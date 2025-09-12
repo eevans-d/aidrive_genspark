@@ -26,6 +26,7 @@ from src.ocr.extractor import InvoiceExtractor
 from src.pricing.calculator import PricingCalculator
 from src.pricing.cache import PricingCache
 from src.integration.deposito_client import DepositoClient
+from shared.auth import require_role, NEGOCIO_ROLE
 
 # Configure logging
 logging.basicConfig(
@@ -155,7 +156,7 @@ def get_deposito_client(endpoint: str) -> DepositoClient:
 # Routes
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check(current_user: dict = Depends(require_role(NEGOCIO_ROLE))):
     """
     Comprehensive health check endpoint
     Verifies all dependencies and system status
@@ -209,7 +210,8 @@ async def process_invoice(
     request_data: InvoiceProcessRequest = Depends(),
     deposito_endpoint: Optional[str] = Form(None),
     update_stock: Optional[bool] = Form(True),
-    inflation_rate: Optional[float] = Form(0.045)
+    inflation_rate: Optional[float] = Form(0.045),
+    current_user: dict = Depends(require_role(NEGOCIO_ROLE))
 ):
     """
     Complete end-to-end invoice processing pipeline:
@@ -359,7 +361,8 @@ async def consult_price(
     product_name: str,
     base_price: float,
     inflation_rate: Optional[float] = 0.045,
-    days_elapsed: Optional[int] = 365
+    days_elapsed: Optional[int] = 365,
+    current_user: dict = Depends(require_role(NEGOCIO_ROLE))
 ):
     """
     Calculate adjusted price with inflation for a specific product
@@ -422,7 +425,8 @@ async def consult_price(
 @app.post("/ocr/test", response_model=OCRTestResponse)
 async def test_ocr(
     image: UploadFile = File(..., description="Image file for OCR testing"),
-    preprocess_only: Optional[bool] = Form(False)
+    preprocess_only: Optional[bool] = Form(False),
+    current_user: dict = Depends(require_role(NEGOCIO_ROLE))
 ):
     """
     Test OCR functionality on individual images

@@ -13,7 +13,7 @@ Aplicación completa con:
 """
 
 import logging
-from typing import Optional, List
+from typing import Optional, List, Dict, Any
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Depends, HTTPException, Query, Path, status, Request
@@ -28,6 +28,13 @@ from .dependencies import (
     get_system_health, log_slow_requests, ErrorHandler, ResponseBuilder
 )
 from .services import ProductoService, StockService, ReporteService
+
+# Importaciones de seguridad
+import sys
+import os
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from shared.auth import get_current_user as auth_get_current_user, require_role, DEPOSITO_ROLE, ADMIN_ROLE
+from shared.security_middleware import security_middleware
 from .schemas import (
     # Producto schemas
     ProductoCreate, ProductoUpdate, ProductoResponse, ProductoFilters,
@@ -115,6 +122,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# Middleware de seguridad (CRÍTICO - aplicado ANTES que otros middlewares)
+app.middleware("http")(security_middleware)
+
 # Middleware para requests lentos
 app.middleware("http")(log_slow_requests)
 
@@ -187,6 +197,55 @@ async def detailed_health_check(
     }
 
 
+# === AUTHENTICATION ENDPOINTS ===
+
+from pydantic import BaseModel
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+@app.post("/api/v1/auth/login", 
+    summary="Login y obtener token JWT",
+    response_description="Token JWT para autenticación"
+)
+async def login(credentials: LoginRequest):
+    """
+    🔐 **ENDPOINT DE LOGIN - IMPLEMENTACIÓN CRÍTICA**
+    
+    Autentica usuario y devuelve token JWT para acceso a endpoints protegidos.
+    
+    **USUARIOS DEMO:**
+    - admin/admin123 (rol: admin)
+    - deposito/dep123 (rol: deposito)
+    """
+    # NOTA: En producción, verificar contra base de datos
+    demo_users = {
+        "admin": {"password": "admin123", "role": ADMIN_ROLE},
+        "deposito": {"password": "dep123", "role": DEPOSITO_ROLE}
+    }
+    
+    user = demo_users.get(credentials.username)
+    if not user or user["password"] != credentials.password:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Credenciales inválidas"
+        )
+    
+    from shared.auth import auth_manager
+    token = auth_manager.create_access_token({
+        "sub": credentials.username,
+        "role": user["role"]
+    })
+    
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "role": user["role"],
+        "expires_hours": 8
+    }
+
+
 # === PRODUCTOS ENDPOINTS ===
 
 @app.post("/api/v1/productos",
@@ -198,7 +257,7 @@ async def detailed_health_check(
 async def create_producto(
     producto_data: ProductoCreate,
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE)),
     response_builder: ResponseBuilder = Depends(get_response_builder)
 ):
     """
@@ -231,7 +290,8 @@ async def create_producto(
          tags=["Productos"])
 async def get_producto(
     producto_id: int = Path(..., description="ID del producto", ge=1),
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene un producto específico por su ID.
@@ -262,7 +322,8 @@ async def get_producto(
          tags=["Productos"])
 async def get_producto_by_codigo(
     codigo: str = Path(..., description="Código del producto"),
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene un producto específico por su código único.
@@ -286,6 +347,45 @@ async def get_producto_by_codigo(
         raise error_handler.handle_service_error(e)
 
 
+@app.get("/api/v1/productos/codigo/{codigo}/precio",
+         response_model=Dict[str, Any],
+         summary="Obtener precio base de producto para cálculos",
+         description="Endpoint específico para PricingEngine - Solo devuelve precio_compra",
+         tags=["Productos"])
+async def get_producto_precio_by_codigo(
+    codigo: str = Path(..., description="Código del producto"),
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
+):
+    """
+    🔐 **ENDPOINT ESPECÍFICO PARA PRICING ENGINE**
+    
+    Devuelve únicamente la información de precio necesaria para cálculos
+    de inflación, manteniendo la separación de responsabilidades.
+    """
+    try:
+        service = ProductoService(db)
+        producto = service.get_producto_by_codigo(codigo)
+        
+        if not producto:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Producto con código '{codigo}' no encontrado"
+            )
+        
+        return {
+            "codigo": producto.codigo,
+            "precio_compra": float(producto.precio_compra),
+            "fecha_ultima_compra": producto.fecha_actualizacion.isoformat() if producto.fecha_actualizacion else None
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        error_handler = ErrorHandler()
+        raise error_handler.handle_service_error(e)
+
+
 @app.put("/api/v1/productos/{producto_id}",
          response_model=ProductoResponse,
          summary="Actualizar Producto",
@@ -295,7 +395,7 @@ async def update_producto(
     producto_id: int = Path(..., description="ID del producto", ge=1),
     update_data: ProductoUpdate = ...,
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user)
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Actualiza un producto existente.
@@ -321,7 +421,7 @@ async def update_producto(
 async def delete_producto(
     producto_id: int = Path(..., description="ID del producto", ge=1),
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user)
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Elimina un producto del sistema (soft delete).
@@ -430,7 +530,7 @@ async def search_productos(
 async def update_stock(
     request: StockUpdateRequest,
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user)
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Actualiza el stock de un producto a una cantidad específica.
@@ -463,7 +563,7 @@ async def update_stock(
 async def adjust_stock(
     request: StockAdjustmentRequest,
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user)
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Ajusta el stock de un producto por una cantidad específica.
@@ -495,7 +595,7 @@ async def adjust_stock(
 async def process_stock_movement(
     request: StockMovementRequest,
     db: Session = Depends(get_database),
-    current_user: str = Depends(get_current_user)
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Procesa un movimiento de stock (entrada o salida).
@@ -528,7 +628,8 @@ async def process_stock_movement(
          description="Obtiene productos con stock crítico",
          tags=["Stock"])
 async def get_stock_critico(
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene todos los productos con stock crítico.
@@ -553,7 +654,8 @@ async def get_stock_movements(
     producto_id: Optional[int] = Query(None, description="ID del producto (opcional)"),
     dias: int = Query(30, ge=1, le=365, description="Días hacia atrás"),
     limit: int = Query(100, ge=1, le=500, description="Límite de resultados"),
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene el historial de movimientos de stock.
@@ -593,7 +695,8 @@ async def get_stock_movements(
          description="Genera reporte completo de stock",
          tags=["Reportes"])
 async def generate_stock_report(
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Genera un reporte completo del estado del stock.
@@ -623,7 +726,8 @@ async def generate_stock_report(
 async def get_top_movimientos(
     dias: int = Query(30, ge=1, le=365, description="Días hacia atrás"),
     limit: int = Query(10, ge=1, le=50, description="Límite de resultados"),
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene los productos con más movimientos en el período especificado.
@@ -648,7 +752,8 @@ async def get_top_movimientos(
          description="Valida la integridad del stock",
          tags=["Reportes"])
 async def validate_stock_integrity(
-    db: Session = Depends(get_database)
+    db: Session = Depends(get_database),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Valida la integridad del stock comparando con el historial de movimientos.

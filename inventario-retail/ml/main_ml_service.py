@@ -25,6 +25,7 @@ import pandas as pd
 # Import our ML components
 from model_manager import ModelManager, ModelConfig, ModelType, EvictionPolicy
 from cache_manager import MLCacheManager, CacheConfig, CacheType
+from shared.auth import require_role, ML_ROLE
 
 # Configure logging
 logging.basicConfig(
@@ -202,7 +203,7 @@ app.add_middleware(
 
 # API Routes
 @app.get("/", response_model=Dict[str, Any])
-async def root():
+async def root(current_user: dict = Depends(require_role(ML_ROLE))):
     """Service information and status"""
     return {
         "service": "ML Service Complete",
@@ -221,7 +222,7 @@ async def root():
     }
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health(current_user: dict = Depends(require_role(ML_ROLE))):
     """Comprehensive health check"""
     uptime = ml_service.get_uptime()
 
@@ -268,7 +269,10 @@ async def health_check():
     )
 
 @app.post("/predict", response_model=PredictionResponse)
-async def predict(request: PredictionRequest):
+async def predict(
+    request: PredictionRequest,
+    current_user: dict = Depends(require_role(ML_ROLE))
+):
     """Make predictions using trained models"""
     start_time = time.time()
 
@@ -346,7 +350,10 @@ async def predict(request: PredictionRequest):
         )
 
 @app.post("/train", response_model=Dict[str, Any])
-async def train_model(request: ModelTrainingRequest, background_tasks: BackgroundTasks):
+async def train(
+    request: ModelTrainingRequest,
+    current_user: dict = Depends(require_role(ML_ROLE))
+):
     """Train a new model"""
     try:
         # Validate model type
@@ -436,7 +443,7 @@ async def train_model_background(model_name: str, X: pd.DataFrame, y: pd.Series)
         logger.error(f"Background training failed for {model_name}: {e}")
 
 @app.get("/models", response_model=List[ModelResponse])
-async def list_models():
+async def list_models(current_user: dict = Depends(require_role(ML_ROLE))):
     """List all available models"""
     try:
         models = ml_service.model_manager.list_models()
@@ -470,7 +477,7 @@ async def list_models():
         )
 
 @app.get("/models/{model_name}", response_model=ModelResponse)
-async def get_model_info(model_name: str):
+async def get_model(model_name: str, current_user: dict = Depends(require_role(ML_ROLE))):
     """Get detailed information about a specific model"""
     try:
         if model_name not in ml_service.model_manager.models:
@@ -492,7 +499,7 @@ async def get_model_info(model_name: str):
         )
 
 @app.delete("/models/{model_name}")
-async def delete_model(model_name: str):
+async def delete_model(model_name: str, current_user: dict = Depends(require_role(ML_ROLE))):
     """Delete a model"""
     try:
         if model_name not in ml_service.model_manager.models:
@@ -524,7 +531,7 @@ async def delete_model(model_name: str):
         )
 
 @app.get("/cache/info")
-async def get_cache_info():
+async def cache_info(current_user: dict = Depends(require_role(ML_ROLE))):
     """Get cache information and statistics"""
     try:
         cache_info = ml_service.cache_manager.get_cache_info()
@@ -538,7 +545,7 @@ async def get_cache_info():
         )
 
 @app.delete("/cache/clear")
-async def clear_cache():
+async def cache_clear(current_user: dict = Depends(require_role(ML_ROLE))):
     """Clear all cache entries"""
     try:
         await ml_service.cache_manager.cache.clear()
@@ -554,7 +561,7 @@ async def clear_cache():
         )
 
 @app.get("/metrics")
-async def get_metrics():
+async def metrics(current_user: dict = Depends(require_role(ML_ROLE))):
     """Get service metrics and performance statistics"""
     try:
         # Model metrics
@@ -584,7 +591,7 @@ async def get_metrics():
         )
 
 @app.post("/data/upload")
-async def upload_data(request: DataUploadRequest):
+async def upload_data(current_user: dict = Depends(require_role(ML_ROLE))):
     """Upload training data"""
     try:
         # Save data to file
@@ -616,7 +623,7 @@ async def upload_data(request: DataUploadRequest):
         )
 
 @app.get("/data/list")
-async def list_data_files():
+async def list_data(current_user: dict = Depends(require_role(ML_ROLE))):
     """List available data files"""
     try:
         data_path = Path(ML_SERVICE_CONFIG["data_path"])

@@ -9,10 +9,15 @@ import redis
 import requests
 import json
 import os
+import sys
 from datetime import datetime, timedelta
 from werkzeug.utils import secure_filename
 from werkzeug.security import check_password_hash, generate_password_hash
 import logging
+
+# Importar autenticación JWT para comunicación con APIs
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from shared.auth import auth_manager, ADMIN_ROLE
 
 # Configuración logging
 logging.basicConfig(level=logging.INFO)
@@ -49,23 +54,45 @@ def check_auth():
     """Verificar autenticación usuario"""
     return 'user' in session
 
-def get_api_data(endpoint, api='deposito', params=None):
-    """Helper para llamadas APIs backend"""
+def get_dashboard_token():
+    """Generar token JWT para comunicación con APIs backend"""
+    if 'user' in session:
+        user_role = 'admin' if session['user'] == 'admin' else 'empleado'
+        return auth_manager.create_access_token({
+            'sub': session['user'],
+            'role': user_role
+        })
+    return None
+
+def get_api_data(endpoint, api='deposito'):
+    """Wrapper para llamadas API GET con autenticación JWT"""
     try:
+        token = get_dashboard_token()
+        if not token:
+            logger.error("No hay token JWT disponible")
+            return None
+            
         url = f"{API_URLS[api]}{endpoint}"
-        response = requests.get(url, params=params, timeout=5)
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.get(url, headers=headers, timeout=10)
         if response.status_code == 200:
             return response.json()
         return None
     except Exception as e:
-        logger.error(f"Error API {api}{endpoint}: {e}")
+        logger.error(f"Error GET API {api}{endpoint}: {e}")
         return None
 
 def post_api_data(endpoint, data, api='deposito'):
-    """Helper para POST APIs backend"""
+    """Wrapper para llamadas API POST con autenticación JWT"""
     try:
+        token = get_dashboard_token()
+        if not token:
+            logger.error("No hay token JWT disponible")
+            return None
+            
         url = f"{API_URLS[api]}{endpoint}"
-        response = requests.post(url, json=data, timeout=10)
+        headers = {'Authorization': f'Bearer {token}'}
+        response = requests.post(url, json=data, headers=headers, timeout=30)
         if response.status_code in [200, 201]:
             return response.json()
         return None

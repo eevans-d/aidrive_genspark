@@ -31,6 +31,7 @@ from .stock_manager import (
     stock_manager, StockManagerError, InsufficientStockError, 
     ProductoNotFoundError
 )
+from shared.auth import require_role, DEPOSITO_ROLE
 
 # Configurar logging
 logging.basicConfig(
@@ -84,7 +85,8 @@ async def log_requests(request, call_next):
           description="Crea un nuevo producto en el catálogo")
 async def create_producto(
     producto: ProductoCreate,
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Crea un nuevo producto con validaciones completas
@@ -141,7 +143,8 @@ async def list_productos(
     precio_max: Optional[Decimal] = Query(None, description="Precio máximo"),
     page: int = Query(1, ge=1, description="Número de página"),
     size: int = Query(20, ge=1, le=100, description="Tamaño de página"),
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Lista productos con filtros avanzados y paginación
@@ -237,7 +240,8 @@ async def list_productos(
          description="Obtiene un producto específico por ID")
 async def get_producto(
     producto_id: int,
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene un producto específico por su ID
@@ -269,7 +273,8 @@ async def get_producto(
 async def update_producto(
     producto_id: int,
     producto_update: ProductoUpdate,
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Actualiza un producto existente con validaciones
@@ -336,7 +341,8 @@ async def update_producto(
             description="Elimina un producto (soft delete)")
 async def delete_producto(
     producto_id: int,
-    db: Session = Depends(get_database_session)
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Elimina un producto (marcado como inactivo - soft delete)
@@ -392,18 +398,19 @@ async def delete_producto(
 # ===== ENDPOINTS DE STOCK =====
 
 @app.post("/stock/update", 
-          response_model=StockUpdateResponse,
+          response_model=StockUpdateResponse, 
           summary="Actualizar stock",
-          description="Actualiza stock con control ACID")
+          description="Actualiza el stock de un producto")
 async def update_stock(
-    stock_request: StockUpdateRequest,
-    db: Session = Depends(get_database_session)
+    stock_update: StockUpdateRequest,
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Actualiza stock de un producto con control ACID completo
     """
     try:
-        result = stock_manager.update_stock(db, stock_request)
+        result = stock_manager.update_stock(db, stock_update)
         db.commit()  # Commit explícito después de operaciones de stock
 
         return StockUpdateResponse(**result)
@@ -435,19 +442,15 @@ async def update_stock(
         )
 
 @app.get("/stock/movements", 
-         response_model=PaginatedResponse,
-         summary="Historial movimientos",
-         description="Obtiene historial de movimientos de stock")
+         response_model=StockMovementsResponse, 
+         summary="Historial de movimientos",
+         description="Obtiene el historial de movimientos de stock")
 async def get_stock_movements(
-    producto_id: Optional[int] = Query(None, description="ID del producto"),
-    tipo_movimiento: Optional[str] = Query(None, description="Tipo de movimiento"),
-    usuario: Optional[str] = Query(None, description="Usuario que realizó el movimiento"),
-    fecha_desde: Optional[datetime] = Query(None, description="Fecha desde"),
-    fecha_hasta: Optional[datetime] = Query(None, description="Fecha hasta"),
-    documento_referencia: Optional[str] = Query(None, description="Documento de referencia"),
-    page: int = Query(1, ge=1, description="Número de página"),
-    size: int = Query(20, ge=1, le=100, description="Tamaño de página"),
-    db: Session = Depends(get_database_session)
+    producto_id: Optional[int] = Query(None, description="ID del producto (opcional)"),
+    dias: int = Query(30, ge=1, le=365, description="Días hacia atrás"),
+    limit: int = Query(100, ge=1, le=500, description="Límite de resultados"),
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Obtiene historial de movimientos con filtros y paginación
@@ -459,9 +462,6 @@ async def get_stock_movements(
         # Aplicar filtros
         if producto_id:
             query = query.filter(MovimientoStock.producto_id == producto_id)
-
-        if tipo_movimiento:
-            query = query.filter(MovimientoStock.tipo_movimiento == tipo_movimiento)
 
         if usuario:
             query = query.filter(MovimientoStock.usuario.ilike(f"%{usuario}%"))
@@ -523,10 +523,13 @@ async def get_stock_movements(
         )
 
 @app.get("/stock/critical", 
-         response_model=List[ProductoStockCritico],
-         summary="Productos stock crítico",
-         description="Lista productos con stock crítico")
-async def get_critical_stock():
+         response_model=StockCriticoResponse, 
+         summary="Stock crítico",
+         description="Obtiene productos con stock crítico")
+async def get_stock_critical(
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
+):
     """
     Obtiene productos con stock crítico
     """
@@ -557,10 +560,13 @@ async def get_critical_stock():
         )
 
 @app.get("/stock/summary", 
-         response_model=ResumenStock,
+         response_model=StockSummaryResponse, 
          summary="Resumen de stock",
-         description="Obtiene resumen general del estado del stock")
-async def get_stock_summary():
+         description="Obtiene resumen de stock")
+async def get_stock_summary(
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
+):
     """
     Obtiene resumen general del estado del stock
     """
@@ -586,9 +592,13 @@ async def get_stock_summary():
 # ===== ENDPOINTS DE HEALTH CHECK =====
 
 @app.get("/health", 
-         summary="Health Check",
-         description="Verifica estado de la API y base de datos")
-async def health_check():
+         response_model=HealthResponse, 
+         summary="Health check",
+         description="Verifica el estado del sistema")
+async def health_check(
+    db: Session = Depends(get_database_session),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
+):
     """
     Endpoint de health check para monitoreo
     """

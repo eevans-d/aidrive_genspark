@@ -58,6 +58,23 @@ class DepositoClient:
             logger.error(f"Error buscando/creando producto: {e}")
             raise
 
+    async def get_producto_by_codigo(self, codigo: str) -> Optional[Dict]:
+        """Obtener producto específico por código para PricingEngine"""
+        try:
+            async with httpx.AsyncClient(timeout=self.timeout) as client:
+                response = await client.get(
+                    f"{self.base_url}/productos",
+                    params={"codigo": codigo}
+                )
+                if response.status_code == 200:
+                    productos = response.json().get("productos", [])
+                    return productos[0] if productos else None
+                return None
+
+        except Exception as e:
+            logger.error(f"Error obteniendo producto {codigo}: {e}")
+            return None
+
     async def actualizar_stock(self, stock_data: Dict) -> Dict:
         """Actualizar stock en AgenteDepósito"""
         try:

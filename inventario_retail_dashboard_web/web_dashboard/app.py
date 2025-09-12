@@ -16,6 +16,9 @@ from werkzeug.utils import secure_filename
 import io
 import base64
 from PIL import Image
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from shared.auth import AuthManager, ADMIN_ROLE, NEGOCIO_ROLE
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -62,6 +65,13 @@ class MockMLEngine:
         }
 
 ml_engine = MockMLEngine()
+
+# JWT Token functions
+auth_manager = AuthManager()
+
+def get_dashboard_token():
+    """Generate token for dashboard API access"""
+    return auth_manager.generate_token({"role": ADMIN_ROLE, "user": "dashboard"})
 
 # Rutas principales
 @app.route('/')

@@ -17,6 +17,9 @@ import base64
 from PIL import Image
 import plotly.graph_objs as go
 import plotly.utils
+import sys
+sys.path.append(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
+from shared.auth import AuthManager, ADMIN_ROLE, NEGOCIO_ROLE
 
 # Configuración aplicación
 app = Flask(__name__)
@@ -70,6 +73,13 @@ def cache_set(key, value, ttl=300):
             redis_client.setex(key, ttl, json.dumps(value) if isinstance(value, (dict, list)) else value)
         except:
             pass
+
+# JWT Token functions
+auth_manager = AuthManager()
+
+def get_dashboard_token():
+    """Generate token for dashboard API access"""
+    return auth_manager.generate_token({"role": ADMIN_ROLE, "user": "dashboard"})
 
 # ==================== RUTAS PRINCIPALES ====================
 

@@ -18,6 +18,7 @@ import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.database import get_db, health_check_db
+from shared.auth import require_role, DEPOSITO_ROLE
 from shared.models import Producto, MovimientoStock
 from shared.config import get_settings, setup_logging
 from shared.utils import formateador, obtener_factor_estacional
@@ -110,7 +111,7 @@ async def producto_no_encontrado_handler(request, exc):
 # ==========================================
 
 @app.get("/health", response_model=HealthResponse)
-async def health_check():
+async def health_check(current_user: dict = Depends(require_role(DEPOSITO_ROLE))):
     """Health check del AgenteDepósito"""
     try:
         # Verificar BD
@@ -151,7 +152,7 @@ async def health_check():
 # ==========================================
 
 @app.post("/productos", response_model=ProductoResponse, status_code=status.HTTP_201_CREATED)
-async def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)):
+async def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db), current_user: dict = Depends(require_role(DEPOSITO_ROLE))):
     """
     Crea un nuevo producto con validaciones
     """
@@ -188,28 +189,29 @@ async def crear_producto(producto: ProductoCreate, db: Session = Depends(get_db)
 
 @app.get("/productos", response_model=ProductoListResponse)
 async def listar_productos(
-    skip: int = 0,
-    limit: int = 100,
     categoria: Optional[str] = None,
-    activo: bool = True,
-    db: Session = Depends(get_db)
+    activos_solo: bool = True,
+    limit: int = 100,
+    offset: int = 0,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Lista productos con paginación y filtros
     """
     try:
-        query = db.query(Producto).filter(Producto.activo == activo)
+        query = db.query(Producto).filter(Producto.activo == activos_solo)
 
         if categoria:
             query = query.filter(Producto.categoria.ilike(f"%{categoria}%"))
 
         total = query.count()
-        productos = query.offset(skip).limit(limit).all()
+        productos = query.offset(offset).limit(limit).all()
 
         return ProductoListResponse(
             productos=[ProductoResponse.from_orm(p) for p in productos],
             total=total,
-            skip=skip,
+            skip=offset,
             limit=limit
         )
 
@@ -221,7 +223,7 @@ async def listar_productos(
         )
 
 @app.get("/productos/{producto_id}", response_model=ProductoResponse)
-async def obtener_producto(producto_id: int, db: Session = Depends(get_db)):
+async def obtener_producto(producto_id: int, db: Session = Depends(get_db), current_user: dict = Depends(require_role(DEPOSITO_ROLE))):
     """
     Obtiene un producto específico por ID
     """
@@ -292,7 +294,8 @@ async def actualizar_producto(
 @app.post("/stock/update", response_model=StockUpdateResponse)
 async def actualizar_stock(
     stock_request: StockUpdateRequest,
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
 ):
     """
     Actualizar stock con transacciones ACID e idempotencia
@@ -320,7 +323,11 @@ async def actualizar_stock(
         )
 
 @app.get("/stock/critical", response_model=List[StockCriticoResponse])
-async def obtener_stock_critico(db: Session = Depends(get_db)):
+async def obtener_stock_critico(
+    limite_critico: int = 10,
+    db: Session = Depends(get_db),
+    current_user: dict = Depends(require_role(DEPOSITO_ROLE))
+):
     """
     Obtiene productos con stock crítico ajustado por temporada
     """

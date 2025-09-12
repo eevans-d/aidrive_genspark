@@ -10,6 +10,7 @@ import sys, os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from shared.config import get_settings, setup_logging
+from shared.auth import require_role, NEGOCIO_ROLE
 from .ocr.processor import OCRProcessor
 from .pricing.engine import PricingEngine
 from .invoice.processor import InvoiceProcessor
@@ -29,7 +30,7 @@ invoice_processor = InvoiceProcessor()
 deposito_client = DepositoClient()
 
 @app.get("/health")
-async def health():
+async def health(current_user: dict = Depends(require_role(NEGOCIO_ROLE))):
     """Health check con conectividad AgenteDepósito"""
     try:
         deposito_status = await deposito_client.health_check()
@@ -43,7 +44,7 @@ async def health():
         return {"status": "unhealthy", "error": str(e)}
 
 @app.get("/precios/consultar")
-async def consultar_precio(codigo: str, dias_desde_compra: int = 0):
+async def consultar_precio(codigo: str, dias_desde_compra: int = 0, current_user: dict = Depends(require_role(NEGOCIO_ROLE))):
     """Consultar precio con inflación aplicada"""
     try:
         precio = await pricing_engine.calcular_precio_inflacion(codigo, dias_desde_compra)
@@ -57,7 +58,7 @@ async def consultar_precio(codigo: str, dias_desde_compra: int = 0):
         raise HTTPException(status_code=404, detail=str(e))
 
 @app.post("/facturas/procesar")
-async def procesar_factura(file: UploadFile = File(...), proveedor_cuit: str = Form(...)):
+async def procesar_factura(file: UploadFile = File(...), proveedor_cuit: str = Form(...), current_user: dict = Depends(require_role(NEGOCIO_ROLE))):
     """Procesar factura E2E: OCR → Pricing → Stock Update"""
     try:
         logger.info(f"Procesando factura de proveedor CUIT: {proveedor_cuit}")
