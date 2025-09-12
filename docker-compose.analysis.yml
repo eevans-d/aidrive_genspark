@@ -1,0 +1,180 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database con configuración de análisis forense
+  postgres:
+    image: postgres:15-alpine
+    container_name: sistema_bancario_db_analysis
+    environment:
+      POSTGRES_DB: sistema_bancario
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres123
+      POSTGRES_HOST_AUTH_METHOD: trust
+      # Configuración de logging completo para análisis forense
+      POSTGRES_INITDB_ARGS: "--auth-host=trust --auth-local=trust"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - postgres_logs:/var/log/postgresql
+      - ./scripts/init_db.sql:/docker-entrypoint-initdb.d/init_db.sql
+      - ./analysis/postgresql_forensic.conf:/etc/postgresql/postgresql.conf
+    networks:
+      - banking_network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    # Configuración adicional para logging SQL completo
+    command: >
+      postgres 
+      -c log_statement=all 
+      -c log_directory=/var/log/postgresql
+      -c log_filename=postgresql-%Y-%m-%d_%H%M%S.log
+      -c logging_collector=on
+      -c log_min_duration_statement=0
+      -c log_line_prefix='%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+      -c shared_preload_libraries=pg_stat_statements
+      -c pg_stat_statements.track=all
+
+  # Redis Cache con configuración de análisis
+  redis:
+    image: redis:7-alpine
+    container_name: sistema_bancario_redis_analysis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+      - redis_logs:/var/log/redis
+    networks:
+      - banking_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    command: >
+      redis-server 
+      --logfile /var/log/redis/redis.log
+      --loglevel debug
+      --slowlog-log-slower-than 1000
+      --slowlog-max-len 1000
+
+  # Agente Depósito Service con instrumentación de cobertura
+  agente-deposito:
+    build:
+      context: .
+      dockerfile: Dockerfile.agente-deposito
+    container_name: agente_deposito_analysis
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/sistema_bancario
+      - REDIS_URL=redis://redis:6379
+      - COVERAGE_PROCESS_START=1
+      - COVERAGE_RCFILE=/app/.coveragerc
+      - PYTHONPATH=/app
+      - OTEL_SERVICE_NAME=agente-deposito
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:14268/api/traces
+      - OTEL_TRACES_EXPORTER=console
+    ports:
+      - "8001:8000"
+    volumes:
+      - coverage_data:/app/coverage
+      - app_logs:/app/logs
+      - ./analysis/.coveragerc:/app/.coveragerc
+    networks:
+      - banking_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # Agente Negocio Service con instrumentación de cobertura
+  agente-negocio:
+    build:
+      context: .
+      dockerfile: Dockerfile.agente-negocio
+    container_name: agente_negocio_analysis
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/sistema_bancario
+      - REDIS_URL=redis://redis:6379
+      - DEPOSITO_SERVICE_URL=http://agente-deposito:8000
+      - COVERAGE_PROCESS_START=1
+      - COVERAGE_RCFILE=/app/.coveragerc
+      - PYTHONPATH=/app
+      - OTEL_SERVICE_NAME=agente-negocio
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://jaeger:14268/api/traces
+      - OTEL_TRACES_EXPORTER=console
+    ports:
+      - "8002:8000"
+    volumes:
+      - coverage_data:/app/coverage
+      - app_logs:/app/logs
+      - ./analysis/.coveragerc:/app/.coveragerc
+    networks:
+      - banking_network
+    depends_on:
+      agente-deposito:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+
+  # ML Service con instrumentación
+  ml-service:
+    build:
+      context: .
+      dockerfile: Dockerfile.ml-service
+    container_name: ml_service_analysis
+    environment:
+      - DATABASE_URL=postgresql://postgres:postgres123@postgres:5432/sistema_bancario
+      - COVERAGE_PROCESS_START=1
+      - COVERAGE_RCFILE=/app/.coveragerc
+      - PYTHONPATH=/app
+      - OTEL_SERVICE_NAME=ml-service
+      - OTEL_TRACES_EXPORTER=console
+    ports:
+      - "8003:8000"
+    volumes:
+      - coverage_data:/app/coverage
+      - app_logs:/app/logs
+      - ml_models:/app/models
+      - ./analysis/.coveragerc:/app/.coveragerc
+    networks:
+      - banking_network
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  # Jaeger para tracing distribuido (opcional)
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger_analysis
+    ports:
+      - "16686:16686"
+      - "14268:14268"
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - banking_network
+
+volumes:
+  postgres_data:
+  postgres_logs:
+  redis_data:
+  redis_logs:
+  coverage_data:
+  app_logs:
+  ml_models:
+
+networks:
+  banking_network:
+    driver: bridge

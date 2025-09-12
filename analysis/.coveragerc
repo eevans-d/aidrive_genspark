@@ -1,0 +1,18 @@
+[run]
+branch = True
+source = .
+parallel = True
+concurrency = thread,greenlet
+
+[report]
+show_missing = True
+skip_covered = False
+precision = 2
+
+[html]
+directory = htmlcov
+
+[paths]
+source = 
+    .
+    /app
