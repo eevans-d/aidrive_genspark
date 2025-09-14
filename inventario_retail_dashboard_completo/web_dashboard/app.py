@@ -5,6 +5,7 @@ Aplicación Flask principal con funcionalidades completas para retail
 
 from flask import Flask, render_template, request, jsonify, send_file, flash, redirect, url_for
 from flask_socketio import SocketIO, emit
+from shared.security_headers import apply_flask_security
 from werkzeug.utils import secure_filename
 import os
 import json
@@ -28,7 +29,10 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max
 
 # Configuración SocketIO para updates tiempo real
-socketio = SocketIO(app, cors_allowed_origins="*")
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins or None)
+# Security headers
+apply_flask_security(app)
 
 # Configuración Redis Cache
 try:

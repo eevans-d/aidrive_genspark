@@ -16,6 +16,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, HTTPException, Depends, BackgroundTasks, Request, status
+from shared.errors import register_fastapi_error_handlers
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -191,6 +192,7 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+register_fastapi_error_handlers(app)
 
 # CORS middleware
 app.add_middleware(

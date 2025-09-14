@@ -5,6 +5,9 @@ FastAPI con endpoints CRUD completos y control ACID
 
 from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
+from shared.security_headers import apply_fastapi_security
+import os
+from shared.errors import register_fastapi_error_handlers
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
@@ -16,6 +19,7 @@ from decimal import Decimal
 import uvicorn
 
 # Imports del proyecto
+ 
 from .database import get_database_session, db_manager
 from .models import Producto, MovimientoStock, Cliente, Proveedor
 from .schemas import (
@@ -55,15 +59,19 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+register_fastapi_error_handlers(app)
 
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # En producción, especificar dominios permitidos
+    allow_origins=[o.strip() for o in os.getenv('CORS_ORIGINS', '').split(',') if o.strip()],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=[m.strip() for m in os.getenv('CORS_METHODS', 'GET,POST,PUT,DELETE,OPTIONS').split(',') if m.strip()],
+    allow_headers=[h.strip() for h in os.getenv('CORS_HEADERS', 'Authorization,Content-Type').split(',') if h.strip()]
 )
+
+# Security headers
+apply_fastapi_security(app)
 
 # Middleware para logging de requests
 @app.middleware("http")

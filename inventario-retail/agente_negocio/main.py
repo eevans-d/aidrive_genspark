@@ -12,6 +12,9 @@ import logging
 from datetime import datetime
 from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
+from shared.security_headers import apply_fastapi_security
+from shared.errors import register_fastapi_error_handlers
+import os
 
 # Configuración de rutas y entorno
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,7 +32,21 @@ settings = get_settings()
 
 # Inicialización de la aplicación FastAPI
 app = FastAPI(title="AgenteNegocio - OCR & Pricing", version="1.0.0")
-app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"], allow_headers=["*"])
+register_fastapi_error_handlers(app)
+# CORS seguro por entorno
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+_cors_methods = [m.strip() for m in os.getenv("CORS_METHODS", "GET,POST,PUT,DELETE,OPTIONS").split(",") if m.strip()]
+_cors_headers = [h.strip() for h in os.getenv("CORS_HEADERS", "Authorization,Content-Type").split(",") if h.strip()]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=_cors_origins,
+    allow_methods=_cors_methods,
+    allow_headers=_cors_headers,
+)
+
+# Security headers
+apply_fastapi_security(app)
 
 # Inicializar componentes de negocio
 ocr_processor = OCRProcessor()

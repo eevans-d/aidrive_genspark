@@ -5,6 +5,7 @@ Aplicación Flask principal con integración completa ML, OCR, Cache
 
 from flask import Flask, render_template, request, jsonify, redirect, url_for, session, flash
 from flask_socketio import SocketIO, emit
+from shared.security_headers import apply_flask_security
 import redis
 import requests
 import json
@@ -30,7 +31,10 @@ app.config['UPLOAD_FOLDER'] = 'uploads'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # 16MB max file size
 
 # SocketIO para updates tiempo real
-socketio = SocketIO(app, cors_allowed_origins="*")
+_cors_origins = [o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip()]
+socketio = SocketIO(app, cors_allowed_origins=_cors_origins or None)
+# Security headers
+apply_flask_security(app)
 
 # Redis para cache y sessions
 redis_client = redis.Redis(host='localhost', port=6379, db=0, decode_responses=True)
