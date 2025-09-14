@@ -5,6 +5,9 @@ Compliance fiscal para retail argentino
 import csv
 import json
 import logging
+import os
+import signal
+from contextlib import contextmanager
 from datetime import datetime, timedelta
 from typing import Dict, List, Optional, Tuple
 from decimal import Decimal, ROUND_HALF_UP
@@ -12,6 +15,25 @@ import pandas as pd
 from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+# Configuración por environment para IVA Reporter
+IVA_TIMEOUT = int(os.getenv('IVA_TIMEOUT', '180'))  # 3 minutos default
+IVA_CHUNK_SIZE = int(os.getenv('IVA_CHUNK_SIZE', '500'))
+
+@contextmanager
+def timeout_protection_iva(seconds: int):
+    """Context manager para protección de timeout en operaciones IVA"""
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Operación IVA cancelada por timeout ({seconds}s)")
+    
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 class AlicuotasIVA:
     """Alícuotas IVA oficiales AFIP actualizadas"""
@@ -90,16 +112,17 @@ class ReporteIVA:
                 'validaciones': self._validar_reporte(resumen_iva)
             }
 
-            # Guardar resumen JSON
+            # Guardar resumen JSON con timeout protection
             resumen_file = self.output_dir / f"reporte_iva_{año}_{mes:02d}_resumen.json"
-            with open(resumen_file, 'w', encoding='utf-8') as f:
-                json.dump(reporte, f, indent=2, ensure_ascii=False)
+            with timeout_protection_iva(IVA_TIMEOUT):
+                with open(resumen_file, 'w', encoding='utf-8') as f:
+                    json.dump(reporte, f, indent=2, ensure_ascii=False)
 
             logger.info(f"Reporte IVA generado exitosamente: {len(archivos_generados)} archivos")
             return reporte
 
         except Exception as e:
-            logger.error(f"Error generando reporte IVA: {e}")
+            logger.error(f"Error generando reporte IVA: {e}", exc_info=True)
             raise
 
     def _obtener_facturas_periodo(self, fecha_desde: datetime, fecha_hasta: datetime, cuit_emisor: str) -> List[Dict]:
@@ -149,7 +172,7 @@ class ReporteIVA:
             return facturas
 
         except Exception as e:
-            logger.error(f"Error obteniendo facturas: {e}")
+            logger.error(f"Error obteniendo facturas: {e}", exc_info=True)
             return []
 
     def _determinar_alicuota_iva(self, subtotal: float, iva_total: float) -> float:
@@ -302,14 +325,15 @@ class ReporteIVA:
         archivos = []
 
         try:
-            # Archivo resumen IVA
+            # Archivo resumen IVA con timeout protection
             resumen_file = self.output_dir / f"iva_resumen_{año}_{mes:02d}.txt"
-            with open(resumen_file, 'w', encoding='utf-8') as f:
-                f.write("RESUMEN MENSUAL IVA\n")
-                f.write(f"Período: {mes:02d}/{año}\n")
-                f.write(f"IVA Débito Fiscal (Ventas): ${resumen['iva_ventas']:.2f}\n")
-                f.write(f"IVA Crédito Fiscal (Compras): ${resumen['iva_compras']:.2f}\n")
-                f.write(f"Saldo Técnico: ${resumen['iva_ventas'] - resumen['iva_compras']:.2f}\n")
+            with timeout_protection_iva(IVA_TIMEOUT):
+                with open(resumen_file, 'w', encoding='utf-8') as f:
+                    f.write("RESUMEN MENSUAL IVA\n")
+                    f.write(f"Período: {mes:02d}/{año}\n")
+                    f.write(f"IVA Débito Fiscal (Ventas): ${resumen['iva_ventas']:.2f}\n")
+                    f.write(f"IVA Crédito Fiscal (Compras): ${resumen['iva_compras']:.2f}\n")
+                    f.write(f"Saldo Técnico: ${resumen['iva_ventas'] - resumen['iva_compras']:.2f}\n")
 
             archivos.append(str(resumen_file))
 
@@ -366,7 +390,7 @@ class ReporteIVA:
             return archivos
 
         except Exception as e:
-            logger.error(f"Error generando archivos AFIP: {e}")
+            logger.error(f"Error generando archivos AFIP: {e}", exc_info=True)
             return archivos
 
     def _validar_reporte(self, resumen: Dict) -> List[str]:

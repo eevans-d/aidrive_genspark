@@ -14,10 +14,34 @@ import hashlib
 import os
 import logging
 from decimal import Decimal, ROUND_HALF_UP
+import signal
+from contextlib import contextmanager
+import threading
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
+
+# Configuración por environment 
+COMPLIANCE_TIMEOUT = int(os.getenv('COMPLIANCE_TIMEOUT', '300'))  # 5 minutos default
+COMPLIANCE_CHUNK_SIZE = int(os.getenv('COMPLIANCE_CHUNK_SIZE', '1000'))  
+COMPLIANCE_MAX_RETRIES = int(os.getenv('COMPLIANCE_MAX_RETRIES', '3'))
+
+@contextmanager
+def timeout_protection(seconds: int):
+    """Context manager para protección de timeout en operaciones críticas"""
+    def timeout_handler(signum, frame):
+        raise TimeoutError(f"Operación cancelada por timeout ({seconds}s)")
+    
+    # Configurar signal handler
+    old_handler = signal.signal(signal.SIGALRM, timeout_handler)
+    signal.alarm(seconds)
+    
+    try:
+        yield
+    finally:
+        signal.alarm(0)
+        signal.signal(signal.SIGALRM, old_handler)
 
 class TipoComprobante(Enum):
     FACTURA_A = "01"
@@ -184,12 +208,8 @@ class FiscalComplianceReporter:
             return resultado
 
         except Exception as e:
-            logger.error(f"Error generando Libro IVA Ventas: {e}")
-            return {
-                "success": False,
-                "error": str(e),
-                "archivo_path": None
-            }
+            logger.error(f"Error generando Libro IVA Ventas: {e}", exc_info=True)
+            raise
 
     def generar_libro_iva_compras(
         self, 
@@ -241,7 +261,7 @@ class FiscalComplianceReporter:
             return resultado
 
         except Exception as e:
-            logger.error(f"Error generando Libro IVA Compras: {e}")
+            logger.error(f"Error generando Libro IVA Compras: {e}", exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -293,7 +313,7 @@ class FiscalComplianceReporter:
             return resultado
 
         except Exception as e:
-            logger.error(f"Error generando SIFERE: {e}")
+            logger.error(f"Error generando SIFERE: {e}", exc_info=True)
             return {
                 "success": False,
                 "error": str(e),
@@ -447,77 +467,141 @@ class FiscalComplianceReporter:
         ]
 
     def _procesar_comprobantes_venta(self, comprobantes: List[Dict]) -> List[ComprobanteVenta]:
-        """Procesa y valida comprobantes de venta"""
+        """Procesa y valida comprobantes de venta con gestión de memoria"""
         procesados = []
+        
+        # Procesar en chunks para gestión de memoria eficiente
+        for i in range(0, len(comprobantes), COMPLIANCE_CHUNK_SIZE):
+            chunk = comprobantes[i:i + COMPLIANCE_CHUNK_SIZE]
+            logger.info(f"Procesando chunk {i//COMPLIANCE_CHUNK_SIZE + 1} ({len(chunk)} comprobantes)")
+            
+            for comp in chunk:
+                # Validación de entrada robusta
+                if not self._validar_comprobante_venta(comp):
+                    logger.warning(f"Comprobante inválido omitido: {comp}")
+                    continue
+                    
+                try:
+                    comprobante = ComprobanteVenta(
+                        fecha_comprobante=comp["fecha"],
+                        tipo_comprobante=comp["tipo_comprobante"],
+                        punto_venta=comp["punto_venta"],
+                        numero_comprobante=comp["numero"],
+                        numero_comprobante_hasta=comp["numero"],  # Mismo número para comprobante individual
+                        codigo_documento_comprador="80",  # CUIT
+                        numero_documento_comprador=comp["cliente_documento"],
+                        denominacion_comprador=comp["cliente_nombre"],
+                        importe_total_operacion=comp["importe_total"],
+                        importe_total_conceptos=Decimal('0.00'),
+                        importe_percepciones=Decimal('0.00'),
+                        importe_iibb=Decimal('0.00'),
+                        importe_percepcion_municipal=Decimal('0.00'),
+                        importe_impuestos_internos=Decimal('0.00'),
+                        codigo_moneda="PES",
+                        tipo_cambio=Decimal('1.00'),
+                        cantidad_alicuotas_iva=1,
+                        codigo_operacion="0",  # Contado
+                        otros_tributos=Decimal('0.00'),
+                        fecha_vencimiento_pago=comp["fecha"],
+                        neto_gravado_21=comp.get("neto_21", Decimal('0.00')),
+                        iva_21=comp.get("iva_21", Decimal('0.00'))
+                    )
+                    procesados.append(comprobante)
 
-        for comp in comprobantes:
-            try:
-                comprobante = ComprobanteVenta(
-                    fecha_comprobante=comp["fecha"],
-                    tipo_comprobante=comp["tipo_comprobante"],
-                    punto_venta=comp["punto_venta"],
-                    numero_comprobante=comp["numero"],
-                    numero_comprobante_hasta=comp["numero"],  # Mismo número para comprobante individual
-                    codigo_documento_comprador="80",  # CUIT
-                    numero_documento_comprador=comp["cliente_documento"],
-                    denominacion_comprador=comp["cliente_nombre"],
-                    importe_total_operacion=comp["importe_total"],
-                    importe_total_conceptos=Decimal('0.00'),
-                    importe_percepciones=Decimal('0.00'),
-                    importe_iibb=Decimal('0.00'),
-                    importe_percepcion_municipal=Decimal('0.00'),
-                    importe_impuestos_internos=Decimal('0.00'),
-                    codigo_moneda="PES",
-                    tipo_cambio=Decimal('1.00'),
-                    cantidad_alicuotas_iva=1,
-                    codigo_operacion="0",  # Contado
-                    otros_tributos=Decimal('0.00'),
-                    fecha_vencimiento_pago=comp["fecha"],
-                    neto_gravado_21=comp.get("neto_21", Decimal('0.00')),
-                    iva_21=comp.get("iva_21", Decimal('0.00'))
-                )
-                procesados.append(comprobante)
-
-            except Exception as e:
-                logger.error(f"Error procesando comprobante {comp}: {e}")
-                continue
+                except Exception as e:
+                    logger.error(f"Error procesando comprobante {comp}: {e}", exc_info=True)
+                    continue
 
         return procesados
 
+    def _validar_comprobante_venta(self, comp: Dict) -> bool:
+        """Valida estructura y contenido de comprobante de venta"""
+        campos_requeridos = ["fecha", "tipo_comprobante", "punto_venta", "numero", 
+                           "cliente_documento", "cliente_nombre", "importe_total"]
+        
+        for campo in campos_requeridos:
+            if campo not in comp or comp[campo] is None:
+                logger.warning(f"Campo requerido faltante: {campo}")
+                return False
+        
+        # Validaciones de tipo y rango
+        try:
+            importe = Decimal(str(comp["importe_total"]))
+            if importe < 0:
+                logger.warning(f"Importe negativo: {importe}")
+                return False
+        except (ValueError, TypeError):
+            logger.warning(f"Importe inválido: {comp.get('importe_total')}")
+            return False
+            
+        return True
+
+    def _validar_comprobante_compra(self, comp: Dict) -> bool:
+        """Valida estructura y contenido de comprobante de compra"""
+        campos_requeridos = ["fecha", "tipo_comprobante", "punto_venta", "numero",
+                           "proveedor_documento", "proveedor_nombre", "importe_total"]
+        
+        for campo in campos_requeridos:
+            if campo not in comp or comp[campo] is None:
+                logger.warning(f"Campo requerido faltante: {campo}")
+                return False
+        
+        # Validaciones específicas de compra
+        try:
+            importe = Decimal(str(comp["importe_total"]))
+            if importe < 0:
+                logger.warning(f"Importe negativo: {importe}")
+                return False
+        except (ValueError, TypeError):
+            logger.warning(f"Importe inválido: {comp.get('importe_total')}")
+            return False
+            
+        return True
+
     def _procesar_comprobantes_compra(self, comprobantes: List[Dict]) -> List[ComprobanteCompra]:
-        """Procesa y valida comprobantes de compra"""
+        """Procesa y valida comprobantes de compra con gestión de memoria"""
         procesados = []
+        
+        # Procesar en chunks para gestión de memoria eficiente
+        for i in range(0, len(comprobantes), COMPLIANCE_CHUNK_SIZE):
+            chunk = comprobantes[i:i + COMPLIANCE_CHUNK_SIZE]
+            logger.info(f"Procesando chunk compras {i//COMPLIANCE_CHUNK_SIZE + 1} ({len(chunk)} comprobantes)")
+            
+            for comp in chunk:
+                # Validación de entrada robusta
+                if not self._validar_comprobante_compra(comp):
+                    logger.warning(f"Comprobante compra inválido omitido: {comp}")
+                    continue
+                    
+                try:
+                    comprobante = ComprobanteCompra(
+                        fecha_comprobante=comp["fecha"],
+                        tipo_comprobante=comp["tipo_comprobante"],
+                        punto_venta=comp["punto_venta"],
+                        numero_comprobante=comp["numero"],
+                        despacho_importacion="",
+                        codigo_documento_vendedor="80",
+                        numero_documento_vendedor=comp["proveedor_documento"],
+                        denominacion_vendedor=comp["proveedor_nombre"],
+                        importe_total_operacion=comp["importe_total"],
+                        importe_total_conceptos=Decimal('0.00'),
+                        importe_operaciones_exentas=Decimal('0.00'),
+                        importe_percepciones=Decimal('0.00'),
+                        importe_iibb=Decimal('0.00'),
+                        importe_percepcion_municipal=Decimal('0.00'),
+                        importe_impuestos_internos=Decimal('0.00'),
+                        codigo_moneda="PES",
+                        tipo_cambio=Decimal('1.00'),
+                        cantidad_alicuotas_iva=1,
+                        codigo_operacion="0",
+                        neto_gravado_21=comp.get("neto_21", Decimal('0.00')),
+                        iva_21=comp.get("iva_21", Decimal('0.00'))
+                    )
+                    procesados.append(comprobante)
 
-        for comp in comprobantes:
-            try:
-                comprobante = ComprobanteCompra(
-                    fecha_comprobante=comp["fecha"],
-                    tipo_comprobante=comp["tipo_comprobante"],
-                    punto_venta=comp["punto_venta"],
-                    numero_comprobante=comp["numero"],
-                    despacho_importacion="",
-                    codigo_documento_vendedor="80",
-                    numero_documento_vendedor=comp["proveedor_documento"],
-                    denominacion_vendedor=comp["proveedor_nombre"],
-                    importe_total_operacion=comp["importe_total"],
-                    importe_total_conceptos=Decimal('0.00'),
-                    importe_operaciones_exentas=Decimal('0.00'),
-                    importe_percepciones=Decimal('0.00'),
-                    importe_iibb=Decimal('0.00'),
-                    importe_percepcion_municipal=Decimal('0.00'),
-                    importe_impuestos_internos=Decimal('0.00'),
-                    codigo_moneda="PES",
-                    tipo_cambio=Decimal('1.00'),
-                    cantidad_alicuotas_iva=1,
-                    codigo_operacion="0",
-                    neto_gravado_21=comp.get("neto_21", Decimal('0.00')),
-                    iva_21=comp.get("iva_21", Decimal('0.00'))
-                )
-                procesados.append(comprobante)
-
-            except Exception as e:
-                logger.error(f"Error procesando comprobante compra {comp}: {e}")
-                continue
+                except Exception as e:
+                    logger.error(f"Error procesando comprobante compra {comp}: {e}", exc_info=True)
+                    continue
 
         return procesados
 
@@ -526,13 +610,14 @@ class FiscalComplianceReporter:
         filename = f"iva_ventas_{desde.strftime('%Y%m')}_{hasta.strftime('%Y%m')}.txt"
         filepath = os.path.join(self.compliance_dir, filename)
 
-        with open(filepath, 'w', encoding='utf-8') as f:
-            for comp in comprobantes:
-                # Formato según RG AFIP para Libro IVA Ventas
-                linea = "|".join([
-                    comp.fecha_comprobante.strftime("%d/%m/%Y"),
-                    comp.tipo_comprobante.zfill(3),
-                    str(comp.punto_venta).zfill(5),
+        with timeout_protection(COMPLIANCE_TIMEOUT):
+            with open(filepath, 'w', encoding='utf-8') as f:
+                for comp in comprobantes:
+                    # Formato según RG AFIP para Libro IVA Ventas
+                    linea = "|".join([
+                        comp.fecha_comprobante.strftime("%d/%m/%Y"),
+                        comp.tipo_comprobante.zfill(3),
+                        str(comp.punto_venta).zfill(5),
                     str(comp.numero_comprobante).zfill(20),
                     str(comp.numero_comprobante_hasta).zfill(20),
                     comp.codigo_documento_comprador.zfill(2),
@@ -585,9 +670,10 @@ class FiscalComplianceReporter:
     def _calcular_hash_archivo(self, filepath: str) -> str:
         """Calcula hash SHA256 para integridad del archivo"""
         hash_sha256 = hashlib.sha256()
-        with open(filepath, "rb") as f:
-            for chunk in iter(lambda: f.read(4096), b""):
-                hash_sha256.update(chunk)
+        with timeout_protection(COMPLIANCE_TIMEOUT):
+            with open(filepath, "rb") as f:
+                for chunk in iter(lambda: f.read(4096), b""):
+                    hash_sha256.update(chunk)
         return hash_sha256.hexdigest()
 
     def _registrar_auditoria(self, operacion: str, resultado: Dict[str, Any]):
@@ -602,10 +688,17 @@ class FiscalComplianceReporter:
             "error": resultado.get("error")
         }
 
-        # Guardar en archivo de auditoría
+        # Guardar en archivo de auditoría con timeout y hash de integridad
         audit_file = os.path.join(self.compliance_dir, "auditoria.jsonl")
-        with open(audit_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(log_entry) + "\n")
+        
+        # Generar hash del entry para integridad
+        entry_data = json.dumps(log_entry, sort_keys=True)
+        entry_hash = hashlib.sha256(entry_data.encode()).hexdigest()
+        log_entry["entry_hash"] = entry_hash
+        
+        with timeout_protection(60):  # Timeout más corto para logging
+            with open(audit_file, 'a', encoding='utf-8') as f:
+                f.write(json.dumps(log_entry) + "\n")
 
     # Mock implementations para métodos restantes
     def _obtener_facturas_electronicas(self, desde: date, hasta: date) -> List[Dict]:
@@ -658,15 +751,17 @@ class FiscalComplianceReporter:
 
     def _generar_respaldo_json(self, datos: Dict, ano: int) -> str:
         filepath = os.path.join(self.compliance_dir, f"retencion_{ano}_datos.json")
-        with open(filepath, 'w', encoding='utf-8') as f:
-            json.dump(datos, f, indent=2, default=str)
+        with timeout_protection(COMPLIANCE_TIMEOUT):
+            with open(filepath, 'w', encoding='utf-8') as f:
+                json.dump(datos, f, indent=2, default=str)
         return filepath
 
     def _generar_respaldo_excel(self, datos: Dict, ano: int) -> str:
         filepath = os.path.join(self.compliance_dir, f"retencion_{ano}_resumen.xlsx")
-        # Mock: crear archivo Excel básico
-        with open(filepath, 'w') as f:
-            f.write("Mock Excel file")
+        # Mock: crear archivo Excel básico con timeout protection
+        with timeout_protection(COMPLIANCE_TIMEOUT):
+            with open(filepath, 'w') as f:
+                f.write("Mock Excel file")
         return filepath
 
     def _crear_package_retencion(self, archivos: List[str], ano: int) -> str:
