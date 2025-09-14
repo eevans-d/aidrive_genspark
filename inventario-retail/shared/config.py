@@ -5,7 +5,8 @@ Contexto: Retail argentino con inflación y temporadas
 """
 from functools import lru_cache
 from typing import Literal
-from pydantic import BaseSettings, validator
+from pydantic_settings import BaseSettings
+from pydantic import validator
 import os
 from pathlib import Path
 
