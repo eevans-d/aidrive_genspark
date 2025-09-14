@@ -203,28 +203,6 @@ validate_env_vars([
 ])
 
 # Métricas Prometheus y endpoint /metrics
-
-# Métricas Prometheus y endpoint /metrics
-from fastapi import Response
-from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
-REQUEST_COUNT = Counter('ml_service_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
-REQUEST_LATENCY = Histogram('ml_service_request_latency_seconds', 'Latencia de requests', ['endpoint'])
-
-@app.middleware("http")
-async def log_requests(request, call_next):
-    start_time = time.time()
-    response = await call_next(request)
-    process_time = time.time() - start_time
-    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
-    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
-    logger.info(f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
-    return response
-
-@app.get("/metrics")
-def metrics():
-    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
-
-# Métricas Prometheus
 from fastapi import Response
 from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 REQUEST_COUNT = Counter('ml_service_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
@@ -491,16 +469,21 @@ async def train(
         )
 
 async def train_model_background(model_name: str, X: pd.DataFrame, y: pd.Series):
-    """Background task for model training"""
+    """Background task for model training with improved error handling"""
     try:
         metrics = await ml_service.model_manager.train_model(model_name, X, y)
-        logger.info(f"Model {model_name} training completed successfully")
+        logger.info(f"Model {model_name} training completed successfully with metrics: {metrics}")
 
         # Clear model cache after training
         await ml_service.cache_manager.invalidate_model_cache(model_name)
 
+        # TODO: Notify user of successful training (via webhook, email, etc.)
+
     except Exception as e:
-        logger.error(f"Background training failed for {model_name}: {e}")
+        logger.error(f"Background training failed for {model_name}: {e}", exc_info=True)
+        # TODO: Implement notification system for training failures
+        # For now, log with full context for debugging
+        logger.critical(f"TRAINING FAILURE - Model: {model_name}, Data shape: X{X.shape}, y{y.shape}, Error: {str(e)}")
 
 @app.get("/models", response_model=List[ModelResponse])
 async def list_models(current_user: dict = Depends(require_role(ML_ROLE))):
@@ -571,10 +554,22 @@ async def delete_model(model_name: str, current_user: dict = Depends(require_rol
         # Remove from memory
         del ml_service.model_manager.models[model_name]
 
-        # Remove model file
+        # Remove model file with permission validation
         model_file = Path(ML_SERVICE_CONFIG["models_path"]) / f"{model_name}.pkl"
         if model_file.exists():
-            model_file.unlink()
+            try:
+                if not os.access(model_file, os.W_OK):
+                    raise HTTPException(
+                        status_code=403,
+                        detail=f"No write permission to delete model file: {model_file}"
+                    )
+                model_file.unlink()
+            except PermissionError as e:
+                logger.error(f"Permission denied deleting model file: {e}")
+                raise HTTPException(
+                    status_code=403,
+                    detail=f"Permission denied: {str(e)}"
+                )
 
         # Clear cache
         await ml_service.cache_manager.invalidate_model_cache(model_name)
@@ -696,10 +691,18 @@ async def list_data(current_user: dict = Depends(require_role(ML_ROLE))):
 
                 # Try to read first few rows to get column info
                 try:
-                    df_sample = pd.read_csv(file_path, nrows=5)
-                    columns = list(df_sample.columns)
-                    row_count = len(pd.read_csv(file_path))
-                except:
+                    # Check file size first to avoid memory issues
+                    if stat.st_size > 100 * 1024 * 1024:  # 100MB limit
+                        columns = ["File too large to preview"]
+                        row_count = "Unknown (>100MB)"
+                    else:
+                        df_sample = pd.read_csv(file_path, nrows=5)
+                        columns = list(df_sample.columns)
+                        # Use faster method to count rows for large files
+                        with open(file_path, 'r') as f:
+                            row_count = sum(1 for _ in f) - 1  # -1 for header
+                except Exception as e:
+                    logger.warning(f"Error reading CSV file {file_path}: {e}")
                     columns = []
                     row_count = 0
 
