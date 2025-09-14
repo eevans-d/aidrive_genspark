@@ -197,6 +197,19 @@ class DepositoClient:
             'total_retries': 0,
             'avg_response_time': 0.0
         }
+        self._stats_max = 1000000  # Límite de acumulación para evitar memory leak
+
+    def _reset_stats_if_needed(self):
+        """Resetea stats si se supera el límite para evitar memory leak silencioso y loguea estructuradamente."""
+        if self.stats['total_requests'] > self._stats_max:
+            logger.warning(f"Resetting stats after {self.stats['total_requests']} requests to avoid memory leak.")
+            logger.info({
+                'event': 'stats_reset',
+                'total_requests': self.stats['total_requests'],
+                'timestamp': datetime.now().isoformat()
+            })
+            for k in self.stats:
+                self.stats[k] = 0
 
         logger.info(f"DepositoClient inicializado - Base URL: {self.base_url}")
 
@@ -292,6 +305,7 @@ class DepositoClient:
         if data and not files:
             json_data = data
 
+        self._reset_stats_if_needed()
         # Realizar request con reintentos
         last_response = None
         for attempt in range(1, self.request_config.max_retries + 2):
@@ -370,11 +384,12 @@ class DepositoClient:
                     raise
 
         # Si llegamos aquí, todos los reintentos fallaron
-        if last_response:
-            logger.error(f"All retry attempts failed for {url}. Last status: {last_response.status_code}")
+        if last_response is not None:
+            logger.error(f"All retry attempts failed for {url}. Last status: {getattr(last_response, 'status_code', 'N/A')}")
             return last_response
         else:
-            raise RuntimeError(f"All retry attempts failed for {url}")
+            logger.critical(f"All retry attempts failed for {url}. No response object returned. Raising explicit error.")
+            raise RuntimeError(f"All retry attempts failed for {url} (no response object)")
 
     def request_sync(self, 
                     method: RequestMethod,
@@ -409,6 +424,7 @@ class DepositoClient:
         # Preparar autenticación
         self._prepare_auth(session)
 
+        self._reset_stats_if_needed()
         # Realizar request con reintentos
         last_response = None
         for attempt in range(1, self.request_config.max_retries + 2):
@@ -489,11 +505,12 @@ class DepositoClient:
                     raise
 
         # Si llegamos aquí, todos los reintentos fallaron
-        if last_response:
-            logger.error(f"All retry attempts failed for {url}. Last status: {last_response.status_code}")
+        if last_response is not None:
+            logger.error(f"All retry attempts failed for {url}. Last status: {getattr(last_response, 'status_code', 'N/A')}")
             return last_response
         else:
-            raise RuntimeError(f"All retry attempts failed for {url}")
+            logger.critical(f"All retry attempts failed for {url}. No response object returned. Raising explicit error.")
+            raise RuntimeError(f"All retry attempts failed for {url} (no response object)")
 
     # Métodos convenientes
     async def get_async(self, endpoint: str, params: Optional[Dict[str, Any]] = None, 
@@ -502,8 +519,11 @@ class DepositoClient:
         return await self.request_async(RequestMethod.GET, endpoint, params=params, headers=headers)
 
     async def post_async(self, endpoint: str, data: Optional[Dict[str, Any]] = None,
-                        headers: Optional[Dict[str, str]] = None) -> Response:
-        """POST asíncrono"""
+                        headers: Optional[Dict[str, str]] = None, idempotency_key: Optional[str] = None) -> Response:
+        """POST asíncrono con soporte opcional de idempotency-key"""
+        headers = headers.copy() if headers else {}
+        if idempotency_key:
+            headers['Idempotency-Key'] = idempotency_key
         return await self.request_async(RequestMethod.POST, endpoint, data=data, headers=headers)
 
     async def put_async(self, endpoint: str, data: Optional[Dict[str, Any]] = None,
@@ -521,8 +541,11 @@ class DepositoClient:
         return self.request_sync(RequestMethod.GET, endpoint, params=params, headers=headers)
 
     def post(self, endpoint: str, data: Optional[Dict[str, Any]] = None,
-            headers: Optional[Dict[str, str]] = None) -> Response:
-        """POST síncrono"""
+            headers: Optional[Dict[str, str]] = None, idempotency_key: Optional[str] = None) -> Response:
+        """POST síncrono con soporte opcional de idempotency-key"""
+        headers = headers.copy() if headers else {}
+        if idempotency_key:
+            headers['Idempotency-Key'] = idempotency_key
         return self.request_sync(RequestMethod.POST, endpoint, data=data, headers=headers)
 
     def put(self, endpoint: str, data: Optional[Dict[str, Any]] = None,

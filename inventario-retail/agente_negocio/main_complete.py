@@ -523,15 +523,37 @@ async def startup_event():
     """Initialize application on startup"""
     logger.info("Agente de Negocio starting up...")
 
-    # Initialize cache cleanup task
+    # Initialize cache cleanup task con circuit breaker básico
     async def cache_cleanup():
+        fail_count = 0
+        MAX_FAILS = 5
         while True:
             try:
                 pricing_cache.cleanup_expired()
+                fail_count = 0
                 await asyncio.sleep(3600)  # Cleanup every hour
             except Exception as e:
-                logger.error(f"Cache cleanup error: {e}")
-                await asyncio.sleep(300)  # Retry in 5 minutes
+                fail_count += 1
+                logger.error(f"Cache cleanup error: {e} (fail {fail_count})")
+                if fail_count >= MAX_FAILS:
+                    logger.critical(f"Cache cleanup circuit breaker activado tras {fail_count} fallos consecutivos. Pausando 1 hora.")
+                    # Observabilidad: alerta crítica (simulada)
+                    try:
+                        import smtplib
+                        from email.message import EmailMessage
+                        msg = EmailMessage()
+                        msg.set_content(f"ALERTA: Circuit breaker activado en cache_cleanup. Fallos: {fail_count}")
+                        msg['Subject'] = 'ALERTA CRÍTICA - Circuit Breaker Cache Cleanup'
+                        msg['From'] = 'alertas@inventario-retail.local'
+                        msg['To'] = 'admin@inventario-retail.local'
+                        # Simulación: solo loguea, no envía realmente
+                        logger.critical(f"[ALERTA EMAIL] {msg['Subject']} -> {msg['To']}")
+                    except Exception as alert_e:
+                        logger.error(f"Error en alerta crítica: {alert_e}")
+                    await asyncio.sleep(3600)  # Pausa larga por circuit breaker
+                    fail_count = 0
+                else:
+                    await asyncio.sleep(300)  # Retry en 5 minutos
 
     # Start background task
     asyncio.create_task(cache_cleanup())
