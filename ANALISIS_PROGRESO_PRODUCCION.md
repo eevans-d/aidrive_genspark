@@ -80,11 +80,17 @@
 | Monitoring & observabilidad | 0.5 semana | 🟡 IMPORTANTE |
 | Fine-tuning inicial | Variable | 🟢 CONTINUO |
 
-### **🎯 HITOS CRÍTICOS RESTANTES:**
+### **🎯 HITOS CRÍTICOS RESTANTES - ENFOQUE MINI MARKET:**
 
-1. **SEMANA 1:** Completar auditorías restantes (Depósito, ML, Dashboard)
-2. **SEMANA 2-3:** Testing exhaustivo y corrección de issues
-3. **SEMANA 4:** Deployment, monitoring y go-live controlado
+⚠️ **ACTUALIZACIÓN**: Cliente especificó uso para **MINI MARKET INTERNO**
+- Evitar over-engineering enterprise
+- AFIP/compliance NO prioritario  
+- Simplicidad sobre robustez extrema
+
+**ROADMAP REDEFINIDO:**
+1. **SEMANA 1:** Revisión funcional básica (NO auditoría exhaustiva)
+2. **SEMANA 2:** Testing práctico y UX mini market
+3. **SEMANA 3:** Deploy simple y capacitación usuario
 
 ---
 
