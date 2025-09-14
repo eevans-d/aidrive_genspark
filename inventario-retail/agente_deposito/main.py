@@ -1,3 +1,8 @@
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+# Métricas Prometheus
+REQUEST_COUNT = Counter('agente_deposito_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('agente_deposito_request_latency_seconds', 'Latencia de requests', ['endpoint'])
 """
 AgenteDepósito - FastAPI App para gestión ACID de stock
 Puerto 8002 con endpoints CRUD, validaciones y auditoría
@@ -71,14 +76,18 @@ app.add_middleware(
 # Manager de stock
 stock_manager = StockManager()
 
-# Middleware para logging de requests
+
+# Middleware para logging y métricas
 @app.middleware("http")
 async def log_requests(request, call_next):
     start_time = time.time()
-
     response = await call_next(request)
-
     process_time = time.time() - start_time
+
+    # Prometheus metrics
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+
     logger.info(
         f"Request processed",
         extra={
@@ -88,8 +97,12 @@ async def log_requests(request, call_next):
             "process_time": round(process_time, 4)
         }
     )
-
     return response
+
+# Endpoint /metrics Prometheus
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # Exception handlers
 @app.exception_handler(StockInsuficienteError)

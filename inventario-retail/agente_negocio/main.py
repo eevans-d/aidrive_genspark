@@ -1,4 +1,64 @@
 
+# Imports principales
+import os
+import sys
+import logging
+from datetime import datetime
+from fastapi import FastAPI, Depends, HTTPException, File, UploadFile, Form, Response
+from fastapi.middleware.cors import CORSMiddleware
+from shared.security_headers import apply_fastapi_security
+from shared.errors import register_fastapi_error_handlers
+from shared.config import validate_env_vars
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+
+# Inicialización de logging y settings
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+from shared.config import get_settings, setup_logging
+from shared.auth import require_role, NEGOCIO_ROLE
+from .ocr.processor import OCRProcessor
+from .pricing.engine import PricingEngine
+from .invoice.processor import InvoiceProcessor
+from .integrations.deposito_client import DepositoClient
+
+setup_logging()
+logger = logging.getLogger(__name__)
+settings = get_settings()
+
+# Inicialización de la aplicación FastAPI
+app = FastAPI(title="AgenteNegocio - OCR & Pricing", version="1.0.0")
+register_fastapi_error_handlers(app)
+validate_env_vars([
+    "JWT_SECRET_KEY",
+    "CORS_ORIGINS",
+])
+
+# Métricas Prometheus
+REQUEST_COUNT = Counter('agente_negocio_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('agente_negocio_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = datetime.now()
+    response = await call_next(request)
+    process_time = (datetime.now() - start_time).total_seconds()
+
+    # Prometheus metrics
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+
+    logger.info(
+        f"{request.method} {request.url.path} - "
+        f"Status: {response.status_code} - "
+        f"Time: {process_time:.3f}s"
+    )
+    return response
+
+# Endpoint /metrics Prometheus
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
 """
 Agente de Negocio - FastAPI
 Procesamiento de facturas AFIP con OCR, pricing por inflación y actualización de stock.

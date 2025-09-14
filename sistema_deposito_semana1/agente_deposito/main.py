@@ -1,3 +1,24 @@
+
+
+# Métricas Prometheus y endpoint /metrics (después de la instancia app)
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('agente_deposito_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('agente_deposito_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = datetime.now()
+    response = await call_next(request)
+    process_time = (datetime.now() - start_time).total_seconds()
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+    logger.info(f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
+    return response
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 """
 API Principal - Sistema Gestión Depósito
 FastAPI con endpoints CRUD completos y control ACID
@@ -53,6 +74,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # Crear aplicación FastAPI
+
+
+
 app = FastAPI(
     title="Sistema de Gestión de Depósito",
     description="API completa para gestión de productos, stock y movimientos con control ACID",
@@ -66,6 +90,30 @@ validate_env_vars([
     "CORS_ORIGINS",
 ])
 
+# --- MÉTRICAS Y ENDPOINT /metrics ---
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('agente_deposito_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('agente_deposito_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = datetime.now()
+    response = await call_next(request)
+    process_time = (datetime.now() - start_time).total_seconds()
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+    logger.info(f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
+    return response
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+
+
+
+
 # Configurar CORS
 app.add_middleware(
     CORSMiddleware,
@@ -78,12 +126,22 @@ app.add_middleware(
 # Security headers
 apply_fastapi_security(app)
 
-# Middleware para logging de requests
+# Métricas Prometheus
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('agente_deposito_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('agente_deposito_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
 @app.middleware("http")
 async def log_requests(request, call_next):
     start_time = datetime.now()
     response = await call_next(request)
     process_time = (datetime.now() - start_time).total_seconds()
+
+    # Prometheus metrics
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
 
     logger.info(
         f"{request.method} {request.url.path} - "
@@ -91,6 +149,11 @@ async def log_requests(request, call_next):
         f"Time: {process_time:.3f}s"
     )
     return response
+
+# Endpoint /metrics Prometheus
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # ===== ENDPOINTS DE PRODUCTOS =====
 

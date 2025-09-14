@@ -1,3 +1,28 @@
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+# Métricas Prometheus
+REQUEST_COUNT = Counter('ml_service_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('ml_service_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+# Middleware para logging y métricas
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    # Prometheus metrics
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+
+    logger.info(
+        f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s"
+    )
+    return response
+
+# Endpoint /metrics Prometheus
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 """
 Main ML Service - Complete Independent ML Service on Port 8003
 Integrates predictor, model manager, and cache manager with FastAPI
@@ -185,6 +210,8 @@ async def lifespan(app: FastAPI):
     await ml_service.cleanup()
 
 # FastAPI App
+
+
 app = FastAPI(
     title="ML Service Complete",
     description="Complete ML prediction service with model management and caching",
@@ -198,6 +225,55 @@ validate_env_vars([
     "JWT_SECRET_KEY",
     "CORS_ORIGINS",
 ])
+
+# Métricas Prometheus y endpoint /metrics
+
+# Métricas Prometheus y endpoint /metrics
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('ml_service_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('ml_service_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+    logger.info(f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s")
+    return response
+
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
+
+# Métricas Prometheus
+from fastapi import Response
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('ml_service_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('ml_service_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
+@app.middleware("http")
+async def log_requests(request, call_next):
+    start_time = time.time()
+    response = await call_next(request)
+    process_time = time.time() - start_time
+
+    # Prometheus metrics
+    REQUEST_COUNT.labels(request.method, request.url.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.url.path).observe(process_time)
+
+    logger.info(
+        f"{request.method} {request.url.path} - Status: {response.status_code} - Time: {process_time:.3f}s"
+    )
+    return response
+
+# Endpoint /metrics Prometheus
+@app.get("/metrics")
+def metrics():
+    return Response(content=generate_latest(), media_type=CONTENT_TYPE_LATEST)
 
 # CORS middleware
 app.add_middleware(

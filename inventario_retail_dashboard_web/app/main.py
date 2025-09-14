@@ -1,3 +1,51 @@
+...existing code...
+# Definición de la app Flask
+app = Flask(__name__)
+
+# Métricas Prometheus
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('dashboard_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('dashboard_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
+@app.before_request
+def before_request_metrics():
+    request._start_time = datetime.now()
+
+@app.after_request
+def after_request_metrics(response):
+    process_time = (datetime.now() - getattr(request, '_start_time', datetime.now())).total_seconds()
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.path).observe(process_time)
+    return response
+
+# Endpoint /metrics Prometheus
+@app.route("/metrics")
+def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
+...existing code...
+
+# Métricas Prometheus
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('dashboard_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('dashboard_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
+@app.before_request
+def before_request_metrics():
+    request._start_time = datetime.now()
+
+@app.after_request
+def after_request_metrics(response):
+    process_time = (datetime.now() - getattr(request, '_start_time', datetime.now())).total_seconds()
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.path).observe(process_time)
+    return response
+
+# Endpoint /metrics Prometheus
+@app.route("/metrics")
+def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 """
 Dashboard Web Interactivo - Sistema Inventario Retail Argentino
 Aplicación Flask principal con integración completa ML, OCR, Cache
@@ -27,6 +75,28 @@ logger = logging.getLogger(__name__)
 
 # Configuración Flask
 app = Flask(__name__)
+
+# Métricas Prometheus
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+REQUEST_COUNT = Counter('dashboard_requests_total', 'Total de requests', ['method', 'endpoint', 'http_status'])
+REQUEST_LATENCY = Histogram('dashboard_request_latency_seconds', 'Latencia de requests', ['endpoint'])
+
+# Middleware para logging y métricas
+@app.before_request
+def before_request_metrics():
+    request._start_time = datetime.now()
+
+@app.after_request
+def after_request_metrics(response):
+    process_time = (datetime.now() - getattr(request, '_start_time', datetime.now())).total_seconds()
+    REQUEST_COUNT.labels(request.method, request.path, response.status_code).inc()
+    REQUEST_LATENCY.labels(request.path).observe(process_time)
+    return response
+
+# Endpoint /metrics Prometheus
+@app.route("/metrics")
+def metrics():
+    return generate_latest(), 200, {'Content-Type': CONTENT_TYPE_LATEST}
 validate_env_vars(["DASHBOARD_SECRET_KEY", "CORS_ORIGINS"])  # fail-fast
 app.config['SECRET_KEY'] = os.getenv('DASHBOARD_SECRET_KEY')
 app.config['UPLOAD_FOLDER'] = 'uploads'
