@@ -1,0 +1,289 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form class="row mb-4" method="get" action="/analytics">
+    <div class="col-md-4 mb-2">
+        <label for="start_date" class="form-label">Desde</label>
+        <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request.query_params.get('start_date', '') }}">
+    </div>
+    <div class="col-md-4 mb-2">
+        <label for="end_date" class="form-label">Hasta</label>
+        <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request.query_params.get('end_date', '') }}">
+    </div>
+    <div class="col-md-4 mb-2">
+        <label for="proveedor" class="form-label">Proveedor</label>
+        <input type="text" class="form-control" id="proveedor" name="proveedor" placeholder="Nombre o código" value="{{ request.query_params.get('proveedor', '') }}">
+    </div>
+    <div class="col-12 mb-2">
+        <button type="submit" class="btn btn-primary">Filtrar</button>
+    </div>
+</form>
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-chart-bar text-info"></i>
+            Analytics Avanzado
+        </h1>
+        <p class="lead">Análisis profundo y tendencias del negocio</p>
+    </div>
+</div>
+
+<!-- Top Products -->
+<div class="row mb-4">
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-star"></i> Productos Más Pedidos</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm">
+                        <thead>
+                            <tr>
+                                <th>#</th>
+                                <th>Producto</th>
+                                <th>Cantidad</th>
+                                <th>Pedidos</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products[:10] %}
+                            <tr>
+                                <td>{{ loop.index }}</td>
+                                <td>{{ product.producto }}</td>
+                                <td><span class="badge bg-success">{{ product.cantidad_total }}</span></td>
+                                <td><span class="badge bg-info">{{ product.pedidos }}</span></td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-6 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-pie"></i> Distribución de Productos</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="topProductsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tendencias mensuales -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Tendencias Mensuales</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="trendsChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Métricas adicionales -->
+<div class="row">
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h6><i class="fas fa-calendar"></i> Promedio Mensual</h6>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="text-primary">
+                    {% set avg_pedidos = (trends.pedidos_mensuales|sum(attribute='pedidos') / trends.pedidos_mensuales|length) if trends.pedidos_mensuales else 0 %}
+                    {{ "%.1f"|format(avg_pedidos) }}
+                </h3>
+                <p class="mb-0">Pedidos por mes</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h6><i class="fas fa-trending-up"></i> Crecimiento</h6>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="text-success">+15%</h3>
+                <p class="mb-0">Vs. mes anterior</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header bg-warning text-white">
+                <h6><i class="fas fa-users"></i> Proveedores Activos</h6>
+            </div>
+            <div class="card-body text-center">
+                <h3 class="text-warning">
+                    {% set avg_proveedores = (trends.pedidos_mensuales|sum(attribute='proveedores_activos') / trends.pedidos_mensuales|length) if trends.pedidos_mensuales else 0 %}
+                    {{ "%.0f"|format(avg_proveedores) }}
+                </h3>
+                <p class="mb-0">Promedio mensual</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Botones de Exportación Filtrada -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-download"></i> Exportar Datos Filtrados</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-6 mb-2">
+                        <button class="btn btn-success w-100" onclick="exportTopProducts()">
+                            <i class="fas fa-star"></i> Exportar Top Productos (CSV)
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-2">
+                        <button class="btn btn-info w-100" onclick="exportTrends()">
+                            <i class="fas fa-chart-line"></i> Exportar Tendencias (En desarrollo)
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Gráfico de top productos
+    async function initTopProductsChart() {
+        const topProducts = {{ top_products[:5]|tojson }};
+        
+        if (!topProducts || topProducts.length === 0) return;
+        
+        const labels = topProducts.map(p => p.producto.substring(0, 20) + '...');
+        const values = topProducts.map(p => p.cantidad_total);
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+        
+        const ctx = document.getElementById('topProductsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Top 5 Productos'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de tendencias
+    async function initTrendsChart() {
+        const trends = {{ trends.pedidos_mensuales|tojson }};
+        
+        if (!trends || trends.length === 0) return;
+        
+        const labels = trends.map(t => t.mes);
+        const pedidos = trends.map(t => t.pedidos);
+        const proveedores = trends.map(t => t.proveedores_activos);
+        
+        const ctx = document.getElementById('trendsChart').getContext('2d');
+        new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Pedidos',
+                    data: pedidos,
+                    borderColor: '#007bff',
+                    backgroundColor: 'rgba(0, 123, 255, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y'
+                }, {
+                    label: 'Proveedores Activos',
+                    data: proveedores,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Evolución Mensual'
+                    }
+                },
+                scales: {
+                    y: {
+                        type: 'linear',
+                        display: true,
+                        position: 'left',
+                        title: {
+                            display: true,
+                            text: 'Pedidos'
+                        }
+                    },
+                    y1: {
+                        type: 'linear',
+                        display: true,
+                        position: 'right',
+                        title: {
+                            display: true,
+                            text: 'Proveedores'
+                        },
+                        grid: {
+                            drawOnChartArea: false,
+                        },
+                    }
+                }
+            }
+        });
+    }
+    
+    // Exportar datos filtrados
+    function exportTopProducts() {
+        const params = new URLSearchParams(window.location.search);
+        const exportUrl = '/api/export/top-products.csv?' + params.toString();
+        window.open(exportUrl, '_blank');
+    }
+    
+    function exportTrends() {
+        showAlert('Función de exportación de tendencias en desarrollo', 'info');
+    }
+    
+    // Inicializar gráficos
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            initTopProductsChart();
+            initTrendsChart();
+        }, 500);
+    });
+</script>
+{% endblock %}

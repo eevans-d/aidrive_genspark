@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <div class="card border-danger">
+            <div class="card-header bg-danger text-white text-center">
+                <h2><i class="fas fa-exclamation-triangle"></i> Error</h2>
+            </div>
+            <div class="card-body text-center">
+                <h4 class="text-danger mb-4">Oops! Algo salió mal</h4>
+                <p class="lead">{{ error }}</p>
+                
+                <hr>
+                
+                <div class="row">
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-primary w-100" onclick="window.location.reload()">
+                            <i class="fas fa-sync-alt"></i> Recargar Página
+                        </button>
+                    </div>
+                    <div class="col-md-6 mb-3">
+                        <button class="btn btn-success w-100" onclick="window.location.href='/'">
+                            <i class="fas fa-home"></i> Ir al Inicio
+                        </button>
+                    </div>
+                </div>
+                
+                <small class="text-muted">
+                    Si el problema persiste, contacta al administrador del sistema.
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

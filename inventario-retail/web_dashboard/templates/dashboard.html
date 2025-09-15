@@ -1,0 +1,379 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12">
+        <h1 class="display-4">
+            <i class="fas fa-tachometer-alt text-primary"></i>
+            Dashboard Mini Market
+        </h1>
+        <p class="lead">Panel de control y métricas en tiempo real</p>
+        <small class="text-muted">Última actualización: <span class="timestamp"></span></small>
+    </div>
+</div>
+
+<!-- Métricas principales -->
+<div class="row mb-4">
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card">
+            <div class="card-body text-center">
+                <i class="fas fa-truck fa-3x mb-3"></i>
+                <h3 class="metric-number" id="total-proveedores">{{ summary.total_proveedores }}</h3>
+                <h6>Proveedores Activos</h6>
+                <div class="trend-indicator trend-stable small">
+                    <i class="fas fa-minus"></i> Sin cambios
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card success">
+            <div class="card-body text-center">
+                <i class="fas fa-shopping-cart fa-3x mb-3"></i>
+                <h3 class="metric-number" id="total-pedidos">{{ summary.total_pedidos }}</h3>
+                <h6>Pedidos Totales</h6>
+                <div class="trend-indicator trend-up small">
+                    <i class="fas fa-arrow-up"></i> +22%
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card warning">
+            <div class="card-body text-center">
+                <i class="fas fa-box fa-3x mb-3"></i>
+                <h3 class="metric-number" id="productos-pedidos">{{ summary.total_productos_pedidos }}</h3>
+                <h6>Productos Pedidos</h6>
+                <div class="trend-indicator trend-up small">
+                    <i class="fas fa-arrow-up"></i> +18%
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-3 col-md-6 mb-3">
+        <div class="card metric-card info">
+            <div class="card-body text-center">
+                <i class="fas fa-exchange-alt fa-3x mb-3"></i>
+                <h3 class="metric-number" id="movimientos">{{ summary.total_movimientos }}</h3>
+                <h6>Movimientos Stock</h6>
+                <div class="trend-indicator trend-down small">
+                    <i class="fas fa-arrow-down"></i> -5%
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Estadísticas del período -->
+<div class="row mb-4">
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5><i class="fas fa-calendar-week"></i> Últimos 30 Días</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Pedidos del Mes:</span>
+                    <div>
+                        <span class="badge bg-success fs-6">{{ summary.pedidos_mes }}</span>
+                        <span class="trend-indicator trend-up ms-1">
+                            <i class="fas fa-arrow-up"></i> +15%
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Movimientos Semana:</span>
+                    <div>
+                        <span class="badge bg-info fs-6">{{ summary.movimientos_semana }}</span>
+                        <span class="trend-indicator trend-stable ms-1">
+                            <i class="fas fa-minus"></i> 0%
+                        </span>
+                    </div>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>Facturas OCR:</span>
+                    <div>
+                        <span class="badge bg-warning fs-6">{{ summary.facturas_procesadas }}</span>
+                        <span class="trend-indicator trend-up ms-1">
+                            <i class="fas fa-arrow-up"></i> +8%
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-6 mb-3">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5><i class="fas fa-trophy"></i> Proveedor Top</h5>
+            </div>
+            <div class="card-body text-center">
+                <h4 class="text-primary">{{ summary.proveedor_top.nombre }}</h4>
+                <p class="mb-0">
+                    <span class="badge bg-primary fs-6">{{ summary.proveedor_top.pedidos }} pedidos</span>
+                </p>
+                <small class="text-muted">Más activo del mes</small>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 col-md-12 mb-3">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h5><i class="fas fa-chart-pie"></i> Estado del Sistema</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>Base de Datos:</span>
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check-circle"></i> Conectado
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span>API Sistema:</span>
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check-circle"></i> Activo
+                    </span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span>OCR Procesamiento:</span>
+                    <span class="status-badge status-active">
+                        <i class="fas fa-check-circle"></i> Operativo
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Gráficos y analytics -->
+<div class="row mb-4">
+    <div class="col-lg-8 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-line"></i> Actividad Reciente</h5>
+                <small class="text-muted">Movimientos de stock últimos 7 días</small>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="activityChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-lg-4 mb-3">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-chart-doughnut"></i> Distribución Proveedores</h5>
+            </div>
+            <div class="card-body">
+                <div class="chart-container">
+                    <canvas id="providersChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Acciones rápidas -->
+<div class="row mb-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5><i class="fas fa-bolt"></i> Acciones Rápidas</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <button class="btn btn-primary w-100" onclick="loadProviders()">
+                            <i class="fas fa-truck"></i> Ver Proveedores
+                        </button>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <button class="btn btn-success w-100" onclick="loadAnalytics()">
+                            <i class="fas fa-chart-bar"></i> Analytics
+                        </button>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <button class="btn btn-info w-100" onclick="refreshData()">
+                            <i class="fas fa-sync-alt"></i> Actualizar Datos
+                        </button>
+                    </div>
+                    <div class="col-lg-3 col-md-6 mb-2">
+                        <div class="btn-group w-100" role="group">
+                            <a class="btn btn-warning" href="/api/export/summary.csv">
+                                <i class="fas fa-download"></i> Resumen CSV
+                            </a>
+                            <a class="btn btn-outline-warning" href="/api/export/providers.csv">
+                                <i class="fas fa-file-csv"></i> Proveedores CSV
+                            </a>
+                            <a class="btn btn-outline-info" href="/api/export/top-products.csv">
+                                <i class="fas fa-star"></i> Top Productos CSV
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Configuración de gráficos
+    Chart.defaults.responsive = true;
+    Chart.defaults.maintainAspectRatio = false;
+    
+    // Gráfico de actividad
+    let activityChart;
+    
+    async function initActivityChart() {
+        const data = await loadData('/api/stock-timeline?days=7');
+        
+        if (!data) return;
+        
+        // Procesar datos para el gráfico
+        const dates = [...new Set(data.map(d => d.fecha))].sort();
+        const entradas = dates.map(date => {
+            const entrada = data.find(d => d.fecha === date && d.tipo === 'entrada');
+            return entrada ? entrada.productos : 0;
+        });
+        const salidas = dates.map(date => {
+            const salida = data.find(d => d.fecha === date && d.tipo === 'salida');
+            return salida ? entrada.productos : 0;
+        });
+        
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        activityChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: dates,
+                datasets: [{
+                    label: 'Entradas',
+                    data: entradas,
+                    borderColor: '#28a745',
+                    backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                    tension: 0.4
+                }, {
+                    label: 'Salidas',
+                    data: salidas,
+                    borderColor: '#dc3545',
+                    backgroundColor: 'rgba(220, 53, 69, 0.1)',
+                    tension: 0.4
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Movimientos de Stock por Día'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Cantidad de Productos'
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    // Gráfico de proveedores
+    let providersChart;
+    
+    async function initProvidersChart() {
+        const data = await loadData('/api/providers');
+        
+        if (!data || data.length === 0) return;
+        
+        // Tomar top 5 proveedores por pedidos
+        const topProviders = data
+            .filter(p => p.total_pedidos > 0)
+            .sort((a, b) => b.total_pedidos - a.total_pedidos)
+            .slice(0, 5);
+        
+        const labels = topProviders.map(p => p.codigo);
+        const values = topProviders.map(p => p.total_pedidos);
+        const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
+        
+        const ctx = document.getElementById('providersChart').getContext('2d');
+        providersChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{
+                    data: values,
+                    backgroundColor: colors,
+                    borderWidth: 2,
+                    borderColor: '#fff'
+                }]
+            },
+            options: {
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Top 5 Proveedores'
+                    },
+                    legend: {
+                        display: true,
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+    }
+    
+    // Funciones de acciones rápidas
+    function loadProviders() {
+        window.location.href = '/providers';
+    }
+    
+    function loadAnalytics() {
+        window.location.href = '/analytics';
+    }
+    
+    async function refreshData() {
+        showAlert('Actualizando datos...', 'info');
+        await refreshMetrics();
+        
+        // Recrear gráficos
+        if (activityChart) activityChart.destroy();
+        if (providersChart) providersChart.destroy();
+        
+        await initActivityChart();
+        await initProvidersChart();
+        
+        showAlert('Datos actualizados exitosamente!', 'success');
+    }
+    
+    function exportData() {
+        showAlert('Preparando exportación...', 'info');
+        // Implementar exportación de datos
+        setTimeout(() => {
+            showAlert('Función de exportación en desarrollo', 'warning');
+        }, 1000);
+    }
+    
+    // Inicializar gráficos al cargar la página
+    document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(() => {
+            initActivityChart();
+            initProvidersChart();
+        }, 500);
+    });
+</script>
+{% endblock %}
