@@ -1,19 +1,3 @@
-# Exportar Top Productos a CSV
-@app.get("/api/export/top-products.csv")
-async def api_export_top_products_csv(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None):
-    """Exporta el ranking de productos más pedidos a CSV con filtros."""
-    data = analytics.get_top_products(limit, start_date, end_date, proveedor)
-    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and data[0].get("error"):
-        csv_text = "error,message\ntrue,{}".format(data[0]["error"].replace("\n", " "))
-    else:
-        headers = ["producto","cantidad_total","pedidos","proveedor"]
-        lines = [",".join(headers)]
-        for p in (data or []):
-            lines.append(
-                f"{p.get('producto','')},{p.get('cantidad_total',0)},{p.get('pedidos',0)},{p.get('proveedor','')}"
-            )
-        csv_text = "\n".join(lines)
-    return PlainTextResponse(content=csv_text, media_type="text/csv")
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
@@ -388,6 +372,83 @@ class DashboardAnalytics:
                 "movimientos_mensuales": []
             }
 
+    def get_stock_by_provider(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Calcula stock total por proveedor.
+        Estrategia:
+        - Intentar derivar stock neto desde movimientos_stock (ingreso - egreso) por proveedor.
+        - Si no hay datos o falla la consulta, caer al volumen de productos pedidos por proveedor como proxy.
+        """
+        try:
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                # Intento principal: neto de movimientos por proveedor
+                cursor.execute(
+                    """
+                    SELECT 
+                        pr.codigo,
+                        pr.nombre,
+                        COALESCE(SUM(CASE WHEN ms.tipo_movimiento = 'ingreso' THEN ms.cantidad 
+                                          WHEN ms.tipo_movimiento = 'egreso' THEN -ms.cantidad 
+                                          ELSE 0 END), 0) AS stock_total
+                    FROM proveedores pr
+                    LEFT JOIN movimientos_stock ms ON ms.proveedor_id = pr.id
+                    WHERE pr.activo = 1
+                    GROUP BY pr.id, pr.codigo, pr.nombre
+                    ORDER BY stock_total DESC
+                    LIMIT ?
+                    """,
+                    (limit,)
+                )
+                rows = cursor.fetchall()
+                results = [
+                    {"codigo": r[0], "nombre": r[1], "stock_total": r[2]} for r in rows
+                ]
+                # Si todo cero y sin señal, usar fallback
+                if not results or all((item["stock_total"] or 0) == 0 for item in results):
+                    raise ValueError("Sin movimientos de stock suficientes, usando fallback")
+                return results
+        except Exception:
+            # Fallback: usar total_productos (volumen pedido) como aproximación
+            try:
+                providers = self.get_provider_stats()
+                if isinstance(providers, list) and providers and not providers[0].get("error"):
+                    sorted_list = sorted(providers, key=lambda x: x.get("total_productos", 0), reverse=True)[:limit]
+                    return [
+                        {"codigo": p.get("codigo"), "nombre": p.get("nombre"), "stock_total": p.get("total_productos", 0)}
+                        for p in sorted_list
+                    ]
+                return []
+            except Exception as e2:
+                return [{"error": f"Error obteniendo stock por proveedor: {str(e2)}"}]
+
+    def get_weekly_sales(self, weeks: int = 8) -> List[Dict[str, Any]]:
+        """Obtiene evolución semanal de ventas/pedidos de las últimas N semanas.
+        Retorna lista ordenada por semana con campos: semana (YYYY-WW), pedidos, productos
+        """
+        try:
+            days = max(1, int(weeks)) * 7
+            with self.db_manager.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute(
+                    f"""
+                    SELECT 
+                        strftime('%Y-%W', p.fecha_pedido) AS semana,
+                        COUNT(DISTINCT p.id) AS pedidos,
+                        COALESCE(SUM(dp.cantidad), 0) AS productos
+                    FROM pedidos p
+                    LEFT JOIN detalle_pedidos dp ON dp.pedido_id = p.id
+                    WHERE p.fecha_pedido >= datetime('now', '-{days} days')
+                    GROUP BY strftime('%Y-%W', p.fecha_pedido)
+                    ORDER BY semana
+                    """
+                )
+                rows = cursor.fetchall()
+                return [
+                    {"semana": r[0], "pedidos": r[1], "productos": r[2]} for r in rows
+                ]
+        except Exception as e:
+            return [{"error": f"Error obteniendo ventas semanales: {str(e)}"}]
+
 
 # Instancia de analytics
 analytics = DashboardAnalytics(db_manager)
@@ -486,6 +547,18 @@ async def api_trends(months: int = 6, start_date: str = None, end_date: str = No
     return analytics.get_monthly_trends(months, start_date, end_date, proveedor)
 
 
+@app.get("/api/stock-by-provider")
+async def api_stock_by_provider(limit: int = 10):
+    """API: Stock (o volumen aproximado) por proveedor"""
+    return analytics.get_stock_by_provider(limit)
+
+
+@app.get("/api/weekly-sales")
+async def api_weekly_sales(weeks: int = 8):
+    """API: Evolución semanal de ventas/pedidos de las últimas N semanas"""
+    return analytics.get_weekly_sales(weeks)
+
+
 # Export endpoints (CSV)
 @app.get("/api/export/summary.csv")
 async def api_export_summary_csv():
@@ -527,6 +600,24 @@ async def api_export_providers_csv():
         for p in (data or []):
             lines.append(
                 f"{p.get('codigo','')},{p.get('nombre','')},{p.get('total_pedidos',0)},{p.get('total_productos',0)},{p.get('pedidos_semana',0)},{p.get('pedidos_mes',0)}"
+            )
+        csv_text = "\n".join(lines)
+    return PlainTextResponse(content=csv_text, media_type="text/csv")
+
+
+# Exportar Top Productos a CSV (reubicado correctamente)
+@app.get("/api/export/top-products.csv")
+async def api_export_top_products_csv(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None):
+    """Exporta el ranking de productos más pedidos a CSV con filtros."""
+    data = analytics.get_top_products(limit, start_date, end_date, proveedor)
+    if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and data[0].get("error"):
+        csv_text = "error,message\ntrue,{}".format(data[0]["error"].replace("\n", " "))
+    else:
+        headers = ["producto","cantidad_total","pedidos","proveedor"]
+        lines = [",".join(headers)]
+        for p in (data or []):
+            lines.append(
+                f"{p.get('producto','')},{p.get('cantidad_total',0)},{p.get('pedidos',0)},{p.get('proveedor','')}"
             )
         csv_text = "\n".join(lines)
     return PlainTextResponse(content=csv_text, media_type="text/csv")

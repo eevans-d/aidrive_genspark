@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 
 {% block content %}
-<div class="row mb-4">
+<div class="row mb-4" id="dashboardFlags" data-tiene-critico="{{ '1' if tiene_critico else '0' }}">
     <div class="col-12">
         <h1 class="display-4">
             <i class="fas fa-tachometer-alt text-primary"></i>
@@ -222,6 +222,29 @@
     </div>
 </div>
 
+    <!-- Gráfico: Stock por proveedor -->
+    <div class="row mb-4">
+      <div class="col-12">
+        <div class="card">
+          <div class="card-body">
+            <h5 class="card-title mb-3"><i class="fas fa-boxes-stacked text-info"></i> Stock por proveedor</h5>
+            <canvas id="stockByProviderChart" height="120"></canvas>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+        <!-- Gráfico: Evolución semanal de ventas/pedidos -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title mb-3"><i class="fas fa-chart-line text-primary"></i> Evolución semanal</h5>
+                        <canvas id="weeklySalesChart" height="120"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
 <!-- Acciones rápidas -->
 <div class="row mb-4">
     <div class="col-12">
@@ -264,6 +287,15 @@
         </div>
     </div>
 </div>
+
+{% if tiene_critico %}
+<div class="mb-2 d-flex align-items-center gap-2">
+  <button id="btnPlayAlerta" class="btn btn-sm btn-danger">
+    <i class="fas fa-bell"></i> Reproducir alerta
+  </button>
+  <small class="text-muted">Si no se escucha sonido automáticamente, pulsa el botón.</small>
+</div>
+{% endif %}
 {% endblock %}
 
 {% block scripts %}
@@ -415,20 +447,131 @@
         setTimeout(() => {
             initActivityChart();
             initProvidersChart();
+            initStockByProviderChart();
+            initWeeklySalesChart();
         }, 500);
     });
     
-    {% if tiene_critico %}
-        window.onload = function() {
-            var audio = document.getElementById('alertaSonora');
-            if (audio) {
-                audio.play();
+        // Reproducción manual de alerta si el navegador bloquea autoplay
+        (function(){
+            const btnPlay = document.getElementById('btnPlayAlerta');
+            if (btnPlay) {
+                btnPlay.addEventListener('click', () => {
+                    const audio = document.getElementById('alertaSonora');
+                    if (audio) audio.play();
+                });
             }
-        };
-    {% endif %}
-</script>
+        })();
 
-{% if tiene_critico %}
-<audio id="alertaSonora" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12b6b1b2e7.mp3" preload="auto"></audio>
-{% endif %}
+        // Reproducción automática si hay críticos (flag desde data-atributo)
+        (function(){
+            const flags = document.getElementById('dashboardFlags');
+            if (flags && flags.dataset.tieneCritico === '1') {
+                window.addEventListener('load', () => {
+                    const audio = document.getElementById('alertaSonora');
+                    if (audio) { try { audio.play(); } catch(e) {} }
+                });
+            }
+        })();
+
+    // Mejoras en gráficos: tooltips y orden
+    // Activity chart opciones
+    if (typeof Chart !== 'undefined') {
+      const defaultTooltip = {
+        enabled: true,
+        callbacks: {
+          label: function(context) {
+            const v = context.parsed.y;
+            return `Movimientos: ${v}`;
+          }
+        }
+      };
+      if (window.activityChart && activityChart.options) {
+        activityChart.options.plugins = activityChart.options.plugins || {};
+        activityChart.options.plugins.tooltip = defaultTooltip;
+        activityChart.update();
+      }
+      if (window.providersChart && providersChart.options) {
+        providersChart.options.plugins = providersChart.options.plugins || {};
+        providersChart.options.plugins.tooltip = {
+          enabled: true,
+          callbacks: {
+            label: function(context) {
+              const v = context.parsed;
+              return `Pedidos: ${v}`;
+            }
+          }
+        };
+        providersChart.options.scales = providersChart.options.scales || {};
+        providersChart.options.scales.y = providersChart.options.scales.y || {};
+        providersChart.options.scales.y.beginAtZero = true;
+        providersChart.update();
+    }
+            // Chart: Stock por proveedor
+                let stockByProviderChart;
+                async function initStockByProviderChart() {
+                        const data = await loadData('/api/stock-by-provider');
+                        if (!data || data.length === 0) return;
+                        const labels = data.map(d => d.codigo || d.nombre);
+                        const values = data.map(d => d.stock_total || 0);
+                        const ctx = document.getElementById('stockByProviderChart').getContext('2d');
+                        stockByProviderChart = new Chart(ctx, {
+                                type: 'bar',
+                                data: {
+                                        labels: labels,
+                                        datasets: [{
+                                                label: 'Stock total',
+                                                data: values,
+                                                backgroundColor: '#36A2EB'
+                                        }]
+                                },
+                                options: {
+                                        plugins: {
+                                                legend: { display: false },
+                                                title: { display: true, text: 'Top Proveedores por Stock' },
+                                                tooltip: {
+                                                        enabled: true,
+                                                        callbacks: {
+                                                                label: function(ctx) { return `Stock: ${ctx.parsed.y}`; }
+                                                        }
+                                                }
+                                        },
+                                        scales: {
+                                                y: { beginAtZero: true, title: { display: true, text: 'Unidades' } }
+                                        }
+                                }
+                        });
+                }
+
+                // Chart: Evolución semanal de ventas
+                let weeklySalesChart;
+                async function initWeeklySalesChart() {
+                    const data = await loadData('/api/weekly-sales?weeks=8');
+                    if (!data || data.length === 0 || data[0].error) return;
+                    const labels = data.map(d => d.semana);
+                    const pedidos = data.map(d => d.pedidos || 0);
+                    const productos = data.map(d => d.productos || 0);
+                    const ctx = document.getElementById('weeklySalesChart').getContext('2d');
+                    weeklySalesChart = new Chart(ctx, {
+                        type: 'line',
+                        data: {
+                            labels: labels,
+                            datasets: [
+                                { label: 'Pedidos', data: pedidos, borderColor: '#007bff', backgroundColor: 'rgba(0,123,255,0.1)', tension: 0.3 },
+                                { label: 'Productos', data: productos, borderColor: '#17a2b8', backgroundColor: 'rgba(23,162,184,0.1)', tension: 0.3 }
+                            ]
+                        },
+                        options: {
+                            plugins: {
+                                title: { display: true, text: 'Evolución semanal (últimas 8 semanas)' },
+                                legend: { display: true, position: 'top' }
+                            },
+                            scales: { y: { beginAtZero: true } }
+                        }
+                    });
+                }
+    }
+</script>
+<!-- Audio de alerta (se reproduce según flags JS) -->
+<audio id="alertaSonora" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12b6b1b2e7.mp3" preload="auto" style="display:none"></audio>
 {% endblock %}
