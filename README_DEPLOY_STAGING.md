@@ -1,59 +1,89 @@
-# 🚀 Guía de Despliegue en Staging
+# 🚀 Guía de Despliegue en Staging (Dashboard)
 
-## 1. Preparar entorno
-- Clona el repo:
-  ```bash
-  git clone https://github.com/eevans-d/aidrive_genspark_forensic.git
-  cd aidrive_genspark_forensic
-  ```
-- Crea y activa entorno virtual:
-  ```bash
-  python3 -m venv .venv && source .venv/bin/activate
-  pip install -r requirements.txt
-  ```
+Esta guía cubre el despliegue del Dashboard Web usando Docker Compose en una VM de staging.
 
-## 2. Configurar variables de entorno
-- Copia `.env.example` a `.env` en cada servicio:
-  ```bash
-  cp inventario-retail/agente_deposito/.env.example inventario-retail/agente_deposito/.env
-  cp inventario-retail/agente_negocio/.env.example inventario-retail/agente_negocio/.env
-  cp inventario-retail/ml/.env.example inventario-retail/ml/.env
-  ```
-- Edita los valores sensibles (`JWT_SECRET`, `DB_URL`, etc.) siguiendo los comentarios de cada `.env.example`.
+## 1) Requisitos en la VM
+- Docker Engine y Docker Compose instalados
+- Puerto 8080 abierto (o proxy inverso configurado)
+- Usuario con acceso SSH y permisos para `docker`
 
-## 3. Levantar servicios
-- Usar Docker Compose (recomendado):
-  ```bash
-  docker-compose -f inventario_retail_dashboard_web/docker-compose.yml up -d
-  ```
-- O iniciar manualmente cada servicio:
-  ```bash
-  cd inventario-retail/agente_deposito && uvicorn main_complete:app --host 0.0.0.0 --port 8001
-  cd inventario-retail/agente_negocio && uvicorn main_complete:app --host 0.0.0.0 --port 8002
-  cd inventario-retail/ml && uvicorn main_ml_service:app --host 0.0.0.0 --port 8003
-  ```
+Instalación rápida (Ubuntu):
 
-## 4. Emitir token JWT para pruebas
-- Usa el endpoint `/api/v1/auth/login` en cada servicio:
-  ```bash
-  curl -X POST http://localhost:8001/api/v1/auth/login \
-    -H "Content-Type: application/json" \
-    -d '{"username": "admin", "password": "admin123"}'
-  ```
-- Copia el `access_token` para usar en los siguientes tests.
+```bash
+sudo apt-get update -y
+sudo apt-get install -y ca-certificates curl gnupg lsb-release
+sudo install -m 0755 -d /etc/apt/keyrings
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /etc/apt/keyrings/docker.gpg
+echo \
+  "deb [arch=$(dpkg --print-architecture) signed-by=/etc/apt/keyrings/docker.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt-get update -y
+sudo apt-get install -y docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+sudo usermod -aG docker $USER
+newgrp docker
+```
 
-## 5. Ejecutar pruebas de humo
-- Ejecuta el script `smoke_test_staging.sh` para validar endpoints críticos:
-  ```bash
-  bash smoke_test_staging.sh
-  ```
-- Verifica que los endpoints protegidos devuelven 401 sin token y 200 con token.
-- Revisa los resultados y logs de los servicios.
+## 2) Estructura de despliegue
+Usaremos el compose ya incluido en el repo:
+- `deploy/compose/docker-compose.dashboard.yml`
+- `deploy/compose/.env.dashboard` (lo creas a partir del ejemplo)
 
-## 6. Validar logs y métricas
-- Revisa los logs de cada servicio para errores y advertencias.
-- Valida que el rate limiting y los headers de seguridad estén activos.
-- Consulta la documentación de endpoints en cada microservicio para detalles avanzados.
+```bash
+mkdir -p ~/minimarket-deploy
+# Copiaremos el contenido de deploy/compose aquí vía CI; o puedes copiarlo manualmente
+```
+
+## 3) Configurar `.env.dashboard`
+Crea el archivo a partir del ejemplo y completa claves reales:
+
+```bash
+cp deploy/compose/.env.dashboard.example deploy/compose/.env.dashboard
+```
+
+Variables mínimas:
+- `DASHBOARD_API_KEY` (obligatoria, protege /api/* y /metrics)
+- `ALLOWED_HOSTS` (coma separada, e.g. `mi-dominio.com,localhost`)
+- Opcional `DASHBOARD_UI_API_KEY` si la UI debe invocar `/api/*` desde el navegador
+
+## 4) Levantar el dashboard (manual)
+En la VM o en tu entorno local:
+
+```bash
+cd deploy/compose
+export IMAGE_TAG=latest
+docker compose -f docker-compose.dashboard.yml pull
+docker compose -f docker-compose.dashboard.yml up -d
+```
+
+## 5) Pruebas de salud y métricas
+
+```bash
+curl -H "X-API-Key: $DASHBOARD_API_KEY" http://localhost:8080/health
+curl -H "X-API-Key: $DASHBOARD_API_KEY" http://localhost:8080/metrics | head
+```
+
+Si definiste `DASHBOARD_UI_API_KEY`, abre http://localhost:8080 y verifica en la consola de red del navegador que las peticiones a `/api/summary` incluyen `X-API-Key`.
+
+## 6) Despliegue automático por CI (opcional)
+El workflow `.github/workflows/ci.yml` copia `deploy/compose/*` a `~/minimarket-deploy` y ejecuta `docker compose up -d` por SSH cuando hay push a `master` y existen secretos de staging.
+
+Secretos necesarios (staging):
+- `STAGING_HOST`, `STAGING_USER`, `STAGING_KEY` (PEM)
+- `STAGING_GHCR_TOKEN`
+- `STAGING_DASHBOARD_API_KEY`
+- (Opcional) `STAGING_DASHBOARD_UI_API_KEY`
+
+## 7) Troubleshooting rápido
+- Ver logs del contenedor:
+  ```bash
+  docker logs -f minimarket-dashboard
+  ```
+- Revisar healthcheck del Compose:
+  ```bash
+  docker inspect --format='{{json .State.Health}}' minimarket-dashboard | jq
+  ```
+- Verificar que el `.env.dashboard` tenga la API Key y que el `healthcheck` está usando ese valor.
+- Si usas proxy TLS, asegúrate de pasar `X-Forwarded-Proto` y configurar `DASHBOARD_FORCE_HTTPS=true` y `DASHBOARD_ENABLE_HSTS=true` si corresponde.
 
 ---
-Sistema listo para staging y producción. Para dudas, consulta el README principal o abre un issue en GitHub.
+Staging listo. Para producción, usa tags (`vX.Y.Z`) que activan el job `deploy-production` con imagen versionada.
