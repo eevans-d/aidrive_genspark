@@ -99,11 +99,19 @@ Secretos requeridos:
   - `STAGING_HOST`, `STAGING_USER`, `STAGING_KEY` (clave privada PEM)
   - `STAGING_GHCR_TOKEN` (token con permiso de lectura en GHCR)
   - `STAGING_DASHBOARD_API_KEY`
+  - `STAGING_DASHBOARD_UI_API_KEY` (opcional; si quieres que la UI consuma `/api/*` desde el navegador)
 - Producción:
   - `PROD_HOST`, `PROD_USER`, `PROD_KEY`
   - `PROD_GHCR_TOKEN`
   - `PROD_DASHBOARD_API_KEY`
+  - `PROD_DASHBOARD_UI_API_KEY` (opcional)
 
 Notas:
 - El contenedor se corre como `minimarket-dashboard` exponiendo `:8080`. Ajusta puertos/variables según tu entorno.
 - Para rollback, ejecuta el deploy con un tag previo (`vX.Y.Z`) o vuelve a `latest` estable.
+
+Checklist host Staging (SSH):
+- Docker Engine y Docker Compose instalados.
+- Directorio de proyecto para compose, por ejemplo `/opt/minimarket-dashboard`.
+- Archivo `.env.dashboard` basado en `deploy/compose/.env.dashboard.example` con valores reales.
+- Abrir puerto 8080 o configurar proxy TLS (Nginx/Traefik) hacia el contenedor.
