@@ -115,3 +115,22 @@ Checklist host Staging (SSH):
 - Directorio de proyecto para compose, por ejemplo `/opt/minimarket-dashboard`.
 - Archivo `.env.dashboard` basado en `deploy/compose/.env.dashboard.example` con valores reales.
 - Abrir puerto 8080 o configurar proxy TLS (Nginx/Traefik) hacia el contenedor.
+
+### Script para crear secretos de Staging (rápido y seguro)
+
+Para agilizar la carga de secretos en GitHub Actions, puedes usar:
+
+- Archivo de ejemplo: `scripts/.env.staging.secrets.example`
+- Script: `scripts/set_staging_secrets.sh`
+
+Pasos:
+1) Instala y autentica GitHub CLI:
+  - https://cli.github.com/
+  - `gh auth login`
+2) Copia y edita el archivo de ejemplo:
+  - `cp scripts/.env.staging.secrets.example scripts/.env.staging.secrets`
+  - Completa los valores (host, user, token GHCR, API keys, y ruta a tu clave SSH)
+3) Ejecuta el script:
+  - `bash scripts/set_staging_secrets.sh -f scripts/.env.staging.secrets`
+
+El script configurará: `STAGING_HOST`, `STAGING_USER`, `STAGING_KEY` (desde archivo o inline), `STAGING_GHCR_TOKEN`, `STAGING_DASHBOARD_API_KEY` y, si lo indicas, `STAGING_DASHBOARD_UI_API_KEY`.
