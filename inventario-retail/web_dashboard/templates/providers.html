@@ -20,7 +20,10 @@
                 <small class="text-muted">{{ providers|length }} proveedores en total</small>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
+                {% if not providers or providers|length == 0 %}
+                <div class="alert alert-info" role="alert" aria-live="polite">No hay proveedores registrados para mostrar.</div>
+                {% endif %}
+                <div class="table-responsive" aria-live="polite">
                     <table class="table table-striped table-hover">
                         <thead class="table-dark">
                             <tr>

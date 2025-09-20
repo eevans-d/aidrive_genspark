@@ -68,8 +68,9 @@
                 <h5><i class="fas fa-chart-pie"></i> Distribución de Productos</h5>
             </div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="topProductsChart"></canvas>
+                <div class="chart-container" aria-live="polite">
+                    <div id="topProductsEmpty" class="alert alert-info d-none" role="alert">No hay datos de productos para graficar.</div>
+                    <canvas id="topProductsChart" aria-label="Distribución de productos" role="img"></canvas>
                 </div>
             </div>
         </div>
@@ -84,8 +85,9 @@
                 <h5><i class="fas fa-chart-line"></i> Tendencias Mensuales</h5>
             </div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="trendsChart"></canvas>
+                <div class="chart-container" aria-live="polite">
+                    <div id="trendsEmpty" class="alert alert-info d-none" role="alert">No hay datos de tendencias para el período.</div>
+                    <canvas id="trendsChart" aria-label="Tendencias mensuales" role="img"></canvas>
                 </div>
             </div>
         </div>
@@ -214,7 +216,10 @@
     // Gráfico de top productos (mantener)
     async function initTopProductsChart() {
         const topProducts = topProductsData.slice(0, 5);
-        if (!topProducts || topProducts.length === 0) return;
+        if (!topProducts || topProducts.length === 0) {
+            document.getElementById('topProductsEmpty')?.classList.remove('d-none');
+            return;
+        }
         const labels = topProducts.map(p => p.producto.substring(0, 20) + '...');
         const values = topProducts.map(p => p.cantidad_total);
         const colors = ['#FF6384', '#36A2EB', '#FFCE56', '#4BC0C0', '#9966FF'];
@@ -249,7 +254,10 @@
     async function initTrendsChart() {
     const trends = JSON.parse('{{ trends.pedidos_mensuales|tojson|escapejs }}');
         
-        if (!trends || trends.length === 0) return;
+        if (!trends || trends.length === 0) {
+            document.getElementById('trendsEmpty')?.classList.remove('d-none');
+            return;
+        }
         
         const labels = trends.map(t => t.mes);
         const pedidos = trends.map(t => t.pedidos);

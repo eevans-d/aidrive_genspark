@@ -228,8 +228,15 @@
                 <small class="text-muted">Movimientos de stock últimos 7 días</small>
             </div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="activityChart"></canvas>
+                <div class="chart-container" aria-busy="true" aria-live="polite">
+                    <div id="activityChartLoading" class="text-center my-3">
+                        <div class="spinner-border text-primary" role="status" aria-label="Cargando gráfico de actividad"></div>
+                        <div><small class="text-muted">Cargando datos…</small></div>
+                    </div>
+                    <div id="activityChartEmpty" class="alert alert-info d-none" role="alert" aria-live="polite">
+                        No hay datos para mostrar en el período seleccionado.
+                    </div>
+                    <canvas id="activityChart" aria-label="Gráfico de actividad reciente" role="img"></canvas>
                 </div>
             </div>
         </div>
@@ -241,8 +248,15 @@
                 <h5><i class="fas fa-chart-doughnut"></i> Distribución Proveedores</h5>
             </div>
             <div class="card-body">
-                <div class="chart-container">
-                    <canvas id="providersChart"></canvas>
+                <div class="chart-container" aria-busy="true" aria-live="polite">
+                    <div id="providersChartLoading" class="text-center my-3">
+                        <div class="spinner-border text-primary" role="status" aria-label="Cargando gráfico de proveedores"></div>
+                        <div><small class="text-muted">Cargando datos…</small></div>
+                    </div>
+                    <div id="providersChartEmpty" class="alert alert-info d-none" role="alert" aria-live="polite">
+                        No hay datos suficientes de proveedores para graficar.
+                    </div>
+                    <canvas id="providersChart" aria-label="Distribución de proveedores" role="img"></canvas>
                 </div>
             </div>
         </div>
@@ -255,7 +269,14 @@
         <div class="card">
           <div class="card-body">
             <h5 class="card-title mb-3"><i class="fas fa-boxes-stacked text-info"></i> Stock por proveedor</h5>
-            <canvas id="stockByProviderChart" height="120"></canvas>
+                        <div class="chart-container" aria-busy="true" aria-live="polite">
+                            <div id="stockByProviderLoading" class="text-center my-3">
+                                <div class="spinner-border text-primary" role="status" aria-label="Cargando gráfico de stock por proveedor"></div>
+                                <div><small class="text-muted">Cargando datos…</small></div>
+                            </div>
+                            <div id="stockByProviderEmpty" class="alert alert-info d-none" role="alert" aria-live="polite">No hay datos de stock por proveedor disponibles.</div>
+                            <canvas id="stockByProviderChart" height="120" aria-label="Stock por proveedor" role="img"></canvas>
+                        </div>
           </div>
         </div>
       </div>
@@ -267,7 +288,16 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title mb-3"><i class="fas fa-chart-line text-primary"></i> Evolución semanal</h5>
-                        <canvas id="weeklySalesChart" height="120"></canvas>
+                                                <div class="chart-container" aria-busy="true" aria-live="polite">
+                                                    <div id="weeklySalesLoading" class="text-center my-3">
+                                                        <div class="spinner-border text-primary" role="status" aria-label="Cargando gráfico de evolución semanal"></div>
+                                                        <div><small class="text-muted">Cargando datos…</small></div>
+                                                    </div>
+                                                    <div id="weeklySalesEmpty" class="alert alert-info d-none" role="alert" aria-live="polite">
+                                                        No hay datos de semanas recientes para graficar.
+                                                    </div>
+                                                    <canvas id="weeklySalesChart" height="120" aria-label="Evolución semanal" role="img"></canvas>
+                                                </div>
                     </div>
                 </div>
             </div>
@@ -347,10 +377,15 @@
         });
         const salidas = dates.map(date => {
             const salida = data.find(d => d.fecha === date && d.tipo === 'salida');
-            return salida ? entrada.productos : 0;
+            return salida ? salida.productos : 0;
         });
         
-        const ctx = document.getElementById('activityChart').getContext('2d');
+                document.getElementById('activityChartLoading')?.classList.add('d-none');
+                if (!dates.length) {
+                    document.getElementById('activityChartEmpty')?.classList.remove('d-none');
+                    return;
+                }
+                const ctx = document.getElementById('activityChart').getContext('2d');
         activityChart = new Chart(ctx, {
             type: 'line',
             data: {
@@ -397,9 +432,10 @@
     let providersChart;
     
     async function initProvidersChart() {
-        const data = await loadData('/api/providers');
+    const data = await loadData('/api/providers');
         
-        if (!data || data.length === 0) return;
+    document.getElementById('providersChartLoading')?.classList.add('d-none');
+    if (!data || data.length === 0) { document.getElementById('providersChartEmpty')?.classList.remove('d-none'); return; }
         
         // Tomar top 5 proveedores por pedidos
         const topProviders = data
@@ -538,7 +574,8 @@
                 let stockByProviderChart;
                 async function initStockByProviderChart() {
                         const data = await loadData('/api/stock-by-provider');
-                        if (!data || data.length === 0) return;
+                        document.getElementById('stockByProviderLoading')?.classList.add('d-none');
+                        if (!data || data.length === 0) { document.getElementById('stockByProviderEmpty')?.classList.remove('d-none'); return; }
                         const labels = data.map(d => d.codigo || d.nombre);
                         const values = data.map(d => d.stock_total || 0);
                         const ctx = document.getElementById('stockByProviderChart').getContext('2d');
@@ -574,7 +611,8 @@
                 let weeklySalesChart;
                 async function initWeeklySalesChart() {
                     const data = await loadData('/api/weekly-sales?weeks=8');
-                    if (!data || data.length === 0 || data[0].error) return;
+                    document.getElementById('weeklySalesLoading')?.classList.add('d-none');
+                    if (!data || data.length === 0 || data[0].error) { document.getElementById('weeklySalesEmpty')?.classList.remove('d-none'); return; }
                     const labels = data.map(d => d.semana);
                     const pedidos = data.map(d => d.pedidos || 0);
                     const productos = data.map(d => d.productos || 0);

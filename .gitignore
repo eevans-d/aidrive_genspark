@@ -1,0 +1,45 @@
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+*.so
+
+# Envs
+.env
+.venv/
+venv/
+ENV/
+
+# Test / Tools caches
+.pytest_cache/
+.hypothesis/
+.coverage
+coverage.xml
+htmlcov/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Byte-compiled / compiled / temp
+*.tmp
+*.swp
+*.swo
+
+# Editor folders
+.vscode/
+.idea/
+
+# Build
+build/
+dist/
+*.egg-info/
+
+# Backups (allow keeping under backups/ dir but ignore other temp zips)
+*.bak
+~$*

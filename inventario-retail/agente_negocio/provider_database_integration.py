@@ -13,6 +13,7 @@ Versión: 1.0
 """
 
 import sqlite3
+import threading
 import json
 from datetime import datetime, date
 from typing import Dict, List, Any, Optional, Tuple
@@ -33,11 +34,62 @@ class MiniMarketDatabaseManager:
         """
         self.db_path = db_path
         self.provider_logic = MiniMarketProviderLogic()
+        # Control para inicialización de rendimiento/índices
+        self._perf_lock = threading.Lock()
+        self._indexes_ready = False
     
     def get_connection(self) -> sqlite3.Connection:
         """Obtiene una conexión a la base de datos"""
         conn = sqlite3.connect(self.db_path)
         conn.row_factory = sqlite3.Row  # Para acceso por nombre de columna
+        # Ajustes de rendimiento por conexión
+        try:
+            # Modo WAL mejora concurrencia lectura/escritura
+            conn.execute("PRAGMA journal_mode=WAL")
+            # Equilibrio durabilidad/rendimiento para dashboard (NORMAL)
+            conn.execute("PRAGMA synchronous=NORMAL")
+            # Usar memoria para temporales y ampliar caché (~20MB)
+            conn.execute("PRAGMA temp_store=MEMORY")
+            conn.execute("PRAGMA cache_size=-20000")
+            # Evitar bloqueos breves ante contención
+            conn.execute("PRAGMA busy_timeout=5000")
+            # Asegurar FK activas
+            conn.execute("PRAGMA foreign_keys=ON")
+        except Exception:
+            # Continuar aun si algún PRAGMA no aplica
+            pass
+
+        # Asegurar índices críticos una sola vez por proceso
+        if not self._indexes_ready:
+            with self._perf_lock:
+                if not self._indexes_ready:
+                    try:
+                        conn.executescript(
+                            """
+                            -- Índices para joins y agregaciones frecuentes
+                            CREATE INDEX IF NOT EXISTS idx_dp_pedido ON detalle_pedidos(pedido_id);
+                            CREATE INDEX IF NOT EXISTS idx_dp_producto ON detalle_pedidos(producto_nombre);
+
+                            CREATE INDEX IF NOT EXISTS idx_ms_proveedor ON movimientos_stock(proveedor_id);
+                            CREATE INDEX IF NOT EXISTS idx_ms_proveedor_tipo_fecha ON movimientos_stock(proveedor_id, tipo_movimiento, fecha_movimiento);
+
+                            CREATE INDEX IF NOT EXISTS idx_facturas_procesado ON facturas_ocr(procesado);
+                            CREATE INDEX IF NOT EXISTS idx_proveedores_activo ON proveedores(activo);
+
+                            -- Reforzar en caso de instalaciones antiguas
+                            CREATE INDEX IF NOT EXISTS idx_pedidos_fecha ON pedidos(fecha_pedido);
+                            CREATE INDEX IF NOT EXISTS idx_pedidos_proveedor ON pedidos(proveedor_id);
+                            CREATE INDEX IF NOT EXISTS idx_ms_fecha ON movimientos_stock(fecha_movimiento);
+                            """
+                        )
+                        # Actualizar estadísticas (no es crítico si falla)
+                        try:
+                            conn.execute("ANALYZE")
+                        except Exception:
+                            pass
+                    finally:
+                        self._indexes_ready = True
+
         return conn
     
     def registrar_pedido_natural(self, comando: str, usuario: str = "sistema") -> Dict[str, Any]:

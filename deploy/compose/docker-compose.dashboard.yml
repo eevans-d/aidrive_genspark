@@ -1,0 +1,26 @@
+version: '3.9'
+services:
+  dashboard:
+    image: ghcr.io/eevans-d/aidrive_genspark_forensic:${IMAGE_TAG:-latest}
+    container_name: minimarket-dashboard
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+    env_file:
+      - .env.dashboard
+    environment:
+      # Defaults de seguridad si no llegan desde env_file
+      DASHBOARD_RATELIMIT_ENABLED: ${DASHBOARD_RATELIMIT_ENABLED:-true}
+      DASHBOARD_RATELIMIT_MAX: ${DASHBOARD_RATELIMIT_MAX:-100}
+    volumes:
+      - dashboard_db:/app/inventario-retail/agente_negocio
+      - dashboard_logs:/var/log/minimarket
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "-H", "X-API-Key: ${DASHBOARD_API_KEY}", "http://localhost:8080/health"]
+      interval: 15s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  dashboard_db:
+  dashboard_logs:

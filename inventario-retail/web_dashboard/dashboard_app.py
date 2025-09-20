@@ -12,20 +12,27 @@ Fecha: 2025-01-18
 Versión: 1.0
 """
 
-from fastapi import FastAPI, Request, HTTPException, Depends
+from fastapi import FastAPI, Request, HTTPException, Depends, Header
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
 from fastapi.responses import PlainTextResponse
 import sqlite3
 import json
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, UTC
 from typing import Dict, List, Any, Optional
 import math
 from pathlib import Path
 import os
 import threading
 import time
+import re
+import logging
+import uuid
+import contextvars
+from starlette.middleware.trustedhost import TrustedHostMiddleware
+from starlette.middleware.cors import CORSMiddleware
+from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
 
 # Importar lógica del Mini Market
 import sys
@@ -57,6 +64,199 @@ templates = Jinja2Templates(directory=TEMPLATES_DIR)
 # Instancia del gestor de base de datos
 db_path = os.path.join(os.path.dirname(__file__), '..', 'agente_negocio', 'minimarket_inventory.db')
 db_manager = MiniMarketDatabaseManager(db_path) if MiniMarketDatabaseManager else None
+
+# -----------------------------
+# Logging estructurado y Request-ID
+# -----------------------------
+
+# Variables de contexto para logs
+request_id_var: contextvars.ContextVar[str] = contextvars.ContextVar("request_id", default="-")
+
+class JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        payload = {
+            "ts": datetime.now(UTC).isoformat().replace("+00:00", "Z"),
+            "level": record.levelname,
+            "logger": record.name,
+            "msg": record.getMessage(),
+            "request_id": request_id_var.get("-"),
+        }
+        # Adjuntar campos extra comunes si están presentes
+        for key in ("path","method","status","duration_ms","client_ip"):
+            if hasattr(record, key):
+                payload[key] = getattr(record, key)
+        return json.dumps(payload, ensure_ascii=False)
+
+def _configure_logging():
+    log_level = os.getenv("DASHBOARD_LOG_LEVEL", "INFO").upper()
+    log_dir = os.getenv("DASHBOARD_LOG_DIR", os.path.join(BASE_DIR, "logs"))
+    rotate_when = os.getenv("DASHBOARD_LOG_ROTATE_WHEN", "midnight")  # TimedRotatingFileHandler
+    backup_count = int(os.getenv("DASHBOARD_LOG_BACKUP_COUNT", "7"))
+
+    os.makedirs(log_dir, exist_ok=True)
+
+    logger = logging.getLogger("dashboard")
+    logger.setLevel(getattr(logging, log_level, logging.INFO))
+
+    # Formateador JSON
+    formatter = JsonFormatter()
+
+    # Consola
+    sh = logging.StreamHandler()
+    sh.setFormatter(formatter)
+    logger.addHandler(sh)
+
+    # Archivo con rotación diaria
+    try:
+        from logging.handlers import TimedRotatingFileHandler
+        fh = TimedRotatingFileHandler(os.path.join(log_dir, "dashboard.log"), when=rotate_when, backupCount=backup_count, encoding="utf-8")
+        fh.setFormatter(formatter)
+        logger.addHandler(fh)
+    except Exception:
+        # Si falla el handler de archivo, seguimos con consola
+        pass
+
+    return logger
+
+logger = _configure_logging()
+
+# Métricas simples en memoria
+_metrics_lock = threading.Lock()
+_metrics = {
+    "start_time": time.time(),
+    "requests_total": 0,
+    "errors_total": 0,
+    "by_path": {},  # path -> {count, errors, total_duration_ms}
+}
+
+# -----------------------------
+# Seguridad y Hardening (Middlewares y utilidades)
+# -----------------------------
+
+# Hosts de confianza (configurable por env). Ej: "localhost,127.0.0.1,mi-dominio.com"
+_allowed_hosts_env = os.getenv("DASHBOARD_ALLOWED_HOSTS", "*")
+if _allowed_hosts_env and _allowed_hosts_env.strip() != "*":
+    app.add_middleware(TrustedHostMiddleware, allowed_hosts=[h.strip() for h in _allowed_hosts_env.split(",") if h.strip()])
+
+# Redirección HTTPS opcional
+if os.getenv("DASHBOARD_FORCE_HTTPS", "false").lower() == "true":
+    app.add_middleware(HTTPSRedirectMiddleware)
+
+# CORS opcional, restringido por env (no usar '*' por defecto)
+_cors_origins = [o.strip() for o in os.getenv("DASHBOARD_CORS_ORIGINS", "").split(",") if o.strip()]
+if _cors_origins:
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=_cors_origins,
+        allow_credentials=False,
+        allow_methods=["GET"],
+        allow_headers=["*"]
+    )
+
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    response = await call_next(request)
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["Referrer-Policy"] = "no-referrer"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    # Nota: hay scripts inline en templates; por ahora permitir 'unsafe-inline' y https. Se puede endurecer con nonces en el futuro.
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self' https:; "
+        "img-src 'self' data: https:; "
+        "style-src 'self' 'unsafe-inline' https:; "
+        "script-src 'self' 'unsafe-inline' https:; "
+        "connect-src 'self' https:; "
+        "font-src 'self' https: data:"
+    )
+    if os.getenv("DASHBOARD_ENABLE_HSTS", "false").lower() == "true":
+        response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
+    return response
+
+# Validación/Sanitización de parámetros
+DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+def sanitize_date(value: Optional[str]) -> Optional[str]:
+    """Devuelve una fecha YYYY-MM-DD válida o None.
+
+    - Primero valida el formato con regex.
+    - Luego valida que la fecha sea del calendario usando datetime.strptime.
+    """
+    if not value:
+        return None
+    v = value.strip()
+    if not DATE_RE.match(v):
+        return None
+    try:
+        # Validar fecha real del calendario
+        datetime.strptime(v, "%Y-%m-%d")
+        return v
+    except Exception:
+        return None
+
+def sanitize_text(value: Optional[str], max_len: int = 60) -> Optional[str]:
+    if not value:
+        return None
+    v = value.strip()
+    # Permitir alfanumérico, espacios, guiones, puntos, barras, acentos y ñ
+    v = re.sub(r"[^\w\s\-\._/áéíóúÁÉÍÓÚñÑ]", "", v)
+    return v[:max_len]
+
+def clamp_int(value: int, min_v: int, max_v: int) -> int:
+    try:
+        iv = int(value)
+    except Exception:
+        iv = min_v
+    return max(min_v, min(iv, max_v))
+
+# API Key opcional para proteger /api*. Si DASHBOARD_API_KEY está seteada, se exige X-API-Key.
+def verify_api_key(x_api_key: Optional[str] = Header(default=None)):
+    expected = os.getenv("DASHBOARD_API_KEY")
+    if expected:
+        if not x_api_key or x_api_key != expected:
+            raise HTTPException(status_code=401, detail="API key inválida")
+    return True
+
+# Manejador global de excepciones para evitar fugas de stacktrace
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    # Diferenciar entre rutas HTML y API por prefijo
+    path = request.url.path
+    if path.startswith("/api/") or path in {"/health"}:
+        return JSONResponse(status_code=500, content={"error": "Error interno"})
+    return templates.TemplateResponse("error.html", {"request": request, "error": "Error interno"}, status_code=500)
+
+# Rate limiting sencillo en memoria para rutas /api/*
+_rate_counters = {}
+_rate_lock = threading.Lock()
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    # Releer configuración en cada request para permitir toggling por env (útil en tests y despliegue)
+    _RL_ENABLED = os.getenv("DASHBOARD_RATELIMIT_ENABLED", "true").lower() == "true"
+    _RL_WINDOW_SEC = int(os.getenv("DASHBOARD_RATELIMIT_WINDOW", "60"))
+    _RL_MAX_REQ = int(os.getenv("DASHBOARD_RATELIMIT_MAX", "120"))
+    if not _RL_ENABLED:
+        return await call_next(request)
+    path = request.url.path
+    if not path.startswith("/api/"):
+        return await call_next(request)
+    # Identificar cliente
+    client_ip = request.client.host if request.client else "unknown"
+    now = int(time.time())
+    window = now // _RL_WINDOW_SEC
+    key = (client_ip, path, window)
+    with _rate_lock:
+        count = _rate_counters.get(key, 0) + 1
+        _rate_counters[key] = count
+        # Limpieza básica de ventanas antiguas para contener memoria
+        if len(_rate_counters) > 5000:
+            obsolete = [k for k in _rate_counters.keys() if k[2] < window]
+            for k in obsolete:
+                _rate_counters.pop(k, None)
+    if count > _RL_MAX_REQ:
+        return JSONResponse(status_code=429, content={"error": "Rate limit excedido"})
+    return await call_next(request)
 
 
 class DashboardAnalytics:
@@ -618,6 +818,53 @@ class DashboardAnalytics:
 analytics = DashboardAnalytics(db_manager)
 
 
+# -----------------------------
+# Middleware: Request-ID, Access Log y Métricas
+# -----------------------------
+
+@app.middleware("http")
+async def access_log_and_metrics(request: Request, call_next):
+    req_id = request.headers.get("X-Request-ID") or uuid.uuid4().hex
+    request_id_var.set(req_id)
+    start = time.time()
+    status_code = 500
+    response = None
+    try:
+        response = await call_next(request)
+        status_code = response.status_code
+        return response
+    finally:
+        duration_ms = int((time.time() - start) * 1000)
+        client_ip = request.client.host if request.client else "-"
+        path = request.url.path
+        method = request.method
+        # Métricas
+        try:
+            with _metrics_lock:
+                _metrics["requests_total"] += 1
+                if status_code >= 500:
+                    _metrics["errors_total"] += 1
+                by = _metrics["by_path"].setdefault(path, {"count": 0, "errors": 0, "total_duration_ms": 0})
+                by["count"] += 1
+                if status_code >= 500:
+                    by["errors"] += 1
+                by["total_duration_ms"] += duration_ms
+        except Exception:
+            pass
+        # Logging
+        extra = {"path": path, "method": method, "status": status_code, "duration_ms": duration_ms, "client_ip": client_ip}
+        try:
+            if status_code >= 500:
+                logger.error(f"{method} {path} -> {status_code}", extra=extra)
+            else:
+                logger.info(f"{method} {path} -> {status_code}", extra=extra)
+        except Exception:
+            pass
+        # Propagar Request-ID en respuesta
+        if response is not None:
+            response.headers["X-Request-ID"] = req_id
+
+
 # Rutas principales del dashboard
 @app.get("/", response_class=HTMLResponse)
 async def dashboard_home(request: Request):
@@ -665,8 +912,11 @@ async def providers_dashboard(request: Request):
 async def analytics_dashboard(request: Request, start_date: str = None, end_date: str = None, proveedor: str = None):
     """Dashboard de analytics avanzado con filtros"""
     try:
-        trends = analytics.get_monthly_trends(6, start_date, end_date, proveedor)
-        top_products = analytics.get_top_products(10, start_date, end_date, proveedor)
+        s_start = sanitize_date(start_date)
+        s_end = sanitize_date(end_date)
+        s_prov = sanitize_text(proveedor, 60)
+        trends = analytics.get_monthly_trends(6, s_start, s_end, s_prov)
+        top_products = analytics.get_top_products(10, s_start, s_end, s_prov)
         return templates.TemplateResponse("analytics.html", {
             "request": request,
             "title": "Analytics - Mini Market Dashboard",
@@ -682,50 +932,94 @@ async def analytics_dashboard(request: Request, start_date: str = None, end_date
 
 # API endpoints para datos JSON
 @app.get("/api/summary")
-async def api_summary():
+async def api_summary(_auth: bool = Depends(verify_api_key)):
     """API: Resumen general"""
     return analytics.get_dashboard_summary()
 
 
 @app.get("/api/providers")
-async def api_providers():
+async def api_providers(_auth: bool = Depends(verify_api_key)):
     """API: Estadísticas de proveedores"""
     return analytics.get_provider_stats()
 
 
 @app.get("/api/stock-timeline")
-async def api_stock_timeline(days: int = 7):
+async def api_stock_timeline(days: int = 7, _auth: bool = Depends(verify_api_key)):
     """API: Timeline de movimientos de stock"""
-    return analytics.get_stock_movements_timeline(days)
+    safe_days = clamp_int(days, 1, 90)
+    return analytics.get_stock_movements_timeline(safe_days)
 
 
 @app.get("/api/top-products")
-async def api_top_products(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None):
+async def api_top_products(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None, _auth: bool = Depends(verify_api_key)):
     """API: Productos más pedidos con filtros opcionales"""
-    return analytics.get_top_products(limit, start_date, end_date, proveedor)
+    safe_limit = clamp_int(limit, 1, 100)
+    s_start = sanitize_date(start_date)
+    s_end = sanitize_date(end_date)
+    s_prov = sanitize_text(proveedor, 60)
+    return analytics.get_top_products(safe_limit, s_start, s_end, s_prov)
 
 
 @app.get("/api/trends")
-async def api_trends(months: int = 6, start_date: str = None, end_date: str = None, proveedor: str = None):
+async def api_trends(months: int = 6, start_date: str = None, end_date: str = None, proveedor: str = None, _auth: bool = Depends(verify_api_key)):
     """API: Tendencias mensuales con filtros opcionales"""
-    return analytics.get_monthly_trends(months, start_date, end_date, proveedor)
+    safe_months = clamp_int(months, 1, 24)
+    s_start = sanitize_date(start_date)
+    s_end = sanitize_date(end_date)
+    s_prov = sanitize_text(proveedor, 60)
+    return analytics.get_monthly_trends(safe_months, s_start, s_end, s_prov)
 
 
 @app.get("/api/stock-by-provider")
-async def api_stock_by_provider(limit: int = 10):
+async def api_stock_by_provider(limit: int = 10, _auth: bool = Depends(verify_api_key)):
     """API: Stock (o volumen aproximado) por proveedor"""
-    return analytics.get_stock_by_provider(limit)
+    safe_limit = clamp_int(limit, 1, 100)
+    return analytics.get_stock_by_provider(safe_limit)
 
 
 @app.get("/api/weekly-sales")
-async def api_weekly_sales(weeks: int = 8):
+async def api_weekly_sales(weeks: int = 8, _auth: bool = Depends(verify_api_key)):
     """API: Evolución semanal de ventas/pedidos de las últimas N semanas"""
-    return analytics.get_weekly_sales(weeks)
+    safe_weeks = clamp_int(weeks, 1, 52)
+    return analytics.get_weekly_sales(safe_weeks)
 
+
+# Endpoint de métricas (Prometheus-like), protegido por API Key
+@app.get("/metrics")
+async def metrics(_auth: bool = Depends(verify_api_key)):
+    uptime = int(time.time() - _metrics.get("start_time", time.time()))
+    with _metrics_lock:
+        req_total = _metrics.get("requests_total", 0)
+        err_total = _metrics.get("errors_total", 0)
+        by_path = dict(_metrics.get("by_path", {}))
+    lines = []
+    lines.append("# HELP dashboard_requests_total Total requests processed")
+    lines.append("# TYPE dashboard_requests_total counter")
+    lines.append(f"dashboard_requests_total {req_total}")
+    lines.append("# HELP dashboard_errors_total Total 5xx errors")
+    lines.append("# TYPE dashboard_errors_total counter")
+    lines.append(f"dashboard_errors_total {err_total}")
+    lines.append("# HELP dashboard_uptime_seconds Process uptime in seconds")
+    lines.append("# TYPE dashboard_uptime_seconds gauge")
+    lines.append(f"dashboard_uptime_seconds {uptime}")
+    # Por path
+    lines.append("# HELP dashboard_requests_by_path_total Requests by path")
+    lines.append("# TYPE dashboard_requests_by_path_total counter")
+    lines.append("# HELP dashboard_errors_by_path_total Errors by path")
+    lines.append("# TYPE dashboard_errors_by_path_total counter")
+    lines.append("# HELP dashboard_request_duration_ms_sum Total duration by path (ms)")
+    lines.append("# TYPE dashboard_request_duration_ms_sum counter")
+    for path, data in sorted(by_path.items()):
+        p = path.replace('"', '\"')
+        lines.append(f'dashboard_requests_by_path_total{{path="{p}"}} {data.get("count", 0)}')
+        lines.append(f'dashboard_errors_by_path_total{{path="{p}"}} {data.get("errors", 0)}')
+        lines.append(f'dashboard_request_duration_ms_sum{{path="{p}"}} {data.get("total_duration_ms", 0)}')
+    text = "\n".join(lines) + "\n"
+    return PlainTextResponse(content=text, media_type="text/plain; version=0.0.4")
 
 # Export endpoints (CSV)
 @app.get("/api/export/summary.csv")
-async def api_export_summary_csv():
+async def api_export_summary_csv(_auth: bool = Depends(verify_api_key)):
     """Exporta el resumen general a CSV."""
     data = analytics.get_dashboard_summary()
     if isinstance(data, dict) and data.get("error"):
@@ -753,7 +1047,7 @@ async def api_export_summary_csv():
 
 
 @app.get("/api/export/providers.csv")
-async def api_export_providers_csv():
+async def api_export_providers_csv(_auth: bool = Depends(verify_api_key)):
     """Exporta estadísticas de proveedores a CSV."""
     data = analytics.get_provider_stats()
     if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and data[0].get("error"):
@@ -771,9 +1065,13 @@ async def api_export_providers_csv():
 
 # Exportar Top Productos a CSV (reubicado correctamente)
 @app.get("/api/export/top-products.csv")
-async def api_export_top_products_csv(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None):
+async def api_export_top_products_csv(limit: int = 10, start_date: str = None, end_date: str = None, proveedor: str = None, _auth: bool = Depends(verify_api_key)):
     """Exporta el ranking de productos más pedidos a CSV con filtros."""
-    data = analytics.get_top_products(limit, start_date, end_date, proveedor)
+    safe_limit = clamp_int(limit, 1, 100)
+    s_start = sanitize_date(start_date)
+    s_end = sanitize_date(end_date)
+    s_prov = sanitize_text(proveedor, 60)
+    data = analytics.get_top_products(safe_limit, s_start, s_end, s_prov)
     if isinstance(data, list) and len(data) > 0 and isinstance(data[0], dict) and data[0].get("error"):
         csv_text = "error,message\ntrue,{}".format(data[0]["error"].replace("\n", " "))
     else:

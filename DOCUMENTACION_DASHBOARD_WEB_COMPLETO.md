@@ -30,14 +30,20 @@ El Dashboard Web para el Sistema Mini Market ha sido implementado exitosamente c
 - **Información de contacto** y estado de actividad
 
 ### **4. API REST Completa**
+Nota: Los endpoints bajo `/api/*` requieren header `X-API-Key`. El endpoint `/metrics` también requiere API Key.
 ```
-GET /api/summary                    # Métricas del dashboard
-GET /api/top-products               # Productos más pedidos
-GET /api/trends                     # Tendencias mensuales
-GET /api/providers                  # Estadísticas de proveedores
-GET /api/export/top-products.csv    # Exportación productos CSV
-GET /api/export/trends.csv          # Exportación tendencias CSV
-GET /health                         # Estado del sistema
+GET /api/summary                      # Métricas del dashboard (JSON)
+GET /api/top-products                 # Productos más pedidos (JSON)
+GET /api/trends                       # Tendencias mensuales (JSON)
+GET /api/providers                    # Estadísticas de proveedores (JSON)
+GET /api/stock-timeline               # Timeline de stock (JSON)
+GET /api/stock-by-provider            # Stock por proveedor (JSON)
+GET /api/weekly-sales                 # Ventas/pedidos semanales (JSON)
+GET /api/export/summary.csv           # Exportación resumen (CSV)
+GET /api/export/providers.csv         # Exportación proveedores (CSV)
+GET /api/export/top-products.csv      # Exportación top productos (CSV)
+GET /metrics                          # Métricas Prometheus (text/plain)
+GET /health                           # Estado del sistema (sin API Key)
 ```
 
 ---

@@ -1,3 +1,4 @@
+[![CI](https://github.com/eevans-d/aidrive_genspark_forensic/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eevans-d/aidrive_genspark_forensic/actions/workflows/ci.yml)
 # 🛒 Sistema Multiagente Inventario Retail Argentino
 
 Sistema robusto y modular para gestión de inventario, compras, ML y dashboard web, optimizado para retail argentino y listo para producción.
@@ -8,7 +9,7 @@ Sistema robusto y modular para gestión de inventario, compras, ML y dashboard w
 - **Integración ML:** Recomendaciones de compra, predicción de demanda
 - **Dashboard web interactivo:** KPIs, alertas, gráficos, mobile-first
 - **Despliegue sencillo:** Docker Compose, scripts automatizados
-- **Documentación y onboarding guiado**
+- **Documentación y onboarding guiado
 
 ## 🏗️ Estructura del Proyecto
 ```
@@ -116,6 +117,24 @@ curl -s http://localhost:5000/metrics | head
 ```
 
 Si ves series como `http_request_total` y `http_request_duration_seconds_bucket`, la integración está activa.
+
+## 🐳 Imagen Docker del Dashboard (GHCR)
+La imagen del dashboard se publica automáticamente en cada push a `master`:
+- Registro: `ghcr.io/eevans-d/aidrive_genspark_forensic:latest`
+
+Ejecutar localmente (requiere definir API Key):
+```bash
+# Descargar imagen
+docker pull ghcr.io/eevans-d/aidrive_genspark_forensic:latest
+
+# Ejecutar el dashboard en 8080
+docker run --rm -p 8080:8080 \
+  -e DASHBOARD_API_KEY=mi-clave-segura \
+  ghcr.io/eevans-d/aidrive_genspark_forensic:latest
+
+# Probar salud (con API Key)
+curl -H 'X-API-Key: mi-clave-segura' http://localhost:8080/health
+```
 
 ## �📝 Contacto y Soporte
 - Email: soporte@inventarioretail.com

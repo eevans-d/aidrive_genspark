@@ -1,0 +1,32 @@
+# syntax=docker/dockerfile:1.6
+FROM python:3.12-slim as base
+
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+WORKDIR /app
+
+# Dependencias del sistema mínimas (opcional)
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    build-essential \
+ && rm -rf /var/lib/apt/lists/*
+
+# Instalar requirements
+COPY inventario-retail/web_dashboard/requirements.txt /tmp/requirements.txt
+RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
+
+# Copiar código
+COPY . /app
+
+# Puerto de la app
+EXPOSE 8080
+
+# Variables por defecto seguras (pueden ser sobreescritas)
+ENV DASHBOARD_RATELIMIT_ENABLED=true \
+    DASHBOARD_RATELIMIT_MAX=100 \
+    DASHBOARD_API_KEY=change-me
+
+# Comando de ejecución (uvicorn)
+CMD ["uvicorn", "inventario-retail.web_dashboard.dashboard_app:app", "--host", "0.0.0.0", "--port", "8080"]
