@@ -12,6 +12,8 @@ jobs:
   test-dashboard:
     name: Test Web Dashboard (FastAPI)
     runs-on: ubuntu-latest
+    permissions:
+      contents: write  # Necesario para actualizar badge de cobertura en README
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -47,6 +49,32 @@ jobs:
         with:
           name: coverage-xml
           path: coverage.xml
+
+      - name: Extraer porcentaje de cobertura
+        id: cov
+        run: |
+          python -c "import xml.etree.ElementTree as ET;root=ET.parse('coverage.xml').getroot();import math;line_rate=float(root.attrib.get('line-rate',0));percent=int(round(line_rate*100));print(f'coverage={percent}');open('coverage_percent.txt','w').write(str(percent))"
+          echo "percent=$(cat coverage_percent.txt)" >> $GITHUB_OUTPUT
+
+      - name: Actualizar badge de cobertura en README (si cambia)
+        run: |
+          PCT=${{ steps.cov.outputs.percent }}
+          COLOR=red
+          if [ "$PCT" -ge 85 ]; then COLOR=brightgreen; elif [ "$PCT" -ge 75 ]; then COLOR=yellowgreen; elif [ "$PCT" -ge 60 ]; then COLOR=yellow; fi
+          BADGE="[![Coverage](https://img.shields.io/badge/coverage-${PCT}%25-${COLOR}.svg)](#)"
+          if grep -q "\[!\[Coverage\](https://img.shields.io/badge/coverage-" README.md; then
+            # Reemplazar línea que contiene el badge Coverage
+            sed -i "s|\[!\[Coverage\](https://img.shields.io/badge/coverage-[^)]*)|$BADGE|" README.md
+          else
+            # Insertar debajo del badge de CI
+            sed -i "1a $BADGE" README.md
+          fi
+          if git diff --quiet README.md; then echo "Sin cambios en README"; exit 0; fi
+          git config user.name "github-actions"
+          git config user.email "github-actions@users.noreply.github.com"
+          git add README.md
+          git commit -m "docs(badge): actualiza badge cobertura a ${PCT}%" || true
+          git push || true
 
   docker-build-push:
     name: Docker Build & Push (GHCR)
