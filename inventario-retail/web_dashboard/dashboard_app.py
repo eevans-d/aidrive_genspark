@@ -164,19 +164,13 @@ async def add_security_headers(request: Request, call_next):
     # Ajustar si se añaden nuevos CDNs. Preferir SRI para recursos externos.
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        # Imágenes: permitir self, data para favicons/base64, y HTTPS genérico mínimo (o enumerar dominios específicos)
         "img-src 'self' data: https://cdn.jsdelivr.net https://cdn.pixabay.com; "
-        # Styles: self + CDN usado (bootstrap, fontawesome) + Google Fonts si se añadiera
         "style-src 'self' https://cdn.jsdelivr.net; "
-        # Scripts: self + jsdelivr (Chart.js, Bootstrap) únicamente
         "script-src 'self' https://cdn.jsdelivr.net; "
-        # Fuentes: self + jsdelivr (FontAwesome) + data: para incrustadas
         "font-src 'self' https://cdn.jsdelivr.net data:; "
-        # Conexiones XHR/fetch
+        "media-src 'self' https://cdn.pixabay.com; "
         "connect-src 'self'; "
-        # Objetos/plugins deshabilitados
         "object-src 'none'; "
-        # No permitir inline event handlers ni base-uri externa
         "base-uri 'self'; frame-ancestors 'none'"
     )
     if os.getenv("DASHBOARD_ENABLE_HSTS", "false").lower() == "true":
@@ -775,8 +769,7 @@ async def dashboard_home(request: Request):
         if hasattr(analytics, "get_stock_alerts"):
             stock_alerts = analytics.get_stock_alerts()
             tiene_critico = any(prod.get("nivel_alerta") == "critico" for prod in stock_alerts)
-        return templates.TemplateResponse("dashboard.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "dashboard.html", {
             "title": "Mini Market Dashboard",
             "summary": summary,
             "stock_alerts": stock_alerts,
@@ -784,8 +777,7 @@ async def dashboard_home(request: Request):
             "dashboard_api_key": _get_ui_api_key()
         })
     except Exception as e:
-        return templates.TemplateResponse("error.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "error.html", {
             "error": f"Error cargando dashboard: {str(e)}",
             "dashboard_api_key": _get_ui_api_key()
         })
@@ -796,15 +788,13 @@ async def providers_dashboard(request: Request):
     """Dashboard de proveedores"""
     try:
         provider_stats = analytics.get_provider_stats()
-        return templates.TemplateResponse("providers.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "providers.html", {
             "title": "Proveedores - Mini Market Dashboard",
             "providers": provider_stats,
             "dashboard_api_key": _get_ui_api_key()
         })
     except Exception as e:
-        return templates.TemplateResponse("error.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "error.html", {
             "error": f"Error cargando proveedores: {str(e)}",
             "dashboard_api_key": _get_ui_api_key()
         })
@@ -819,16 +809,14 @@ async def analytics_dashboard(request: Request, start_date: Optional[str] = None
         s_prov = sanitize_text(proveedor, 60)
         trends = analytics.get_monthly_trends(6, s_start, s_end, s_prov)
         top_products = analytics.get_top_products(10, s_start, s_end, s_prov)
-        return templates.TemplateResponse("analytics.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "analytics.html", {
             "title": "Analytics - Mini Market Dashboard",
             "trends": trends,
             "top_products": top_products,
             "dashboard_api_key": _get_ui_api_key()
         })
     except Exception as e:
-        return templates.TemplateResponse("error.html", {
-            "request": request,
+        return templates.TemplateResponse(request, "error.html", {
             "error": f"Error cargando analytics: {str(e)}",
             "dashboard_api_key": _get_ui_api_key()
         })
