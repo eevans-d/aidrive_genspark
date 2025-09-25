@@ -40,3 +40,30 @@ def test_no_inline_scripts_in_templates():
     import re
     inline_blocks = re.findall(r"<script(?![^>]*src)(?![^>]*application/json)[^>]*>\\s*[^<]+</script>", html, flags=re.IGNORECASE)
     assert not inline_blocks, f"Se encontraron scripts inline no permitidos: {inline_blocks[:2]}"
+
+
+def test_csp_snapshot_policy():
+    """Asegura que la política CSP completa no cambie sin revisión.
+
+    Si se requiere modificar la CSP (nuevos CDNs, directivas, etc.) actualizar
+    la cadena expected_csp abajo y documentar la justificación en DOCUMENTACION_CI_CD.md.
+    """
+    r = client.get("/")
+    csp = r.headers.get("content-security-policy")
+    assert csp, "Header CSP ausente"
+    expected_csp = (
+        "default-src 'self'; "
+        "img-src 'self' data: https://cdn.jsdelivr.net https://cdn.pixabay.com; "
+        "style-src 'self' https://cdn.jsdelivr.net; "
+        "script-src 'self' https://cdn.jsdelivr.net; "
+        "font-src 'self' https://cdn.jsdelivr.net data:; "
+        "media-src 'self' https://cdn.pixabay.com; "
+        "connect-src 'self'; "
+        "object-src 'none'; "
+        "base-uri 'self'; frame-ancestors 'none'"
+    )
+    # Comparamos exacto; si difiere, mostramos diff amigable
+    if csp != expected_csp:
+        import difflib
+        diff = '\n'.join(difflib.unified_diff(expected_csp.split(), csp.split(), fromfile='expected', tofile='actual', lineterm=''))
+        raise AssertionError(f"La política CSP ha cambiado. Actualiza el snapshot si es intencional. Diff:\n{diff}")
