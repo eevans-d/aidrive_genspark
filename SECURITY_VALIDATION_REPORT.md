@@ -180,3 +180,42 @@ curl -H "Authorization: Bearer <JWT_TOKEN>" http://localhost:8001/productos # �
 ---
 
 **🎉 PROYECTO DE SEGURIDAD COMPLETADO CON ÉXITO** 🎉
+
+---
+
+## 🔎 Surface 2025-09 (Dashboard Web) – Auditoría Go-Live
+
+| Ruta | Tipo | Protegida API Key | Autenticación Esperada | Observaciones |
+|------|------|-------------------|------------------------|---------------|
+| / | HTML | N/A (pública UI) | Visual sólo, no datos sensibles | Headers de seguridad presentes |
+| /providers | HTML | N/A | Igual que / | Usa datos agregados |
+| /analytics | HTML | N/A | Igual que / | Sin datos crudos; CSP estricta |
+| /api/summary | API JSON | Sí | X-API-Key requerida | Datos agregados resumen |
+| /api/providers | API JSON | Sí | X-API-Key | Stats por proveedor agregadas |
+| /api/stock-timeline | API JSON | Sí | X-API-Key | Timeline movimientos agregados |
+| /api/top-products | API JSON | Sí | X-API-Key | Ranking productos (agregado) |
+| /api/trends | API JSON | Sí | X-API-Key | Tendencias mensuales agregadas |
+| /api/stock-by-provider | API JSON | Sí | X-API-Key | Stock aproximado/volumen agregado |
+| /api/weekly-sales | API JSON | Sí | X-API-Key | Evolución semanal agregada |
+| /metrics | Texto Prometheus | Sí | X-API-Key | Evita exposición pública de métricas |
+| /api/export/summary.csv | CSV | Sí | X-API-Key | Igual a summary en CSV |
+| /api/export/providers.csv | CSV | Sí | X-API-Key | Estadísticas proveedores CSV |
+| /api/export/top-products.csv | CSV | Sí | X-API-Key | Ranking productos CSV |
+| /health | JSON | Sí (cabecera en uso de test) | X-API-Key; podría permitirse público según política | Devuelve estado y timestamp |
+
+### Verificaciones
+1. Todas las rutas /api/* y /metrics aplican `verify_api_key` (decorador FastAPI con Depends).
+2. Rutas HTML no exponen secretos; frontend usa API Key independiente (`DASHBOARD_UI_API_KEY`) opcional.
+3. CSP snapshot test asegura ausencia de inline script y dominios externos limitados.
+4. Security headers presentes: X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy, CSP y opcional HSTS.
+5. No se detectan endpoints de administración ocultos ni rutas de debug.
+
+### Riesgos Residuales (Aceptados)
+| Riesgo | Impacto | Mitigación | Estado |
+|--------|---------|------------|--------|
+| Exposición controlada de /health (si se hace pública) | Baja | Limitar a IP internas o requerir API Key | Aceptado |
+| API Key compartida sin rotación automática | Medio | Script `rotate_dashboard_api_key.sh` + política rotación 30 días | Mitigado |
+| Cache en memoria (analytics) no expira bajo carga elevada | Bajo | Tamaño controlado y datos agregados | Aceptado |
+
+### Conclusión Surface
+Superficie mínima, todos los endpoints de datos requieren API Key, UI no expone datos sensibles sin pasar por capa segura. Sin hallazgos críticos.
