@@ -9,15 +9,16 @@ Archivo: `.github/workflows/ci.yml`
 - Dispara en pushes y PRs contra `master`.
 - Job `test-dashboard`:
   - Python 3.12, cache de pip.
-  - Instala dependencias del dashboard: `inventario-retail/web_dashboard/requirements.txt` y `pytest`.
-  - Variables de entorno mínimas para pasar seguridad y evitar rate limit en test:
+  - Instala dependencias del dashboard + pytest/pytest-cov.
+  - Variables mínimas:
     - `DASHBOARD_API_KEY=test-key`
     - `DASHBOARD_RATELIMIT_ENABLED=false`
-  - Ejecuta: `python -m pytest -q tests/web_dashboard`
-  - Incluye test de cabecera CSP (`tests/test_csp_headers.py`) que verifica:
-    - Ausencia de `'unsafe-inline'`.
-    - Directivas `script-src` y `media-src` estrictas.
-    - No reaparición de scripts inline no permitidos.
+  - Ejecuta suite completa: `pytest -q tests --cov=...`
+  - Cobertura mínima (`--cov-fail-under=80`) sobre `inventario-retail/web_dashboard`.
+  - Tests de seguridad incluidos:
+    - CSP: sin `'unsafe-inline'`, directivas estrictas y sin scripts inline.
+    - Snapshot CSP: cambio en la concatenación de directivas exige actualizar test.
+    - HSTS: header `Strict-Transport-Security` presente cuando `DASHBOARD_ENABLE_HSTS=true`.
 
 ### Filtro temporal de tests legacy
 
@@ -34,9 +35,9 @@ Usar siempre `python -m pytest` en CI garantiza el intérprete correcto del venv
 - Agregar matriz: `python-version: ["3.10", "3.11", "3.12"]` en `setup-python`.
 
 ## Cobertura de pruebas
-- Instalación: `pytest-cov`
-- Ejecución: `pytest --cov=inventario-retail/web_dashboard --cov-report=xml --cov-report=term-missing`
-- Artefacto: `coverage.xml` (subido por el workflow). Puede añadirse un badge de cobertura al README.
+- Integrada en el pipeline actual (`pytest-cov`).
+- Reportes: `coverage.xml` y resumen en terminal (líneas faltantes).
+- Artefacto: `coverage.xml` (subido por el workflow). Siguiente paso opcional: badge de cobertura en README.
 
 ## CD: Opciones de despliegue
 
@@ -89,11 +90,10 @@ Usar siempre `python -m pytest` en CI garantiza el intérprete correcto del venv
 - Verificar periódicamente mediante el test CSP que la política se mantiene endurecida.
 
 ## Próximos pasos
-- Añadir pipeline de Docker build & push.
-- Implementar despliegue a staging con aprobación manual.
-- Agregar badge de cobertura si se activa `pytest-cov`.
-- Añadir test snapshot de la cabecera CSP si se desea mayor rigidez ante cambios.
-- Eliminar el filtro `not learning_system` cuando las dependencias estén disponibles.
+- Badge de cobertura en README.
+- Incrementar `--cov-fail-under` progresivamente (80 → 85 → 90...).
+- Eliminar el filtro `not learning_system` cuando el módulo esté listo.
+- Añadir tests para `Permissions-Policy` y `Referrer-Policy` (pendiente si se quiere 100% headers).
 
 ## Deploy manual a Staging (placeholder)
 - Disparador: `workflow_dispatch` en GitHub Actions.

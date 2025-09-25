@@ -1,4 +1,5 @@
 [![CI](https://github.com/eevans-d/aidrive_genspark_forensic/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/eevans-d/aidrive_genspark_forensic/actions/workflows/ci.yml)
+[![Coverage](https://img.shields.io/badge/coverage-pending-lightgrey)](#) <!-- Badge real a reemplazar tras publicar reporte -->
 # 🛒 Sistema Multiagente Inventario Retail Argentino
 
 Sistema robusto y modular para gestión de inventario, compras, ML y dashboard web, optimizado para retail argentino y listo para producción.

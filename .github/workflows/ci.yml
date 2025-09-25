@@ -34,14 +34,13 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r inventario-retail/web_dashboard/requirements.txt
           pip install pytest pytest-cov
-
-      - name: Run tests (web_dashboard) with coverage
+      - name: Run full test suite with coverage
         env:
           # Variables mínimas para que los tests pasen auth y no activen rate limit
           DASHBOARD_API_KEY: test-key
           DASHBOARD_RATELIMIT_ENABLED: 'false'
         run: |
-          pytest -q tests/web_dashboard --cov=inventario-retail/web_dashboard --cov-report=xml --cov-report=term-missing --cov-fail-under=80
+          pytest -q tests --cov=inventario-retail/web_dashboard --cov-report=xml --cov-report=term-missing --cov-fail-under=80
 
       - name: Upload coverage artifact
         uses: actions/upload-artifact@v4
