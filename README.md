@@ -58,6 +58,7 @@ Sistema robusto y modular para gestión de inventario, compras, ML y dashboard w
 - Guía de despliegue: `README_DEPLOY_STAGING.md`
 - Guía dashboard web: `inventario_retail_dashboard_web/DEPLOYMENT_GUIDE.md`
 - Documentación endpoints: ver carpetas de cada microservicio
+ - Changelog: `CHANGELOG.md`
 
 ## 🧑‍💻 Onboarding Rápido
 - Sigue los pasos de instalación y despliegue
