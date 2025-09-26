@@ -13,6 +13,7 @@ Procedimientos para operar, monitorear y solucionar problemas del Dashboard.
 - Ver métricas: GET `/metrics` con `X-API-Key`
 - Revisar logs: `${DASHBOARD_LOG_DIR}/dashboard.log`
 - Correlación: usar/propagar `X-Request-ID`
+ - Script rápido métricas (requests, errores, p95): `scripts/check_metrics_dashboard.sh -u <url> -k <API_KEY>`
 
 ## Respuesta a incidentes comunes
 - 401 en APIs: validar `X-API-Key` y valor en `DASHBOARD_API_KEY`
@@ -78,3 +79,10 @@ Condición: incremento súbito de errores 5xx post despliegue.
 - No refactors de estructura o nombres de directorios hasta fase post-Go-Live.
 - No expansión de caching sin métricas de latencia concretas.
 - Ramas de error DB extremas no se fuerzan en tests ahora.
+
+### Tagging (RC → Release)
+1. Validar staging (smoke + script métricas error% <2, p95 <800ms)
+2. Tag RC: `git tag v1.0.0-rc1 && git push origin v1.0.0-rc1`
+3. Observar 30–60 min métricas y logs
+4. Si estable: `git tag v1.0.0 && git push origin v1.0.0`
+5. Registrar métricas iniciales (requests_total, error%, p95) aquí
