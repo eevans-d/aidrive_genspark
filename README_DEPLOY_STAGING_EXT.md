@@ -137,5 +137,36 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/export/summar
 ## 10. Notas Finales
 Esta guía se mantiene “extendida” para no sobrecargar el README base. Cualquier cambio operativo aprobado debe reflejarse aquí y luego condensarse en el runbook.
 
+## 11. Plantilla comandos carga de secretos (Staging / Producción)
+
+### Staging
+```bash
+gh secret set STAGING_HOST -R eevans-d/aidrive_genspark_forensic --body "staging.example.com"
+gh secret set STAGING_USER -R eevans-d/aidrive_genspark_forensic --body "deploy"
+gh secret set STAGING_KEY -R eevans-d/aidrive_genspark_forensic < /ruta/clave_staging.pem
+gh secret set STAGING_GHCR_TOKEN -R eevans-d/aidrive_genspark_forensic --body "<ghcr_pat_read_packages>"
+# API Key (generar y subir)
+./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --print-only
+./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic
+# UI opcional
+./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic -u "$(openssl rand -hex 32)"
+```
+
+### Producción (NO ejecutar hasta aprobado)
+```bash
+gh secret set PROD_HOST -R eevans-d/aidrive_genspark_forensic --body "prod.example.com"
+gh secret set PROD_USER -R eevans-d/aidrive_genspark_forensic --body "deploy"
+gh secret set PROD_KEY -R eevans-d/aidrive_genspark_forensic < /ruta/clave_prod.pem
+gh secret set PROD_GHCR_TOKEN -R eevans-d/aidrive_genspark_forensic --body "<ghcr_pat_read_packages>"
+# API Key prod (simular primero)
+./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --prod --print-only
+./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --prod
+```
+
+Verificación:
+```bash
+gh secret list -R eevans-d/aidrive_genspark_forensic | grep -E 'STAGING_|PROD_'
+```
+
 ---
 Última actualización: (pendiente de timestamp automático)
