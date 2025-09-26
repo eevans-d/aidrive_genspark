@@ -26,6 +26,24 @@ Procedimientos para operar, monitorear y solucionar problemas del Dashboard.
 - Respaldo de logs antes de depuración profunda
 - Revisión de métricas de latencia y errores por ruta
 
+### Rotación de API Keys
+- Política: Staging cada 30 días, Producción cada 60 días o ante incidente.
+- Tooling: `scripts/rotate_dashboard_api_key.sh`
+- Staging ejemplo:
+	```bash
+	./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --print-only
+	./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic
+	```
+- Producción (planificar ventana baja):
+	```bash
+	./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --prod --print-only
+	./scripts/rotate_dashboard_api_key.sh -r eevans-d/aidrive_genspark_forensic --prod
+	```
+- Validación post-rotación:
+	1. Confirmar `/api/summary` 401 con clave anterior
+	2. Confirmar 200/500 con nueva clave
+	3. Revisar `/metrics` (requests_total sigue aumentando)
+
 ## Prometheus/Grafana
 - Scrape `/metrics` con API Key (via sidecar/exporter o auth en proxy)
 - Paneles: solicitudes totales, errores 5xx, latencia por ruta, uptime
@@ -39,3 +57,24 @@ Procedimientos para operar, monitorear y solucionar problemas del Dashboard.
 - Escalar workers Uvicorn/Gunicorn
 - Reiniciar servicio tras cambios de env vars
 - Verificar accesos en `/`, `/analytics`, `/providers`
+
+### Rollback rápido (Staging / Producción)
+Condición: incremento súbito de errores 5xx post despliegue.
+
+1. Identificar tag estable previo (ej: `v1.0.0-rc1`)
+2. Redeploy:
+	```bash
+	ssh $STAGING_USER@$STAGING_HOST \
+	  "cd ~/minimarket-deploy && export IMAGE_TAG=v1.0.0-rc1 && \
+		docker compose -f docker-compose.dashboard.yml pull && \
+		docker compose -f docker-compose.dashboard.yml up -d"
+	```
+3. Verificar `/health` y reducción de errores en `/metrics`
+4. Registrar incidente (timestamp, causa tentativa, acciones) en este runbook
+5. Para producción, mismo procedimiento cambiando variables y host
+
+### Criterios de corte ("DONES")
+- Cobertura ya ≥85%: no perseguir mejoras marginales previas a Go-Live.
+- No refactors de estructura o nombres de directorios hasta fase post-Go-Live.
+- No expansión de caching sin métricas de latencia concretas.
+- Ramas de error DB extremas no se fuerzan en tests ahora.
