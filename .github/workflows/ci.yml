@@ -1,5 +1,9 @@
 name: CI
 
+# Nota: Algunos linters locales pueden marcar como "Context access might be invalid" las referencias a
+# secrets (STAGING_* / PROD_*) porque no están definidos en el entorno local. En GitHub Actions
+# en tiempo de ejecución sí estarán presentes si fueron cargados. Este es un comportamiento esperado.
+
 on:
   push:
     branches: [ master ]
@@ -239,6 +243,33 @@ jobs:
             docker compose -f docker-compose.dashboard.yml pull
             docker compose -f docker-compose.dashboard.yml up -d
             for i in {1..30}; do curl -fsS -H "X-API-Key: ${DASHBOARD_API_KEY}" http://localhost:8080/health && break || sleep 1; done
+      - name: Post-deploy smoke checks
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.STAGING_HOST }}
+          username: ${{ secrets.STAGING_USER }}
+          key: ${{ secrets.STAGING_KEY }}
+          script: |
+            set -euo pipefail
+            BASE="http://localhost:8080"
+            echo "[SMOKE] Iniciando verificación básica"
+            echo "1) /health (200 o 503)"
+            HCODE=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ${{ secrets.STAGING_DASHBOARD_API_KEY }}" "$BASE/health" || true)
+            if [ "$HCODE" != "200" ] && [ "$HCODE" != "503" ]; then echo "FAIL /health => $HCODE"; exit 1; fi
+            echo "2) /api/summary sin auth (401)"
+            NOAUTH=$(curl -s -o /dev/null -w "%{http_code}" "$BASE/api/summary" || true)
+            [ "$NOAUTH" = "401" ] || { echo "FAIL /api/summary sin API Key => $NOAUTH"; exit 1; }
+            echo "3) /api/summary con auth (200 o 500)"
+            AUTH=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ${{ secrets.STAGING_DASHBOARD_API_KEY }}" "$BASE/api/summary" || true)
+            if [ "$AUTH" != "200" ] && [ "$AUTH" != "500" ]; then echo "FAIL /api/summary con API Key => $AUTH"; exit 1; fi
+            echo "4) /metrics (200 y contiene dashboard_requests_total)"
+            MC=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ${{ secrets.STAGING_DASHBOARD_API_KEY }}" "$BASE/metrics" || true)
+            [ "$MC" = "200" ] || { echo "FAIL /metrics status => $MC"; exit 1; }
+            curl -s -H "X-API-Key: ${{ secrets.STAGING_DASHBOARD_API_KEY }}" "$BASE/metrics" | grep -q 'dashboard_requests_total' || { echo "FAIL /metrics sin dashboard_requests_total"; exit 1; }
+            echo "5) Export CSV summary (200)"
+            EC=$(curl -s -o /dev/null -w "%{http_code}" -H "X-API-Key: ${{ secrets.STAGING_DASHBOARD_API_KEY }}" "$BASE/api/export/summary.csv" || true)
+            [ "$EC" = "200" ] || { echo "FAIL /api/export/summary.csv => $EC"; exit 1; }
+            echo "[SMOKE] OK"
 
   deploy-production:
     name: Deploy to Production (tags)
