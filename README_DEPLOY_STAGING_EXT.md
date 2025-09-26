@@ -133,7 +133,6 @@ curl -s -o /dev/null -w "%{http_code}\n" http://localhost:8080/api/export/summar
 | Runbook / Incidentes | `RUNBOOK_OPERACIONES_DASHBOARD.md` |
 | Seguridad / CSP | Tests + `DOCUMENTACION_DASHBOARD_WEB_COMPLETO.md` |
 
----
 ## 10. Notas Finales
 Esta guía se mantiene “extendida” para no sobrecargar el README base. Cualquier cambio operativo aprobado debe reflejarse aquí y luego condensarse en el runbook.
 
@@ -168,5 +167,39 @@ Verificación:
 gh secret list -R eevans-d/aidrive_genspark_forensic | grep -E 'STAGING_|PROD_'
 ```
 
+## 12. Verificación rápida post-deploy (script)
+Para evaluar rápidamente errores y p95 tras el despliegue usa:
+```bash
+scripts/check_metrics_dashboard.sh -u https://staging.example.com -k "$STAGING_DASHBOARD_API_KEY"
+```
+Retornos:
+- Código 0: dentro de umbrales
+- Código 5: error % supera umbral (default 2%)
+
+Parámetros opcionales:
+```bash
+scripts/check_metrics_dashboard.sh -u <URL> -k <API_KEY> -t 3
+```
+
+## 13. Procedimiento Tagging RC y Release Final
+1. Cargar y verificar secretos Staging (ver sección 11).
+2. Push a `master` y esperar deploy automático + smoke ✅.
+3. Verificar métricas: error% <2, p95 <800ms.
+4. Crear tag RC:
+```bash
+git tag v1.0.0-rc1
+git push origin v1.0.0-rc1
+```
+5. Esperar deploy production (si pipeline configurado para tags RC) o validar manual si sólo aplica a final.
+6. Ventana de observación mínima sugerida: 30-60 min tráfico real.
+7. Si estable, crear tag final:
+```bash
+git tag v1.0.0
+git push origin v1.0.0
+```
+8. Registrar en `RUNBOOK_OPERACIONES_DASHBOARD.md` fecha/hora y métricas iniciales.
+
+Nota: No introducir cambios de código entre `-rc1` y `v1.0.0` salvo fix crítico + nuevo `-rc2`.
+
 ---
-Última actualización: (pendiente de timestamp automático)
+Última actualización: 2025-09-26
