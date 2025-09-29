@@ -188,6 +188,103 @@ class DatabaseOptimizer:
         
         return stats
     
+    def apply_deposito_postgresql_optimizations(self, connection_params: Dict[str, str]) -> bool:
+        """
+        Aplicar optimizaciones PostgreSQL específicas para sistema_deposito
+        """
+        deposito_config = self.config_path / "deposito_postgresql_optimizations.sql"
+        
+        if not deposito_config.exists():
+            logger.error(f"Deposito PostgreSQL config not found: {deposito_config}")
+            return False
+            
+        try:
+            logger.info(f"Applying Deposito PostgreSQL optimizations to: {connection_params.get('host', 'localhost')}")
+            
+            # Construir string de conexión
+            conn_string = (
+                f"host={connection_params.get('host', 'localhost')} "
+                f"port={connection_params.get('port', '5432')} "
+                f"dbname={connection_params.get('database', 'deposito_db')} "
+                f"user={connection_params.get('user', 'deposito_user')} "
+                f"password={connection_params.get('password', 'deposito_pass')}"
+            )
+            
+            with psycopg2.connect(conn_string) as conn:
+                with conn.cursor() as cursor:
+                    # Leer archivo de configuración específico para depósito
+                    with open(deposito_config, 'r') as f:
+                        sql_content = f.read()
+                    
+                    # Ejecutar comandos
+                    for statement in sql_content.split(';'):
+                        statement = statement.strip()
+                        if statement and not statement.startswith('--'):
+                            try:
+                                cursor.execute(statement)
+                                logger.debug(f"Executed deposito optimization: {statement[:50]}...")
+                            except psycopg2.Error as e:
+                                logger.warning(f"Deposito PostgreSQL warning: {e} for statement: {statement[:50]}")
+                
+                conn.commit()
+                
+            # Verificar optimizaciones específicas del depósito
+            stats = self._verify_deposito_optimizations(connection_params)
+            logger.info(f"Deposito PostgreSQL optimizations applied successfully: {stats}")
+            return True
+            
+        except Exception as e:
+            logger.error(f"Error applying Deposito PostgreSQL optimizations: {e}")
+            return False
+
+    def _verify_deposito_optimizations(self, connection_params: Dict[str, str]) -> Dict[str, str]:
+        """Verificar optimizaciones específicas del depósito"""
+        stats = {}
+        
+        try:
+            conn_string = (
+                f"host={connection_params.get('host', 'localhost')} "
+                f"port={connection_params.get('port', '5432')} "
+                f"dbname={connection_params.get('database', 'deposito_db')} "
+                f"user={connection_params.get('user', 'deposito_user')} "
+                f"password={connection_params.get('password', 'deposito_pass')}"
+            )
+            
+            with psycopg2.connect(conn_string) as conn:
+                with conn.cursor() as cursor:
+                    # Verificar índices específicos del depósito
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM pg_indexes 
+                        WHERE indexname LIKE 'idx_productos_deposito_%' 
+                           OR indexname LIKE 'idx_movimientos_deposito_%'
+                           OR indexname LIKE 'idx_transferencias_%'
+                    """)
+                    stats['deposito_specific_indexes'] = str(cursor.fetchone()[0])
+                    
+                    # Verificar constraints de integridad
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM information_schema.check_constraints 
+                        WHERE constraint_name LIKE '%cantidad_positiva%'
+                    """)
+                    stats['integrity_constraints'] = str(cursor.fetchone()[0])
+                    
+                    # Verificar configuración autovacuum
+                    cursor.execute("""
+                        SELECT COUNT(*) 
+                        FROM pg_stat_user_tables 
+                        WHERE schemaname = 'public' 
+                        AND relname IN ('movimientos_stock', 'transferencias_deposito')
+                    """)
+                    stats['monitored_tables'] = str(cursor.fetchone()[0])
+                    
+        except Exception as e:
+            logger.error(f"Error verifying deposito optimizations: {e}")
+            stats['error'] = str(e)
+        
+        return stats
+
     def optimize_all_databases(self, config: Dict[str, Dict[str, str]]) -> bool:
         """
         Aplicar optimizaciones a todas las bases de datos configuradas
@@ -209,10 +306,10 @@ class DatabaseOptimizer:
             if not self.apply_postgresql_optimizations(pg_config):
                 success = False
         
-        # 3. Optimizar PostgreSQL para sistema_deposito
+        # 3. Optimizar PostgreSQL para sistema_deposito (configuración específica)
         if 'postgresql_deposito' in config:
             deposito_config = config['postgresql_deposito']
-            if not self.apply_postgresql_optimizations(deposito_config):
+            if not self.apply_deposito_postgresql_optimizations(deposito_config):
                 success = False
         
         return success
