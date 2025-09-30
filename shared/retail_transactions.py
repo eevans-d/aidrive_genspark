@@ -59,9 +59,12 @@ class CircuitBreaker:
             self._on_success()
             return result
             
-        except self.config.expected_exception as e:
-            self._on_failure()
-            raise e
+        except Exception as e:
+            # Solo contar como fallo si coincide con el tipo esperado
+            if isinstance(e, self.config.expected_exception):
+                self._on_failure()
+            # Re-lanzar siempre
+            raise
             
     def _should_attempt_reset(self) -> bool:
         """Verificar si es tiempo de intentar recovery"""
@@ -115,22 +118,45 @@ class RetailStockService:
         """
         for attempt in range(max_retries):
             try:
-                async with self.db_session_factory() as session:
-                    # Usar SELECT FOR UPDATE para bloquear el producto específico
-                    await session.execute(
-                        "SELECT id FROM productos WHERE id = :producto_id FOR UPDATE",
-                        {"producto_id": producto_id}
-                    )
-                    
-                    # Invalidar cache del producto
-                    if self.cache_client:
-                        await self._invalidate_product_cache(producto_id)
-                    
+                session = await self.db_session_factory()
+                # Usar SELECT FOR UPDATE para bloquear el producto específico
+                await session.execute(
+                    "SELECT id FROM productos WHERE id = :producto_id FOR UPDATE",
+                    {"producto_id": producto_id}
+                )
+                
+                # Invalidar cache del producto
+                if self.cache_client:
+                    await self._invalidate_product_cache(producto_id)
+                
+                try:
                     yield session
-                    await session.commit()
-                    
-                    logger.info(f"Stock operation completed successfully for product {producto_id}")
-                    break
+                    if hasattr(session, "commit"):
+                        commit = session.commit
+                        if asyncio.iscoroutinefunction(commit):
+                            await commit()
+                        else:
+                            commit()
+                except Exception:
+                    # Intentar rollback si está disponible
+                    if hasattr(session, "rollback"):
+                        rollback = session.rollback
+                        if asyncio.iscoroutinefunction(rollback):
+                            await rollback()
+                        else:
+                            rollback()
+                    raise
+                finally:
+                    # Cerrar sesión si corresponde
+                    if hasattr(session, "close"):
+                        close = session.close
+                        if asyncio.iscoroutinefunction(close):
+                            await close()
+                        else:
+                            close()
+                
+                logger.info(f"Stock operation completed successfully for product {producto_id}")
+                break
                     
             except Exception as e:
                 if "database is locked" in str(e).lower() and attempt < max_retries - 1:
@@ -144,47 +170,47 @@ class RetailStockService:
                 raise
                 
         else:
-            raise Exception(f"Stock operation failed after {max_retries} attempts for product {produto_id}")
+            raise Exception(f"Stock operation failed after {max_retries} attempts for product {producto_id}")
     
     async def validar_stock_suficiente(self, producto_id: int, cantidad_requerida: int) -> Dict[str, Any]:
         """
         Validación robusta de stock suficiente con circuit breaker
         """
         async def _validate_stock():
-            async with self.db_session_factory() as session:
-                result = await session.execute(
-                    """
-                    SELECT 
-                        p.nombre,
-                        p.stock_actual,
-                        p.stock_minimo,
-                        COALESCE(SUM(CASE WHEN m.tipo_movimiento = 'ENTRADA' THEN m.cantidad 
-                                         WHEN m.tipo_movimiento = 'SALIDA' THEN -m.cantidad 
-                                         ELSE 0 END), 0) as stock_calculado
-                    FROM productos p
-                    LEFT JOIN movimientos_stock m ON p.id = m.producto_id
-                    WHERE p.id = :producto_id AND p.activo = 1
-                    GROUP BY p.id, p.nombre, p.stock_actual, p.stock_minimo
-                    """,
-                    {"producto_id": producto_id}
-                )
-                
-                producto = result.fetchone()
-                if not producto:
-                    raise ValueError(f"Producto {producto_id} no encontrado o inactivo")
-                
-                stock_real = producto.stock_calculado or producto.stock_actual
-                
-                return {
-                    "producto_id": producto_id,
-                    "nombre": producto.nombre,
-                    "stock_actual": stock_real,
-                    "stock_minimo": producto.stock_minimo,
-                    "cantidad_requerida": cantidad_requerida,
-                    "stock_suficiente": stock_real >= cantidad_requerida,
-                    "stock_restante": stock_real - cantidad_requerida,
-                    "alerta_stock_bajo": (stock_real - cantidad_requerida) <= producto.stock_minimo
-                }
+            session = await self.db_session_factory()
+            result = await session.execute(
+                """
+                SELECT 
+                    p.nombre,
+                    p.stock_actual,
+                    p.stock_minimo,
+                    COALESCE(SUM(CASE WHEN m.tipo_movimiento = 'ENTRADA' THEN m.cantidad 
+                                     WHEN m.tipo_movimiento = 'SALIDA' THEN -m.cantidad 
+                                     ELSE 0 END), 0) as stock_calculado
+                FROM productos p
+                LEFT JOIN movimientos_stock m ON p.id = m.producto_id
+                WHERE p.id = :producto_id AND p.activo = 1
+                GROUP BY p.id, p.nombre, p.stock_actual, p.stock_minimo
+                """,
+                {"producto_id": producto_id}
+            )
+            
+            producto = result.fetchone()
+            if not producto:
+                raise ValueError(f"Producto {producto_id} no encontrado o inactivo")
+            
+            stock_real = producto.stock_calculado or producto.stock_actual
+            
+            return {
+                "producto_id": producto_id,
+                "nombre": producto.nombre,
+                "stock_actual": stock_real,
+                "stock_minimo": producto.stock_minimo,
+                "cantidad_requerida": cantidad_requerida,
+                "stock_suficiente": stock_real >= cantidad_requerida,
+                "stock_restante": stock_real - cantidad_requerida,
+                "alerta_stock_bajo": (stock_real - cantidad_requerida) <= producto.stock_minimo
+            }
         
         return await self.stock_circuit_breaker.call(_validate_stock)
     

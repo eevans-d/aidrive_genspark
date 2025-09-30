@@ -75,7 +75,7 @@ class RetailMetricsCollector:
         self.api_response_time = Histogram(
             'retail_api_response_seconds',
             'API response time distribution',
-            ['endpoint', 'method', 'status_code', 'submódulo'],
+            ['endpoint', 'method', 'status_code', 'submodule'],
             buckets=[0.01, 0.05, 0.1, 0.25, 0.5, 1.0, 2.5, 5.0],
             registry=self.registry
         )
@@ -182,14 +182,14 @@ class RetailMetricsCollector:
         logger.info(f"OCR processing recorded: {processing_time:.2f}s, confidence: {confidence:.2%}")
     
     async def record_api_call(self, endpoint: str, method: str, status_code: int, 
-                            response_time: float, submódulo: str):
+                            response_time: float, submodule: str):
         """Registrar llamada API"""
         if PROMETHEUS_AVAILABLE:
             self.api_response_time.labels(
                 endpoint=endpoint,
                 method=method,
                 status_code=str(status_code),
-                submódulo=submódulo
+                submodule=submodule
             ).observe(response_time)
     
     async def calculate_stock_metrics(self) -> Dict[str, Any]:
@@ -197,47 +197,47 @@ class RetailMetricsCollector:
         metrics = {}
         
         try:
-            async with self.db_session_factory() as session:
-                # Valor total del inventario por categoría y depósito
-                result = await session.execute("""
-                    SELECT 
-                        deposito_id,
-                        categoria,
-                        SUM(stock_actual * precio_ars) as valor_total,
-                        COUNT(*) as total_productos,
-                        COUNT(CASE WHEN stock_actual <= stock_minimo THEN 1 END) as productos_stock_bajo
-                    FROM productos 
-                    WHERE activo = 1 AND precio_ars > 0
-                    GROUP BY deposito_id, categoria
-                """)
+            session = await self.db_session_factory()
+            # Valor total del inventario por categoría y depósito
+            result = await session.execute("""
+                SELECT 
+                    deposito_id,
+                    categoria,
+                    SUM(stock_actual * precio_ars) as valor_total,
+                    COUNT(*) as total_productos,
+                    COUNT(CASE WHEN stock_actual <= stock_minimo THEN 1 END) as productos_stock_bajo
+                FROM productos 
+                WHERE activo = 1 AND precio_ars > 0
+                GROUP BY deposito_id, categoria
+            """)
+            
+            for row in result:
+                deposito_id = str(row.deposito_id)
+                categoria = row.categoria
                 
-                for row in result:
-                    deposito_id = str(row.deposito_id)
-                    categoria = row.categoria
+                # Actualizar métricas Prometheus
+                if PROMETHEUS_AVAILABLE:
+                    self.current_stock_value.labels(
+                        deposito_id=deposito_id,
+                        categoria=categoria,
+                        currency="ARS"
+                    ).set(float(row.valor_total or 0))
                     
-                    # Actualizar métricas Prometheus
-                    if PROMETHEUS_AVAILABLE:
-                        self.current_stock_value.labels(
-                            deposito_id=deposito_id,
-                            categoria=categoria,
-                            currency="ARS"
-                        ).set(float(row.valor_total or 0))
-                        
-                        # Clasificar criticidad del stock bajo
-                        criticality = "CRITICO" if row.productos_stock_bajo > row.total_productos * 0.2 else "NORMAL"
-                        self.low_stock_items.labels(
-                            categoria=categoria,
-                            criticality=criticality,
-                            deposito_id=deposito_id
-                        ).set(row.productos_stock_bajo or 0)
-                    
-                    # Agregar a métricas calculadas
-                    key = f"{deposito_id}_{categoria}"
-                    metrics[f"stock_value_{key}"] = float(row.valor_total or 0)
-                    metrics[f"low_stock_items_{key}"] = row.productos_stock_bajo or 0
-                    metrics[f"total_products_{key}"] = row.total_productos or 0
+                    # Clasificar criticidad del stock bajo
+                    criticality = "CRITICO" if row.productos_stock_bajo > row.total_productos * 0.2 else "NORMAL"
+                    self.low_stock_items.labels(
+                        categoria=categoria,
+                        criticality=criticality,
+                        deposito_id=deposito_id
+                    ).set(row.productos_stock_bajo or 0)
                 
-                logger.info(f"Stock metrics calculated for {len(metrics)} combinations")
+                # Agregar a métricas calculadas
+                key = f"{deposito_id}_{categoria}"
+                metrics[f"stock_value_{key}"] = float(row.valor_total or 0)
+                metrics[f"low_stock_items_{key}"] = row.productos_stock_bajo or 0
+                metrics[f"total_products_{key}"] = row.total_productos or 0
+            
+            logger.info(f"Stock metrics calculated for {len(metrics)} combinations")
                 
         except Exception as e:
             logger.error(f"Error calculating stock metrics: {e}")
@@ -250,65 +250,65 @@ class RetailMetricsCollector:
         metrics = {}
         
         try:
-            async with self.db_session_factory() as session:
-                # Rotación de inventario por categoría (últimos 30 días)
-                result = await session.execute("""
-                    SELECT 
-                        p.categoria,
-                        p.deposito_id,
-                        AVG(p.stock_actual) as stock_promedio,
-                        SUM(CASE WHEN m.tipo_movimiento = 'SALIDA' THEN m.cantidad ELSE 0 END) as ventas_30d
-                    FROM productos p
-                    LEFT JOIN movimientos_stock m ON p.id = m.producto_id 
-                        AND m.created_at >= date('now', '-30 days')
-                    WHERE p.activo = 1
-                    GROUP BY p.categoria, p.deposito_id
-                    HAVING stock_promedio > 0
-                """)
+            session = await self.db_session_factory()
+            # Rotación de inventario por categoría (últimos 30 días)
+            result = await session.execute("""
+                SELECT 
+                    p.categoria,
+                    p.deposito_id,
+                    AVG(p.stock_actual) as stock_promedio,
+                    SUM(CASE WHEN m.tipo_movimiento = 'SALIDA' THEN m.cantidad ELSE 0 END) as ventas_30d
+                FROM productos p
+                LEFT JOIN movimientos_stock m ON p.id = m.producto_id 
+                    AND m.created_at >= date('now', '-30 days')
+                WHERE p.activo = 1
+                GROUP BY p.categoria, p.deposito_id
+                HAVING stock_promedio > 0
+            """)
+            
+            for row in result:
+                deposito_id = str(row.deposito_id)
+                categoria = row.categoria
                 
-                for row in result:
-                    deposito_id = str(row.deposito_id)
-                    categoria = row.categoria
-                    
-                    # Calcular tasa de rotación (ventas/stock promedio)
-                    turnover_rate = (row.ventas_30d or 0) / (row.stock_promedio or 1)
-                    
-                    if PROMETHEUS_AVAILABLE:
-                        self.inventory_turnover_rate.labels(
-                            categoria=categoria,
-                            deposito_id=deposito_id,
-                            period="30d"
-                        ).set(turnover_rate)
-                    
-                    metrics[f"turnover_rate_{deposito_id}_{categoria}"] = turnover_rate
+                # Calcular tasa de rotación (ventas/stock promedio)
+                turnover_rate = (row.ventas_30d or 0) / (row.stock_promedio or 1)
                 
-                # Ventas diarias por categoría
-                today = date.today()
-                result = await session.execute("""
-                    SELECT 
-                        p.categoria,
-                        p.deposito_id,
-                        SUM(m.cantidad * p.precio_ars) as ventas_diarias
-                    FROM movimientos_stock m
-                    JOIN productos p ON m.producto_id = p.id
-                    WHERE m.tipo_movimiento = 'SALIDA' 
-                        AND date(m.created_at) = :today
-                    GROUP BY p.categoria, p.deposito_id
-                """, {"today": today})
+                if PROMETHEUS_AVAILABLE:
+                    self.inventory_turnover_rate.labels(
+                        categoria=categoria,
+                        deposito_id=deposito_id,
+                        period="30d"
+                    ).set(turnover_rate)
                 
-                for row in result:
-                    deposito_id = str(row.deposito_id)
-                    categoria = row.categoria
-                    ventas = float(row.ventas_diarias or 0)
-                    
-                    if PROMETHEUS_AVAILABLE:
-                        self.daily_sales_volume.labels(
-                            deposito_id=deposito_id,
-                            categoria=categoria,
-                            date=today.isoformat()
-                        ).set(ventas)
-                    
-                    metrics[f"daily_sales_{deposito_id}_{categoria}"] = ventas
+                metrics[f"turnover_rate_{deposito_id}_{categoria}"] = turnover_rate
+            
+            # Ventas diarias por categoría
+            today = date.today()
+            result = await session.execute("""
+                SELECT 
+                    p.categoria,
+                    p.deposito_id,
+                    SUM(m.cantidad * p.precio_ars) as ventas_diarias
+                FROM movimientos_stock m
+                JOIN productos p ON m.producto_id = p.id
+                WHERE m.tipo_movimiento = 'SALIDA' 
+                    AND date(m.created_at) = :today
+                GROUP BY p.categoria, p.deposito_id
+            """, {"today": today})
+            
+            for row in result:
+                deposito_id = str(row.deposito_id)
+                categoria = row.categoria
+                ventas = float(row.ventas_diarias or 0)
+                
+                if PROMETHEUS_AVAILABLE:
+                    self.daily_sales_volume.labels(
+                        deposito_id=deposito_id,
+                        categoria=categoria,
+                        date=today.isoformat()
+                    ).set(ventas)
+                
+                metrics[f"daily_sales_{deposito_id}_{categoria}"] = ventas
                 
         except Exception as e:
             logger.error(f"Error calculating business metrics: {e}")
@@ -321,43 +321,43 @@ class RetailMetricsCollector:
         metrics = {}
         
         try:
-            async with self.db_session_factory() as session:
-                # Análisis de aumentos de precio en últimos 90 días
-                result = await session.execute("""
-                    SELECT 
-                        p.categoria,
-                        COUNT(*) as productos_actualizados,
-                        AVG((hp.precio_nuevo - hp.precio_anterior) / hp.precio_anterior * 100) as inflacion_promedio
-                    FROM historial_precios hp
-                    JOIN productos p ON hp.producto_id = p.id
-                    WHERE hp.fecha_cambio >= date('now', '-90 days')
-                        AND hp.precio_anterior > 0
-                    GROUP BY p.categoria
-                """)
+            session = await self.db_session_factory()
+            # Análisis de aumentos de precio en últimos 90 días
+            result = await session.execute("""
+                SELECT 
+                    p.categoria,
+                    COUNT(*) as productos_actualizados,
+                    AVG((hp.precio_nuevo - hp.precio_anterior) / hp.precio_anterior * 100) as inflacion_promedio
+                FROM historial_precios hp
+                JOIN productos p ON hp.producto_id = p.id
+                WHERE hp.fecha_cambio >= date('now', '-90 days')
+                    AND hp.precio_anterior > 0
+                GROUP BY p.categoria
+            """)
+            
+            for row in result:
+                categoria = row.categoria
+                inflacion_pct = float(row.inflacion_promedio or 0)
                 
-                for row in result:
-                    categoria = row.categoria
-                    inflacion_pct = float(row.inflacion_promedio or 0)
-                    
-                    if PROMETHEUS_AVAILABLE:
-                        self.price_inflation_impact.labels(
-                            categoria=categoria,
-                            periodo="90d",
-                            tipo_inflacion="precio_productos"
-                        ).set(inflacion_pct)
-                    
-                    # Generar alerta si inflación > 20% en 90 días
-                    alert_level = None
-                    if inflacion_pct > 30:
-                        alert_level = AlertLevel.CRITICAL
-                    elif inflacion_pct > 20:
-                        alert_level = AlertLevel.WARNING
-                    
-                    metrics[f"inflation_impact_{categoria}"] = {
-                        "percentage": inflacion_pct,
-                        "products_updated": row.productos_actualizados,
-                        "alert_level": alert_level.value if alert_level else None
-                    }
+                if PROMETHEUS_AVAILABLE:
+                    self.price_inflation_impact.labels(
+                        categoria=categoria,
+                        periodo="90d",
+                        tipo_inflacion="precio_productos"
+                    ).set(inflacion_pct)
+                
+                # Generar alerta si inflación > 20% en 90 días
+                alert_level = None
+                if inflacion_pct > 30:
+                    alert_level = AlertLevel.CRITICAL
+                elif inflacion_pct > 20:
+                    alert_level = AlertLevel.WARNING
+                
+                metrics[f"inflation_impact_{categoria}"] = {
+                    "percentage": inflacion_pct,
+                    "products_updated": row.productos_actualizados,
+                    "alert_level": alert_level.value if alert_level else None
+                }
                 
         except Exception as e:
             logger.error(f"Error calculating inflation impact: {e}")
@@ -370,61 +370,61 @@ class RetailMetricsCollector:
         alerts = []
         
         try:
-            async with self.db_session_factory() as session:
-                # Productos con stock crítico (< 3 días de venta)
-                result = await session.execute("""
-                    SELECT 
-                        p.id,
-                        p.nombre,
-                        p.categoria,
-                        p.stock_actual,
-                        p.stock_minimo,
-                        AVG(CASE WHEN m.tipo_movimiento = 'SALIDA' THEN m.cantidad ELSE 0 END) as venta_diaria_promedio
-                    FROM productos p
-                    LEFT JOIN movimientos_stock m ON p.id = m.producto_id 
-                        AND m.created_at >= date('now', '-7 days')
-                    WHERE p.activo = 1 AND p.stock_actual > 0
-                    GROUP BY p.id, p.nombre, p.categoria, p.stock_actual, p.stock_minimo
-                    HAVING venta_diaria_promedio > 0 
-                        AND (p.stock_actual / venta_diaria_promedio) < 3
-                """)
-                
-                for row in result:
-                    dias_stock = row.stock_actual / (row.venta_diaria_promedio or 1)
-                    alerts.append({
-                        "type": "STOCK_CRITICO",
-                        "level": AlertLevel.WARNING.value,
-                        "producto_id": row.id,
-                        "producto_nombre": row.nombre,
-                        "categoria": row.categoria,
-                        "stock_actual": row.stock_actual,
-                        "dias_stock_restante": round(dias_stock, 1),
-                        "mensaje": f"Producto {row.nombre} tiene stock para {dias_stock:.1f} días"
-                    })
-                
-                # Productos sin movimiento en 30 días
-                result = await session.execute("""
-                    SELECT p.id, p.nombre, p.categoria, p.stock_actual
-                    FROM productos p
-                    WHERE p.activo = 1 
-                        AND p.stock_actual > 0
-                        AND NOT EXISTS (
-                            SELECT 1 FROM movimientos_stock m 
-                            WHERE m.producto_id = p.id 
-                                AND m.created_at >= date('now', '-30 days')
-                        )
-                """)
-                
-                for row in result:
-                    alerts.append({
-                        "type": "PRODUCTO_SIN_MOVIMIENTO", 
-                        "level": AlertLevel.INFO.value,
-                        "producto_id": row.id,
-                        "producto_nombre": row.nombre,
-                        "categoria": row.categoria,
-                        "stock_actual": row.stock_actual,
-                        "mensaje": f"Producto {row.nombre} sin movimientos hace 30+ días"
-                    })
+            session = await self.db_session_factory()
+            # Productos con stock crítico (< 3 días de venta)
+            result = await session.execute("""
+                SELECT 
+                    p.id,
+                    p.nombre,
+                    p.categoria,
+                    p.stock_actual,
+                    p.stock_minimo,
+                    AVG(CASE WHEN m.tipo_movimiento = 'SALIDA' THEN m.cantidad ELSE 0 END) as venta_diaria_promedio
+                FROM productos p
+                LEFT JOIN movimientos_stock m ON p.id = m.producto_id 
+                    AND m.created_at >= date('now', '-7 days')
+                WHERE p.activo = 1 AND p.stock_actual > 0
+                GROUP BY p.id, p.nombre, p.categoria, p.stock_actual, p.stock_minimo
+                HAVING venta_diaria_promedio > 0 
+                    AND (p.stock_actual / venta_diaria_promedio) < 3
+            """)
+            
+            for row in result:
+                dias_stock = row.stock_actual / (row.venta_diaria_promedio or 1)
+                alerts.append({
+                    "type": "STOCK_CRITICO",
+                    "level": AlertLevel.WARNING.value,
+                    "producto_id": row.id,
+                    "producto_nombre": row.nombre,
+                    "categoria": row.categoria,
+                    "stock_actual": row.stock_actual,
+                    "dias_stock_restante": round(dias_stock, 1),
+                    "mensaje": f"Producto {row.nombre} tiene stock para {dias_stock:.1f} días"
+                })
+            
+            # Productos sin movimiento en 30 días
+            result = await session.execute("""
+                SELECT p.id, p.nombre, p.categoria, p.stock_actual
+                FROM productos p
+                WHERE p.activo = 1 
+                    AND p.stock_actual > 0
+                    AND NOT EXISTS (
+                        SELECT 1 FROM movimientos_stock m 
+                        WHERE m.producto_id = p.id 
+                            AND m.created_at >= date('now', '-30 days')
+                    )
+            """)
+            
+            for row in result:
+                alerts.append({
+                    "type": "PRODUCTO_SIN_MOVIMIENTO", 
+                    "level": AlertLevel.INFO.value,
+                    "producto_id": row.id,
+                    "producto_nombre": row.nombre,
+                    "categoria": row.categoria,
+                    "stock_actual": row.stock_actual,
+                    "mensaje": f"Producto {row.nombre} sin movimientos hace 30+ días"
+                })
                 
         except Exception as e:
             logger.error(f"Error generating retail alerts: {e}")
@@ -445,8 +445,9 @@ class RetailMetricsCollector:
         await self.calculate_stock_metrics()
         await self.calculate_business_metrics()
         await self.calculate_inflation_impact()
-        
-        return generate_latest(self.registry)
+        # self.registry no puede ser None aquí si PROMETHEUS_AVAILABLE
+        assert self.registry is not None
+        return generate_latest(self.registry).decode("utf-8")
     
     def _get_confidence_level(self, confidence: float) -> str:
         """Clasificar nivel de confianza OCR"""

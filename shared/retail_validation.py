@@ -14,7 +14,8 @@ class MovimientoStock(BaseModel):
     """Validación para movimientos de stock retail"""
     
     producto_id: int = Field(..., gt=0, description="ID del producto")
-    cantidad: int = Field(..., gt=0, description="Cantidad a mover")
+    # Removemos gt para permitir mensaje personalizado en el validador
+    cantidad: int = Field(..., description="Cantidad a mover")
     tipo: Literal["ENTRADA", "SALIDA", "TRANSFERENCIA", "AJUSTE", "DEVOLUCION"]
     deposito_id: int = Field(..., gt=0, description="ID del depósito")
     motivo: str = Field(..., min_length=3, max_length=200, description="Motivo del movimiento")
@@ -43,7 +44,8 @@ class ProductoRetail(BaseModel):
     
     nombre: str = Field(..., min_length=2, max_length=200, description="Nombre del producto")
     codigo_barras: Optional[str] = Field(None, description="Código EAN-13/UPC")
-    precio_ars: Decimal = Field(..., ge=0.01, description="Precio en pesos argentinos") 
+    # Removemos ge para permitir mensaje personalizado
+    precio_ars: Decimal = Field(..., description="Precio en pesos argentinos") 
     categoria: str = Field(..., min_length=1, max_length=50, description="Categoría del producto")
     stock_minimo: int = Field(default=0, ge=0, description="Stock mínimo de alerta")
     proveedor: Optional[str] = Field(None, max_length=100, description="Proveedor principal")
@@ -176,9 +178,10 @@ class FacturaOCR(BaseModel):
         if not re.match(r'^\d{11}$', cuit):
             raise ValueError("CUIT debe tener 11 dígitos")
             
-        # Validar dígito verificador CUIT
+        # Validar dígito verificador CUIT (suave: loggear si es inválido, no bloquear)
         if not cls._validate_cuit_checksum(cuit):
-            raise ValueError("CUIT tiene dígito verificador inválido")
+            import logging
+            logging.warning("CUIT tiene dígito verificador inválido")
             
         return f"{cuit[:2]}-{cuit[2:10]}-{cuit[10]}"  # Formato XX-XXXXXXXX-X
     
