@@ -6,7 +6,7 @@ Implementa reglas de negocio críticas para el sistema multi-agente
 import re
 from typing import Literal, Optional
 from decimal import Decimal, ROUND_HALF_UP
-from pydantic import BaseModel, validator, Field
+from pydantic import BaseModel, Field, field_validator
 from datetime import datetime, date
 
 
@@ -21,7 +21,8 @@ class MovimientoStock(BaseModel):
     motivo: str = Field(..., min_length=3, max_length=200, description="Motivo del movimiento")
     usuario_id: int = Field(..., gt=0, description="ID del usuario responsable")
     
-    @validator('cantidad')
+    @field_validator('cantidad')
+    @classmethod
     def validate_cantidad_positiva(cls, v):
         """Cantidad siempre debe ser positiva"""
         if v <= 0:
@@ -30,7 +31,8 @@ class MovimientoStock(BaseModel):
             raise ValueError("Cantidad excede límite máximo permitido (999,999)")
         return v
     
-    @validator('tipo')
+    @field_validator('tipo')
+    @classmethod
     def validate_tipo_movimiento(cls, v):
         """Validar tipos de movimiento permitidos"""
         tipos_validos = ["ENTRADA", "SALIDA", "TRANSFERENCIA", "AJUSTE", "DEVOLUCION"] 
@@ -50,7 +52,8 @@ class ProductoRetail(BaseModel):
     stock_minimo: int = Field(default=0, ge=0, description="Stock mínimo de alerta")
     proveedor: Optional[str] = Field(None, max_length=100, description="Proveedor principal")
     
-    @validator('codigo_barras')
+    @field_validator('codigo_barras')
+    @classmethod
     def validate_codigo_barras(cls, v):
         """Validar formato EAN-13 o UPC-A"""
         if v is None:
@@ -85,7 +88,8 @@ class ProductoRetail(BaseModel):
         checksum = (10 - (suma % 10)) % 10
         return checksum == int(codigo[-1])
     
-    @validator('precio_ars')
+    @field_validator('precio_ars')
+    @classmethod
     def validate_precio_argentino(cls, v):
         """Validar precios razonables en contexto argentino"""
         if v < Decimal('0.01'):
@@ -97,7 +101,8 @@ class ProductoRetail(BaseModel):
         # Redondear a 2 decimales (centavos)
         return v.quantize(Decimal('0.01'), rounding=ROUND_HALF_UP)
     
-    @validator('categoria')
+    @field_validator('categoria')
+    @classmethod
     def validate_categoria_retail(cls, v):
         """Validar categorías típicas de retail argentino"""
         categorias_validas = [
@@ -124,14 +129,16 @@ class TransferenciaDeposito(BaseModel):
     observaciones: Optional[str] = Field(None, max_length=500)
     fecha_programada: Optional[date] = Field(None, description="Fecha programada para transferencia")
     
-    @validator('deposito_destino_id')
-    def validate_depositos_diferentes(cls, v, values):
+    @field_validator('deposito_destino_id')
+    @classmethod
+    def validate_depositos_diferentes(cls, v, info):
         """Origen y destino deben ser diferentes"""
-        if 'deposito_origen_id' in values and v == values['deposito_origen_id']:
+        if 'deposito_origen_id' in info.data and v == info.data['deposito_origen_id']:
             raise ValueError("Depósito origen y destino deben ser diferentes")
         return v
     
-    @validator('fecha_programada')
+    @field_validator('fecha_programada')
+    @classmethod
     def validate_fecha_futura(cls, v):
         """Fecha programada no puede ser en el pasado"""
         if v is not None and v < date.today():
@@ -146,7 +153,8 @@ class ConfiguracionInflacion(BaseModel):
     alerta_precio_desactualizado_dias: int = Field(default=30, ge=7, le=365)
     factor_ajuste_automatico: bool = Field(default=False, description="Aplicar ajuste automático de precios")
     
-    @validator('inflacion_mensual')
+    @field_validator('inflacion_mensual')
+    @classmethod
     def validate_inflacion_realista(cls, v):
         """Validar inflación en rango realista para Argentina"""
         if v > 30.0:
@@ -165,7 +173,8 @@ class FacturaOCR(BaseModel):
     importe_total: Decimal = Field(..., gt=0)
     confianza_ocr: float = Field(..., ge=0.0, le=1.0, description="Nivel de confianza OCR")
     
-    @validator('cuit_emisor')
+    @field_validator('cuit_emisor')
+    @classmethod
     def validate_cuit_formato(cls, v):
         """Validar formato CUIT argentino"""
         if v is None:
@@ -203,7 +212,8 @@ class FacturaOCR(BaseModel):
             
         return dv == int(cuit[10])
     
-    @validator('confianza_ocr')
+    @field_validator('confianza_ocr')
+    @classmethod
     def validate_confianza_minima(cls, v):
         """Advertir si confianza OCR es baja"""
         if v < 0.7:
