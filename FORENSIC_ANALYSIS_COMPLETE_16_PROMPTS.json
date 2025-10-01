@@ -1,0 +1,2105 @@
+{
+  "prompt1_metadata": {
+    "project_metadata": {
+      "name": "aidrive_genspark_forensic - Sistema Multiagente Inventario Retail Argentino",
+      "version": "0.8.4",
+      "version_source": "CHANGELOG.md",
+      "description": "Sistema robusto y modular para gestión de inventario, compras, ML y dashboard web, optimizado para retail argentino",
+      "repository_structure": {
+        "total_files": 721,
+        "total_lines_of_code": 67836,
+        "python_files": 199,
+        "javascript_files": 16,
+        "markdown_files": 116,
+        "main_directories": [
+          {
+            "name": "sistema_inventario",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "examples",
+            "purpose": "Example files and templates"
+          },
+          {
+            "name": "inventario_retail_cache",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "business-intelligence-orchestrator-v3.1",
+            "purpose": "BI and web scraping orchestrator"
+          },
+          {
+            "name": "retail-argentina-system",
+            "purpose": "Argentina-specific retail system components"
+          },
+          {
+            "name": "monitoring",
+            "purpose": "Monitoring and observability"
+          },
+          {
+            "name": "scripts",
+            "purpose": "Deployment and utility scripts"
+          },
+          {
+            "name": "sistema_deposito_semana1",
+            "purpose": "Warehouse management system (Week 1)"
+          },
+          {
+            "name": "inventario_retail_ocr_avanzado",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "inventario_retail_dashboard_web",
+            "purpose": "Web dashboard for visualization and management"
+          },
+          {
+            "name": "vibe_production_system",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "deploy",
+            "purpose": "Deployment configurations and scripts"
+          },
+          {
+            "name": "deployment_instructions",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "app",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "docs",
+            "purpose": "Documentation files"
+          },
+          {
+            "name": "inventario-retail",
+            "purpose": "Main multi-agent retail inventory system"
+          },
+          {
+            "name": "data",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "inventario_retail_dashboard_completo",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "integrations",
+            "purpose": "Third-party integrations and schedulers"
+          },
+          {
+            "name": "inventario_retail_ml_inteligente",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "tests",
+            "purpose": "Test suite for all components"
+          },
+          {
+            "name": "config",
+            "purpose": "Configuration files"
+          },
+          {
+            "name": "analysis",
+            "purpose": "Analysis and forensic reports"
+          },
+          {
+            "name": "shared",
+            "purpose": "Shared utilities and common modules"
+          },
+          {
+            "name": "monitoring_basic",
+            "purpose": "Additional project component"
+          },
+          {
+            "name": "analysis_definitivo_gemini",
+            "purpose": "Additional project component"
+          }
+        ]
+      },
+      "primary_language": "Python",
+      "secondary_languages": [
+        "JavaScript",
+        "HTML",
+        "CSS",
+        "Shell",
+        "YAML"
+      ],
+      "build_system": "pip (Python), Docker Compose",
+      "package_manager": "pip",
+      "evidence": {
+        "readme": "README.md:line 3-5",
+        "structure": "inventario-retail/ main project directory",
+        "requirements": "inventario-retail/requirements.txt",
+        "docker": "inventario-retail/docker-compose.production.yml"
+      }
+    }
+  },
+  "prompt2_architecture": {
+    "architecture": {
+      "pattern": "Microservicios con arquitectura multi-agente",
+      "justification": "Multiple independent FastAPI services with REST communication, shared database, and event-driven schedulers",
+      "components": [
+        {
+          "name": "Agente Depósito",
+          "type": "service",
+          "location": "inventario-retail/agente_deposito/",
+          "primary_file": "main.py",
+          "language": "Python",
+          "framework": "FastAPI",
+          "purpose": "Warehouse stock management with ACID transactions",
+          "entry_point": "main.py",
+          "dependencies_internal": [
+            "shared"
+          ],
+          "dependencies_external": [
+            "SQLAlchemy",
+            "PostgreSQL/SQLite"
+          ],
+          "state_management": "stateful",
+          "estimated_lines_of_code": 4696,
+          "evidence": "inventario-retail/agente_deposito/main.py"
+        },
+        {
+          "name": "Agente Negocio",
+          "type": "service",
+          "location": "inventario-retail/agente_negocio/",
+          "primary_file": "main.py",
+          "language": "Python",
+          "framework": "FastAPI",
+          "purpose": "Business logic, OCR invoice processing, pricing with inflation",
+          "entry_point": "main.py",
+          "dependencies_internal": [
+            "shared",
+            "agente_deposito"
+          ],
+          "dependencies_external": [
+            "EasyOCR",
+            "AFIP integration"
+          ],
+          "state_management": "stateful",
+          "estimated_lines_of_code": 8338,
+          "evidence": "inventario-retail/agente_negocio/main.py"
+        },
+        {
+          "name": "ML Predictor Service",
+          "type": "service",
+          "location": "inventario-retail/ml/",
+          "primary_file": "main.py",
+          "language": "Python",
+          "framework": "FastAPI + scikit-learn",
+          "purpose": "ML predictions for demand forecasting and purchase recommendations",
+          "entry_point": "main.py",
+          "dependencies_internal": [
+            "shared"
+          ],
+          "dependencies_external": [
+            "scikit-learn",
+            "pandas",
+            "numpy"
+          ],
+          "state_management": "stateless",
+          "estimated_lines_of_code": 3752,
+          "evidence": "inventario-retail/ml/main.py"
+        },
+        {
+          "name": "Web Dashboard (FastAPI)",
+          "type": "frontend",
+          "location": "inventario-retail/web_dashboard/",
+          "primary_file": "dashboard_app.py",
+          "language": "Python",
+          "framework": "FastAPI + Jinja2",
+          "purpose": "Interactive web dashboard with KPIs, security headers, rate limiting",
+          "entry_point": "dashboard_app.py",
+          "dependencies_internal": [
+            "agente_deposito",
+            "agente_negocio",
+            "ml"
+          ],
+          "dependencies_external": [
+            "FastAPI",
+            "Jinja2",
+            "Redis"
+          ],
+          "state_management": "stateless",
+          "estimated_lines_of_code": 1609,
+          "evidence": "inventario-retail/web_dashboard/dashboard_app.py"
+        },
+        {
+          "name": "Schedulers",
+          "type": "service",
+          "location": "inventario-retail/schedulers/",
+          "primary_file": "main.py",
+          "language": "Python",
+          "framework": "FastAPI + APScheduler",
+          "purpose": "Automated background tasks (backups, alerts, reports)",
+          "entry_point": "main.py",
+          "dependencies_internal": [
+            "shared",
+            "agente_deposito"
+          ],
+          "dependencies_external": [
+            "APScheduler"
+          ],
+          "state_management": "stateful",
+          "estimated_lines_of_code": 3583,
+          "evidence": "inventario-retail/schedulers/main.py"
+        }
+      ],
+      "communication_patterns": [
+        {
+          "from": "Agente Negocio",
+          "to": "Agente Depósito",
+          "type": "REST",
+          "protocol": "HTTP",
+          "evidence": "inventario-retail/agente_negocio/integrations/"
+        },
+        {
+          "from": "Web Dashboard",
+          "to": "All Services",
+          "type": "REST",
+          "protocol": "HTTP",
+          "evidence": "inventario-retail/web_dashboard/dashboard_app.py"
+        },
+        {
+          "from": "Schedulers",
+          "to": "Agente Depósito",
+          "type": "REST",
+          "protocol": "HTTP",
+          "evidence": "inventario-retail/schedulers/main.py"
+        }
+      ],
+      "evidence": "README.md:15-30, inventario-retail/ structure"
+    }
+  },
+  "prompt3_agents": {
+    "agents": [],
+    "rag_system": {
+      "present": false,
+      "vector_database": null,
+      "embedding_model": null,
+      "retrieval_strategy": null,
+      "location": null
+    },
+    "note": "This system uses traditional microservices with ML (scikit-learn) for predictions, not LLM-based agents",
+    "ml_components": [
+      {
+        "name": "ML Predictor Service",
+        "type": "scikit-learn based ML service",
+        "location": "inventario-retail/ml/",
+        "models": [
+          "demand forecasting",
+          "purchase recommendations"
+        ],
+        "framework": "scikit-learn",
+        "evidence": "inventario-retail/requirements.txt (scikit-learn==1.3.2)"
+      }
+    ]
+  },
+  "prompt4_dependencies": {
+    "dependencies": {
+      "production": [
+        {
+          "name": "fastapi",
+          "version": "0.104.1",
+          "purpose": "Web framework for APIs",
+          "criticality": "critical"
+        },
+        {
+          "name": "uvicorn[standard]",
+          "version": "0.24.0",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "python-multipart",
+          "version": "0.0.6",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "jinja2",
+          "version": "3.1.2",
+          "purpose": "Template rendering",
+          "criticality": "medium"
+        },
+        {
+          "name": "sqlalchemy",
+          "version": "2.0.23",
+          "purpose": "ORM for database operations",
+          "criticality": "critical"
+        },
+        {
+          "name": "alembic",
+          "version": "1.12.1",
+          "purpose": "Database migrations",
+          "criticality": "high"
+        },
+        {
+          "name": "pydantic",
+          "version": "2.5.0",
+          "purpose": "Data validation",
+          "criticality": "critical"
+        },
+        {
+          "name": "pydantic-settings",
+          "version": "2.1.0",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "scikit-learn",
+          "version": "1.3.2",
+          "purpose": "Machine learning",
+          "criticality": "high"
+        },
+        {
+          "name": "pandas",
+          "version": "2.1.4",
+          "purpose": "Data manipulation",
+          "criticality": "medium"
+        },
+        {
+          "name": "numpy",
+          "version": "1.26.4",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "joblib",
+          "version": "1.3.2",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "easyocr",
+          "version": "1.7.0",
+          "purpose": "OCR for invoice processing",
+          "criticality": "medium"
+        },
+        {
+          "name": "pillow",
+          "version": "10.1.0",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "opencv-python",
+          "version": "4.8.1.78",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "streamlit",
+          "version": "1.28.2",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "plotly",
+          "version": "5.17.0",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "python-jose[cryptography]",
+          "version": "3.3.0",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "passlib[bcrypt]",
+          "version": "1.7.4",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        },
+        {
+          "name": "python-dateutil",
+          "version": "2.8.2",
+          "purpose": "Supporting library",
+          "criticality": "medium"
+        }
+      ],
+      "development": [
+        {
+          "name": "pytest>=8.2.0",
+          "version": "latest",
+          "purpose": "testing"
+        },
+        {
+          "name": "pytest-cov>=5.0.0",
+          "version": "latest",
+          "purpose": "testing"
+        },
+        {
+          "name": "fastapi>=0.111.0",
+          "version": "latest",
+          "purpose": "testing"
+        },
+        {
+          "name": "uvicorn[standard]>=0.30.0",
+          "version": "latest",
+          "purpose": "testing"
+        },
+        {
+          "name": "jinja2>=3.1.2",
+          "version": "latest",
+          "purpose": "testing"
+        }
+      ],
+      "system_dependencies": [
+        {
+          "name": "PostgreSQL",
+          "version": "latest",
+          "purpose": "Primary database",
+          "evidence": "inventario-retail/docker-compose.production.yml"
+        }
+      ]
+    },
+    "frameworks_and_libraries": {
+      "web_framework": "FastAPI 0.104.1",
+      "ai_frameworks": [
+        "scikit-learn 1.3.2"
+      ],
+      "database_orm": "SQLAlchemy 2.0.23",
+      "testing_framework": "pytest",
+      "async_framework": "asyncio + uvicorn"
+    },
+    "infrastructure": {
+      "containerization": "Docker",
+      "orchestration": "Docker Compose",
+      "ci_cd": "GitHub Actions",
+      "evidence_files": [
+        "inventario-retail/docker-compose.production.yml",
+        ".github/workflows/ci.yml",
+        "inventario-retail/Dockerfile"
+      ]
+    }
+  },
+  "prompt5_interfaces": {
+    "interfaces": [
+      {
+        "type": "REST API",
+        "service": "Agente Depósito",
+        "endpoint_or_topic": "/metrics",
+        "method": "GET",
+        "location": "inventario-retail/agente_deposito/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_deposito/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Depósito",
+        "endpoint_or_topic": "/health",
+        "method": "GET",
+        "location": "inventario-retail/agente_deposito/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_deposito/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Depósito",
+        "endpoint_or_topic": "/productos",
+        "method": "POST",
+        "location": "inventario-retail/agente_deposito/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_deposito/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Depósito",
+        "endpoint_or_topic": "/productos",
+        "method": "GET",
+        "location": "inventario-retail/agente_deposito/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_deposito/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Depósito",
+        "endpoint_or_topic": "/productos/{producto_id}",
+        "method": "GET",
+        "location": "inventario-retail/agente_deposito/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_deposito/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Negocio",
+        "endpoint_or_topic": "/metrics",
+        "method": "GET",
+        "location": "inventario-retail/agente_negocio/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_negocio/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Negocio",
+        "endpoint_or_topic": "/health",
+        "method": "GET",
+        "location": "inventario-retail/agente_negocio/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_negocio/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Negocio",
+        "endpoint_or_topic": "/precios/consultar",
+        "method": "GET",
+        "location": "inventario-retail/agente_negocio/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_negocio/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "Agente Negocio",
+        "endpoint_or_topic": "/facturas/procesar",
+        "method": "POST",
+        "location": "inventario-retail/agente_negocio/main.py",
+        "authentication": {
+          "required": true,
+          "method": "JWT",
+          "location": "middleware or decorator"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "configured per endpoint",
+          "location": "inventario-retail/agente_negocio/main.py"
+        }
+      },
+      {
+        "type": "REST API",
+        "service": "All Services",
+        "endpoint_or_topic": "/metrics",
+        "method": "GET",
+        "location": "All main.py files",
+        "authentication": {
+          "required": true,
+          "method": "API Key (X-API-Key header)",
+          "location": "middleware"
+        },
+        "rate_limiting": {
+          "present": false,
+          "limits": "N/A for metrics",
+          "location": null
+        },
+        "output_schema": {
+          "description": "Prometheus metrics format",
+          "schema_location": "prometheus_client library"
+        },
+        "evidence": "README.md:74-123, inventario-retail/web_dashboard/dashboard_app.py"
+      }
+    ],
+    "internal_contracts": [
+      {
+        "from": "Agente Negocio",
+        "to": "Agente Depósito",
+        "function_or_method": "HTTP REST calls",
+        "parameters": "JSON payloads",
+        "return_type": "JSON responses",
+        "location": "inventario-retail/agente_negocio/integrations/"
+      }
+    ],
+    "api_documentation": {
+      "present": true,
+      "format": "FastAPI auto-generated docs",
+      "location": "/docs and /redoc endpoints",
+      "evidence": "FastAPI framework provides automatic OpenAPI documentation"
+    }
+  },
+  "prompt6_flows": {
+    "critical_flows": [
+      {
+        "name": "Invoice OCR Processing",
+        "description": "Process invoice images using OCR, validate against AFIP, update inventory",
+        "business_criticality": "high",
+        "estimated_frequency": "10-50 per day",
+        "trigger": "HTTP POST request with invoice image",
+        "entry_point": {
+          "file": "inventario-retail/agente_negocio/main.py",
+          "function": "POST /api/v1/facturas/procesar",
+          "line": "estimated"
+        },
+        "steps": [
+          {
+            "step_number": 1,
+            "component": "Agente Negocio",
+            "action": "Receive invoice image",
+            "file_location": "inventario-retail/agente_negocio/ocr/",
+            "function": "OCR pipeline",
+            "external_calls": [
+              "EasyOCR API"
+            ],
+            "database_operations": [],
+            "error_handling": "Try-catch with logging"
+          },
+          {
+            "step_number": 2,
+            "component": "Agente Negocio",
+            "action": "Validate against AFIP standards",
+            "file_location": "inventario-retail/agente_negocio/invoice/",
+            "function": "AFIP validator",
+            "external_calls": [],
+            "database_operations": [],
+            "error_handling": "Validation errors returned to client"
+          },
+          {
+            "step_number": 3,
+            "component": "Agente Depósito",
+            "action": "Update inventory stock",
+            "file_location": "inventario-retail/agente_deposito/stock_manager.py",
+            "function": "update_stock",
+            "external_calls": [],
+            "database_operations": [
+              "INSERT",
+              "UPDATE"
+            ],
+            "error_handling": "ACID transaction rollback on error"
+          }
+        ],
+        "evidence": "inventario-retail/README.md:245-382"
+      },
+      {
+        "name": "Stock Query and Update",
+        "description": "Query current stock levels and perform updates",
+        "business_criticality": "high",
+        "estimated_frequency": "100+ per day",
+        "trigger": "HTTP GET/POST request",
+        "entry_point": {
+          "file": "inventario-retail/agente_deposito/main.py",
+          "function": "Stock endpoints",
+          "line": "estimated"
+        },
+        "dependencies": {
+          "internal_components": [
+            "shared/database",
+            "shared/models"
+          ],
+          "external_services": [],
+          "databases": [
+            "SQLite/PostgreSQL"
+          ],
+          "caches": [
+            "Redis (optional)"
+          ]
+        },
+        "evidence": "inventario-retail/agente_deposito/stock_manager.py"
+      },
+      {
+        "name": "ML Demand Prediction",
+        "description": "Generate demand forecasts and purchase recommendations",
+        "business_criticality": "medium",
+        "estimated_frequency": "scheduled daily",
+        "trigger": "Scheduled job or HTTP request",
+        "entry_point": {
+          "file": "inventario-retail/ml/main.py",
+          "function": "Prediction endpoints",
+          "line": "estimated"
+        },
+        "dependencies": {
+          "internal_components": [
+            "shared/database"
+          ],
+          "external_services": [],
+          "databases": [
+            "SQLite/PostgreSQL"
+          ],
+          "caches": []
+        },
+        "evidence": "inventario-retail/ml/"
+      },
+      {
+        "name": "Dashboard Metrics Exposition",
+        "description": "Expose Prometheus metrics for monitoring",
+        "business_criticality": "medium",
+        "estimated_frequency": "scraped every 15-60s",
+        "trigger": "HTTP GET /metrics",
+        "entry_point": {
+          "file": "inventario-retail/web_dashboard/dashboard_app.py",
+          "function": "metrics endpoint",
+          "line": "estimated"
+        },
+        "dependencies": {
+          "internal_components": [],
+          "external_services": [
+            "Prometheus"
+          ],
+          "databases": [],
+          "caches": []
+        },
+        "evidence": "README.md:74-123, inventario-retail/web_dashboard/dashboard_app.py"
+      }
+    ],
+    "use_cases": [
+      {
+        "name": "Invoice Processing",
+        "description": "Store owner uploads invoice photo, system extracts data and updates inventory",
+        "actor": "Store Owner/Employee",
+        "flows_involved": [
+          "Invoice OCR Processing",
+          "Stock Query and Update"
+        ]
+      },
+      {
+        "name": "Inventory Monitoring",
+        "description": "Manager views real-time stock levels and receives alerts",
+        "actor": "Manager",
+        "flows_involved": [
+          "Stock Query and Update",
+          "Dashboard Metrics Exposition"
+        ]
+      },
+      {
+        "name": "Purchase Planning",
+        "description": "System generates purchase recommendations based on ML predictions",
+        "actor": "System + Manager",
+        "flows_involved": [
+          "ML Demand Prediction"
+        ]
+      }
+    ]
+  },
+  "prompt7_configuration": {
+    "configuration": {
+      "config_files": [
+        {
+          "file": ".env.example",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "sistema_deposito_semana1/.env.example",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "inventario-retail/agente_deposito/.env.example",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "inventario-retail/ml/.env.example",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "inventario-retail/agente_negocio/.env.example",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "inventario-retail/.env.template",
+          "format": ".env",
+          "purpose": "Environment variables template",
+          "contains_secrets": true,
+          "environment_specific": "all"
+        },
+        {
+          "file": "docker-compose.analysis.yml",
+          "format": "YAML",
+          "purpose": "Docker orchestration configuration",
+          "contains_secrets": false,
+          "environment_specific": "development"
+        },
+        {
+          "file": "sistema_deposito_semana1/docker-compose.yml",
+          "format": "YAML",
+          "purpose": "Docker orchestration configuration",
+          "contains_secrets": false,
+          "environment_specific": "development"
+        },
+        {
+          "file": "inventario_retail_dashboard_web/docker-compose.yml",
+          "format": "YAML",
+          "purpose": "Docker orchestration configuration",
+          "contains_secrets": false,
+          "environment_specific": "development"
+        }
+      ],
+      "environment_variables": [
+        {
+          "name": "JWT_SECRET_KEY",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Authentication/encryption key",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "CORS_ORIGINS",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "CORS_METHODS",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "CORS_HEADERS",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_HOST",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_PORT",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_NAME",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_USER",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_PASSWORD",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "POSTGRES_HOST",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Host/domain configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "POSTGRES_PORT",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Service port configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "POSTGRES_DB",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "POSTGRES_USER",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "POSTGRES_PASSWORD",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "SQLITE_DB",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "REDIS_URL",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Redis cache configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "CACHE_TTL",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "MAX_CACHE_MEMORY_MB",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "LOG_PATH",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "LOG_LEVEL",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "API_HOST",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Host/domain configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "API_PORT",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Service port configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "API_DEBUG",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "API configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "API_RELOAD",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "API configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DASHBOARD_TOKEN",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "TELEGRAM_BOT_TOKEN",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "ML_ACCESS_TOKEN",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": true
+        },
+        {
+          "name": "ENV",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Application configuration",
+          "locations_used": [
+            ".env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_HOST",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            "sistema_deposito_semana1/.env.example"
+          ],
+          "appears_to_be_secret": false
+        },
+        {
+          "name": "DB_PORT",
+          "required": true,
+          "default_value": "see .env.example",
+          "purpose": "Database connection",
+          "locations_used": [
+            "sistema_deposito_semana1/.env.example"
+          ],
+          "appears_to_be_secret": false
+        }
+      ],
+      "secrets_management": {
+        "method": "environment variables",
+        "evidence": ".env.example files throughout project",
+        "hardcoded_secrets_found": false,
+        "locations": []
+      },
+      "database_config": {
+        "connection_string_location": "DATABASE_URL in .env files",
+        "connection_pooling": true,
+        "migrations_present": true,
+        "migrations_location": "inventario-retail/shared/ (Alembic)"
+      },
+      "logging_config": {
+        "framework": "Python logging module",
+        "log_levels": [
+          "DEBUG",
+          "INFO",
+          "WARNING",
+          "ERROR",
+          "CRITICAL"
+        ],
+        "log_destinations": [
+          "console",
+          "file"
+        ],
+        "structured_logging": true,
+        "sensitive_data_filtering": true
+      }
+    }
+  },
+  "prompt8_error_handling": {
+    "error_handling": {
+      "global_error_handlers": [
+        {
+          "type": "FastAPI exception handler",
+          "location": "inventario-retail/agente_deposito/main.py",
+          "handles": [
+            "HTTP exceptions",
+            "validation errors"
+          ],
+          "action": "return JSON error response"
+        }
+      ],
+      "exception_patterns": [
+        {
+          "pattern": "try-except",
+          "frequency": "common",
+          "common_locations": [
+            "all Python files"
+          ]
+        }
+      ],
+      "timeout_handling": {
+        "http_requests": {
+          "default_timeout": "configured per client",
+          "locations": [
+            {
+              "location": "inventario_retail_dashboard_web/app/main.py",
+              "configured": true
+            }
+          ]
+        },
+        "database_queries": {
+          "timeout_configured": true,
+          "location": "SQLAlchemy connection parameters"
+        }
+      },
+      "retry_mechanisms": [
+        {
+          "location": "inventario-retail/shared/resilience/",
+          "strategy": "exponential backoff",
+          "max_retries": "configurable",
+          "applies_to": "HTTP integrations"
+        }
+      ]
+    }
+  },
+  "prompt9_security": {
+    "security": {
+      "input_validation": [
+        {
+          "endpoint_or_function": "All FastAPI endpoints",
+          "validation_method": "Pydantic",
+          "validates": [
+            "request body",
+            "query parameters",
+            "path parameters"
+          ],
+          "location": "schema definitions",
+          "sanitization": true
+        }
+      ],
+      "authentication": {
+        "method": "JWT + API Key",
+        "implementation": "python-jose for JWT, custom middleware for API keys",
+        "location": "inventario-retail/shared/",
+        "password_hashing": "passlib with bcrypt",
+        "token_expiration": "configured"
+      },
+      "authorization": {
+        "method": "Role-based access control (RBAC)",
+        "implementation": "JWT claims with role checking",
+        "location": "authentication middleware"
+      },
+      "sql_injection_protection": {
+        "orm_used": true,
+        "orm": "SQLAlchemy",
+        "parameterized_queries": true,
+        "raw_sql_locations": []
+      },
+      "xss_protection": {
+        "output_escaping": true,
+        "csp_headers": true,
+        "location": "inventario-retail/web_dashboard/dashboard_app.py"
+      },
+      "cors_configuration": {
+        "configured": true,
+        "allowed_origins": "configurable",
+        "location": "FastAPI CORS middleware"
+      },
+      "security_headers": {
+        "implemented": true,
+        "headers": [
+          "X-Content-Type-Options",
+          "X-Frame-Options",
+          "X-XSS-Protection",
+          "Strict-Transport-Security (HSTS)",
+          "Content-Security-Policy (CSP)"
+        ],
+        "location": "inventario-retail/web_dashboard/dashboard_app.py",
+        "evidence": "README.md mentions strict CSP and HSTS"
+      },
+      "rate_limiting": {
+        "implemented": true,
+        "method": "slowapi or custom middleware",
+        "location": "dashboard middleware",
+        "evidence": "README.md:9 mentions rate limiting"
+      },
+      "secrets_in_code": {
+        "found": false,
+        "locations": [],
+        "types": []
+      },
+      "dependencies_vulnerabilities": {
+        "scan_needed": true,
+        "known_issues": []
+      }
+    }
+  },
+  "prompt10_testing": {
+    "testing": {
+      "test_framework": "pytest",
+      "test_structure": {
+        "unit_tests_directory": "tests/",
+        "integration_tests_directory": "tests/",
+        "e2e_tests_directory": "tests/ (if present)"
+      },
+      "test_coverage": {
+        "coverage_tool": "pytest-cov",
+        "coverage_config_file": ".coveragerc",
+        "minimum_coverage": "85% for Dashboard (per CI config)",
+        "evidence": ".github/workflows/ci.yml, .coveragerc"
+      },
+      "test_statistics": {
+        "total_test_files": 37,
+        "test_directories": [
+          "tests/retail",
+          "tests/web_dashboard"
+        ],
+        "estimated_total_tests": 185
+      },
+      "test_types_present": {
+        "unit_tests": true,
+        "integration_tests": true,
+        "e2e_tests": false,
+        "property_based_tests": false,
+        "performance_tests": false,
+        "security_tests": false
+      },
+      "ci_cd_integration": {
+        "tests_run_on_ci": true,
+        "ci_config_file": ".github/workflows/ci.yml",
+        "test_commands": [
+          "pytest",
+          "pytest --cov"
+        ],
+        "evidence": ".github/workflows/ci.yml"
+      }
+    },
+    "code_quality": {
+      "linters_configured": [],
+      "formatters_configured": [],
+      "static_analysis": [],
+      "pre_commit_hooks": {
+        "configured": false,
+        "hooks": [],
+        "config_file": null
+      }
+    }
+  },
+  "prompt11_performance": {
+    "performance": {
+      "monitoring_tools": {
+        "apm_tool": "Prometheus",
+        "logging_service": "local logging + optional external",
+        "metrics_exported": true,
+        "evidence": "README.md:74-123 documents /metrics endpoints"
+      },
+      "performance_metrics_in_code": [
+        {
+          "metric_type": "request_count",
+          "location": "all services",
+          "tool": "prometheus_client",
+          "metrics": [
+            "dashboard_requests_total",
+            "http_request_total"
+          ]
+        },
+        {
+          "metric_type": "latency",
+          "location": "all services",
+          "tool": "prometheus_client",
+          "metrics": [
+            "dashboard_request_duration_ms_p95",
+            "http_request_duration_seconds"
+          ]
+        },
+        {
+          "metric_type": "error_rate",
+          "location": "all services",
+          "tool": "prometheus_client",
+          "metrics": [
+            "dashboard_errors_total"
+          ]
+        }
+      ],
+      "caching": {
+        "cache_used": "Redis",
+        "cache_locations": [
+          "rate limiting",
+          "session management"
+        ],
+        "cache_invalidation_strategy": "TTL-based",
+        "ttl_configured": true,
+        "evidence": "Redis mentioned in dependencies"
+      },
+      "database_optimization": {
+        "indexes_defined": true,
+        "query_optimization": "SQLAlchemy ORM with eager loading",
+        "connection_pooling": true,
+        "evidence": "SQLAlchemy configuration"
+      },
+      "async_processing": {
+        "async_framework": "asyncio + FastAPI",
+        "background_jobs": true,
+        "queue_system": "APScheduler",
+        "locations": [
+          "inventario-retail/schedulers/"
+        ]
+      },
+      "rate_limiting": {
+        "implemented": true,
+        "method": "middleware with Redis backend",
+        "limits": "configurable per endpoint",
+        "location": "dashboard middleware",
+        "evidence": "README.md:9, DASHBOARD_RATELIMIT_ENABLED env var"
+      }
+    },
+    "scalability": {
+      "horizontal_scaling_ready": true,
+      "stateless_design": "mostly stateless (session in Redis)",
+      "database_sharding": false,
+      "load_balancing": "NGINX reverse proxy configured",
+      "evidence": "inventario-retail/nginx/nginx.conf"
+    }
+  },
+  "prompt12_logs": {
+    "logging": {
+      "logging_framework": "Python logging module",
+      "log_levels_used": [
+        "DEBUG",
+        "INFO",
+        "WARNING",
+        "ERROR",
+        "CRITICAL"
+      ],
+      "structured_logging": true,
+      "log_format": "JSON for production, text for development",
+      "sensitive_data_in_logs": {
+        "risk": "low",
+        "evidence": "request_id tracking implemented, PII filtering expected"
+      },
+      "log_locations": {
+        "development": "console",
+        "production": "file + optional external service",
+        "configuration": "Python logging configuration"
+      }
+    },
+    "historical_issues": {
+      "todo_fixme_comments": [
+        {
+          "type": "TODO",
+          "location": "examples/retail_integration_complete.py:505",
+          "content": "print(\"  ✅ Todos los productos tienen stock adecuado\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:71",
+          "content": "logger.debug(f\"🎯 Cache HIT producto: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:80",
+          "content": "logger.debug(f\"💾 Cache SET producto: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:115",
+          "content": "logger.debug(f\"🎯 Cache HIT stock: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:122",
+          "content": "logger.debug(f\"💾 Cache SET stock: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:154",
+          "content": "logger.debug(f\"🎯 Cache HIT OCR: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:164",
+          "content": "logger.debug(f\"💾 Cache SET OCR exitoso: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:197",
+          "content": "logger.debug(f\"🎯 Cache HIT ML: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:212",
+          "content": "logger.debug(f\"💾 Cache SET ML: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:245",
+          "content": "logger.debug(f\"🎯 Cache HIT pricing: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:260",
+          "content": "logger.debug(f\"💾 Cache SET pricing: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:293",
+          "content": "logger.debug(f\"🎯 Cache HIT query: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:307",
+          "content": "logger.debug(f\"💾 Cache SET query: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:341",
+          "content": "logger.debug(f\"🎯 Cache HIT report: {func.__name__}\")",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:358",
+          "content": "logger.debug(f\"💾 Cache SET report: {func.__name__} (generado en {generation_time:.2f}s)\")",
+          "severity": "medium"
+        },
+        {
+          "type": "TODO",
+          "location": "inventario_retail_cache/cache_decorators.py:376",
+          "content": "Invalida todo el cache relacionado a un producto específico",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/cache_decorators.py:431",
+          "content": "logger.debug(f\"📊 Endpoint cacheado usado: {func.__name__} (tipo: {cache_type})\")",
+          "severity": "medium"
+        },
+        {
+          "type": "TODO",
+          "location": "inventario_retail_cache/agente_deposito_cached.py:273",
+          "content": "\"\"\"Elimina producto e invalida todo su cache\"\"\"",
+          "severity": "medium"
+        },
+        {
+          "type": "TODO",
+          "location": "inventario_retail_cache/agente_deposito_cached.py:291",
+          "content": "# Invalidar todo el cache relacionado",
+          "severity": "medium"
+        },
+        {
+          "type": "BUG",
+          "location": "inventario_retail_cache/agente_deposito_cached.py:528",
+          "content": "\"\"\"Invalida cache manualmente (útil para debugging)\"\"\"",
+          "severity": "medium"
+        }
+      ],
+      "known_bugs_in_issues": "check GitHub Issues",
+      "deprecated_code": []
+    },
+    "incident_response": {
+      "runbooks_present": true,
+      "runbooks_location": "RUNBOOK_OPERACIONES_DASHBOARD.md",
+      "alerting_configured": true,
+      "alerting_details": "Prometheus metrics for alertmanager",
+      "evidence": "RUNBOOK_OPERACIONES_DASHBOARD.md exists"
+    }
+  },
+  "prompt13_deployment": {
+    "deployment": {
+      "deployment_method": "Docker + Docker Compose + systemd",
+      "deployment_files": [
+        {
+          "file": "sistema_deposito_semana1/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario_retail_dashboard_web/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "retail-argentina-system/prompt8-final/docker/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "retail-argentina-system/prompt8-final/backup_automation/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario_retail_dashboard_web/web_dashboard/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario-retail/web_dashboard/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario-retail/agente_deposito/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario-retail/ml/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario-retail/agente_negocio/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "inventario_retail_dashboard_completo/web_dashboard/Dockerfile",
+          "purpose": "Container definition"
+        },
+        {
+          "file": "docker-compose.analysis.yml",
+          "purpose": "Multi-container orchestration"
+        },
+        {
+          "file": "sistema_deposito_semana1/docker-compose.yml",
+          "purpose": "Multi-container orchestration"
+        },
+        {
+          "file": "inventario_retail_dashboard_web/docker-compose.yml",
+          "purpose": "Multi-container orchestration"
+        },
+        {
+          "file": "inventario-retail/docker-compose.production.yml",
+          "purpose": "Multi-container orchestration"
+        },
+        {
+          "file": "inventario-retail/docker-compose.development.yml",
+          "purpose": "Multi-container orchestration"
+        }
+      ],
+      "environment_stages": {
+        "development": {
+          "configured": true,
+          "differences": "docker-compose.development.yml with dev settings"
+        },
+        "staging": {
+          "configured": true,
+          "evidence": "README_DEPLOY_STAGING.md, staging secrets in CI"
+        },
+        "production": {
+          "configured": true,
+          "special_config": "docker-compose.production.yml with prod optimizations",
+          "evidence": "inventario-retail/docker-compose.production.yml"
+        }
+      },
+      "ci_cd_pipeline": {
+        "platform": "GitHub Actions",
+        "config_file": ".github/workflows/ci.yml",
+        "stages": [
+          "test",
+          "build",
+          "push to GHCR",
+          "deploy staging",
+          "deploy prod on tags"
+        ],
+        "automated_deployment": true,
+        "deployment_triggers": "push to master (staging), tags vX.Y.Z (prod)",
+        "evidence": ".github/workflows/ci.yml"
+      },
+      "infrastructure_as_code": {
+        "tool": "Docker Compose",
+        "files": [
+          "inventario-retail/docker-compose.production.yml"
+        ]
+      },
+      "health_checks": {
+        "endpoint": "/health",
+        "location": "all main.py files",
+        "checks_performed": [
+          "API responsiveness",
+          "database connectivity"
+        ]
+      },
+      "rollback_strategy": {
+        "documented": true,
+        "automated": false,
+        "description": "Docker image versioning allows rollback to previous tags",
+        "evidence": "Docker tags in GHCR"
+      },
+      "container_registry": {
+        "platform": "GitHub Container Registry (GHCR)",
+        "image": "ghcr.io/eevans-d/aidrive_genspark_forensic",
+        "evidence": "README.md:141-158, .github/workflows/ci.yml"
+      }
+    },
+    "operational_tools": {
+      "makefile": {
+        "present": true,
+        "commands": [
+          "test",
+          "coverage",
+          "preflight",
+          "rc-tag"
+        ],
+        "evidence": "Makefile, README.md:124-140"
+      },
+      "scripts": {
+        "preflight": "scripts/preflight_rc.sh",
+        "metrics_check": "scripts/check_metrics_dashboard.sh",
+        "security_check": "scripts/check_security_headers.sh",
+        "evidence": "README.md:134-139"
+      }
+    }
+  },
+  "prompt14_documentation": {
+    "documentation": {
+      "readme": {
+        "present": true,
+        "completeness": "comprehensive",
+        "sections": [
+          "🚀 Características Principales",
+          "🏗️ Estructura del Proyecto",
+          "📦 Instalación Rápida",
+          "🔑 Autenticación y Pruebas",
+          "📚 Documentación y Guías",
+          "🧑‍💻 Onboarding Rápido",
+          "🛡️ Seguridad y Robustez",
+          "🔍 Observabilidad (/metrics)",
+          "🛠️ Tooling Operativo Rápido",
+          "🐳 Imagen Docker del Dashboard (GHCR)"
+        ],
+        "up_to_date": "appears current",
+        "evidence": "README.md"
+      },
+      "api_documentation": {
+        "present": true,
+        "format": "FastAPI auto-docs + manual markdown",
+        "location": "/docs endpoints + DOCUMENTACION_API_DASHBOARD.md",
+        "completeness": "80%+"
+      },
+      "code_comments": {
+        "comment_density": "medium",
+        "docstrings_present": true,
+        "quality": "good - follows Python conventions"
+      },
+      "architecture_documentation": {
+        "present": true,
+        "files": [
+          "ANALISIS_PROYECTO.md",
+          "EJEMPLO_ANALISIS_FORENSE_INVENTARIO_RETAIL.md",
+          "inventario-retail/README.md"
+        ],
+        "diagrams": []
+      },
+      "changelog": {
+        "present": true,
+        "file": "CHANGELOG.md",
+        "maintained": true
+      },
+      "contributing_guide": {
+        "present": false,
+        "file": null
+      },
+      "documentation_categories": {
+        "readme": [
+          "README.md",
+          "sistema_deposito_semana1/README.md",
+          "inventario_retail_ocr_avanzado/README.md",
+          "inventario_retail_dashboard_web/README.md",
+          "inventario-retail/README.md",
+          "inventario_retail_dashboard_web/web_dashboard/README.md",
+          "vibe_production_system/components/learning_system/README.md",
+          "docs/progress/README.md",
+          "inventario-retail/web_dashboard/README.md"
+        ],
+        "deployment": [
+          "DEPLOYMENT_READINESS_FINAL.md",
+          "CHECKLIST_DEPLOYMENT_COMPLETO.md",
+          "README_DEPLOY_STAGING_EXT.md",
+          "PLAN_EJECUCION_FINAL_DEPLOYMENT.md",
+          "README_DEPLOY_STAGING.md",
+          "inventario_retail_dashboard_web/DEPLOYMENT_GUIDE.md",
+          "docs/DEPLOYMENT_COMPLETE.md",
+          "inventario-retail/README_DEPLOYMENT.md",
+          "inventario-retail/DEPLOYMENT_GUIDE.md"
+        ],
+        "api": [
+          "DOCUMENTACION_CI_CD.md",
+          "DOCUMENTACION_DESPLIEGUE_DASHBOARD.md",
+          "DOCUMENTACION_OBSERVABILIDAD.md",
+          "DOCUMENTACION_DASHBOARD_WEB_COMPLETO.md",
+          "DOCUMENTACION_API_DASHBOARD.md",
+          "DOCUMENTACION_MAESTRA_MINI_MARKET.md"
+        ],
+        "runbook": [
+          "RUNBOOK_OPERACIONES_DASHBOARD.md"
+        ],
+        "analysis": [
+          "AUDITORIA_COMPLIANCE.md",
+          "AUDITORIA_SCHEDULERS.md",
+          "META_ANALISIS_EXHAUSTIVO_PROMPTS_COPILOT.md",
+          "ANALISIS_PROGRESO_PRODUCCION.md",
+          "EJEMPLO_ANALISIS_FORENSE_RETAIL_ARGENTINA.md",
+          "DICTAMEN_AUDITORIA_APLICADO_2025-09-13.md",
+          "ANALISIS_TECNICO_RETAIL_ARGENTINA.md",
+          "ANALISIS_PROYECTO.md",
+          "ANALISIS_PAUSA_AFIP_ENTERPRISE.md",
+          "EJEMPLO_ANALISIS_BI_ORCHESTRATOR.md",
+          "AUDITORIA_INTEGRACIONES.md",
+          "EJEMPLO_ANALISIS_FORENSE_INVENTARIO_RETAIL.md",
+          "EJEMPLO_ANALISIS_FORENSE_BI_ORCHESTRATOR.md",
+          "SECURITY_AUDIT_REPORT_2025-09-13.md",
+          "AUDITORIA_AGENTE_NEGOCIO.md",
+          "EJEMPLO_ANALISIS_INVENTARIO_RETAIL.md",
+          "inventario-retail/DICTAMEN_FINAL_AUDITORIA.md",
+          "inventario-retail/AUDITORIA_EXHAUSTIVA_PROTOCOLO.md",
+          "inventario-retail/AUDITORIA_ML_SERVICE.md",
+          "inventario-retail/ANALISIS_ESTADO_ACTUAL.md",
+          "analysis_definitivo_gemini/2025-09-12/04_contenedores_k8s/container_infrastructure_analysis.md",
+          "analysis_definitivo_gemini/2025-09-12/03_seguridad_redteam/red_team_security_analysis.md",
+          "analysis_definitivo_gemini/2025-09-12/05_ml_ocr_reversa/ml_reverse_engineering_analysis.md"
+        ],
+        "other": [
+          "SESSION_SUMMARY_2025-09-26.md",
+          "STATUS_FINAL.md",
+          "PROMPT_TESTING_FRAMEWORK.md",
+          "CHANGELOG.md",
+          "SESSION_SUMMARY_2025-09-14.md",
+          "VALIDACION_CONSISTENCIA_PROMPTS.md",
+          "PLAN_DESPLIEGUE_INVENTARIO_RETAIL.md",
+          "RESUMEN_EJECUCION_PROMPTS_COMPLETA.md",
+          "MEJORAS_IMPLEMENTADAS_FORENSIC_PROMPTS.md",
+          "ESPECIFICACION_TECNICA.md",
+          "PLAN_EJECUCION_GO_LIVE.md",
+          "INFORME_DESARROLLO_DASHBOARD.md",
+          "AIDRIVE_GENSPARK_SPEC.md",
+          "PROXIMOS_PASOS.md",
+          "PROJECT_COMPLETION_FINAL.md",
+          "README_PROMPTS_COPILOT.md",
+          "CONFIGURACIONES_PRODUCCION_INVENTARIO_RETAIL.md",
+          "QUICK_REFERENCE_PROMPTS.md",
+          "INFORME_FINAL_SISTEMA_MINIMARKET.md",
+          "GUIA_USUARIO_DASHBOARD.md",
+          "SESSION_SUMMARY_2025-09-12.md",
+          "TROUBLESHOOTING_INVENTARIO_RETAIL.md",
+          "PROMPTS_GITHUB_COPILOT_PRO.md",
+          "PLAN_DESPLIEGUE_BI_ORCHESTRATOR.md",
+          "ESPECIFICACION_MINI_MARKET.md",
+          "SECURITY_VALIDATION_REPORT.md",
+          "GUIA_PRACTICA_USO_PROMPTS.md",
+          "SESSION_SUMMARY_2025-09-15.md",
+          "QUICK_REFERENCE_PROMPTS_DEFINITIVOS.md",
+          "GUIA_IMPLEMENTACION_PROMPTS_DEFINITIVOS.md",
+          "README_FRAMEWORK_DEFINITIVO.md",
+          "PROMPTS_GITHUB_COPILOT_PRO_DEFINITIVOS.md",
+          "CONFIGURACIONES_PRODUCCION_BI_ORCHESTRATOR.md",
+          "sistema_inventario/PROGRESO_DESARROLLO.md",
+          ".github/copilot-instructions.md",
+          "deployment_instructions/postgresql_bi_setup.md",
+          "deployment_instructions/postgresql_deposito_setup.md",
+          "docs/RETAIL_OPTIMIZATION_GUIDE.md",
+          "docs/RETAIL_OPTIMIZATION_COMPLETE.md",
+          "inventario-retail/REPORTE_FINAL_HARDENING.md",
+          "inventario-retail/ROADMAP_2024_2025.md",
+          "inventario-retail/FINAL_PROJECT_SUMMARY.md",
+          "inventario-retail/RESUMEN_FINAL.md",
+          "inventario-retail/PROMPT7_RESUMEN_COMPLETADO.md",
+          "inventario-retail/RESUMEN_PROGRESO_SEMANA2.md",
+          "inventario-retail/SISTEMA_COMPLETO_STATUS.md",
+          "inventario-retail/PROMPT5_RESUMEN_COMPLETADO.md",
+          "inventario-retail/CHECKLIST_BLUEPRINT_DESARROLLO.md",
+          "retail-argentina-system/prompt8-final/ROADMAP_2024_2025.md",
+          "retail-argentina-system/prompt8-final/docs/GUIA_DESPLIEGUE.md",
+          "retail-argentina-system/prompt8-final/docs/RESUMEN_SISTEMA_COMPLETO.md",
+          "retail-argentina-system/prompt8-final/docs/ARQUITECTURA_COMPLETA.md",
+          ".github/ISSUE_TEMPLATE/release_rc_checklist.md",
+          "docs/progress/executive_summary_20250929_0814.md",
+          "inventario-retail/docs/AFIP_SETUP.md",
+          "inventario-retail/docs/RESUMEN_SISTEMA_COMPLETO.md",
+          "inventario-retail/docs/MERCADOLIBRE_SETUP.md",
+          "analysis_definitivo_gemini/2025-09-12/06_consolidacion_final/master_index.md",
+          "analysis_definitivo_gemini/2025-09-12/06_consolidacion_final/executive_summary.md",
+          "analysis_definitivo_gemini/2025-09-12/04_contenedores_k8s/infrastructure_patches.md",
+          "analysis_definitivo_gemini/2025-09-12/03_seguridad_redteam/authentication_patches.md",
+          "analysis_definitivo_gemini/2025-09-12/01_arquitectura_dinamica/architecture_validation_matrix.md",
+          "analysis_definitivo_gemini/2025-09-12/01_arquitectura_dinamica/architectural_violations_patches.md",
+          "analysis_definitivo_gemini/2025-09-12/01_arquitectura_dinamica/alignment_compose_k8s_nginx.md",
+          "analysis_definitivo_gemini/2025-09-12/00_preparacion/environment_readiness_report.md",
+          "analysis_definitivo_gemini/2025-09-12/02_persistencia_forense/sql_timeline_factura_forensic.md",
+          "analysis_definitivo_gemini/2025-09-12/02_persistencia_forense/idempotency_stress_test_results.md",
+          "analysis_definitivo_gemini/2025-09-12/02_persistencia_forense/database_erd_complete.md"
+        ]
+      },
+      "total_documentation_files": 116
+    }
+  },
+  "prompt15_complexity": {
+    "complexity_analysis": {
+      "largest_files": [
+        {
+          "file": "inventario-retail/web_dashboard/dashboard_app.py",
+          "lines_of_code": 1034,
+          "purpose": "web_dashboard"
+        },
+        {
+          "file": "inventario-retail/ui/review_app.py",
+          "lines_of_code": 991,
+          "purpose": "ui"
+        },
+        {
+          "file": "inventario-retail/schedulers/ecommerce_scheduler.py",
+          "lines_of_code": 935,
+          "purpose": "schedulers"
+        },
+        {
+          "file": "inventario-retail/schedulers/backup_scheduler_complete.py",
+          "lines_of_code": 898,
+          "purpose": "schedulers"
+        },
+        {
+          "file": "business-intelligence-orchestrator-v3.1/tests/verification_tests.py",
+          "lines_of_code": 882,
+          "purpose": "tests"
+        },
+        {
+          "file": "inventario-retail/agente_deposito/main_complete.py",
+          "lines_of_code": 842,
+          "purpose": "agente_deposito"
+        },
+        {
+          "file": "integrations/compliance/fiscal_reporters.py",
+          "lines_of_code": 840,
+          "purpose": "compliance"
+        },
+        {
+          "file": "inventario-retail/agente_negocio/main_complete.py",
+          "lines_of_code": 808,
+          "purpose": "agente_negocio"
+        },
+        {
+          "file": "inventario-retail/schedulers/afip_sync_scheduler.py",
+          "lines_of_code": 796,
+          "purpose": "schedulers"
+        },
+        {
+          "file": "inventario-retail/agente_negocio/integrations/deposito_client(1).py",
+          "lines_of_code": 780,
+          "purpose": "integrations"
+        }
+      ],
+      "most_complex_functions": [
+        {
+          "function": "estimated - OCR pipeline",
+          "file": "inventario-retail/agente_negocio/ocr/",
+          "complexity_indicator": "multiple processing steps",
+          "recommendation": "well-modularized"
+        }
+      ],
+      "code_duplication": {
+        "suspected_duplicates": [
+          {
+            "pattern": "FastAPI route boilerplate",
+            "locations": [
+              "multiple main.py files"
+            ],
+            "severity": "low - acceptable for microservices"
+          }
+        ]
+      },
+      "circular_dependencies": {
+        "present": false,
+        "examples": []
+      }
+    },
+    "technical_debt": {
+      "deprecated_dependencies": [],
+      "outdated_patterns": [],
+      "missing_features": [
+        {
+          "feature": "contributing guide",
+          "severity": "low",
+          "locations_affected": [
+            "repository root"
+          ]
+        }
+      ],
+      "overall_assessment": "Low technical debt - modern stack, well-structured"
+    }
+  },
+  "prompt16_executive_summary": {
+    "executive_summary": {
+      "project_overview": "\n                aidrive_genspark_forensic is a comprehensive multi-agent retail inventory management system \n                optimized for the Argentine market. The system consists of multiple microservices including \n                warehouse management (Agente Depósito), business logic with OCR invoice processing (Agente Negocio), \n                ML-based demand forecasting, and an interactive web dashboard. Built with modern Python/FastAPI \n                stack, it emphasizes security, observability, and operational reliability.\n                \n                The project demonstrates production-ready characteristics with comprehensive CI/CD pipelines, \n                Docker containerization, extensive documentation, and monitoring capabilities. It specifically \n                addresses Argentine business requirements including AFIP invoice validation, inflation-adjusted \n                pricing, and local compliance needs.\n                ",
+      "key_strengths": [
+        "Modern microservices architecture with clear separation of concerns",
+        "Strong security implementation (JWT, rate limiting, security headers, RBAC)",
+        "Comprehensive observability with Prometheus metrics on all services",
+        "Excellent documentation (116 markdown files covering architecture, deployment, operations)",
+        "Production-ready CI/CD with GitHub Actions (automated testing, Docker builds, deployments)",
+        "Argentina-specific optimizations (AFIP validation, inflation pricing, local compliance)",
+        "Robust testing infrastructure with 85% coverage requirements",
+        "Container-first design with Docker Compose orchestration",
+        "Well-structured shared libraries reducing code duplication",
+        "Operational tooling (Makefile, scripts for preflight checks, metrics validation)"
+      ],
+      "key_concerns": [
+        "Large number of files (721 total) may indicate some organizational complexity",
+        "Multiple dashboard variations suggest iteration/refactoring in progress",
+        "Some project components appear to be legacy or experimental (sistema_deposito_semana1)",
+        "No formal contributing guidelines for external developers",
+        "Documentation is extensive but distributed across many files"
+      ],
+      "technology_maturity": "High - uses latest stable versions of FastAPI (0.104.1), SQLAlchemy (2.0.23), Python 3.11+, modern async patterns",
+      "estimated_project_size": {
+        "lines_of_code": 67836,
+        "number_of_components": 5,
+        "complexity_level": "medium-high",
+        "documentation_to_code_ratio": "excellent (116 docs / 199 py files)"
+      },
+      "critical_areas_for_audit": [
+        "Database query optimization and indexing strategies",
+        "OCR pipeline accuracy and error handling",
+        "ML model training data and prediction accuracy",
+        "Redis cache configuration and invalidation strategies",
+        "Backup and disaster recovery procedures",
+        "Production secrets management practices",
+        "Rate limiting effectiveness under load",
+        "AFIP integration reliability and error recovery"
+      ],
+      "immediate_red_flags": [],
+      "deployment_readiness": "Production-ready with minor optimizations needed",
+      "recommended_next_steps": [
+        "Consolidate dashboard variations into single canonical implementation",
+        "Archive or remove legacy experimental components",
+        "Create CONTRIBUTING.md guide for external developers",
+        "Consider documentation consolidation/organization",
+        "Implement automated dependency vulnerability scanning",
+        "Add performance/load testing suite",
+        "Document disaster recovery procedures",
+        "Create architecture diagrams"
+      ]
+    },
+    "analysis_metadata": {
+      "analysis_date": "2025-10-01T09:03:13.494163",
+      "repository": "eevans-d/aidrive_genspark_forensic",
+      "total_files_analyzed": 721,
+      "python_files": 199,
+      "total_python_loc": 67836,
+      "documentation_files": 116,
+      "prompts_completed": 16,
+      "methodology": "Comprehensive 16-prompt forensic analysis framework"
+    }
+  }
+}
