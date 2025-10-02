@@ -1,0 +1,103 @@
+{
+  "timestamp": "2025-10-02T21:40:06.736914",
+  "total_properties": 7,
+  "properties_verified": [
+    {
+      "id": "P1",
+      "risk_id": "R1_CONTAINER_ROOT_EXECUTION",
+      "formula": "∀ container ∈ {agents} : uid(container) > 0",
+      "description": "Ningún contenedor de agente debe ejecutarse con UID 0 (root)",
+      "status": "FAIL",
+      "evidence": [
+        "web_dashboard/Dockerfile: Sin directiva USER o USER root detectado"
+      ],
+      "verification_method": "dockerfile_analysis",
+      "test_strategy": "CI/CD smoke test verificando UID > 0 en todos los containers",
+      "recommendation": "Agregar directiva USER en Dockerfiles: web_dashboard"
+    },
+    {
+      "id": "P2",
+      "risk_id": "R2_JWT_SINGLE_SECRET",
+      "formula": "∀ agent_i, agent_j : i ≠ j ⟹ jwt_secret(i) ≠ jwt_secret(j)",
+      "description": "Cada agente debe tener secreto JWT único para prevenir lateral movement",
+      "status": "FAIL",
+      "evidence": [
+        "docker-compose.production.yml: Mismo JWT_SECRET_KEY usado 6 veces"
+      ],
+      "verification_method": "docker_compose_analysis",
+      "test_strategy": "Intentar cross-service authentication con JWT comprometido (debe fallar)",
+      "recommendation": "Implementar JWT_SECRET_DEPOSITO, JWT_SECRET_NEGOCIO, JWT_SECRET_ML, JWT_SECRET_DASHBOARD"
+    },
+    {
+      "id": "P3",
+      "risk_id": "R3_OCR_ENGINE_TIMEOUT",
+      "formula": "∀ ocr_op ∈ {EasyOCR, Tesseract, PaddleOCR} : duration(ocr_op) ≤ 30s",
+      "description": "Operaciones OCR en agente_negocio deben completar en ≤30s",
+      "status": "PASS",
+      "evidence": [
+        "provider_database_integration.py: Configuración de timeout detectada"
+      ],
+      "verification_method": "code_analysis",
+      "test_strategy": "Load test con facturas malformadas verificando timeouts"
+    },
+    {
+      "id": "P4",
+      "risk_id": "R4_ML_HARDCODED_INFLATION",
+      "formula": "inflation_rate ∉ source_code ∧ inflation_rate ∈ config_external",
+      "description": "Tasa de inflación 4.5% debe externalizarse a configuración",
+      "status": "FAIL",
+      "evidence": [
+        "predictor.py: Inflación hardcodeada detectada",
+        "features.py: Inflación hardcodeada detectada",
+        "data_generator.py: Inflación hardcodeada detectada"
+      ],
+      "verification_method": "code_analysis",
+      "test_strategy": "Cambiar inflación en config y verificar que ML service lo detecta",
+      "recommendation": "Externalizar a INFLATION_RATE_MONTHLY en .env o config service"
+    },
+    {
+      "id": "P5",
+      "risk_id": "R5_FORENSIC_CASCADE_FAILURE",
+      "formula": "∀ phase_i ∈ {1..5} : complete(phase_i) ⟹ checkpointed(phase_i)",
+      "description": "Auditoría forense de 5 fases debe implementar checkpointing",
+      "status": "NOT_APPLICABLE",
+      "evidence": [
+        "Auditoría forense es conceptual, no implementada en inventario-retail/"
+      ],
+      "verification_method": "code_analysis",
+      "test_strategy": "Simular fallo en phase_3 y verificar que phases 1-2 persisten",
+      "recommendation": "Si se implementa: Agregar checkpointing con state persistence en DB/Redis"
+    },
+    {
+      "id": "P6",
+      "risk_id": "R6_NO_DEPENDENCY_SCANNING",
+      "formula": "∃ ci_cd_step : scans_dependencies(ci_cd_step) = true",
+      "description": "Pipeline CI/CD debe incluir escaneo de vulnerabilidades",
+      "status": "PASS",
+      "evidence": [
+        "ci.yml: Dependency scanning detectado"
+      ],
+      "verification_method": "ci_cd_analysis",
+      "test_strategy": "Verificar que safety/snyk/dependabot ejecutan en cada PR"
+    },
+    {
+      "id": "P7",
+      "risk_id": "R7_WEBSOCKET_MEMORY_LEAK",
+      "formula": "∀ ws_connection : connected(ws) ⟹ ∃ cleanup_handler",
+      "description": "Conexiones WebSocket deben tener cleanup explícito",
+      "status": "FAIL",
+      "evidence": [
+        "No se encontró cleanup explícito para WebSocket connections"
+      ],
+      "verification_method": "code_analysis",
+      "test_strategy": "Load test con 1000 conexiones y verificar que memoria se libera",
+      "recommendation": "Implementar @socketio.on('disconnect') con cleanup de recursos"
+    }
+  ],
+  "verification_summary": {
+    "passed": 2,
+    "failed": 4,
+    "warnings": 1
+  },
+  "freeze_compliance_verified": true
+}
