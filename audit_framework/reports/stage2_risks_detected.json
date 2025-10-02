@@ -1,0 +1,273 @@
+[
+  {
+    "id": "R1_CONTAINER_ROOT_EXECUTION",
+    "type": "container_security",
+    "severity": 10,
+    "impact_score": 9,
+    "probability": 8,
+    "title": "Containers ejecutando como root",
+    "evidence": [
+      "Análisis forense: 'Containers ejecutando como root' - CRÍTICO",
+      "Dockerfiles sin directiva USER o USER root",
+      "Afecta 6 servicios"
+    ],
+    "affected_services": [
+      "agente_deposito",
+      "agente_negocio",
+      "ml_service",
+      "web_dashboard",
+      "postgres",
+      "redis"
+    ],
+    "attack_vector": "Container escape → Host privilege escalation → System compromise",
+    "business_impact": "Compromiso completo del sistema multi-agente y host",
+    "technical_details": {
+      "container_count": 6,
+      "capability_risks": [
+        "CAP_SYS_ADMIN abuse",
+        "Kernel exploitation",
+        "Host filesystem access",
+        "Other container access"
+      ],
+      "exploitation_difficulty": "MEDIUM",
+      "detection_difficulty": "HIGH"
+    },
+    "references": [
+      "CIS Docker Benchmark 4.1",
+      "NIST SP 800-190 Section 3.1",
+      "Docker Security Best Practices"
+    ]
+  },
+  {
+    "id": "R2_JWT_SINGLE_SECRET",
+    "type": "authentication_security",
+    "severity": 9,
+    "impact_score": 10,
+    "probability": 6,
+    "title": "JWT único compartido entre todos los agentes",
+    "evidence": [
+      "docker-compose.production.yml: mismo JWT_SECRET_KEY para todos",
+      "4 agentes comparten el mismo secret",
+      "No hay rotación de secrets configurada"
+    ],
+    "affected_services": [
+      "agente_deposito",
+      "agente_negocio",
+      "ml_service",
+      "web_dashboard"
+    ],
+    "attack_vector": "JWT compromise → All inter-agent communication compromised",
+    "business_impact": "Bypass completo de autenticación, movimiento lateral sin restricciones",
+    "technical_details": {
+      "single_secret": true,
+      "rotation_policy": "not_configured",
+      "storage_method": "environment_variable",
+      "attack_scenarios": [
+        "1. Atacante compromete un agente (ej: agente_negocio)",
+        "2. Obtiene JWT_SECRET_KEY del ambiente",
+        "3. Genera JWTs válidos para todos los demás agentes",
+        "4. Bypass completo de autenticación inter-agente",
+        "5. Acceso total al sistema multi-agente"
+      ]
+    },
+    "references": [
+      "OWASP A07:2021 - Identification and Authentication Failures",
+      "RFC 7519 - JSON Web Token Best Practices"
+    ]
+  },
+  {
+    "id": "R3_OCR_ENGINE_TIMEOUT",
+    "type": "performance_reliability",
+    "severity": 7,
+    "impact_score": 8,
+    "probability": 7,
+    "title": "Timeouts OCR multi-engine sin configuración explícita",
+    "evidence": [
+      "FSM agente_negocio: timeout_states sin configuración explícita",
+      "3 motores OCR (EasyOCR, Tesseract, PaddleOCR) sin timeout individual",
+      "SLA: 15000ms pero no enforced programáticamente"
+    ],
+    "affected_services": [
+      "agente_negocio"
+    ],
+    "attack_vector": "Malformed AFIP invoice → OCR hang → Agent unavailable → Service degradation",
+    "business_impact": "Procesamiento de facturas AFIP bloqueado, pérdida de ingresos",
+    "technical_details": {
+      "ocr_engines": [
+        "EasyOCR",
+        "Tesseract",
+        "PaddleOCR"
+      ],
+      "expected_timeout_ms": 15000,
+      "timeout_configured": false,
+      "voting_consensus_required": true,
+      "failure_modes": [
+        "Single engine hang blocks entire pipeline",
+        "No partial results on timeout",
+        "Cascade failure to dependent services"
+      ]
+    },
+    "references": [
+      "Resilience patterns: Circuit Breaker",
+      "Timeout and Retry patterns"
+    ]
+  },
+  {
+    "id": "R4_ML_HARDCODED_INFLATION",
+    "type": "business_logic",
+    "severity": 6,
+    "impact_score": 8,
+    "probability": 9,
+    "title": "Inflación 4.5% hardcodeada en predicciones ML",
+    "evidence": [
+      "FSM ml_service: inflación 4.5% hardcodeada",
+      "No configuración externa para ajuste de inflación",
+      "Contexto argentino: inflación variable requiere actualización frecuente"
+    ],
+    "affected_services": [
+      "ml_service"
+    ],
+    "attack_vector": "Economic change → Wrong predictions → Financial losses → Business decisions on bad data",
+    "business_impact": "Predicciones incorrectas de demanda y precios, pérdidas financieras",
+    "technical_details": {
+      "current_inflation_rate": 4.5,
+      "hardcoded": true,
+      "currency": "ARS",
+      "update_frequency_required": "monthly",
+      "current_update_mechanism": "code_change_and_redeploy",
+      "consequences": [
+        "Over/under-stocking decisions",
+        "Incorrect pricing strategies",
+        "Revenue loss or opportunity cost",
+        "Competitive disadvantage"
+      ]
+    },
+    "references": [
+      "Twelve-Factor App: Config",
+      "Business Logic Security - OWASP"
+    ]
+  },
+  {
+    "id": "R5_FORENSIC_CASCADE_FAILURE",
+    "type": "business_continuity",
+    "severity": 8,
+    "impact_score": 9,
+    "probability": 6,
+    "title": "Fallo en fase de auditoría forense pierde auditoría completa",
+    "evidence": [
+      "FSM forensic_audit: phase_failure → error sin recuperación parcial",
+      "5 fases secuenciales sin checkpointing",
+      "No mecanismo de partial recovery implementado"
+    ],
+    "affected_services": [
+      "all_agents"
+    ],
+    "attack_vector": "Single phase failure → Complete audit lost → Compliance gap → Regulatory risk",
+    "business_impact": "Pérdida de auditoría forense crítica, compliance risk, forensic evidence gap",
+    "technical_details": {
+      "phase_count": 5,
+      "sequential_execution": true,
+      "checkpointing": false,
+      "partial_recovery": false,
+      "error_recovery": false,
+      "phase_dependencies": {
+        "phase_1": [
+          "agente_deposito"
+        ],
+        "phase_2": [
+          "agente_negocio"
+        ],
+        "phase_3": [
+          "ml_service"
+        ],
+        "phase_4": [
+          "web_dashboard"
+        ],
+        "phase_5": [
+          "all_agents"
+        ]
+      },
+      "failure_impact": [
+        "Loss of forensic evidence",
+        "Compliance violations",
+        "Inability to investigate incidents",
+        "Regulatory penalties"
+      ]
+    },
+    "references": [
+      "ISO 27037 - Digital Evidence Guidelines",
+      "NIST SP 800-86 - Computer Security Incident Handling"
+    ]
+  },
+  {
+    "id": "R6_NO_DEPENDENCY_SCANNING",
+    "type": "security",
+    "severity": 7,
+    "impact_score": 7,
+    "probability": 8,
+    "title": "Sin escaneo automatizado de vulnerabilidades en dependencias",
+    "evidence": [
+      "Análisis forense: 'No automated dependency vulnerability scanning'",
+      "Vulnerabilidades conocidas en baseline: 0",
+      "No CI/CD integration con safety/snyk/dependabot"
+    ],
+    "affected_services": [
+      "all_services"
+    ],
+    "attack_vector": "Unknown CVEs → Exploitation → Data breach → System compromise",
+    "business_impact": "Vulnerabilidades desconocidas en producción, riesgo de explotación",
+    "technical_details": {
+      "known_vulnerabilities": 0,
+      "scanning_tools": [],
+      "ci_cd_integration": false,
+      "update_frequency": "manual",
+      "python_packages": "156+ dependencies",
+      "risk_exposure": [
+        "Zero-day vulnerabilities undetected",
+        "Known CVEs not patched",
+        "Supply chain attacks",
+        "Transitive dependency risks"
+      ]
+    },
+    "references": [
+      "OWASP Dependency-Check",
+      "Snyk/Safety vulnerability databases",
+      "CWE-1035 - Vulnerable Third Party Component"
+    ]
+  },
+  {
+    "id": "R7_WEBSOCKET_MEMORY_LEAK",
+    "type": "performance_reliability",
+    "severity": 6,
+    "impact_score": 8,
+    "probability": 7,
+    "title": "WebSocket connections sin cleanup explícito",
+    "evidence": [
+      "FSM dashboard: websocket_broadcast sin cleanup explícito",
+      "Dashboard maneja tiempo real con WebSockets",
+      "No connection pooling o límite de conexiones visible"
+    ],
+    "affected_services": [
+      "web_dashboard"
+    ],
+    "attack_vector": "Multiple connections → Memory exhaustion → Dashboard crash → Monitoring unavailable",
+    "business_impact": "Monitoreo en tiempo real no disponible, degradación de servicio",
+    "technical_details": {
+      "websocket_enabled": true,
+      "cleanup_explicit": false,
+      "connection_limit": "not_configured",
+      "timeout_idle": "not_configured",
+      "failure_modes": [
+        "Memory leak from unclosed connections",
+        "File descriptor exhaustion",
+        "CPU saturation from too many connections",
+        "Dashboard process OOM kill"
+      ],
+      "frequency_rps": 25
+    },
+    "references": [
+      "WebSocket Connection Management Best Practices",
+      "RFC 6455 - WebSocket Protocol"
+    ]
+  }
+]

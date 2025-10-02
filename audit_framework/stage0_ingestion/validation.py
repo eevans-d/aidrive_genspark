@@ -110,10 +110,13 @@ class ProfileValidator:
         components = profile.get("architecture", {}).get("components", [])
         component_names = {c["name"] for c in components}
         
+        # Dependencias válidas especiales (no son componentes del sistema)
+        valid_external_deps = {"all_agents", "models", "tesseract"}
+        
         for component in components:
             deps = component.get("dependencies", [])
             for dep in deps:
-                if dep != "all_agents" and dep != "models" and dep not in component_names:
+                if dep not in valid_external_deps and dep not in component_names:
                     self.validation_errors.append(
                         f"Component {component['name']} has invalid dependency: {dep}"
                     )

@@ -1,0 +1,198 @@
+{
+  "services_count": 7,
+  "edges_count": 12,
+  "nodes": [
+    "agente_deposito",
+    "agente_negocio",
+    "ml_service",
+    "web_dashboard",
+    "nginx",
+    "postgres",
+    "redis"
+  ],
+  "edges": [
+    [
+      "agente_deposito",
+      "postgres"
+    ],
+    [
+      "agente_deposito",
+      "redis"
+    ],
+    [
+      "agente_negocio",
+      "postgres"
+    ],
+    [
+      "agente_negocio",
+      "redis"
+    ],
+    [
+      "ml_service",
+      "postgres"
+    ],
+    [
+      "ml_service",
+      "redis"
+    ],
+    [
+      "web_dashboard",
+      "agente_deposito"
+    ],
+    [
+      "web_dashboard",
+      "agente_negocio"
+    ],
+    [
+      "web_dashboard",
+      "ml_service"
+    ],
+    [
+      "web_dashboard",
+      "postgres"
+    ],
+    [
+      "web_dashboard",
+      "redis"
+    ],
+    [
+      "nginx",
+      "web_dashboard"
+    ]
+  ],
+  "cycles": [],
+  "critical_points": {
+    "single_points_of_failure": [
+      {
+        "service": "postgres",
+        "dependent_count": 4,
+        "dependents": [
+          "agente_deposito",
+          "agente_negocio",
+          "ml_service",
+          "web_dashboard"
+        ]
+      },
+      {
+        "service": "redis",
+        "dependent_count": 4,
+        "dependents": [
+          "agente_deposito",
+          "agente_negocio",
+          "ml_service",
+          "web_dashboard"
+        ]
+      }
+    ],
+    "high_dependency_services": [
+      {
+        "service": "web_dashboard",
+        "dependency_count": 5,
+        "dependencies": [
+          "agente_deposito",
+          "agente_negocio",
+          "ml_service",
+          "postgres",
+          "redis"
+        ]
+      }
+    ],
+    "orphan_services": []
+  },
+  "agent_metrics": {
+    "agente_deposito": {
+      "fan_in": 1,
+      "fan_out": 2,
+      "betweenness": 0.16,
+      "is_orchestrator": false,
+      "communication_complexity": 3,
+      "port": 8001,
+      "criticality": "critical"
+    },
+    "agente_negocio": {
+      "fan_in": 1,
+      "fan_out": 2,
+      "betweenness": 0.16,
+      "is_orchestrator": false,
+      "communication_complexity": 3,
+      "port": 8002,
+      "criticality": "critical"
+    },
+    "ml_service": {
+      "fan_in": 1,
+      "fan_out": 2,
+      "betweenness": 0.16,
+      "is_orchestrator": false,
+      "communication_complexity": 3,
+      "port": 8003,
+      "criticality": "critical"
+    },
+    "web_dashboard": {
+      "fan_in": 1,
+      "fan_out": 5,
+      "betweenness": 0.6470588235294118,
+      "is_orchestrator": true,
+      "communication_complexity": 6,
+      "port": 8080,
+      "criticality": "critical"
+    }
+  },
+  "dependency_chains": [
+    [
+      "nginx",
+      "web_dashboard",
+      "agente_deposito",
+      "postgres"
+    ],
+    [
+      "nginx",
+      "web_dashboard",
+      "agente_deposito",
+      "redis"
+    ],
+    [
+      "nginx",
+      "web_dashboard",
+      "agente_negocio",
+      "postgres"
+    ],
+    [
+      "nginx",
+      "web_dashboard",
+      "agente_negocio",
+      "redis"
+    ],
+    [
+      "nginx",
+      "web_dashboard",
+      "ml_service",
+      "postgres"
+    ],
+    [
+      "nginx",
+      "web_dashboard",
+      "ml_service",
+      "redis"
+    ],
+    [
+      "web_dashboard",
+      "agente_deposito",
+      "postgres"
+    ],
+    [
+      "web_dashboard",
+      "agente_deposito",
+      "redis"
+    ],
+    [
+      "web_dashboard",
+      "agente_negocio",
+      "postgres"
+    ],
+    [
+      "web_dashboard",
+      "agente_negocio",
+      "redis"
+    ]
+  ]
+}
