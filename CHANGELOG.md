@@ -1,27 +1,104 @@
 # Changelog
 
-## [v0.9.0] - 2025-10-03
-### Security (ETAPA 2: Risk Mitigation R1, R6, R3)
-- **R1 (Container Security, severity 10)**: Hardened dashboard container to run as non-root user `dashboarduser` (UID/GID 1001)
-  - All 4 agent containers now execute with non-root users (agente, negocio, mluser, dashboarduser)
-  - Created logs/cache directories with proper ownership in web_dashboard Dockerfile
-- **R6 (Dependency Scanning, severity 7)**: Enforced Trivy dependency scanning in CI/CD pipeline
-  - Added `trivy-scan-dependencies` job to scan requirements.txt with exit-code=1 (enforced)
-  - Configured severity CRITICAL,HIGH only (ignore MEDIUM false positives)
-  - Runs in parallel to test-dashboard (no dependency on image build)
-- **R3 (OCR Timeout Risk, severity 7)**: Added timeout protection to OCR processing
-  - Changed OCRProcessor.process_image from async to sync (correct for to_thread execution)
-  - Wrapped OCR calls with asyncio.wait_for() and configurable OCR_TIMEOUT_SECONDS (default 30s)
-  - Applied to both /process-invoice and /test-ocr endpoints
-  - Returns HTTP 504 with clear error message when timeout exceeded
+Todas las notas siguen el formato Keep a Changelog y versionado SemVer.
+
+## [v0.10.0] - 2025-10-03
+### Security (ETAPA 2 COMPLETA: Risk Mitigations R1, R2, R3, R4, R6)
+
+**Forensic Analysis Implementation**: Este release completa 5 de 7 mitigaciones identificadas en el análisis forense exhaustivo del sistema. Total: 23h de esfuerzo, ROI promedio 1.95.
+
+#### R1: Container Security (Severity 10) ✅
+- **Problema**: Dashboard container ejecutándose como root (vulnerabilidad crítica)
+- **Solución**: Hardened all 4 agent containers with non-root users
+  - `agente_deposito`: USER agente ✅
+  - `agente_negocio`: USER negocio ✅
+  - `ml_service`: USER mluser ✅
+  - `web_dashboard`: USER dashboarduser ✅ (NEW)
+- **Impacto**: Previene escalación de privilegios en caso de compromiso del container
+- **Commits**: b02f2ae | Effort: 3h | ROI: 3.5
+
+#### R6: Dependency Scanning (Severity 7) ✅
+- **Problema**: Trivy scan solo advisory (continue-on-error: true), no bloquea builds
+- **Solución**: Enforced Trivy in CI/CD with exit-code=1
+  - New job `trivy-scan-dependencies` scans requirements.txt (scan-type: fs)
+  - Severity: CRITICAL,HIGH (excludes MEDIUM to avoid false positives)
+  - ignore-unfixed: true (don't block on CVEs without patches)
+  - Runs parallel to test-dashboard (no blocking dependencies)
+- **Impacto**: Prevents vulnerable dependencies from reaching production
+- **Commits**: b02f2ae | Effort: 2h | ROI: 2.1
+
+#### R3: OCR Timeout Risk (Severity 7) ✅
+- **Problema**: OCR processing sin timeout, riesgo de DoS con imágenes grandes/maliciosas
+- **Solución**: Configurable timeout with asyncio.wait_for()
+  - OCRProcessor.process_image: Changed from async to sync (correct for to_thread)
+  - Wrapped OCR calls in both `/process-invoice` and `/test-ocr` endpoints
+  - ENV var `OCR_TIMEOUT_SECONDS=30` (configurable)
+  - Returns HTTP 504 with clear message on timeout
+- **Impacto**: Prevents resource exhaustion, improves UX with clear error messages
+- **Commits**: a5dc1de | Effort: 4h | ROI: 1.8
+
+#### R2: JWT Single Secret (Severity 8) ✅
+- **Problema**: All agents share JWT_SECRET_KEY, compromising one compromises all
+- **Solución**: Per-agent JWT secrets with backward-compatible fallback
+  - New env vars: JWT_SECRET_DEPOSITO, JWT_SECRET_NEGOCIO, JWT_SECRET_ML, JWT_SECRET_DASHBOARD
+  - Fallback pattern: `${JWT_SECRET_AGENT:-${JWT_SECRET_KEY}}` (zero-downtime migration)
+  - Added `iss` (issuer) claim to JWT tokens for origin validation
+  - AuthManager accepts optional secret_key and issuer parameters
+  - Helper function: `get_auth_manager_for_agent(agent_name)`
+- **Impacto**: Agent compromise doesn't cascade, enables independent secret rotation
+- **Migration Guide**: inventario-retail/R2_JWT_SECRET_MIGRATION_GUIDE.md
+- **Commits**: d590f78 | Effort: 8h | ROI: 1.6
+
+#### R4: ML Hardcoded Inflation (Severity 6) ✅
+- **Problema**: Inflation rate hardcoded at 4.5%, requires redeploy to update (critical for Argentina)
+- **Solución**: Externalized to INFLATION_RATE_MONTHLY env var
+  - ml/predictor.py: Read from env var (default 0.045) with startup logging
+  - ml/features.py: Optional inflation parameter, auto-detect decimal vs percentage
+  - Update without redeploy: restart ml-service only (no full stack)
+  - Aligned with INDEC/BCRA monthly reports
+- **Impacto**: Operational agility (minutes vs hours), ML predictions reflect current economics
+- **Migration Guide**: inventario-retail/R4_ML_INFLATION_MIGRATION_GUIDE.md
+- **Commits**: d65c95a | Effort: 6h | ROI: 1.7
+
+### Added
+- Migration guides: R2_JWT_SECRET_MIGRATION_GUIDE.md, R4_ML_INFLATION_MIGRATION_GUIDE.md
+- ENV vars: JWT_SECRET_DEPOSITO, JWT_SECRET_NEGOCIO, JWT_SECRET_ML, JWT_SECRET_DASHBOARD
+- ENV vars: OCR_TIMEOUT_SECONDS, INFLATION_RATE_MONTHLY
+- CI/CD: trivy-scan-dependencies job (enforced)
+- AuthManager: per-agent instances with issuer claim support
+- Logging: OCR timeout config, ML inflation rate at startup
 
 ### Changed
-- OCRProcessor: Removed async from process_image method (now sync for thread execution)
-- agente_negocio main_complete.py: Added OCR_TIMEOUT_SECONDS config with timeout wrappers
-- agente_negocio Dockerfile: Added ENV OCR_TIMEOUT_SECONDS=30
+- shared/auth.py: AuthManager accepts optional secret_key and issuer
+- docker-compose.production.yml: Per-agent secrets with fallback, new env vars
+- .env.production.template: Documented R2, R3, R4 variables with generation instructions
+- ml/predictor.py: Externalized inflation rate to env var
+- ml/features.py: Optional inflation parameter with env var fallback
+- agente_negocio/main_complete.py: OCR timeout wrappers on 2 endpoints
+- agente_negocio/ocr/processor.py: Sync process_image (was async, incorrect)
+- web_dashboard/Dockerfile: Added USER dashboarduser with proper setup
 
-Effort: R1=3h + R6=2h + R3=4h = 9h
-ROI: R1=3.5, R6=2.1, R3=1.8 (all exceed 1.6 threshold)
+### Documentation
+- R2 Migration Guide: Gradual rollout strategy, validation tests, rollback plan
+- R4 Migration Guide: Monthly INDEC update process, operational guidelines
+- CHANGELOG: Comprehensive ETAPA 2 summary with ROI metrics
+
+### Metrics
+- **Total Effort**: 23 hours (R1=3h, R6=2h, R3=4h, R2=8h, R4=6h)
+- **Average ROI**: 1.95 (all exceed 1.6 threshold)
+- **Severity Mitigated**: Avg 7.6/10 (range: 6-10)
+- **Impact**: Security hardening, operational flexibility, zero-downtime migrations
+- **Commits**: 5 technical + 1 docs = 6 total
+
+### Pending (Future Releases)
+- R5: Forensic audit cascade failure (5h, ROI 1.6, severity 6)
+- R7: WebSocket memory leak cleanup (3h, ROI 1.8, severity 5)
+
+---
+
+## [v0.9.0] - 2025-10-03 [DEPRECATED - SEE v0.10.0]
+### Note
+This version was an intermediate release. All R1/R6/R3 mitigations are now consolidated in v0.10.0 above.
 
 ## [v0.8.4] - 2025-09-30
 ### Added

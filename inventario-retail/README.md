@@ -50,9 +50,13 @@ nano .env
 #### Variables Importantes (.env):
 
 ```bash
-# Inflación Argentina
-INFLACION_MENSUAL=4.5
+# Inflación Argentina (R4 Mitigation: externalizada desde v0.10.0)
+INFLACION_MENSUAL=4.5  # Deprecated - usar INFLATION_RATE_MONTHLY
+INFLATION_RATE_MONTHLY=0.045  # Tasa mensual como decimal (0.045 = 4.5%)
 TEMPORADA=verano
+
+# OCR Configuration (R3 Mitigation: timeout configurable desde v0.10.0)
+OCR_TIMEOUT_SECONDS=30  # Timeout para procesamiento OCR (default 30s)
 
 # Telegram Alertas (opcional)
 TELEGRAM_BOT_TOKEN=tu_bot_token
@@ -62,9 +66,21 @@ TELEGRAM_ALERTAS_ENABLED=true
 # Base de Datos
 DATABASE_URL=sqlite:///./data/inventario.db?check_same_thread=false
 
-# JWT Seguridad
+# JWT Seguridad (R2 Mitigation: secretos por agente desde v0.10.0)
+# Opción 1: Secreto global (legacy, backward compatible)
 JWT_SECRET=generar-secreto-fuerte-256-bits
+
+# Opción 2: Secretos aislados por agente (RECOMENDADO producción)
+# Generar con: openssl rand -base64 32
+JWT_SECRET_DEPOSITO=generar-secreto-deposito-256-bits
+JWT_SECRET_NEGOCIO=generar-secreto-negocio-256-bits
+JWT_SECRET_ML=generar-secreto-ml-256-bits
+JWT_SECRET_DASHBOARD=generar-secreto-dashboard-256-bits
 ```
+
+**Guías de Migración**:
+- R2 (JWT Secrets): `inventario-retail/R2_JWT_SECRET_MIGRATION_GUIDE.md`
+- R4 (ML Inflation): `inventario-retail/R4_ML_INFLATION_MIGRATION_GUIDE.md`
 
 ## 🚀 Ejecución
 
