@@ -23,8 +23,12 @@ class OCRProcessor:
             logger.error(f"Error inicializando OCR: {e}")
             self.reader = None
 
-    async def process_image(self, image_bytes: bytes) -> Dict:
-        """Procesar imagen con OCR y extraer datos AFIP"""
+    def process_image(self, image_bytes: bytes) -> Dict:
+        """Procesar imagen con OCR y extraer datos AFIP
+        
+        NOTA: Este método es sync porque se ejecuta con asyncio.to_thread()
+        El timeout se maneja externamente con asyncio.wait_for()
+        """
         if not self.reader:
             raise Exception("OCR no inicializado")
 
@@ -39,7 +43,7 @@ class OCRProcessor:
             else:
                 gray = image_array
 
-            # OCR con EasyOCR
+            # OCR con EasyOCR (operación bloqueante, puede tardar)
             results = self.reader.readtext(gray, paragraph=True)
 
             # Combinar texto

@@ -45,6 +45,10 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+# Configuración de timeouts OCR (R3 mitigation)
+OCR_TIMEOUT_SECONDS = int(os.getenv('OCR_TIMEOUT_SECONDS', '30'))
+logger.info(f"OCR timeout configured: {OCR_TIMEOUT_SECONDS} seconds")
+
 # Pydantic models
 
 class InvoiceProcessRequest(BaseModel):
@@ -276,11 +280,19 @@ async def process_invoice(
                 image_preprocessor.preprocess_image, temp_path
             )
 
-            # Step 2: OCR Processing
-            logger.info("Performing OCR...")
-            ocr_results = await asyncio.to_thread(
-                ocr_processor.process_image, processed_image_path
-            )
+            # Step 2: OCR Processing with timeout (R3 mitigation)
+            logger.info(f"Performing OCR (timeout: {OCR_TIMEOUT_SECONDS}s)...")
+            try:
+                ocr_results = await asyncio.wait_for(
+                    asyncio.to_thread(ocr_processor.process_image, processed_image_path),
+                    timeout=OCR_TIMEOUT_SECONDS
+                )
+            except asyncio.TimeoutError:
+                logger.error(f"OCR processing timed out after {OCR_TIMEOUT_SECONDS}s")
+                raise HTTPException(
+                    status_code=504,
+                    detail=f"OCR processing exceeded timeout ({OCR_TIMEOUT_SECONDS}s). Try with a clearer image or smaller file."
+                )
 
             # Step 3: Extract invoice data
             logger.info("Extracting invoice data...")
@@ -518,11 +530,19 @@ async def test_ocr(
 
             extracted_data = None
 
-            # Step 2: OCR (if not preprocess-only)
+            # Step 2: OCR (if not preprocess-only) with timeout (R3 mitigation)
             if not preprocess_only:
-                ocr_results = await asyncio.to_thread(
-                    ocr_processor.process_image, processed_image_path
-                )
+                try:
+                    ocr_results = await asyncio.wait_for(
+                        asyncio.to_thread(ocr_processor.process_image, processed_image_path),
+                        timeout=OCR_TIMEOUT_SECONDS
+                    )
+                except asyncio.TimeoutError:
+                    logger.error(f"OCR test processing timed out after {OCR_TIMEOUT_SECONDS}s")
+                    raise HTTPException(
+                        status_code=504,
+                        detail=f"OCR processing exceeded timeout ({OCR_TIMEOUT_SECONDS}s)"
+                    )
 
                 # Step 3: Extract structured data
                 extracted_data = await asyncio.to_thread(

@@ -33,6 +33,7 @@ COPY --chown=negocio:negocio ../shared ../shared
 ENV PYTHONPATH=/app
 ENV PATH=/home/negocio/.local/bin:$PATH
 ENV TESSERACT_CMD=/usr/bin/tesseract
+ENV OCR_TIMEOUT_SECONDS=30
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
