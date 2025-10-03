@@ -2,6 +2,16 @@
 
 Todas las notas siguen el formato Keep a Changelog y versionado SemVer.
 
+## [Unreleased]
+### Planning
+- **ETAPA 3**: Mega plan created - Consolidación Operacional y Features Críticas
+  - Fase 1: Deploy & Observability (Mes 1, 40-48h)
+  - Fase 2: Automation & Features (Mes 2-3, 60-72h)
+  - Fase 3: Optimization & Tech Debt (Mes 3-4, 32-40h)
+  - Total: 132-160h / 14 semanas
+  - ROI esperado: 2.1x promedio
+  - Doc: `MEGA_PLAN_ETAPA_3.md` (690 lines)
+
 ## [v0.10.0] - 2025-10-03
 ### Security (ETAPA 2 COMPLETA: Risk Mitigations R1, R2, R3, R4, R6)
 
