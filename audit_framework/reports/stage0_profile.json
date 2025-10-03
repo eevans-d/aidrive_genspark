@@ -1,0 +1,210 @@
+{
+  "project_metadata": {
+    "name": "aidrive_genspark_forensic",
+    "version": "0.8.4",
+    "primary_language": "Python",
+    "criticality": "mission-critical",
+    "freeze_status": true,
+    "context": "retail_argentino_afip",
+    "repository_size_mb": 27,
+    "last_update": "2025-10-02T21:03:15Z"
+  },
+  "architecture": {
+    "pattern": "microservices-multi-agent",
+    "services_count": 7,
+    "components": [
+      {
+        "name": "agente_deposito",
+        "type": "agent",
+        "port": 8001,
+        "dependencies": [
+          "postgres",
+          "redis"
+        ],
+        "criticality": "critical",
+        "framework": "FastAPI",
+        "location": "inventario-retail/agente_deposito/",
+        "main_file": "main.py"
+      },
+      {
+        "name": "agente_negocio",
+        "type": "agent",
+        "port": 8002,
+        "dependencies": [
+          "postgres",
+          "redis",
+          "tesseract"
+        ],
+        "criticality": "critical",
+        "ocr_engines": [
+          "EasyOCR",
+          "Tesseract",
+          "PaddleOCR"
+        ],
+        "framework": "FastAPI",
+        "location": "inventario-retail/agente_negocio/",
+        "main_file": "main.py"
+      },
+      {
+        "name": "ml_service",
+        "type": "agent",
+        "port": 8003,
+        "dependencies": [
+          "postgres",
+          "redis",
+          "models"
+        ],
+        "criticality": "critical",
+        "ml_capabilities": true,
+        "framework": "FastAPI",
+        "location": "inventario-retail/ml/",
+        "main_file": "main.py"
+      },
+      {
+        "name": "web_dashboard",
+        "type": "agent",
+        "port": 8080,
+        "dependencies": [
+          "all_agents",
+          "postgres",
+          "redis"
+        ],
+        "criticality": "critical",
+        "websockets": true,
+        "framework": "FastAPI",
+        "location": "inventario-retail/web_dashboard/",
+        "main_file": "dashboard_app.py"
+      },
+      {
+        "name": "nginx",
+        "type": "reverse_proxy",
+        "ports": [
+          80,
+          443
+        ],
+        "dependencies": [
+          "web_dashboard"
+        ],
+        "criticality": "high",
+        "ssl_termination": true,
+        "location": "inventario-retail/nginx/"
+      },
+      {
+        "name": "postgres",
+        "type": "database",
+        "port": 5432,
+        "version": "15-alpine",
+        "criticality": "critical"
+      },
+      {
+        "name": "redis",
+        "type": "cache",
+        "port": 6379,
+        "version": "7-alpine",
+        "criticality": "high"
+      }
+    ]
+  },
+  "critical_flows": [
+    {
+      "name": "OCR_Multi_Engine_Processing",
+      "description": "Procesamiento de facturas AFIP con 3 motores OCR y votación",
+      "frequency_rps": 2,
+      "sla_requirements": {
+        "max_latency_ms": 15000,
+        "min_availability_percentage": 99.0
+      },
+      "components": [
+        "agente_negocio",
+        "ocr_engines"
+      ],
+      "critical": true
+    },
+    {
+      "name": "ML_Demand_Prediction_Inflation_Adjusted",
+      "description": "Predicción de demanda ajustada por inflación 4.5% mensual",
+      "frequency_rps": 5,
+      "sla_requirements": {
+        "max_latency_ms": 800,
+        "min_availability_percentage": 99.0
+      },
+      "components": [
+        "ml_service",
+        "postgres",
+        "redis"
+      ],
+      "inflation_integration": true,
+      "critical": true
+    },
+    {
+      "name": "Forensic_Audit_5_Phases",
+      "description": "Auditoría forense en 5 fases secuenciales",
+      "frequency_rps": 0.1,
+      "sla_requirements": {
+        "max_latency_ms": 300000,
+        "min_availability_percentage": 99.5
+      },
+      "components": [
+        "all_agents"
+      ],
+      "phase_count": 5,
+      "critical": true
+    },
+    {
+      "name": "Dashboard_Inter_Agent_Communication",
+      "description": "Comunicación orquestada Dashboard → Agentes con JWT",
+      "frequency_rps": 25,
+      "sla_requirements": {
+        "max_latency_ms": 250,
+        "min_availability_percentage": 99.5
+      },
+      "components": [
+        "web_dashboard",
+        "all_agents"
+      ],
+      "jwt_secured": true,
+      "critical": true
+    }
+  ],
+  "security_context": {
+    "jwt_secret_single": true,
+    "api_keys_required": [
+      "DASHBOARD_API_KEY",
+      "DASHBOARD_UI_API_KEY"
+    ],
+    "containers_root_risk": true,
+    "ssl_configured": true,
+    "cors_configured": true,
+    "rate_limiting": true,
+    "authentication_method": "JWT",
+    "vulnerabilities_known": 0
+  },
+  "afip_context": {
+    "cuit_validation": true,
+    "inflation_rate_monthly": 4.5,
+    "inflation_hardcoded": true,
+    "timezone": "America/Argentina/Buenos_Aires",
+    "currency": "ARS",
+    "tax_integration": true,
+    "factura_types": [
+      "A",
+      "B",
+      "C"
+    ],
+    "ocr_validation": true
+  },
+  "freeze_constraints": {
+    "directory_renames": false,
+    "heavy_dependencies": false,
+    "broad_refactors": false,
+    "core_logic_changes": false,
+    "reason": "Pre Go-Live freeze - preservar estabilidad",
+    "allowed_changes": [
+      "External wrappers and analysis tools",
+      "Non-invasive configuration",
+      "Documentation updates",
+      "Monitoring enhancements"
+    ]
+  },
+  "extraction_timestamp": "2025-10-02T21:39:35.225584"
+}

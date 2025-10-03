@@ -1,0 +1,233 @@
+{
+  "jwt_configuration": {
+    "single_secret": true,
+    "secret_name": "JWT_SECRET_KEY",
+    "shared_across_services": true,
+    "rotation_policy": "not_configured",
+    "secret_complexity": "unknown",
+    "storage_method": "environment_variable",
+    "agents_using_jwt": [
+      "agente_deposito",
+      "agente_negocio",
+      "ml_service",
+      "web_dashboard"
+    ]
+  },
+  "communication_flows": [
+    {
+      "from": "web_dashboard",
+      "to": "agente_deposito",
+      "auth_method": "JWT",
+      "secret": "JWT_SECRET_KEY",
+      "port": 8001,
+      "protocol": "HTTP",
+      "encrypted": false,
+      "criticality": "critical"
+    },
+    {
+      "from": "web_dashboard",
+      "to": "agente_negocio",
+      "auth_method": "JWT",
+      "secret": "JWT_SECRET_KEY",
+      "port": 8002,
+      "protocol": "HTTP",
+      "encrypted": false,
+      "criticality": "critical"
+    },
+    {
+      "from": "web_dashboard",
+      "to": "ml_service",
+      "auth_method": "JWT",
+      "secret": "JWT_SECRET_KEY",
+      "port": 8003,
+      "protocol": "HTTP",
+      "encrypted": false,
+      "criticality": "critical"
+    }
+  ],
+  "risk_assessment": {
+    "single_secret_risk": {
+      "id": "JWT_SINGLE_SECRET_RISK",
+      "severity": 9,
+      "impact": 10,
+      "probability": 6,
+      "description": "Un único JWT_SECRET_KEY compartido entre todos los agentes",
+      "consequence": "Compromiso del JWT → Todos los agentes vulnerables",
+      "affected_services": [
+        "agente_deposito",
+        "agente_negocio",
+        "ml_service",
+        "web_dashboard"
+      ],
+      "attack_scenario": [
+        "1. Atacante compromete un agente (ej: agente_negocio)",
+        "2. Obtiene JWT_SECRET_KEY del ambiente",
+        "3. Genera JWTs válidos para todos los demás agentes",
+        "4. Bypass completo de autenticación inter-agente",
+        "5. Acceso total al sistema multi-agente"
+      ]
+    },
+    "no_jwt_rotation": {
+      "id": "JWT_NO_ROTATION",
+      "severity": 6,
+      "impact": 7,
+      "probability": 8,
+      "description": "No hay política de rotación de JWT secret",
+      "consequence": "Secret comprometido permanece válido indefinidamente"
+    },
+    "env_var_storage": {
+      "id": "JWT_ENV_VAR_STORAGE",
+      "severity": 5,
+      "impact": 6,
+      "probability": 7,
+      "description": "JWT secret almacenado en variable de entorno",
+      "consequence": "Vulnerable a process inspection y container escape"
+    },
+    "http_transmission": {
+      "id": "JWT_HTTP_TRANSMISSION",
+      "severity": 7,
+      "impact": 8,
+      "probability": 5,
+      "description": "JWT transmitido sobre HTTP (no HTTPS) en red Docker",
+      "consequence": "Vulnerable a sniffing en red comprometida"
+    }
+  },
+  "attack_vectors": [
+    {
+      "vector": "Container Escape → JWT Extraction",
+      "steps": [
+        "1. Explotar vulnerabilidad en container (root execution)",
+        "2. Escapar del container",
+        "3. Leer JWT_SECRET_KEY de docker-compose.yml o .env",
+        "4. Generar JWTs válidos para todos los agentes"
+      ],
+      "likelihood": "HIGH",
+      "impact": "CRITICAL",
+      "prerequisites": [
+        "Container root execution",
+        "Docker host access"
+      ]
+    },
+    {
+      "vector": "Agent Compromise → Lateral Movement",
+      "steps": [
+        "1. Comprometer un agente individual (ej: OCR vulnerability)",
+        "2. Extraer JWT_SECRET_KEY del ambiente del agente",
+        "3. Autenticarse como cualquier otro agente",
+        "4. Movimiento lateral sin detección"
+      ],
+      "likelihood": "MEDIUM",
+      "impact": "CRITICAL",
+      "prerequisites": [
+        "Agent vulnerability",
+        "Process memory access"
+      ]
+    },
+    {
+      "vector": "Network Sniffing → JWT Replay",
+      "steps": [
+        "1. Comprometer red Docker interna",
+        "2. Sniff tráfico HTTP entre agentes",
+        "3. Capturar JWT tokens en tránsito",
+        "4. Replay tokens para impersonation"
+      ],
+      "likelihood": "LOW",
+      "impact": "HIGH",
+      "prerequisites": [
+        "Docker network access",
+        "HTTP traffic"
+      ]
+    },
+    {
+      "vector": "Supply Chain → Secret Exposure",
+      "steps": [
+        "1. Secret hardcoded en código o config",
+        "2. Push accidental a repositorio público",
+        "3. Secret expuesto en logs o error messages",
+        "4. Descubrimiento por atacante externo"
+      ],
+      "likelihood": "MEDIUM",
+      "impact": "CRITICAL",
+      "prerequisites": [
+        "Developer error",
+        "Insufficient secret scanning"
+      ]
+    }
+  ],
+  "mitigation_recommendations": [
+    {
+      "id": "MIT-1",
+      "priority": "CRITICAL",
+      "title": "Implementar JWT per-service",
+      "description": "Cada agente debe tener su propio JWT secret",
+      "effort_hours": 8.0,
+      "benefits": [
+        "Compromiso de un agente no afecta otros",
+        "Granularidad en auditoría y revocación",
+        "Aislamiento de security boundaries"
+      ],
+      "implementation": [
+        "1. Generar JWT_SECRET_DEPOSITO, JWT_SECRET_NEGOCIO, etc.",
+        "2. Configurar validación específica por agente",
+        "3. Dashboard mantiene múltiples secrets para comunicación",
+        "4. Actualizar docker-compose con secrets individuales"
+      ],
+      "alternatives": [
+        "Implementar mTLS entre servicios (esfuerzo: 12h)",
+        "Usar service mesh (Istio/Linkerd) (esfuerzo: 20h)"
+      ]
+    },
+    {
+      "id": "MIT-2",
+      "priority": "HIGH",
+      "title": "Implementar JWT rotation policy",
+      "description": "Rotación automática de secrets cada 30 días",
+      "effort_hours": 4.0,
+      "benefits": [
+        "Limita ventana de compromiso",
+        "Compliance con security best practices"
+      ],
+      "implementation": [
+        "1. Crear script de rotación automática",
+        "2. Almacenar secrets en secret manager (Vault, AWS Secrets)",
+        "3. Configurar reload sin downtime",
+        "4. Alertar si rotación falla"
+      ]
+    },
+    {
+      "id": "MIT-3",
+      "priority": "HIGH",
+      "title": "Migrar a HTTPS/TLS inter-agent",
+      "description": "Encriptar comunicación HTTP entre agentes",
+      "effort_hours": 6.0,
+      "benefits": [
+        "Protección contra sniffing",
+        "Validación de identidad con certificados"
+      ],
+      "implementation": [
+        "1. Generar certificados TLS internos",
+        "2. Configurar FastAPI con HTTPS",
+        "3. Actualizar clientes HTTP para validar certs",
+        "4. Documentar proceso de renovación"
+      ]
+    },
+    {
+      "id": "MIT-4",
+      "priority": "MEDIUM",
+      "title": "Implementar JWT claims específicos",
+      "description": "Agregar claims de scope y expiration",
+      "effort_hours": 3.0,
+      "benefits": [
+        "Principle of least privilege",
+        "Tokens con tiempo de vida limitado",
+        "Auditoría granular de permisos"
+      ],
+      "implementation": [
+        "1. Definir scopes: deposito:read, negocio:write, etc.",
+        "2. Agregar exp claim (1 hora)",
+        "3. Validar scopes en cada endpoint",
+        "4. Implementar token refresh mechanism"
+      ]
+    }
+  ]
+}

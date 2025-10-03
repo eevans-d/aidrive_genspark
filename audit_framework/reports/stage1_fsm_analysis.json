@@ -1,0 +1,152 @@
+{
+  "fsm_count": 5,
+  "agents": {
+    "agente_deposito": {
+      "description": "Gestión de inventario con transacciones ACID",
+      "state_count": 5,
+      "transition_count": 6,
+      "terminal_states": [],
+      "dead_states": [],
+      "unreachable_states": [],
+      "critical_path_length": 5,
+      "has_timeout_states": true,
+      "has_error_recovery": true,
+      "complexity": "LOW"
+    },
+    "agente_negocio": {
+      "description": "OCR Multi-Engine + Validación AFIP",
+      "state_count": 9,
+      "transition_count": 10,
+      "terminal_states": [
+        "error"
+      ],
+      "dead_states": [
+        "error"
+      ],
+      "unreachable_states": [],
+      "critical_path_length": 9,
+      "has_timeout_states": true,
+      "has_error_recovery": false,
+      "complexity": "MEDIUM"
+    },
+    "ml_service": {
+      "description": "Predicción de demanda con ajuste inflación 4.5%",
+      "state_count": 7,
+      "transition_count": 7,
+      "terminal_states": [
+        "error"
+      ],
+      "dead_states": [
+        "error"
+      ],
+      "unreachable_states": [],
+      "critical_path_length": 7,
+      "has_timeout_states": false,
+      "has_error_recovery": true,
+      "complexity": "MEDIUM"
+    },
+    "web_dashboard": {
+      "description": "Orquestador con JWT y WebSockets",
+      "state_count": 7,
+      "transition_count": 8,
+      "terminal_states": [
+        "error"
+      ],
+      "dead_states": [
+        "error"
+      ],
+      "unreachable_states": [],
+      "critical_path_length": 7,
+      "has_timeout_states": false,
+      "has_error_recovery": true,
+      "complexity": "MEDIUM"
+    },
+    "forensic_audit": {
+      "description": "Auditoría forense en 5 fases secuenciales",
+      "state_count": 8,
+      "transition_count": 8,
+      "terminal_states": [
+        "error"
+      ],
+      "dead_states": [
+        "error"
+      ],
+      "unreachable_states": [],
+      "critical_path_length": 8,
+      "has_timeout_states": false,
+      "has_error_recovery": false,
+      "complexity": "MEDIUM"
+    }
+  },
+  "critical_findings": [
+    {
+      "agent": "agente_negocio",
+      "type": "timeout_not_configured",
+      "severity": "HIGH",
+      "description": "agente_negocio has timeout states without explicit configuration"
+    },
+    {
+      "agent": "agente_negocio",
+      "type": "no_error_recovery",
+      "severity": "MEDIUM",
+      "description": "agente_negocio lacks error recovery mechanisms"
+    },
+    {
+      "agent": "forensic_audit",
+      "type": "no_error_recovery",
+      "severity": "MEDIUM",
+      "description": "forensic_audit lacks error recovery mechanisms"
+    }
+  ],
+  "timeout_configurations": [
+    {
+      "agent": "agente_deposito",
+      "timeout_states": [
+        "database_access"
+      ],
+      "configured": false
+    },
+    {
+      "agent": "agente_negocio",
+      "timeout_states": [
+        "easyocr_processing",
+        "tesseract_processing",
+        "paddleocr_processing"
+      ],
+      "configured": true
+    }
+  ],
+  "error_recovery_analysis": {
+    "agente_deposito": {
+      "has_recovery": true,
+      "error_states": [
+        "error"
+      ]
+    },
+    "agente_negocio": {
+      "has_recovery": false,
+      "error_states": [
+        "error"
+      ]
+    },
+    "ml_service": {
+      "has_recovery": true,
+      "error_states": [
+        "error"
+      ]
+    },
+    "web_dashboard": {
+      "has_recovery": true,
+      "error_states": [
+        "error"
+      ]
+    },
+    "forensic_audit": {
+      "has_recovery": false,
+      "error_states": [
+        "error"
+      ]
+    }
+  },
+  "critical_paths_summary": []
+}

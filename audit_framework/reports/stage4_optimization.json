@@ -1,0 +1,169 @@
+{
+  "timestamp": "2025-10-02T21:39:35.232857",
+  "total_strategies": 7,
+  "optimization_phases": [
+    {
+      "property_id": "P1",
+      "risk_id": "R1_CONTAINER_ROOT_EXECUTION",
+      "current_status": "FAIL",
+      "optimization_goal": "Implementar Ningún contenedor de agente debe ejecutarse con UID 0 (root)",
+      "implementation_steps": [
+        "1. Crear usuarios no-root en cada Dockerfile",
+        "2. Agregar directiva USER antes de CMD/ENTRYPOINT",
+        "3. Ajustar permisos de archivos/directorios",
+        "4. Actualizar docker-compose con security_opt",
+        "5. Ejecutar smoke test verificando UID > 0"
+      ],
+      "estimated_effort_hours": 3.0,
+      "expected_roi": 26.67,
+      "priority": "CRITICAL",
+      "dependencies": [],
+      "validation_criteria": [
+        "docker exec <container> id -u retorna valor > 0",
+        "Container logs no muestran warnings de permisos",
+        "Aplicación funciona correctamente con usuario no-root"
+      ]
+    },
+    {
+      "property_id": "P2",
+      "risk_id": "R2_JWT_SINGLE_SECRET",
+      "current_status": "FAIL",
+      "optimization_goal": "Implementar Cada agente debe tener secreto JWT único para prevenir lateral movement",
+      "implementation_steps": [
+        "1. Generar JWT secrets únicos por servicio",
+        "2. Actualizar docker-compose.production.yml",
+        "3. Modificar validación JWT en cada agente",
+        "4. Implementar rotación automática de secrets",
+        "5. Ejecutar test de cross-service authentication"
+      ],
+      "estimated_effort_hours": 8.0,
+      "expected_roi": 6.75,
+      "priority": "CRITICAL",
+      "dependencies": [
+        "Secret management system (Vault/AWS Secrets)"
+      ],
+      "validation_criteria": [
+        "JWT de agente_deposito no válido en agente_negocio",
+        "Cada servicio valida solo su propio JWT",
+        "Rotación automática funciona sin downtime"
+      ]
+    },
+    {
+      "property_id": "P4",
+      "risk_id": "R4_ML_HARDCODED_INFLATION",
+      "current_status": "FAIL",
+      "optimization_goal": "Implementar Tasa de inflación 4.5% debe externalizarse a configuración",
+      "implementation_steps": [
+        "1. Externalizar INFLATION_RATE_MONTHLY a .env",
+        "2. Crear endpoint /config/inflation para actualización",
+        "3. Implementar validación de rango (0-100%)",
+        "4. Agregar hot-reload sin reiniciar servicio",
+        "5. Test de cambio de inflación en runtime"
+      ],
+      "estimated_effort_hours": 6.0,
+      "expected_roi": 9.0,
+      "priority": "MEDIUM",
+      "dependencies": [],
+      "validation_criteria": [
+        "Inflación no está hardcoded en código",
+        "Cambio de config se refleja sin redeploy",
+        "Validación previene valores fuera de rango"
+      ]
+    },
+    {
+      "property_id": "P7",
+      "risk_id": "R7_WEBSOCKET_MEMORY_LEAK",
+      "current_status": "FAIL",
+      "optimization_goal": "Implementar Conexiones WebSocket deben tener cleanup explícito",
+      "implementation_steps": [
+        "1. Implementar @socketio.on('disconnect') handler",
+        "2. Agregar cleanup de recursos en disconnect",
+        "3. Configurar connection timeout y max connections",
+        "4. Implementar connection pooling",
+        "5. Load test con 1000 conexiones concurrentes"
+      ],
+      "estimated_effort_hours": 3.0,
+      "expected_roi": 14.0,
+      "priority": "HIGH",
+      "dependencies": [],
+      "validation_criteria": [
+        "Memoria se libera tras disconnect",
+        "Max connections limit funciona correctamente",
+        "No memory leaks tras load test"
+      ]
+    }
+  ],
+  "implementation_roadmap": {
+    "phase_1_week_1": {
+      "duration": "1 semana",
+      "focus": "Quick wins (ROI ≥ 20)",
+      "optimizations": [
+        "P1_Container_Security",
+        "P6_Dependency_Scanning"
+      ],
+      "total_effort_hours": 5,
+      "expected_impact": "Reducción inmediata de superficie de ataque"
+    },
+    "phase_2_weeks_2_3": {
+      "duration": "2 semanas",
+      "focus": "High-priority improvements (ROI ≥ 10)",
+      "optimizations": [
+        "P3_OCR_Timeouts",
+        "P7_WebSocket_Cleanup"
+      ],
+      "total_effort_hours": 7,
+      "expected_impact": "Mejora de resiliencia y performance"
+    },
+    "phase_3_month_2": {
+      "duration": "1 mes",
+      "focus": "Structural improvements",
+      "optimizations": [
+        "P4_ML_Configuration",
+        "P5_Forensic_Checkpointing",
+        "P2_JWT_Per_Service"
+      ],
+      "total_effort_hours": 19,
+      "expected_impact": "Arquitectura más robusta y mantenible"
+    }
+  },
+  "quick_wins": [
+    {
+      "risk_id": "R6_NO_DEPENDENCY_SCANNING",
+      "title": "Sin escaneo automatizado de vulnerabilidades en dependencias",
+      "roi": 28.0,
+      "effort_hours": 2.0,
+      "impact": "Immediate security/performance improvement"
+    },
+    {
+      "risk_id": "R1_CONTAINER_ROOT_EXECUTION",
+      "title": "Containers ejecutando como root",
+      "roi": 26.67,
+      "effort_hours": 3.0,
+      "impact": "Immediate security/performance improvement"
+    }
+  ],
+  "long_term_improvements": [
+    {
+      "risk_id": "R4_ML_HARDCODED_INFLATION",
+      "title": "Inflación 4.5% hardcodeada en predicciones ML",
+      "effort_hours": 6.0,
+      "strategic_value": "Architectural improvement",
+      "dependencies": [
+        "Configuration service",
+        "Hot reload mechanism"
+      ]
+    },
+    {
+      "risk_id": "R2_JWT_SINGLE_SECRET",
+      "title": "JWT único compartido entre todos los agentes",
+      "effort_hours": 8.0,
+      "strategic_value": "Architectural improvement",
+      "dependencies": [
+        "Secret management system",
+        "Service mesh (optional)"
+      ]
+    }
+  ],
+  "total_estimated_effort_hours": 20.0,
+  "expected_roi_improvement": 56.42
+}
