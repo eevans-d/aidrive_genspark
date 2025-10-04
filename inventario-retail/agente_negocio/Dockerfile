@@ -25,6 +25,12 @@ WORKDIR /app
 ENV PIP_DEFAULT_TIMEOUT=600
 ENV PIP_RETRIES=5
 
+# Configurar PyPI mirror (Tsinghua) para mayor confiabilidad
+RUN mkdir -p /home/negocio/.pip && \
+    echo "[global]" > /home/negocio/.pip/pip.conf && \
+    echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> /home/negocio/.pip/pip.conf && \
+    echo "trusted-host = pypi.tuna.tsinghua.edu.cn" >> /home/negocio/.pip/pip.conf
+
 # Instalar dependencias Python
 COPY --chown=negocio:negocio ../requirements.txt ./
 RUN pip install --user --no-cache-dir -r requirements.txt

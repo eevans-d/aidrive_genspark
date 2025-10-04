@@ -22,6 +22,12 @@ RUN groupadd -r dashboarduser && useradd --no-log-init -r -g dashboarduser dashb
 ENV PIP_DEFAULT_TIMEOUT=600
 ENV PIP_RETRIES=5
 
+# Configurar PyPI mirror (Tsinghua) para mayor confiabilidad
+RUN mkdir -p /root/.pip && \
+    echo "[global]" > /root/.pip/pip.conf && \
+    echo "index-url = https://pypi.tuna.tsinghua.edu.cn/simple" >> /root/.pip/pip.conf && \
+    echo "trusted-host = pypi.tuna.tsinghua.edu.cn" >> /root/.pip/pip.conf
+
 # Instalar requirements
 COPY web_dashboard/requirements.txt /tmp/requirements.txt
 RUN pip install --upgrade pip && pip install -r /tmp/requirements.txt
