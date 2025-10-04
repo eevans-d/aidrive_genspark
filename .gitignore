@@ -43,3 +43,4 @@ dist/
 # Backups (allow keeping under backups/ dir but ignore other temp zips)
 *.bak
 ~$*
+backups/

@@ -3,7 +3,36 @@
 Todas las notas siguen el formato Keep a Changelog y versionado SemVer.
 
 ## [Unreleased]
-### Planning
+### ETAPA 3 - Phase 1: Deploy & Observability (IN PROGRESS)
+
+#### Week 1: Staging Deployment Success (9h/23h COMPLETADO - 39%)
+**Objetivo**: Resolver blocker de staging deployment (PyPI timeouts ~2.8GB ML packages)
+
+**✅ COMPLETADO (Oct 4, 2025):**
+- **T1.1.1** (2h): PIP_DEFAULT_TIMEOUT=600 + PIP_RETRIES=5 en 4 Dockerfiles
+  - Commit: 9af3d1a "fix(docker): increase pip timeout to 600s"
+  - Mitiga timeouts en descarga de torch (888MB), nvidia-cudnn (707MB)
+- **T1.1.2** (3h): PyPI mirror Tsinghua configurado en 4 Dockerfiles  
+  - Commit: 7193be4 "feat(docker): add PyPI mirror (Tsinghua)"
+  - Fallback: https://pypi.tuna.tsinghua.edu.cn/simple
+- **T1.1.3** (4h): Pre-download wheels strategy
+  - Commit: 8ba725f "feat(deploy): add pre-download wheels strategy"
+  - Script: `scripts/download_wheels.sh` para packages críticos
+  - Documentado en `inventario-retail/DEPLOYMENT_GUIDE.md`
+- **T1.1.4** (1h): Sequential build script
+  - Commit: 3fedb6d "feat(scripts): add sequential build script"
+  - Script: `scripts/build_sequential.sh` (builds one service at a time)
+
+**⏳ PENDIENTE (14h) - Requiere servidor staging:**
+- **T1.1.5** (3h): Deploy staging con nueva estrategia (3 soluciones implementadas)
+- **T1.1.6** (2h): Smoke tests R1-R6 en staging
+- **T1.1.7** (8h): Monitoring 48h + gate decision M1
+
+**📊 Milestone M1 Status**: BLOCKED - Requiere servidor staging externo para validar soluciones
+
+---
+
+### Planning (Completed Oct 3, 2025)
 - **ETAPA 3**: Mega plan created - Consolidación Operacional y Features Críticas
   - Fase 1: Deploy & Observability (Mes 1, 40-48h)
   - Fase 2: Automation & Features (Mes 2-3, 60-72h)

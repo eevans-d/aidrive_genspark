@@ -1,0 +1,145 @@
+# Alertmanager Configuration for Mini Market System
+# Routes alerts to Slack based on severity
+
+global:
+  resolve_timeout: 5m
+  # Slack webhook (set via environment variable)
+  slack_api_url: '${SLACK_WEBHOOK_URL}'
+
+# Template for alert messages
+templates:
+  - '/etc/alertmanager/templates/*.tmpl'
+
+# Routing configuration
+route:
+  # Default receiver for all alerts
+  receiver: 'slack-general'
+  
+  # Group alerts by these labels
+  group_by: ['alertname', 'severity', 'service']
+  
+  # Wait before sending first notification
+  group_wait: 10s
+  
+  # Wait before sending batch of new alerts
+  group_interval: 5m
+  
+  # Wait before re-sending resolved alerts
+  repeat_interval: 3h
+  
+  # Child routes for different severity levels
+  routes:
+    # CRITICAL alerts → Slack #alerts-critical (immediate)
+    - match:
+        severity: critical
+      receiver: 'slack-critical'
+      group_wait: 10s
+      repeat_interval: 30m
+      continue: true  # Also send to general channel
+    
+    # HIGH alerts → Slack #alerts-high
+    - match:
+        severity: high
+      receiver: 'slack-high'
+      group_wait: 30s
+      repeat_interval: 1h
+    
+    # MEDIUM alerts → Slack #alerts-medium (batched)
+    - match:
+        severity: medium
+      receiver: 'slack-medium'
+      group_wait: 5m
+      repeat_interval: 4h
+
+# Inhibition rules (suppress lower priority when higher exists)
+inhibit_rules:
+  # If service is down, don't alert on high latency/errors
+  - source_match:
+      severity: 'critical'
+      alertname: 'ServiceDown'
+    target_match_re:
+      severity: 'high|medium'
+    equal: ['service']
+  
+  # If database is down, don't alert on connection issues
+  - source_match:
+      severity: 'critical'
+      alertname: 'DatabaseDown'
+    target_match:
+      category: 'database'
+    equal: ['instance']
+
+# Receiver configurations
+receivers:
+  # General channel (all alerts)
+  - name: 'slack-general'
+    slack_configs:
+      - channel: '#minimarket-alerts'
+        username: 'Prometheus'
+        icon_emoji: ':warning:'
+        title: '{{ if eq .Status "firing" }}🔥 ALERT FIRING{{ else }}✅ ALERT RESOLVED{{ end }}'
+        text: |
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *Severity:* {{ .CommonLabels.severity | toUpper }}
+          *Service:* {{ .CommonLabels.service }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Runbook:* {{ .CommonAnnotations.runbook }}
+          *Status:* {{ .Status | toUpper }}
+          *Firing Count:* {{ len .Alerts.Firing }}
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}danger{{ else }}good{{ end }}'
+  
+  # Critical alerts (separate channel + @here mention)
+  - name: 'slack-critical'
+    slack_configs:
+      - channel: '#minimarket-alerts-critical'
+        username: 'Prometheus CRITICAL'
+        icon_emoji: ':rotating_light:'
+        title: '<!here> 🚨 CRITICAL ALERT 🚨'
+        text: |
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *Service:* {{ .CommonLabels.service }}
+          *Instance:* {{ .CommonLabels.instance }}
+          *Description:* {{ .CommonAnnotations.description }}
+          
+          *Action Required:* {{ .CommonAnnotations.runbook }}
+          
+          *Status:* {{ .Status | toUpper }}
+          *Started:* {{ .StartsAt }}
+        send_resolved: true
+        color: 'danger'
+  
+  # High severity alerts
+  - name: 'slack-high'
+    slack_configs:
+      - channel: '#minimarket-alerts-high'
+        username: 'Prometheus HIGH'
+        icon_emoji: ':fire:'
+        title: '{{ if eq .Status "firing" }}🔥 HIGH PRIORITY{{ else }}✅ RESOLVED{{ end }}'
+        text: |
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *Severity:* HIGH
+          *Service:* {{ .CommonLabels.service }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Runbook:* {{ .CommonAnnotations.runbook }}
+          *Status:* {{ .Status | toUpper }}
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}warning{{ else }}good{{ end }}'
+  
+  # Medium severity alerts
+  - name: 'slack-medium'
+    slack_configs:
+      - channel: '#minimarket-alerts-medium'
+        username: 'Prometheus MEDIUM'
+        icon_emoji: ':large_yellow_circle:'
+        title: '{{ if eq .Status "firing" }}⚠️ MEDIUM PRIORITY{{ else }}✅ RESOLVED{{ end }}'
+        text: |
+          *Alert:* {{ .CommonAnnotations.summary }}
+          *Service:* {{ .CommonLabels.service }}
+          *Description:* {{ .CommonAnnotations.description }}
+          *Status:* {{ .Status | toUpper }}
+        send_resolved: true
+        color: '{{ if eq .Status "firing" }}#FFA500{{ else }}good{{ end }}'
+  
+  # Fallback receiver (no notifications)
+  - name: 'null'

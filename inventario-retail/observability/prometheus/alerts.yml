@@ -1,0 +1,260 @@
+# Alert Rules for Mini Market Multi-Agent System
+# 15 alerts: 4 Critical, 6 High, 5 Medium
+
+groups:
+  # ============================================
+  # CRITICAL ALERTS (4 rules)
+  # ============================================
+  - name: critical_alerts
+    interval: 30s
+    rules:
+      # 1. Service Down
+      - alert: ServiceDown
+        expr: up == 0
+        for: 2m
+        labels:
+          severity: critical
+          category: availability
+        annotations:
+          summary: "Service {{ $labels.job }} is down"
+          description: "{{ $labels.job }} has been down for more than 2 minutes. Instance: {{ $labels.instance }}"
+          runbook: "Check service logs, verify container is running, check health endpoint"
+
+      # 2. High Error Rate
+      - alert: HighErrorRate
+        expr: |
+          (
+            sum by (service) (rate(http_errors_total[5m]))
+            /
+            sum by (service) (rate(http_requests_total[5m]))
+          ) > 0.05
+        for: 5m
+        labels:
+          severity: critical
+          category: reliability
+        annotations:
+          summary: "High error rate on {{ $labels.service }}"
+          description: "{{ $labels.service }} has error rate > 5% for 5 minutes. Current: {{ $value | humanizePercentage }}"
+          runbook: "Check application logs for errors, verify database connectivity, check recent deployments"
+
+      # 3. Database Down
+      - alert: DatabaseDown
+        expr: pg_up == 0
+        for: 1m
+        labels:
+          severity: critical
+          category: database
+        annotations:
+          summary: "PostgreSQL database is down"
+          description: "PostgreSQL has been unreachable for 1 minute"
+          runbook: "Check postgres container, verify network connectivity, check disk space"
+
+      # 4. Disk Space Critical
+      - alert: DiskSpaceCritical
+        expr: |
+          (
+            node_filesystem_avail_bytes{fstype!="tmpfs"}
+            /
+            node_filesystem_size_bytes{fstype!="tmpfs"}
+          ) < 0.10
+        for: 5m
+        labels:
+          severity: critical
+          category: infrastructure
+        annotations:
+          summary: "Disk space critically low on {{ $labels.instance }}"
+          description: "Disk {{ $labels.mountpoint }} has < 10% space remaining. Current: {{ $value | humanizePercentage }}"
+          runbook: "Clean logs, remove old docker images, expand disk volume"
+
+  # ============================================
+  # HIGH ALERTS (6 rules)
+  # ============================================
+  - name: high_alerts
+    interval: 60s
+    rules:
+      # 5. High Latency
+      - alert: HighLatency
+        expr: |
+          histogram_quantile(0.95,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 0.5
+        for: 10m
+        labels:
+          severity: high
+          category: performance
+        annotations:
+          summary: "High latency on {{ $labels.service }}"
+          description: "P95 latency > 500ms for 10 minutes on {{ $labels.service }}. Current: {{ $value }}s"
+          runbook: "Check slow queries, verify cache hit rate, check CPU/memory usage"
+
+      # 6. Memory Pressure
+      - alert: MemoryPressure
+        expr: |
+          (
+            container_memory_usage_bytes{name=~"agente.*|ml-service|dashboard"}
+            /
+            container_spec_memory_limit_bytes{name=~"agente.*|ml-service|dashboard"}
+          ) > 0.85
+        for: 5m
+        labels:
+          severity: high
+          category: resources
+        annotations:
+          summary: "High memory usage on {{ $labels.name }}"
+          description: "Container {{ $labels.name }} using > 85% memory. Current: {{ $value | humanizePercentage }}"
+          runbook: "Check for memory leaks, verify cache limits, consider scaling up"
+
+      # 7. CPU High
+      - alert: CPUHigh
+        expr: |
+          (
+            rate(container_cpu_usage_seconds_total{name=~"agente.*|ml-service|dashboard"}[5m])
+            /
+            container_spec_cpu_quota{name=~"agente.*|ml-service|dashboard"}
+          ) > 0.80
+        for: 10m
+        labels:
+          severity: high
+          category: resources
+        annotations:
+          summary: "High CPU usage on {{ $labels.name }}"
+          description: "Container {{ $labels.name }} using > 80% CPU. Current: {{ $value | humanizePercentage }}"
+          runbook: "Check hot paths, verify no infinite loops, consider scaling horizontally"
+
+      # 8. Stock Crítico
+      - alert: StockCritico
+        expr: negocio_stock_critico_productos > 0
+        for: 5m
+        labels:
+          severity: high
+          category: business
+        annotations:
+          summary: "Products with critical stock level"
+          description: "{{ $value }} products below minimum stock threshold"
+          runbook: "Review agente_negocio logs, trigger purchase orders, notify inventory manager"
+
+      # 9. OCR Timeout Spike
+      - alert: OCRTimeoutSpike
+        expr: rate(ocr_timeout_events_total[1h]) > 10
+        for: 5m
+        labels:
+          severity: high
+          category: ml
+        annotations:
+          summary: "High OCR timeout rate"
+          description: "OCR timeouts > 10/hour. Current rate: {{ $value }}/hour"
+          runbook: "Check ml_service logs, verify image quality, consider increasing OCR_TIMEOUT_SECONDS"
+
+      # 10. Cache Hit Rate Low
+      - alert: CacheHitRateLow
+        expr: redis_cache_hit_rate < 0.70
+        for: 15m
+        labels:
+          severity: high
+          category: performance
+        annotations:
+          summary: "Low Redis cache hit rate"
+          description: "Cache hit rate < 70% for 15 minutes. Current: {{ $value | humanizePercentage }}"
+          runbook: "Check cache key patterns, verify TTL settings, consider cache warming"
+
+  # ============================================
+  # MEDIUM ALERTS (5 rules)
+  # ============================================
+  - name: medium_alerts
+    interval: 120s
+    rules:
+      # 11. Slow Requests
+      - alert: SlowRequests
+        expr: |
+          histogram_quantile(0.99,
+            sum by (service, le) (rate(http_request_duration_seconds_bucket[5m]))
+          ) > 2.0
+        for: 15m
+        labels:
+          severity: medium
+          category: performance
+        annotations:
+          summary: "Slow requests detected on {{ $labels.service }}"
+          description: "P99 latency > 2s for 15 minutes. Current: {{ $value }}s"
+          runbook: "Investigate slow endpoints, check database queries, review recent changes"
+
+      # 12. Inflación Anomaly
+      - alert: InflacionAnomaly
+        expr: |
+          abs(ml_inflacion_calculada_percent - ml_inflacion_baseline_percent) > 5.0
+        for: 30m
+        labels:
+          severity: medium
+          category: business
+        annotations:
+          summary: "Inflation calculation anomaly detected"
+          description: "Calculated inflation deviates > 5% from baseline. Current: {{ $value }}%"
+          runbook: "Review ml_service logs, verify data sources, check model drift"
+
+      # 13. ML Model Drift
+      - alert: MLModelDrift
+        expr: ml_model_drift_score > 0.15
+        for: 1h
+        labels:
+          severity: medium
+          category: ml
+        annotations:
+          summary: "ML model drift detected"
+          description: "Model drift score > 0.15. Current: {{ $value }}"
+          runbook: "Review prediction accuracy, consider model retraining, check data distribution"
+
+      # 14. Log Volume Spike
+      - alert: LogVolumeSpike
+        expr: |
+          rate(log_lines_total[5m])
+          /
+          avg_over_time(rate(log_lines_total[5m])[1h:5m])
+          > 3.0
+        for: 10m
+        labels:
+          severity: medium
+          category: operations
+        annotations:
+          summary: "Unusual log volume spike"
+          description: "Log volume 3x normal for 10 minutes"
+          runbook: "Check for error floods, verify no debug logging in prod, review recent deployments"
+
+      # 15. Deployment Issue
+      - alert: DeploymentIssue
+        expr: increase(kube_pod_container_status_restarts_total[10m]) > 5
+        for: 5m
+        labels:
+          severity: medium
+          category: deployment
+        annotations:
+          summary: "Container {{ $labels.container }} restarting frequently"
+          description: "Container has restarted > 5 times in 10 minutes"
+          runbook: "Check container logs, verify resource limits, review liveness/readiness probes"
+
+  # ============================================
+  # RECORDING RULES (for dashboard performance)
+  # ============================================
+  - name: recording_rules
+    interval: 30s
+    rules:
+      # Request rate per service
+      - record: job:http_requests:rate5m
+        expr: sum by (job) (rate(http_requests_total[5m]))
+
+      # Error rate per service
+      - record: job:http_errors:rate5m
+        expr: sum by (job) (rate(http_errors_total[5m]))
+
+      # P95 latency per service
+      - record: job:http_request_duration_seconds:p95
+        expr: |
+          histogram_quantile(0.95,
+            sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )
+
+      # P99 latency per service
+      - record: job:http_request_duration_seconds:p99
+        expr: |
+          histogram_quantile(0.99,
+            sum by (job, le) (rate(http_request_duration_seconds_bucket[5m]))
+          )

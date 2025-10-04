@@ -1,0 +1,203 @@
+# Docker Compose for Observability Stack
+# Prometheus, Grafana, Loki, Promtail, Alertmanager
+# Usage: docker-compose -f docker-compose.observability.yml up -d
+
+version: '3.8'
+
+services:
+  # ============================================
+  # PROMETHEUS - Metrics Collection
+  # ============================================
+  prometheus:
+    image: prom/prometheus:v2.47.0
+    container_name: minimarket-prometheus
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./observability/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./observability/prometheus/alerts.yml:/etc/prometheus/alerts.yml:ro
+      - prometheus-data:/prometheus
+    networks:
+      - minimarket-network
+    labels:
+      - "logging=promtail"
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+  # ============================================
+  # ALERTMANAGER - Alert Routing
+  # ============================================
+  alertmanager:
+    image: prom/alertmanager:v0.26.0
+    container_name: minimarket-alertmanager
+    restart: unless-stopped
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--web.external-url=http://localhost:9093'
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./observability/alertmanager/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager-data:/alertmanager
+    networks:
+      - minimarket-network
+    labels:
+      - "logging=promtail"
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+      - SLACK_WEBHOOK_URL=${SLACK_WEBHOOK_URL}
+
+  # ============================================
+  # GRAFANA - Visualization
+  # ============================================
+  grafana:
+    image: grafana/grafana:10.1.0
+    container_name: minimarket-grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    networks:
+      - minimarket-network
+    labels:
+      - "logging=promtail"
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER:-admin}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin}
+      - GF_SERVER_ROOT_URL=http://localhost:3000
+      - GF_INSTALL_PLUGINS=
+      - GF_AUTH_ANONYMOUS_ENABLED=false
+      - GF_ANALYTICS_REPORTING_ENABLED=false
+      - TZ=America/Argentina/Buenos_Aires
+
+  # ============================================
+  # LOKI - Log Aggregation
+  # ============================================
+  loki:
+    image: grafana/loki:2.9.0
+    container_name: minimarket-loki
+    restart: unless-stopped
+    command: -config.file=/etc/loki/loki-config.yml
+    ports:
+      - "3100:3100"
+    volumes:
+      - ./observability/loki/loki-config.yml:/etc/loki/loki-config.yml:ro
+      - loki-data:/loki
+    networks:
+      - minimarket-network
+    labels:
+      - "logging=promtail"
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+  # ============================================
+  # PROMTAIL - Log Shipper
+  # ============================================
+  promtail:
+    image: grafana/promtail:2.9.0
+    container_name: minimarket-promtail
+    restart: unless-stopped
+    command: -config.file=/etc/promtail/promtail-config.yml
+    ports:
+      - "9080:9080"
+    volumes:
+      - ./observability/promtail/promtail-config.yml:/etc/promtail/promtail-config.yml:ro
+      - /var/log:/var/log:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - promtail-data:/tmp
+    networks:
+      - minimarket-network
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+  # ============================================
+  # NODE EXPORTER - System Metrics
+  # ============================================
+  node-exporter:
+    image: prom/node-exporter:v1.6.1
+    container_name: minimarket-node-exporter
+    restart: unless-stopped
+    command:
+      - '--path.rootfs=/host'
+      - '--path.procfs=/host/proc'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    ports:
+      - "9100:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    networks:
+      - minimarket-network
+    environment:
+      - TZ=America/Argentina/Buenos_Aires
+
+  # ============================================
+  # POSTGRES EXPORTER - Database Metrics
+  # ============================================
+  postgres-exporter:
+    image: prometheuscommunity/postgres-exporter:v0.14.0
+    container_name: minimarket-postgres-exporter
+    restart: unless-stopped
+    ports:
+      - "9187:9187"
+    networks:
+      - minimarket-network
+    environment:
+      - DATA_SOURCE_NAME=postgresql://${POSTGRES_USER:-minimarket}:${POSTGRES_PASSWORD:-minimarket}@postgres:5432/${POSTGRES_DB:-minimarket}?sslmode=disable
+      - TZ=America/Argentina/Buenos_Aires
+    depends_on:
+      - postgres
+
+  # ============================================
+  # REDIS EXPORTER - Cache Metrics
+  # ============================================
+  redis-exporter:
+    image: oliver006/redis_exporter:v1.54.0
+    container_name: minimarket-redis-exporter
+    restart: unless-stopped
+    ports:
+      - "9121:9121"
+    networks:
+      - minimarket-network
+    environment:
+      - REDIS_ADDR=redis:6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD:-}
+      - TZ=America/Argentina/Buenos_Aires
+    depends_on:
+      - redis
+
+# ============================================
+# NETWORKS
+# ============================================
+networks:
+  minimarket-network:
+    external: true
+
+# ============================================
+# VOLUMES
+# ============================================
+volumes:
+  prometheus-data:
+    driver: local
+  alertmanager-data:
+    driver: local
+  grafana-data:
+    driver: local
+  loki-data:
+    driver: local
+  promtail-data:
+    driver: local
