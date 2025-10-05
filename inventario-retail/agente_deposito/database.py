@@ -38,7 +38,7 @@ class DatabaseManager:
             poolclass=QueuePool,
             pool_size=10,
             max_overflow=20,
-            pool_recycle=3600,  # Reciclar conexiones cada hora
+            pool_recycle=300,  # Reciclar conexiones cada 5 min (optimizado para PostgreSQL idle timeout)
             pool_pre_ping=True,  # Verificar conexiones antes de usar
             echo=False,  # Cambiar a True para debug SQL
             future=True
