@@ -44,3 +44,22 @@ dist/
 *.bak
 ~$*
 backups/
+
+
+# Optimizaciones agregadas por script
+# Bases de datos
+*.db
+*.sqlite
+*.sqlite3
+data/*.db
+!data/.gitkeep
+
+# Archivos compilados Python (coverage completa)
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+.Python
+
+# Backups de DB movidas
+.backup_db_files/
