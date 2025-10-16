@@ -21,9 +21,28 @@
    - Análisis de estado actual
    - Plan de acción con Opciones A y B
 
-3. **TodoList Actualizado**
-   - 10 tareas organizadas según paths A (con servidor) y B (sin servidor)
-   - Prioridades claras para mañana
+3. **T1.3.2 - Prometheus TLS Setup (1.5h)** ✅
+   - Script `generate_certs.sh` para certificados autofirmados
+   - Certificados generados: CA, Prometheus, Alertmanager (válidos 365 días)
+   - Configuraciones TLS: `prometheus_tls.yml`, `alertmanager_tls.yml`
+   - Autenticación mutua con certificados cliente/servidor
+   - Documentación completa en `TLS_SETUP.md`
+
+4. **T1.3.4 - Data Encryption at Rest (1.5h)** ✅
+   - Extensión pgcrypto con AES-256-CBC
+   - Funciones `encrypt_data()` y `decrypt_data()`
+   - Migración 004: columnas cifradas para datos sensibles
+   - Tabla de auditoría para acceso a datos cifrados
+   - Scripts de rollback para reversión segura
+   - Documentación completa en `DATA_ENCRYPTION.md`
+
+5. **TodoList Actualizado**
+   - Reorganizado según progreso real
+   - 5 tareas completadas, 3 pendientes
+
+6. **Commits y Push**
+   - 4 commits realizados con trabajo del 7 y 16 de octubre
+   - Push pendiente para mañana
 
 ---
 
@@ -252,15 +271,18 @@ inventario-retail/scripts/load_testing/
 
 ## 📊 Proyección de Avance
 
-### Si Path A (Deploy):
-- Completar Week 1 deployment tasks: +12h → **86% total**
-- Comenzar Week 2 observability deployment: +4h → **90% total**
+### Progreso Actual (16 de octubre):
+- **Antes:** 76% (36.5h de 48h)
+- **Completado hoy:** +3h (TLS 1.5h + Encryption 1.5h)
+- **Nuevo total:** **79% (39.5h de 48h)**
 
-### Si Path B (Preparación):
-- Completar Week 3 tasks: +5h → **81% total**
-- Avanzar Week 4 docs: +9h → **100% Phase 1**
+### Si Path B continúa (Preparación sin servidor):
+- **T1.3.5 Load Testing:** +2h → **83% total**
+- **T1.4.1 Deployment Guide:** +2h → **87% total**
+- **T1.4.2 Operations Runbook:** +3h → **93% total**
+- **T1.4.3-T1.4.4 Training/Handover:** +4h → **100% Phase 1**
 
-**En ambos casos:** Fase 1 cerca de completarse (1-2 días más)
+**Proyección:** Completar Fase 1 en 2 días más (~11h de trabajo)
 
 ---
 

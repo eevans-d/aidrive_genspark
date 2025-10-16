@@ -147,9 +147,44 @@ Según `CONTINUAR_MANANA_OCT8.md`, quedaron pendientes:
 ## 🎯 OBJETIVOS PARA HOY (16 octubre)
 
 1. ✅ Crear este documento de estado actualizado
-2. 🔄 Verificar disponibilidad de servidor de staging
-3. 🔄 Actualizar todoList según decisión
-4. 🔄 Iniciar trabajo en path elegido (A o B)
+2. ✅ Push de commits pendientes (Oct 7)
+3. ✅ Asumir Opción B (servidor no disponible)
+4. ✅ Completar T1.3.2 - Prometheus TLS Setup
+5. ✅ Completar T1.3.4 - Data Encryption at Rest
+
+## ✅ TRABAJO COMPLETADO HOY (16 octubre)
+
+### T1.3.2 - Prometheus TLS Setup (1.5h)
+- ✅ Script `generate_certs.sh` para certificados autofirmados
+- ✅ Certificados CA, Prometheus, Alertmanager generados (válidos 365 días)
+- ✅ Configuración TLS: `prometheus_tls.yml`, `alertmanager_tls.yml`
+- ✅ Autenticación mutua con certificados cliente/servidor
+- ✅ Documentación completa en `TLS_SETUP.md` (11 secciones)
+
+### T1.3.4 - Data Encryption at Rest (1.5h)
+- ✅ Extensión `pgcrypto` con funciones `encrypt_data()` y `decrypt_data()`
+- ✅ Algoritmo AES-256-CBC para cifrado de datos sensibles
+- ✅ Migración SQL `004_add_encryption.sql` con:
+  - Columnas cifradas para API keys, JWT secrets, Slack webhooks
+  - Columnas cifradas para costos y precios de productos
+  - Tabla de auditoría `encrypted_data_access_log`
+  - Vista segura `system_config_safe`
+- ✅ Script de rollback `004_add_encryption_rollback.sql`
+- ✅ Documentación completa en `DATA_ENCRYPTION.md` (12 secciones)
+- ✅ Ejemplos de uso en Python con SQLAlchemy
+
+### Progreso Actualizado
+- **Antes:** 76% (36.5h de 48h)
+- **Trabajo hoy:** +3h (TLS 1.5h + Encryption 1.5h)
+- **Nuevo total:** 79% (39.5h de 48h)
+
+### Commits Realizados
+```
+2835004 - ETAPA3-Day3: scripts backup/restore, OWASP review (Oct 7)
+fdcdc06 - ETAPA3-Day12: Análisis gap, progreso 76% (Oct 16)
+0f287c7 - feat(T1.3.2): Configuración TLS Prometheus/Alertmanager
+2165655 - feat(T1.3.4): Cifrado datos en reposo PostgreSQL
+```
 
 ---
 
