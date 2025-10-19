@@ -71,3 +71,4 @@ inventario-retail/scripts/load_testing/results/*.json
 inventario-retail/scripts/load_testing/results/*.txt
 !inventario-retail/scripts/load_testing/results/README.md
 !inventario-retail/scripts/load_testing/results/.gitkeep
+resilience_env/
