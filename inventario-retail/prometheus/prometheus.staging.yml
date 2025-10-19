@@ -1,0 +1,126 @@
+# Prometheus Configuration for Staging Environment
+# Generated: October 19, 2025
+# Purpose: Collect metrics from all 4 circuit breakers and Dashboard
+
+global:
+  scrape_interval: 15s  # Default scrape interval
+  evaluation_interval: 15s
+  external_labels:
+    cluster: 'staging'
+    environment: 'staging'
+    version: '1.0'
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+            # - 'alertmanager:9093'
+
+# Load rules once and periodically evaluate them
+rule_files:
+  - 'rules/alerts.yml'  # Optional: alert rules
+
+scrape_configs:
+  # Dashboard API Service - Main metrics endpoint
+  - job_name: 'dashboard-api'
+    honor_timestamps: true
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['dashboard:8080']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [__scheme__]
+        target_label: scheme
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'dashboard_.*'
+        action: keep
+    basic_auth:
+      username: ''
+      password: 'staging-api-key-2025'
+    params:
+      api_key: ['staging-api-key-2025']
+
+  # PostgreSQL Database Metrics (if postgres_exporter available)
+  - job_name: 'postgresql'
+    honor_timestamps: true
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['postgres-exporter:9187']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [job]
+        regex_replace:
+          - source_labels: [job]
+            target_label: service
+            replacement: 'postgresql'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'pg_.*'
+        action: keep
+
+  # Redis Metrics (if redis_exporter available)
+  - job_name: 'redis'
+    honor_timestamps: true
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['redis-exporter:9121']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+      - source_labels: [job]
+        target_label: service
+        replacement: 'redis'
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'redis_.*'
+        action: keep
+
+  # LocalStack S3 Metrics (if exposed)
+  - job_name: 'localstack'
+    honor_timestamps: true
+    metrics_path: '/'
+    scheme: http
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['localstack:4566']
+    metric_relabel_configs:
+      - source_labels: [__name__]
+        regex: 'localstack_.*|s3_.*'
+        action: keep
+
+  # Prometheus Self-Monitoring
+  - job_name: 'prometheus'
+    honor_timestamps: true
+    metrics_path: '/metrics'
+    scheme: http
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    static_configs:
+      - targets: ['localhost:9090']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+
+# Grafana Dashboard Configuration (optional - can be provisioned)
+# Remote storage configuration (optional - for long-term storage)
+# remote_write:
+#   - url: http://storage-adapter:9009/write
+#     queue_config:
+#       capacity: 10000
+#       max_shards: 200
+# remote_read:
+#   - url: http://storage-adapter:9009/read

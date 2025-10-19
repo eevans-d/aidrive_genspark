@@ -1,0 +1,261 @@
+version: '3.9'
+
+services:
+  # PostgreSQL Database with persistence
+  postgres:
+    image: postgres:15-alpine
+    container_name: aidrive-postgres-staging
+    environment:
+      POSTGRES_USER: ${STAGING_DB_USER:-inventario_user}
+      POSTGRES_PASSWORD: ${STAGING_DB_PASSWORD:-staging_secure_pass_2025}
+      POSTGRES_DB: ${STAGING_DB_NAME:-inventario_retail_staging}
+      POSTGRES_INITDB_ARGS: "-c shared_preload_libraries=pg_stat_statements -c max_connections=200"
+    volumes:
+      - postgres_staging_data:/var/lib/postgresql/data
+      - ./inventario-retail/db/init_scripts:/docker-entrypoint-initdb.d
+    ports:
+      - "${STAGING_DB_PORT:-5433}:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${STAGING_DB_USER:-inventario_user} -d ${STAGING_DB_NAME:-inventario_retail_staging}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 20s
+    networks:
+      - staging-network
+    labels:
+      - "com.aidrive.service=database"
+      - "com.aidrive.environment=staging"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: aidrive-redis-staging
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_staging_data:/data
+    ports:
+      - "${STAGING_REDIS_PORT:-6380}:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    networks:
+      - staging-network
+    labels:
+      - "com.aidrive.service=cache"
+      - "com.aidrive.environment=staging"
+
+  # LocalStack for S3 mocking
+  localstack:
+    image: localstack/localstack:latest
+    container_name: aidrive-localstack-staging
+    environment:
+      - SERVICES=s3
+      - DEBUG=1
+      - AWS_DEFAULT_REGION=us-east-1
+      - AWS_ACCESS_KEY_ID=test
+      - AWS_SECRET_ACCESS_KEY=test
+      - DOCKER_HOST=unix:///var/run/docker.sock
+      - S3_BUCKET_NAME=inventario-retail-bucket-staging
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - localstack_staging_data:/tmp/localstack
+      - ./scripts/init-s3.sh:/docker-entrypoint-initaws.d/init-s3.sh
+    ports:
+      - "${STAGING_S3_PORT:-4566}:4566"
+    healthcheck:
+      test: ["CMD", "awslocal", "s3", "ls"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    networks:
+      - staging-network
+    labels:
+      - "com.aidrive.service=object-storage"
+      - "com.aidrive.environment=staging"
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: aidrive-prometheus-staging
+    volumes:
+      - ./inventario-retail/prometheus/prometheus.staging.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_staging_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=7d'
+    ports:
+      - "${STAGING_PROMETHEUS_PORT:-9091}:9090"
+    networks:
+      - staging-network
+    depends_on:
+      - dashboard
+    labels:
+      - "com.aidrive.service=metrics"
+      - "com.aidrive.environment=staging"
+
+  # Grafana for visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: aidrive-grafana-staging
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${STAGING_GRAFANA_PASSWORD:-admin_staging_2025}
+      - GF_INSTALL_PLUGINS=redis-datasource
+    volumes:
+      - grafana_staging_data:/var/lib/grafana
+      - ./inventario-retail/grafana/provisioning:/etc/grafana/provisioning:ro
+    ports:
+      - "${STAGING_GRAFANA_PORT:-3001}:3000"
+    networks:
+      - staging-network
+    depends_on:
+      - prometheus
+    labels:
+      - "com.aidrive.service=visualization"
+      - "com.aidrive.environment=staging"
+
+  # Dashboard API Service
+  dashboard:
+    build:
+      context: .
+      dockerfile: inventario-retail/Dockerfile.dashboard
+      args:
+        ENVIRONMENT: staging
+    container_name: aidrive-dashboard-staging
+    environment:
+      # Core Configuration
+      ENVIRONMENT: staging
+      DEBUG: "false"
+      LOG_LEVEL: info
+      
+      # API Configuration
+      API_HOST: ${STAGING_API_HOST:-0.0.0.0}
+      API_PORT: ${STAGING_API_PORT:-8080}
+      API_WORKERS: ${STAGING_API_WORKERS:-4}
+      
+      # Database Configuration
+      DATABASE_URL: postgresql://${STAGING_DB_USER:-inventario_user}:${STAGING_DB_PASSWORD:-staging_secure_pass_2025}@postgres:5432/${STAGING_DB_NAME:-inventario_retail_staging}
+      DB_POOL_SIZE: 20
+      DB_POOL_TIMEOUT: 30
+      
+      # Redis Configuration
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      REDIS_DB: 0
+      REDIS_PASSWORD: ""
+      REDIS_POOL_SIZE: 10
+      REDIS_TIMEOUT: 5
+      
+      # S3/LocalStack Configuration
+      AWS_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: test
+      AWS_SECRET_ACCESS_KEY: test
+      S3_ENDPOINT_URL: http://localstack:4566
+      S3_BUCKET_NAME: inventario-retail-bucket-staging
+      S3_TIMEOUT: 10
+      
+      # Circuit Breaker Configuration (OpenAI)
+      OPENAI_API_KEY: ${STAGING_OPENAI_API_KEY:-sk-test-staging}
+      OPENAI_CB_FAILURE_THRESHOLD: 5
+      OPENAI_CB_RECOVERY_TIMEOUT: 30
+      OPENAI_CB_HALF_OPEN_REQUESTS: 2
+      
+      # Circuit Breaker Configuration (Database)
+      DB_CB_FAILURE_THRESHOLD: 3
+      DB_CB_RECOVERY_TIMEOUT: 20
+      DB_CB_HALF_OPEN_REQUESTS: 1
+      
+      # Circuit Breaker Configuration (Redis)
+      REDIS_CB_FAILURE_THRESHOLD: 5
+      REDIS_CB_RECOVERY_TIMEOUT: 15
+      REDIS_CB_HALF_OPEN_REQUESTS: 2
+      
+      # Circuit Breaker Configuration (S3)
+      S3_CB_FAILURE_THRESHOLD: 4
+      S3_CB_RECOVERY_TIMEOUT: 25
+      S3_CB_HALF_OPEN_REQUESTS: 2
+      
+      # Degradation Manager Configuration
+      HEALTH_CHECK_INTERVAL: 10
+      DEGRADATION_RECOVERY_PREDICTION: "true"
+      SERVICE_WEIGHTS: "database:0.50,openai:0.30,redis:0.15,s3:0.05"
+      OPTIMAL_THRESHOLD: 90
+      DEGRADED_THRESHOLD: 70
+      LIMITED_THRESHOLD: 60
+      MINIMAL_THRESHOLD: 40
+      
+      # Security & Monitoring
+      DASHBOARD_API_KEY: ${STAGING_DASHBOARD_API_KEY:-staging-api-key-2025}
+      DASHBOARD_RATELIMIT_ENABLED: "true"
+      DASHBOARD_RATELIMIT_REQUESTS: 100
+      DASHBOARD_RATELIMIT_WINDOW: 60
+      DASHBOARD_ENABLE_HSTS: "true"
+      DASHBOARD_FORCE_HTTPS: "false"
+      METRICS_ENABLED: "true"
+      STRUCTURED_LOGGING: "true"
+      REQUEST_TIMEOUT: 30
+      
+      # Performance Tuning
+      CACHE_TTL_SECONDS: 300
+      MAX_RETRY_ATTEMPTS: 3
+      BATCH_SIZE: 50
+      ASYNC_TIMEOUT: 60
+      
+    ports:
+      - "${STAGING_API_PORT:-8080}:8080"
+    volumes:
+      - ./inventario-retail/web_dashboard:/app/web_dashboard:ro
+      - ./inventario-retail/shared:/app/shared:ro
+      - ./logs/staging:/app/logs
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+    networks:
+      - staging-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "-H", "X-API-Key: ${STAGING_DASHBOARD_API_KEY:-staging-api-key-2025}", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    labels:
+      - "com.aidrive.service=dashboard-api"
+      - "com.aidrive.environment=staging"
+    restart: unless-stopped
+
+networks:
+  staging-network:
+    driver: bridge
+    labels:
+      - "com.aidrive.network=staging"
+
+volumes:
+  postgres_staging_data:
+    labels:
+      - "com.aidrive.component=database"
+      - "com.aidrive.environment=staging"
+  redis_staging_data:
+    labels:
+      - "com.aidrive.component=cache"
+      - "com.aidrive.environment=staging"
+  localstack_staging_data:
+    labels:
+      - "com.aidrive.component=storage"
+      - "com.aidrive.environment=staging"
+  prometheus_staging_data:
+    labels:
+      - "com.aidrive.component=metrics"
+      - "com.aidrive.environment=staging"
+  grafana_staging_data:
+    labels:
+      - "com.aidrive.component=visualization"
+      - "com.aidrive.environment=staging"
