@@ -15,6 +15,9 @@ import requests
 from urllib.parse import urljoin, urlencode
 import time
 from pathlib import Path
+import gc
+import psutil
+import os
 
 # Configuración del logger
 logging.basicConfig(level=logging.INFO)
@@ -200,18 +203,59 @@ class DepositoClient:
         self._stats_max = 1000000  # Límite de acumulación para evitar memory leak
 
     def _reset_stats_if_needed(self):
-        """Resetea stats si se supera el límite para evitar memory leak silencioso y loguea estructuradamente."""
+        """
+        Resetea stats si se supera el límite para evitar memory leak silencioso.
+        Incluye garbage collection periódico y logging estructurado.
+        """
         if self.stats['total_requests'] > self._stats_max:
-            logger.warning(f"Resetting stats after {self.stats['total_requests']} requests to avoid memory leak.")
-            logger.info({
-                'event': 'stats_reset',
-                'total_requests': self.stats['total_requests'],
-                'timestamp': datetime.now().isoformat()
-            })
-            for k in self.stats:
-                self.stats[k] = 0
-
-        logger.info(f"DepositoClient inicializado - Base URL: {self.base_url}")
+            try:
+                # Obtener información de memoria antes de limpieza
+                process = psutil.Process(os.getpid())
+                mem_before = process.memory_info().rss / 1024 / 1024  # MB
+                
+                # Loguear antes del reset
+                logger.warning(
+                    "Stats reset due to accumulation limit",
+                    extra={
+                        'event': 'stats_reset_initiated',
+                        'total_requests': self.stats['total_requests'],
+                        'timestamp': datetime.now().isoformat(),
+                        'memory_before_mb': f"{mem_before:.2f}"
+                    }
+                )
+                
+                # Reset stats
+                for k in self.stats:
+                    self.stats[k] = 0
+                
+                # Garbage collection periódico
+                gc.collect()
+                
+                # Obtener información de memoria después de limpieza
+                mem_after = process.memory_info().rss / 1024 / 1024  # MB
+                memory_freed = mem_before - mem_after
+                
+                # Loguear después del reset
+                logger.info(
+                    "Stats reset completed with garbage collection",
+                    extra={
+                        'event': 'stats_reset_completed',
+                        'memory_after_mb': f"{mem_after:.2f}",
+                        'memory_freed_mb': f"{memory_freed:.2f}",
+                        'timestamp': datetime.now().isoformat()
+                    }
+                )
+            except Exception as e:
+                logger.error(
+                    "Error during stats reset",
+                    extra={
+                        'error': str(e),
+                        'timestamp': datetime.now().isoformat()
+                    }
+                )
+                # Hacer reset básico incluso si hay error
+                for k in self.stats:
+                    self.stats[k] = 0
 
     def _get_sync_session(self) -> requests.Session:
         """Obtiene o crea session síncrona"""
