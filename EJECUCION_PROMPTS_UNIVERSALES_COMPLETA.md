@@ -61,7 +61,7 @@ Un **Retail Resilience Framework** es una arquitectura de software diseñada par
 | **Fase 4: Staging Deploy** | DÍA 5.1 (4h) | Oct 19 | Docker Compose, NGINX, TLS, GitHub Actions CI/CD |
 | **Fase 5: Production Prep** | DÍA 5.2 (4h) | Oct 19 | Chaos testing, load testing (510 RPS), runbooks operacionales |
 | **Fase 6: Documentation** | DÍA Final (8h) | Oct 19 | 32 páginas documentación, go-live procedures, incident playbooks |
-| **Total** | **5 días** | **40h** | **16,500+ líneas código/docs, 175 tests, 94.2% coverage** |
+| **Total** | **5 días** | **40h** | **16,500+ líneas código/docs, 175 tests, 85.74% line coverage** |
 
 #### Commits Clave
 ```
@@ -245,7 +245,7 @@ GET /api/summary → Protected con API Key
 | **Degradación Controlada** | Funcionalidades se reducen gradualmente | 5 niveles de degradación automática |
 | **Recuperación Automática** | No requiere intervención manual | Recovery en < 5 minutos promedio |
 | **Observabilidad** | Visibilidad completa del estado del sistema | 20+ métricas Prometheus, 5 dashboards Grafana |
-| **Testing Exhaustivo** | Alta confianza en producción | 175 tests (100% passing), 94.2% coverage |
+| **Testing Exhaustivo** | Alta confianza en producción | 175 tests (100% passing), 85.74% line coverage |
 | **Documentación Completa** | Runbooks operacionales listos | 32 páginas, 5,400+ líneas |
 | **CI/CD Automatizado** | Despliegues seguros y repetibles | GitHub Actions con smoke tests |
 
@@ -596,7 +596,7 @@ Oct 19     │ DÍA 5.2: Testing & Production Prep (8h)
            │ Load tests (510 RPS), Chaos engineering
            ├─────────────────────────────────────
 Oct 19     │ PROJECT COMPLETION (Total: 40h)
-           │ 175/175 tests passing, 94.2% coverage
+           │ 175/175 tests passing, 85.74% line coverage
            ├─────────────────────────────────────
 Oct 20     │ Preparación para Go-Live (presente)
            │ 31 commits totales, ready for prod
@@ -5204,7 +5204,7 @@ class AdvancedCircuitBreaker(CircuitBreaker):
    - Logs centralizados básicos
 
 5. **Coverage No 100%**
-   - 94.2% vs ideal 98%+
+   - 85.74% vs ideal 98%+
    - Algunos edge cases sin testear
    - No hay mutation testing
 

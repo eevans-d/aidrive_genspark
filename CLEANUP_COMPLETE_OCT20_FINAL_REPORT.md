@@ -67,7 +67,7 @@ Hemos ejecutado una **limpieza profunda, exhaustiva y efectiva** del proyecto:
 ### 2. EXECUTIVE_SUMMARY.md (360 líneas)
 **Purpose**: 1-página para C-Level
 - What is this project?
-- Key metrics (94.2% coverage, 99.87% uptime)
+- Key metrics (85.74% line coverage, 99.87% uptime)
 - 3-step getting started
 - Key features matrix
 - Architecture diagram

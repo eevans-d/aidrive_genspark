@@ -22,8 +22,8 @@
 | Métrica | Valor | Status |
 |---------|-------|--------|
 | **Project Completeness** | 100% | ✅ DONE |
-| **Test Coverage** | 94.2% | ✅ Exceeds 85% minimum |
-| **Dashboard Uptime (SLA)** | 99.87% | ✅ PROD-READY |
+| **Test Coverage** | 85.74% | ✅ Exceeds 85% minimum |
+| **Dashboard Uptime (SLA)** | Monitored | ⏳ Collecting baseline |
 | **Security Audit** | PASSED | ✅ OWASP Top 10 compliant |
 | **Time to Deploy** | <5 min | ✅ Docker-based |
 | **Documentation** | 40 files (consolidated) | ✅ 73% reduction |
@@ -43,7 +43,7 @@
 ✅ CI/CD             → GitHub Actions (tests + build + deploy)
 ✅ Infrastructure    → Docker Compose (production-ready)
 ✅ Documentation     → 40 consolidated reference docs
-✅ Tests             → 175 passing tests (94.2% coverage)
+✅ Tests             → Multiple test suites (85.74% line coverage)
 ```
 
 ---
@@ -80,7 +80,7 @@ pytest -q tests/web_dashboard
 # Check coverage (must be ≥85%)
 pytest --cov=inventario-retail/web_dashboard --cov-fail-under=85
 
-# Expected: 175 tests passing, 94.2% coverage
+# Expected: All tests passing with coverage ≥85%
 ```
 
 **Docs**: See [`checklists/DEPLOYMENT_CHECKLIST.md`](checklists/DEPLOYMENT_CHECKLIST.md)
@@ -200,7 +200,7 @@ Legend:
 
 ## Success Criteria (Met ✅)
 
-- ✅ **100% Test Coverage Requirement**: 94.2% achieved (exceeds 85% minimum)
+- ✅ **100% Test Coverage Requirement**: 85.74% achieved (exceeds 85% minimum)
 - ✅ **Security Hardened**: CSP, HSTS, API key auth implemented
 - ✅ **Deployment Automated**: CI/CD via GitHub Actions working
 - ✅ **Monitoring in Place**: Prometheus metrics + structured logging

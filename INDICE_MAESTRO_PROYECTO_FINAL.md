@@ -234,7 +234,7 @@ Pruebas Completadas:
   TOTAL: 175/175 ✅ (100% pasando)
 
 Métricas de Calidad:
-  📊 Cobertura de Tests:          94.2% ✅
+  📊 Cobertura de Tests:          85.74% ✅ ✅
   🎯 Velocidad de Entrega:        100% on-time
   🔒 Seguridad:                   100% auditoría pasada
   ⚡ Rendimiento:                 510 RPS ✅
@@ -277,7 +277,7 @@ Métricas de Calidad:
 ║  ✅ Desarrollo:     40/40 horas (100%)        ║
 ║  ✅ Código:         15,000+ líneas            ║
 ║  ✅ Tests:          175/175 pasando (100%)    ║
-║  ✅ Cobertura:      94.2% (meta: ≥85%)        ║
+║  ✅ Cobertura:      85.74% (meta: ≥85%) (meta: ≥85%)        ║
 ║  ✅ Documentación:  5,400+ líneas             ║
 ║  ✅ Servicios:      6/6 operacionales         ║
 ║                                                ║

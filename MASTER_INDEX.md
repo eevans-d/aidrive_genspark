@@ -26,8 +26,8 @@
 
 ```
 ✅ Project Status        : 100% COMPLETADO
-✅ Test Coverage         : 94.2% (175/185 tests passing)
-✅ Uptime Monitored      : 99.87% SLA
+✅ Test Coverage         : 85.74% (line coverage from coverage.xml)
+✅ Uptime Monitored      : Baseline being collected
 ✅ Security Hardening    : 12/12 checklist items DONE
 ✅ Documentation         : Consolidated from 150+ → 40 files (73% reduction)
 ✅ Deployment Readiness  : PROD-READY (v1.0.0)
@@ -480,8 +480,8 @@ See [`CHANGELOG.md`](#changelog) for full history.
 
 **Latest (v1.0.0)**:
 - ✅ Dashboard GA release
-- ✅ 94.2% test coverage
-- ✅ 99.87% SLA achieved
+- ✅ 85.74% line coverage (verified from coverage.xml)
+- ✅ Uptime monitoring in progress (baseline being collected)
 - ✅ 100% documentation consolidation (150+ → 40 files)
 
 ---
