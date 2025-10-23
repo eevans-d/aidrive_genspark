@@ -16,6 +16,7 @@ Integración: Copiar endpoints a dashboard_app.py o usar FastAPI router
 """
 
 import os
+import sys
 import logging
 import time
 from datetime import datetime
@@ -23,8 +24,13 @@ from typing import Optional, List
 from fastapi import APIRouter, Request, HTTPException, Header, Query, WebSocket
 from pydantic import BaseModel, Field
 
+# Add parent directory to path for importing repositories
+_web_dashboard_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+if _web_dashboard_dir not in sys.path:
+    sys.path.insert(0, _web_dashboard_dir)
+
 # Import repositories
-from inventario_retail.web_dashboard.repositories.notification_repository import (
+from repositories.notification_repository import (
     NotificationRepository,
     PreferencesRepository,
     init_db

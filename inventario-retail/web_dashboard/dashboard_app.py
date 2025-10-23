@@ -59,6 +59,19 @@ except ImportError:
     print("⚠️  No se pudo importar MiniMarketDatabaseManager")
     MiniMarketDatabaseManager = None
 
+# Importar routers de SEMANA 3 - Endpoints de Notificaciones
+notification_router = None
+try:
+    import sys
+    api_path = os.path.join(os.path.dirname(__file__), "api")
+    if api_path not in sys.path:
+        sys.path.insert(0, api_path)
+    from notification_endpoints import router as notification_router
+except Exception as e:
+    print(f"⚠️  No se pudo importar notification_router: {e}")
+    import traceback
+    traceback.print_exc()
+
 # Configuración de la aplicación
 app = FastAPI(
     title="Dashboard Mini Market",
@@ -189,6 +202,15 @@ async def add_security_headers(request: Request, call_next):
     if os.getenv("DASHBOARD_ENABLE_HSTS", "false").lower() == "true":
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response
+
+# ============================================
+# Router Inclusion - SEMANA 3 Notification Endpoints
+# ============================================
+if notification_router:
+    app.include_router(notification_router)
+    logger.info("✅ Notification router incluido en la app (SEMANA 3)")
+else:
+    logger.warning("⚠️  Notification router no disponible - endpoints de notificaciones NO registrados")
 
 # ============================================
 # Redis Cache Initialization
