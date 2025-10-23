@@ -1530,6 +1530,340 @@ async def get_dashboard_kpis(request: Request):
         )
 
 
+# ========================================
+# NOTIFICATION ENDPOINTS - SEMANA 2.1
+# ========================================
+
+from services.notification_service import (
+    get_notification_service,
+    NotificationType,
+    NotificationChannel,
+    NotificationPriority
+)
+
+
+@app.post("/api/notifications/send")
+async def send_notification(
+    request: Request,
+    user_id: int = Query(..., description="ID del usuario"),
+    notification_type: str = Query(..., description="Tipo de notificación"),
+    subject: str = Query(..., description="Asunto"),
+    message: str = Query(..., description="Mensaje"),
+    channels: str = Query("in_app", description="Canales: email,sms,push,in_app"),
+    priority: str = Query("medium", description="Prioridad: low,medium,high,critical"),
+    x_api_key: str = Header(None)
+):
+    """
+    Envía notificación por múltiples canales (Email, SMS, Push, In-app)
+    
+    - Requiere X-API-Key header
+    - Soporta múltiples canales simultáneos
+    - Guarda en base de datos para auditoría
+    """
+    request_id = request_id_var.get()
+    start_time = time.time()
+    
+    # Verificar API key
+    if not x_api_key or x_api_key != os.getenv("DASHBOARD_API_KEY", "dev"):
+        logger.warning(f"🔐 Unauthorized notification request | request_id={request_id}")
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        # Validar valores enum
+        try:
+            notif_type = NotificationType(notification_type)
+            notif_priority = NotificationPriority(priority)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid enum value: {str(e)}")
+        
+        # Parsear canales
+        try:
+            channels_list = [
+                NotificationChannel(ch.strip()) 
+                for ch in channels.split(",")
+            ]
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=f"Invalid channel: {str(e)}")
+        
+        # Obtener servicio y enviar
+        service = get_notification_service()
+        result = await service.send_notification(
+            user_id=user_id,
+            notification_type=notif_type,
+            subject=subject,
+            message=message,
+            channels=channels_list,
+            priority=notif_priority,
+            request_id=request_id
+        )
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            f"📨 Notification sent",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "type": notification_type,
+                "channels": channels,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        # Actualizar métricas
+        with _metrics_lock:
+            _metrics["requests_total"] += 1
+            _metrics["notification_requests_total"] = _metrics.get("notification_requests_total", 0) + 1
+        
+        return result
+        
+    except HTTPException:
+        # Re-raise HTTP exceptions
+        raise
+    except Exception as e:
+        logger.error(
+            f"❌ Error sending notification",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/notifications")
+async def get_notifications(
+    request: Request,
+    user_id: int = Query(..., description="ID del usuario"),
+    limit: int = Query(20, ge=1, le=100),
+    offset: int = Query(0, ge=0),
+    unread_only: bool = Query(False),
+    x_api_key: str = Header(None)
+):
+    """
+    Obtiene notificaciones del usuario
+    
+    - Requiere X-API-Key header
+    - Soporta paginación con limit/offset
+    - Filtra solo no leídas si unread_only=true
+    """
+    request_id = request_id_var.get()
+    start_time = time.time()
+    
+    if not x_api_key or x_api_key != os.getenv("DASHBOARD_API_KEY", "dev"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        service = get_notification_service()
+        notifications = await service.get_user_notifications(
+            user_id=user_id,
+            limit=limit,
+            offset=offset,
+            unread_only=unread_only
+        )
+        
+        unread_count = await service.get_unread_count(user_id)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            f"✅ Notifications retrieved",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "count": len(notifications),
+                "unread": unread_count,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        with _metrics_lock:
+            _metrics["requests_total"] += 1
+        
+        return {
+            "notifications": notifications,
+            "unread_count": unread_count,
+            "total_returned": len(notifications),
+            "limit": limit,
+            "offset": offset
+        }
+        
+    except Exception as e:
+        logger.error(
+            f"❌ Error retrieving notifications",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/notifications/{notification_id}/read")
+async def mark_notification_read(
+    request: Request,
+    notification_id: int,
+    user_id: int = Query(..., description="ID del usuario"),
+    x_api_key: str = Header(None)
+):
+    """
+    Marca una notificación como leída
+    
+    - Requiere X-API-Key header
+    - Verifica que el usuario sea propietario de la notificación
+    """
+    request_id = request_id_var.get()
+    start_time = time.time()
+    
+    if not x_api_key or x_api_key != os.getenv("DASHBOARD_API_KEY", "dev"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        service = get_notification_service()
+        success = await service.mark_as_read(notification_id, user_id)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            f"✅ Notification marked as read",
+            extra={
+                "request_id": request_id,
+                "notification_id": notification_id,
+                "user_id": user_id,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        with _metrics_lock:
+            _metrics["requests_total"] += 1
+        
+        return {
+            "success": success,
+            "notification_id": notification_id
+        }
+        
+    except Exception as e:
+        logger.error(
+            f"❌ Error marking notification as read",
+            extra={
+                "request_id": request_id,
+                "notification_id": notification_id,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/api/notifications/preferences/{user_id}")
+async def get_notification_preferences(
+    request: Request,
+    user_id: int,
+    x_api_key: str = Header(None)
+):
+    """
+    Obtiene preferencias de notificación del usuario
+    
+    - Requiere X-API-Key header
+    - Retorna valores por defecto si no existen preferencias
+    """
+    request_id = request_id_var.get()
+    start_time = time.time()
+    
+    if not x_api_key or x_api_key != os.getenv("DASHBOARD_API_KEY", "dev"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        service = get_notification_service()
+        preferences = await service.get_preferences(user_id)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            f"✅ Preferences retrieved",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        with _metrics_lock:
+            _metrics["requests_total"] += 1
+        
+        return preferences
+        
+    except Exception as e:
+        logger.error(
+            f"❌ Error retrieving preferences",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.post("/api/notifications/preferences/{user_id}")
+async def set_notification_preferences(
+    request: Request,
+    user_id: int,
+    preferences: Optional[Dict] = None,
+    x_api_key: str = Header(None)
+):
+    """
+    Actualiza preferencias de notificación del usuario
+    
+    - Requiere X-API-Key header
+    - Acepta: email_enabled, sms_enabled, push_enabled, stock_alerts, order_alerts, system_alerts
+    """
+    request_id = request_id_var.get()
+    start_time = time.time()
+    
+    if not x_api_key or x_api_key != os.getenv("DASHBOARD_API_KEY", "dev"):
+        raise HTTPException(status_code=401, detail="Unauthorized")
+    
+    try:
+        # Parse JSON body
+        body = await request.json()
+        
+        service = get_notification_service()
+        success = await service.set_preferences(user_id, body)
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            f"✅ Preferences updated",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        with _metrics_lock:
+            _metrics["requests_total"] += 1
+        
+        return {
+            "success": success,
+            "user_id": user_id,
+            "message": "Preferences updated"
+        }
+        
+    except Exception as e:
+        logger.error(
+            f"❌ Error updating preferences",
+            extra={
+                "request_id": request_id,
+                "user_id": user_id,
+                "error": str(e)
+            }
+        )
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 if __name__ == "__main__":
     import uvicorn
     
