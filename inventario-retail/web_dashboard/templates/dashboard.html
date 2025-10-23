@@ -12,6 +12,9 @@
     </div>
 </div>
 
+<!-- KPIs Dashboard Component -->
+{% include "kpis-component.html" %}
+
 {% if stock_alerts and stock_alerts|length > 0 %}
 <div class="row mb-4">
     <div class="col-12">
@@ -356,6 +359,7 @@
 {% endblock %}
 
 {% block scripts %}
+<script src="{{ url_for('static', path='js/kpis-dashboard.js') }}" defer></script>
 <script src="{{ url_for('static', path='js/dashboard_page.js') }}" defer></script>
 <!-- Audio de alerta -->
 <audio id="alertaSonora" src="https://cdn.pixabay.com/audio/2022/10/16/audio_12b6b1b2e7.mp3" preload="auto" class="audio-hidden"></audio>

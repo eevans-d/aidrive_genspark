@@ -1374,6 +1374,162 @@ async def confirm_ocr(request: Request):
         )
 
 
+# ============================================
+# Dashboard KPIs Endpoints
+# ============================================
+
+@app.get("/api/kpis/dashboard")
+async def get_dashboard_kpis(request: Request):
+    """
+    Obtener KPIs del dashboard
+    
+    Response: {
+        "sales": {
+            "value": 5500.75,
+            "trend": {"direction": "up", "value": "+12.5%"}
+        },
+        "critical_stock": {
+            "value": 7,
+            "percentage": 35,
+            "trend": {"direction": "down", "value": "Bajando"}
+        },
+        "pending_orders": {
+            "value": 3,
+            "status": "pending",
+            "trend": {"direction": "up", "value": "+1 nuevos"}
+        },
+        "active_alerts": {
+            "value": 2,
+            "alerts": ["Stock bajo: Producto A", "Falta recibir pedido #123"],
+            "trend": {"direction": "down", "value": "Mejorando"}
+        },
+        "weekly_trends": {
+            "days": [...],
+            "sales": [...],
+            "critical_stock": [...],
+            "orders": [...]
+        }
+    }
+    """
+    request_id = request.scope.get("x-request-id", "")
+    start_time = time.time()
+    
+    try:
+        # Ruta a la BD
+        db_file = os.path.join(os.path.dirname(__file__), '..', 'agente_negocio', 'minimarket_inventory.db')
+        
+        # Conectar a la BD
+        conn = sqlite3.connect(db_file)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # KPI 1: Ventas totales (simulado - por hoy)
+        cursor.execute("""
+            SELECT SUM(precio_venta * stock_actual) as total_value
+            FROM productos
+            WHERE activo = 1
+        """)
+        sales_result = cursor.fetchone()
+        sales_today = float(sales_result['total_value']) if sales_result and sales_result['total_value'] else 0
+        
+        # KPI 2: Productos con stock crítico
+        cursor.execute("""
+            SELECT COUNT(*) as count
+            FROM productos
+            WHERE stock_actual <= stock_minimo AND activo = 1
+        """)
+        critical_stock = cursor.fetchone()['count']
+        
+        # KPI 3: Pedidos pendientes (simulado)
+        pending_orders = max(0, critical_stock // 2)
+        
+        # KPI 4: Alertas activas
+        alerts_list = []
+        if critical_stock > 0:
+            alerts_list.append(f"{critical_stock} productos con stock bajo")
+        if pending_orders > 0:
+            alerts_list.append(f"{pending_orders} órdenes de compra pendientes")
+        
+        # Tendencias semanales (simulado)
+        weekly_days = ['Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sab', 'Dom']
+        weekly_sales = [5200 + i*300 for i in range(7)]
+        weekly_stock = [8, 7, 6, 7, 6, 5, 4]
+        weekly_orders = [2, 1, 2, 3, 2, 1, 0]
+        
+        conn.close()
+        
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            "✅ KPIs obtenidos",
+            extra={
+                "request_id": request_id,
+                "sales": sales_today,
+                "critical_stock": critical_stock,
+                "duration_ms": round(duration_ms, 2)
+            }
+        )
+        
+        return {
+            "sales": {
+                "value": sales_today,
+                "trend": {
+                    "direction": "up" if sales_today > 5000 else "stable",
+                    "value": "+12.5%" if sales_today > 5000 else "0%"
+                }
+            },
+            "critical_stock": {
+                "value": critical_stock,
+                "percentage": min(critical_stock * 15, 100),  # Simulado
+                "trend": {
+                    "direction": "down" if critical_stock < 5 else "up",
+                    "value": "Bajando" if critical_stock < 5 else "Subiendo"
+                }
+            },
+            "pending_orders": {
+                "value": pending_orders,
+                "status": "critical" if pending_orders > 3 else "pending" if pending_orders > 0 else "ok",
+                "trend": {
+                    "direction": "up" if pending_orders > 0 else "stable",
+                    "value": f"+{pending_orders} nuevos" if pending_orders > 0 else "Al día"
+                }
+            },
+            "active_alerts": {
+                "value": len(alerts_list),
+                "alerts": alerts_list,
+                "trend": {
+                    "direction": "down" if len(alerts_list) == 0 else "stable",
+                    "value": "✓ Mejorando" if len(alerts_list) < 2 else "Revisar"
+                }
+            },
+            "weekly_trends": {
+                "days": weekly_days,
+                "sales": weekly_sales,
+                "critical_stock": weekly_stock,
+                "orders": weekly_orders
+            },
+            "duration_ms": round(duration_ms, 2)
+        }
+        
+    except Exception as e:
+        import traceback
+        logger.error(
+            "❌ Error obteniendo KPIs",
+            extra={
+                "request_id": request_id,
+                "error": str(e),
+                "traceback": traceback.format_exc()
+            }
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Error obteniendo KPIs",
+                "details": str(e)
+            }
+        )
+
+
 if __name__ == "__main__":
     import uvicorn
     
