@@ -14,7 +14,7 @@ Use these repo-specific hints to be productive and avoid common traps.
 - Security headers: strict CSP snapshot tested; HSTS enabled only if `DASHBOARD_ENABLE_HSTS=true` and `DASHBOARD_FORCE_HTTPS=true`.
 - Metrics: plaintext exposition with `dashboard_requests_total`, `dashboard_errors_total`, `dashboard_request_duration_ms_p95`.
 - Structured JSON logging with `request_id`; preserve it in new handlers.
-- “DONES” freeze before Go-Live: no directory renames, no heavy deps, no broad refactors.
+- "DONES" FLEXIBILIZADOS (ver DONES_FLEXIBILIZADOS_PRODUCCION.md): Cambios permitidos si acercan a producción (framework 5 preguntas). Mantener tests >85%, no breaking changes, documentar decisiones. OBJETIVO FIRME: GO-LIVE en 2-3 semanas.
 
 ## Local dev quickstart (Dashboard)
 - Install deps: `pip install -r inventario-retail/web_dashboard/requirements.txt`
