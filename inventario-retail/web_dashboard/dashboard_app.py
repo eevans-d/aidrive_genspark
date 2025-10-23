@@ -12,7 +12,7 @@ Fecha: 2025-01-18
 Versión: 1.0
 """
 
-from fastapi import FastAPI, Request, HTTPException, Depends, Header
+from fastapi import FastAPI, Request, HTTPException, Depends, Header, Query, UploadFile
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -33,6 +33,18 @@ import contextvars
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
+
+# Redis y Cache
+try:
+    from redis import asyncio as aioredis
+    from fastapi_cache2 import FastAPICache
+    from fastapi_cache2.backends.redis import RedisBackend
+    from fastapi_cache2.decorator import cache
+    REDIS_AVAILABLE = True
+except ImportError:
+    print("⚠️  Redis no disponible, cache deshabilitado")
+    REDIS_AVAILABLE = False
+    cache = lambda expire: lambda f: f  # No-op decorator
 
 # Importar lógica del Mini Market
 import sys
@@ -176,6 +188,26 @@ async def add_security_headers(request: Request, call_next):
     if os.getenv("DASHBOARD_ENABLE_HSTS", "false").lower() == "true":
         response.headers["Strict-Transport-Security"] = "max-age=63072000; includeSubDomains; preload"
     return response
+
+# ============================================
+# Redis Cache Initialization
+# ============================================
+
+@app.on_event("startup")
+async def startup_redis():
+    """Inicializar conexión a Redis para caché"""
+    if REDIS_AVAILABLE:
+        try:
+            redis_url = os.getenv("REDIS_URL", "redis://localhost:6379")
+            redis = aioredis.from_url(
+                redis_url,
+                encoding="utf8",
+                decode_responses=True
+            )
+            FastAPICache.init(RedisBackend(redis), prefix="minimarket-cache")
+            logger.info("✅ Redis cache inicializado", extra={"redis_url": redis_url})
+        except Exception as e:
+            logger.warning(f"⚠️  Error inicializando Redis: {e}", extra={"error": str(e)})
 
 # Validación/Sanitización de parámetros
 DATE_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
@@ -1007,6 +1039,122 @@ async def health_check():
                 "status": "unhealthy",
                 "error": str(e),
                 "timestamp": datetime.now().isoformat()
+            }
+        )
+
+
+# ============================================
+# BÚSQUEDA ULTRARRÁPIDA CON CACHE REDIS
+# ============================================
+
+@app.get("/api/productos/search")
+@cache(expire=300)  # Cache 5 minutos
+async def search_productos(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(10, ge=1, le=50),
+    offset: int = Query(0, ge=0)
+):
+    """
+    Búsqueda de productos con cache Redis.
+    
+    Parámetros:
+    - q: Término de búsqueda (nombre o código de barras)
+    - limit: Máximo de resultados (1-50, default 10)
+    - offset: Paginación (default 0)
+    
+    Retorna:
+    - Lista de productos que coinciden con la búsqueda
+    - Marcado como cacheado si viene de Redis
+    """
+    
+    start_time = time.time()
+    
+    try:
+        # Ruta a la BD
+        db_file = os.path.join(os.path.dirname(__file__), '..', 'agente_negocio', 'minimarket_inventory.db')
+        
+        # Conectar a la BD
+        conn = sqlite3.connect(db_file)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # Query optimizada con índices
+        query = """
+        SELECT 
+            id, nombre, codigo_barras, 
+            precio_venta as precio, stock_actual as stock, 
+            categoria_id, activo, fecha_registro
+        FROM productos
+        WHERE activo = 1 AND (
+            nombre LIKE ? COLLATE NOCASE OR
+            codigo_barras LIKE ? COLLATE NOCASE
+        )
+        ORDER BY 
+            CASE 
+                WHEN nombre LIKE ? COLLATE NOCASE THEN 0
+                ELSE 1
+            END,
+            nombre ASC
+        LIMIT ? OFFSET ?
+        """
+        
+        search_term = f"%{q}%"
+        
+        cursor.execute(query, (search_term, search_term, f"{q}%", limit, offset))
+        rows = cursor.fetchall()
+        
+        # Total count
+        count_query = """
+        SELECT COUNT(*) FROM productos 
+        WHERE activo = 1 AND (
+            nombre LIKE ? COLLATE NOCASE OR
+            codigo_barras LIKE ? COLLATE NOCASE
+        )
+        """
+        cursor.execute(count_query, (search_term, search_term))
+        total_count = cursor.fetchone()[0]
+        
+        conn.close()
+        
+        # Convertir a diccionarios
+        results = [dict(row) for row in rows]
+        
+        # Métricas
+        duration_ms = (time.time() - start_time) * 1000
+        
+        logger.info(
+            "🔍 Búsqueda productos",
+            extra={
+                "query": q,
+                "results": len(results),
+                "total": total_count,
+                "duration_ms": int(duration_ms)
+            }
+        )
+        
+        return {
+            "query": q,
+            "count": len(results),
+            "total": total_count,
+            "limit": limit,
+            "offset": offset,
+            "results": results,
+            "cached": True,
+            "duration_ms": round(duration_ms, 2)
+        }
+        
+    except Exception as e:
+        import traceback
+        logger.error(
+            "❌ Error búsqueda productos",
+            extra={"error": str(e), "query": q, "traceback": traceback.format_exc()}
+        )
+        return JSONResponse(
+            status_code=500,
+            content={
+                "error": "Error en búsqueda",
+                "query": q,
+                "details": str(e)
             }
         )
 
