@@ -72,14 +72,16 @@ except (ImportError, ModuleNotFoundError):
 
 # Importar routers de SEMANA 3 - Endpoints de Notificaciones
 notification_router = None
+forensic_router = None
 try:
     import sys
     api_path = os.path.join(os.path.dirname(__file__), "api")
     if api_path not in sys.path:
         sys.path.insert(0, api_path)
     from notification_endpoints import router as notification_router
+    from forensic_endpoints import router as forensic_router
 except Exception as e:
-    print(f"⚠️  No se pudo importar notification_router: {e}")
+    print(f"⚠️  No se pudo importar routers: {e}")
     import traceback
     traceback.print_exc()
 
@@ -243,6 +245,15 @@ if notification_router:
     logger.info("✅ Notification router incluido en la app (SEMANA 3)")
 else:
     logger.warning("⚠️  Notification router no disponible - endpoints de notificaciones NO registrados")
+
+# ============================================
+# Router Inclusion - FASE 5 Forensic Endpoints
+# ============================================
+if forensic_router:
+    app.include_router(forensic_router)
+    logger.info("✅ Forensic router incluido en la app (FASE 5 - Endpoints)")
+else:
+    logger.warning("⚠️  Forensic router no disponible - endpoints forensic NO registrados")
 
 # ============================================
 # Redis Cache Initialization
