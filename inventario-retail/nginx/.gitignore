@@ -1,0 +1,29 @@
+# SSL certificates (environment-specific, should not be in git)
+inventario-retail/nginx/ssl/*.pem
+inventario-retail/nginx/ssl/*.key
+inventario-retail/nginx/ssl/*.csr
+
+# Docker volumes and data
+volumes/
+docker_volumes/
+
+# Environment files
+.env
+.env.local
+.env.staging
+.env.production
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Logs
+logs/
+*.log
