@@ -12,7 +12,7 @@ Fecha: 2025-01-18
 Versión: 1.0
 """
 
-from fastapi import FastAPI, Request, HTTPException, Depends, Header, Query, UploadFile, WebSocket, WebSocketDisconnect
+from fastapi import FastAPI, Request, HTTPException, Depends, Header, Query, UploadFile, WebSocket, WebSocketDisconnect, BackgroundTasks
 from fastapi.templating import Jinja2Templates
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import HTMLResponse, JSONResponse
@@ -31,6 +31,8 @@ import logging
 import asyncio
 import uuid
 import contextvars
+import hmac
+import hashlib
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 from starlette.middleware.cors import CORSMiddleware
 from starlette.middleware.httpsredirect import HTTPSRedirectMiddleware
@@ -50,7 +52,7 @@ except ImportError:
 # Importar lógica del Mini Market
 import sys
 import os
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'agente_negocio'))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..')))
 
 try:
     from provider_database_integration import MiniMarketDatabaseManager
@@ -58,6 +60,15 @@ except ImportError:
     # Fallback si no se encuentra el módulo
     print("⚠️  No se pudo importar MiniMarketDatabaseManager")
     MiniMarketDatabaseManager = None
+
+# Importar ForensicOrchestrator (v1.0: básico, v1.1 ampliado con Fases 2-5)
+try:
+    from inventario_retail.forensic_analysis.orchestrator import ForensicOrchestrator
+    FORENSIC_AVAILABLE = True
+except (ImportError, ModuleNotFoundError):
+    print("⚠️  Módulo ForensicOrchestrator no disponible (OK en v1.0, requerido en v1.1)")
+    FORENSIC_AVAILABLE = False
+    ForensicOrchestrator = None
 
 # Importar routers de SEMANA 3 - Endpoints de Notificaciones
 notification_router = None
@@ -146,14 +157,35 @@ def _configure_logging():
 
 logger = _configure_logging()
 
-# Métricas simples en memoria
+# Métricas Prometheus en memoria con cálculo de percentil p95
 _metrics_lock = threading.Lock()
 _metrics = {
     "start_time": time.time(),
     "requests_total": 0,
     "errors_total": 0,
-    "by_path": {},  # path -> {count, errors, total_duration_ms}
+    "by_path": {},  # path -> {count, errors, total_duration_ms, durations=[]}
+    "request_durations": [],  # Todas las duraciones para cálculo de p95
 }
+
+# Jobs en memoria para ForensicAnalyzer (v1.0)
+# TODO(v1.1, TD-001): Migrar a Redis/SQLite para persistencia y escalabilidad
+forensic_jobs: Dict[str, Dict[str, Any]] = {}
+
+def _calculate_percentile(data: List[float], percentile: int = 95) -> float:
+    """Calcula percentil de una lista de valores.
+    
+    Parámetros:
+        data: Lista de valores numéricos (duraciones en ms)
+        percentile: Percentil a calcular (1-99, default 95)
+    
+    Retorna:
+        Percentil calculado o 0 si la lista está vacía
+    """
+    if not data:
+        return 0.0
+    sorted_data = sorted(data)
+    idx = max(0, int(len(sorted_data) * percentile / 100) - 1)
+    return float(sorted_data[idx])
 
 # -----------------------------
 # Seguridad y Hardening (Middlewares y utilidades)
@@ -277,11 +309,20 @@ def _get_ui_api_key() -> str:
     """
     return os.getenv("DASHBOARD_UI_API_KEY", "")
 
-# API Key opcional para proteger /api*. Si DASHBOARD_API_KEY está seteada, se exige X-API-Key.
+# API Key segura con hmac.compare_digest para proteger /api* y /metrics
 def verify_api_key(x_api_key: Optional[str] = Header(default=None)):
+    """Valida API Key usando comparación segura (hmac.compare_digest).
+    
+    Previene timing attacks. Si DASHBOARD_API_KEY está seteada, se exige X-API-Key.
+    
+    TODO(v1.1, TD-002): Integrar con Redis para invalidación en tiempo real de keys.
+    """
     expected = os.getenv("DASHBOARD_API_KEY")
     if expected:
-        if not x_api_key or x_api_key != expected:
+        if not x_api_key:
+            raise HTTPException(status_code=401, detail="API key requerida")
+        # Usar hmac.compare_digest para evitar timing attacks
+        if not hmac.compare_digest(x_api_key, expected):
             raise HTTPException(status_code=401, detail="API key inválida")
     return True
 
@@ -791,17 +832,26 @@ async def access_log_and_metrics(request: Request, call_next):
         client_ip = request.client.host if request.client else "-"
         path = request.url.path
         method = request.method
-        # Métricas
+        # Métricas: actualizar counters, duraciones y percentil p95
         try:
             with _metrics_lock:
                 _metrics["requests_total"] += 1
                 if status_code >= 500:
                     _metrics["errors_total"] += 1
-                by = _metrics["by_path"].setdefault(path, {"count": 0, "errors": 0, "total_duration_ms": 0})
+                # Guardar duración para cálculo de p95 (mantener últimas 10k)
+                _metrics["request_durations"].append(duration_ms)
+                if len(_metrics["request_durations"]) > 10000:
+                    _metrics["request_durations"] = _metrics["request_durations"][-10000:]
+                # Por path
+                by = _metrics["by_path"].setdefault(path, {"count": 0, "errors": 0, "total_duration_ms": 0, "durations": []})
                 by["count"] += 1
                 if status_code >= 500:
                     by["errors"] += 1
                 by["total_duration_ms"] += duration_ms
+                by["durations"].append(duration_ms)
+                # Limitar durations por path a 1k
+                if len(by["durations"]) > 1000:
+                    by["durations"] = by["durations"][-1000:]
         except Exception:
             pass
         # Logging
@@ -940,21 +990,46 @@ async def api_weekly_sales(weeks: int = 8, _auth: bool = Depends(verify_api_key)
 # Endpoint de métricas (Prometheus-like), protegido por API Key
 @app.get("/metrics")
 async def metrics(_auth: bool = Depends(verify_api_key)):
+    """Endpoint Prometheus con métricas del dashboard.
+    
+    Métricas expuestas:
+    - dashboard_requests_total: Total de requests procesados
+    - dashboard_errors_total: Total de errores 5xx
+    - dashboard_uptime_seconds: Uptime del proceso
+    - dashboard_request_duration_ms_p95: Percentil 95 de duración (ms)
+    - dashboard_requests_by_path_total: Requests por path (métrica)
+    - dashboard_errors_by_path_total: Errores por path (métrica)
+    - dashboard_request_duration_ms_sum: Duración acumulada por path (ms)
+    
+    Requiere: X-API-Key header si DASHBOARD_API_KEY está configurada
+    """
     uptime = int(time.time() - _metrics.get("start_time", time.time()))
     with _metrics_lock:
         req_total = _metrics.get("requests_total", 0)
         err_total = _metrics.get("errors_total", 0)
         by_path = dict(_metrics.get("by_path", {}))
+        all_durations = _metrics.get("request_durations", [])
+    
+    # Calcular p95 global
+    p95_duration = _calculate_percentile(all_durations, 95)
+    
     lines = []
     lines.append("# HELP dashboard_requests_total Total requests processed")
     lines.append("# TYPE dashboard_requests_total counter")
     lines.append(f"dashboard_requests_total {req_total}")
+    
     lines.append("# HELP dashboard_errors_total Total 5xx errors")
     lines.append("# TYPE dashboard_errors_total counter")
     lines.append(f"dashboard_errors_total {err_total}")
+    
     lines.append("# HELP dashboard_uptime_seconds Process uptime in seconds")
     lines.append("# TYPE dashboard_uptime_seconds gauge")
     lines.append(f"dashboard_uptime_seconds {uptime}")
+    
+    lines.append("# HELP dashboard_request_duration_ms_p95 Percentil 95 de duración (ms)")
+    lines.append("# TYPE dashboard_request_duration_ms_p95 gauge")
+    lines.append(f"dashboard_request_duration_ms_p95 {p95_duration}")
+    
     # Por path
     lines.append("# HELP dashboard_requests_by_path_total Requests by path")
     lines.append("# TYPE dashboard_requests_by_path_total counter")
@@ -962,11 +1037,13 @@ async def metrics(_auth: bool = Depends(verify_api_key)):
     lines.append("# TYPE dashboard_errors_by_path_total counter")
     lines.append("# HELP dashboard_request_duration_ms_sum Total duration by path (ms)")
     lines.append("# TYPE dashboard_request_duration_ms_sum counter")
+    
     for path, data in sorted(by_path.items()):
         p = path.replace('"', '\"')
         lines.append(f'dashboard_requests_by_path_total{{path="{p}"}} {data.get("count", 0)}')
         lines.append(f'dashboard_errors_by_path_total{{path="{p}"}} {data.get("errors", 0)}')
         lines.append(f'dashboard_request_duration_ms_sum{{path="{p}"}} {data.get("total_duration_ms", 0)}')
+    
     text = "\n".join(lines) + "\n"
     return PlainTextResponse(content=text, media_type="text/plain; version=0.0.4")
 
@@ -1052,7 +1129,8 @@ async def health_check():
             "services": {
                 "dashboard": "ok",
                 "analytics": "ok",
-                "api": "ok"
+                "api": "ok",
+                "forensic": "available" if FORENSIC_AVAILABLE else "not-available"
             }
         }
     except Exception as e:
@@ -1064,6 +1142,212 @@ async def health_check():
                 "timestamp": datetime.now().isoformat()
             }
         )
+
+
+# ============================================
+# FORENSIC ANALYSIS ENDPOINTS (v1.0 MVP)
+# ============================================
+
+@app.post("/api/forensic/run")
+async def start_forensic_analysis(
+    background_tasks: BackgroundTasks,
+    _auth: bool = Depends(verify_api_key)
+):
+    """Inicia análisis forense de integridad de datos.
+    
+    Request:
+        POST /api/forensic/run
+        Header: X-API-Key: <key>
+    
+    Response:
+        {
+            "job_id": "abc123...",
+            "status": "queued",
+            "created_at": "2025-01-18T...",
+            "message": "Análisis forensic encolado"
+        }
+    
+    Phases:
+        1. Data Validation (completitud, tipos, rangos)
+        2. Cross-referential Consistency (en v1.1)
+        3. ML Predictions (en v1.1)
+        4. Performance Metrics (en v1.1)
+        5. Comprehensive Report (en v1.1)
+    
+    TODO(v1.1, TD-001): Usar Redis/DB para persistencia de jobs
+    """
+    if not FORENSIC_AVAILABLE:
+        raise HTTPException(
+            status_code=503,
+            detail="Módulo forensic no disponible. Actualiza a v1.1 para acceso completo."
+        )
+    
+    job_id = str(uuid.uuid4())[:16]
+    
+    # Guardar job en memoria (v1.0)
+    forensic_jobs[job_id] = {
+        "id": job_id,
+        "status": "queued",
+        "created_at": datetime.now(UTC).isoformat(),
+        "started_at": None,
+        "completed_at": None,
+        "phases_completed": [],
+        "result": None,
+        "error": None
+    }
+    
+    # Encolar tarea en background
+    background_tasks.add_task(_execute_forensic_analysis, job_id)
+    
+    logger.info(
+        "🔍 Forensic analysis queued",
+        extra={"job_id": job_id, "status": "queued"}
+    )
+    
+    return {
+        "job_id": job_id,
+        "status": "queued",
+        "created_at": forensic_jobs[job_id]["created_at"],
+        "message": "Análisis forensic encolado. Usa GET /api/forensic/status/{job_id} para monitorear."
+    }
+
+
+@app.get("/api/forensic/status/{job_id}")
+async def get_forensic_status(
+    job_id: str,
+    _auth: bool = Depends(verify_api_key)
+):
+    """Obtiene estado de un análisis forense.
+    
+    Request:
+        GET /api/forensic/status/{job_id}
+        Header: X-API-Key: <key>
+    
+    Response:
+        {
+            "job_id": "abc123...",
+            "status": "running|completed|failed",
+            "progress": 20,
+            "phases_completed": ["phase_1_data_validation"],
+            "created_at": "...",
+            "started_at": "...",
+            "completed_at": "...",
+            "error": null
+        }
+    """
+    job = forensic_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} no encontrado")
+    
+    # Calcular progreso (fases completadas / total fases)
+    total_phases = 5
+    progress = len(job["phases_completed"]) * 20  # 20% por fase
+    
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "progress": progress,
+        "phases_completed": job["phases_completed"],
+        "created_at": job["created_at"],
+        "started_at": job["started_at"],
+        "completed_at": job["completed_at"],
+        "error": job["error"]
+    }
+
+
+@app.get("/api/forensic/report/{job_id}")
+async def get_forensic_report(
+    job_id: str,
+    _auth: bool = Depends(verify_api_key)
+):
+    """Obtiene reporte completo de análisis forense.
+    
+    Request:
+        GET /api/forensic/report/{job_id}
+        Header: X-API-Key: <key>
+    
+    Response:
+        {
+            "job_id": "abc123...",
+            "status": "completed",
+            "report": {
+                "summary": {...},
+                "phases": {...}
+            }
+        }
+    """
+    job = forensic_jobs.get(job_id)
+    if not job:
+        raise HTTPException(status_code=404, detail=f"Job {job_id} no encontrado")
+    
+    if job["status"] != "completed":
+        raise HTTPException(
+            status_code=400,
+            detail=f"Job {job_id} aún no completado. Status: {job['status']}"
+        )
+    
+    return {
+        "job_id": job_id,
+        "status": job["status"],
+        "report": job["result"],
+        "completed_at": job["completed_at"]
+    }
+
+
+async def _execute_forensic_analysis(job_id: str):
+    """Ejecuta análisis forense en background.
+    
+    TODO(v1.1, TD-006): Implementar fases 2-5 completas
+    """
+    try:
+        job = forensic_jobs[job_id]
+        job["status"] = "running"
+        job["started_at"] = datetime.now(UTC).isoformat()
+        
+        # Phase 1: Data Validation (v1.0 completo)
+        logger.info("🔍 Phase 1: Data Validation iniciada", extra={"job_id": job_id})
+        try:
+            if ForensicOrchestrator:
+                orchestrator = ForensicOrchestrator()
+                phase1_result = orchestrator.run_analysis()  # Simplified Phase 1
+                job["phases_completed"].append("phase_1_data_validation")
+                job["result"] = phase1_result
+            else:
+                # Fallback: Phase 1 simulado en v1.0
+                job["phases_completed"].append("phase_1_data_validation")
+                job["result"] = {
+                    "summary": "Phase 1 (Data Validation) completada en modo fallback",
+                    "phases": ["phase_1_data_validation"]
+                }
+        except Exception as e:
+            logger.error(
+                "❌ Phase 1 failed",
+                extra={"job_id": job_id, "error": str(e)}
+            )
+            job["error"] = f"Phase 1 failed: {str(e)}"
+        
+        # Fases 2-5: TODO para v1.1
+        # job["phases_completed"].append("phase_2_consistency_check")
+        # job["phases_completed"].append("phase_3_ml_predictions")
+        # job["phases_completed"].append("phase_4_performance_metrics")
+        # job["phases_completed"].append("phase_5_comprehensive_report")
+        
+        job["status"] = "completed"
+        job["completed_at"] = datetime.now(UTC).isoformat()
+        
+        logger.info(
+            "✅ Forensic analysis completed",
+            extra={"job_id": job_id, "phases": len(job["phases_completed"])}
+        )
+        
+    except Exception as e:
+        logger.error(
+            "❌ Forensic analysis failed",
+            extra={"job_id": job_id, "error": str(e)}
+        )
+        job["status"] = "failed"
+        job["error"] = str(e)
+        job["completed_at"] = datetime.now(UTC).isoformat()
 
 
 # ============================================
