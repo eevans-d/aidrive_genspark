@@ -1,0 +1,181 @@
+version: '3.9'
+
+services:
+  # ============================================================================
+  # Prometheus - Metrics collection and storage
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: prometheus
+    restart: unless-stopped
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./inventario-retail/monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - ./inventario-retail/monitoring/alert_rules.yml:/etc/prometheus/rules/alert_rules.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9090/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      service: "prometheus"
+      environment: "production"
+
+  # ============================================================================
+  # Grafana - Visualization and dashboarding
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:latest
+    container_name: grafana
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./inventario-retail/monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./inventario-retail/monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GF_SECURITY_ADMIN_PASSWORD:-admin}
+      - GF_SECURITY_ADMIN_USER=${GF_SECURITY_ADMIN_USER:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=${GF_USERS_ALLOW_SIGN_UP:-false}
+      - GF_INSTALL_PLUGINS=grafana-piechart-panel,grafana-worldmap-panel
+      - TZ=UTC
+      # Security settings
+      - GF_SECURITY_COOKIE_SECURE=true
+      - GF_SECURITY_COOKIE_HTTPONLY=true
+      - GF_SECURITY_COOKIE_SAMESITE=Strict
+      # Session settings
+      - GF_SESSION_MAX_LIFETIME=86400
+      - GF_SESSION_COOKIE_DOMAIN=
+    networks:
+      - monitoring
+    depends_on:
+      prometheus:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    labels:
+      service: "grafana"
+      environment: "production"
+
+  # ============================================================================
+  # AlertManager - Alert routing and management
+  # ============================================================================
+  alertmanager:
+    image: prom/alertmanager:latest
+    container_name: alertmanager
+    restart: unless-stopped
+    ports:
+      - "9093:9093"
+    volumes:
+      - ./inventario-retail/monitoring/alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro
+      - alertmanager_data:/alertmanager
+    command:
+      - '--config.file=/etc/alertmanager/alertmanager.yml'
+      - '--storage.path=/alertmanager'
+      - '--log.level=info'
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9093/-/healthy"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      service: "alertmanager"
+      environment: "production"
+
+  # ============================================================================
+  # Node Exporter - System metrics (optional)
+  # ============================================================================
+  node-exporter:
+    image: prom/node-exporter:latest
+    container_name: node-exporter
+    restart: unless-stopped
+    ports:
+      - "9100:9100"
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    environment:
+      - TZ=UTC
+    networks:
+      - monitoring
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:9100"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    labels:
+      service: "node-exporter"
+      environment: "production"
+
+volumes:
+  prometheus_data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${PWD}/data/prometheus"
+
+  grafana_data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${PWD}/data/grafana"
+
+  alertmanager_data:
+    driver: local
+    driver_opts:
+      type: "none"
+      o: "bind"
+      device: "${PWD}/data/alertmanager"
+
+networks:
+  monitoring:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.22.0.0/16
+
+# ============================================================================
+# Docker Compose Networking
+# ============================================================================
+# This monitoring stack is isolated in its own network.
+# To integrate with the main application stack:
+# 1. Create external network: docker network create aidrive_genspark_network
+# 2. Connect main services to monitoring network
+# 3. Update prometheus.yml with service discovery or static configs
+# 
+# Example connection string for Dashboard:
+#   http://dashboard:8080 (if on same Docker network)
+#   http://host.docker.internal:8080 (from containers to host)
