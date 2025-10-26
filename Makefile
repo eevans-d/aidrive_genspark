@@ -1,7 +1,7 @@
 # Makefile operativo (no invasivo) - Dashboard Mini Market
 # Objetivo: facilitar comandos repetitivos de validación y release sin scripts adicionales.
 
-.PHONY: help test coverage smoke preflight headers metrics rc-tag clean-artifacts
+.PHONY: help test coverage smoke preflight headers metrics rc-tag release-tag clean-artifacts
 
 help:
 	@echo "Targets disponibles:";
@@ -12,6 +12,7 @@ help:
 	@echo "  headers       - Verifica headers en STAGING_URL";
 	@echo "  preflight     - Ejecuta preflight RC en STAGING_URL";
 	@echo "  rc-tag        - Crea y push tag RC (VARIABLE TAG=) tras preflight";
+	@echo "  release-tag   - Crea y push tag de release (VARIABLE TAG=vX.Y.Z)";
 
 TEST_DIR=tests
 PYTHON=python3
@@ -48,3 +49,10 @@ rc-tag: preflight
 	git tag $$TAG
 	git push origin $$TAG
 	@echo "Tag $$TAG creado y enviado."
+
+# Uso: make release-tag TAG=v1.0.0
+release-tag:
+	@[ -n "$$TAG" ] || { echo "Definir TAG=vX.Y.Z"; exit 2; }
+	@git tag -a $$TAG -m "Release $$TAG"
+	@git push origin $$TAG
+	@echo "Release $$TAG creado y enviado."
