@@ -23,7 +23,7 @@ test:
 	DASHBOARD_API_KEY=test-key DASHBOARD_RATELIMIT_ENABLED=false pytest -q $(TEST_DIR)/web_dashboard
 
 coverage:
-	DASHBOARD_API_KEY=test-key DASHBOARD_RATELIMIT_ENABLED=false pytest -q $(TEST_DIR)/web_dashboard --cov=inventario-retail/web_dashboard --cov-report=term-missing --cov-fail-under=85
+	DASHBOARD_API_KEY=test-key DASHBOARD_RATELIMIT_ENABLED=false pytest -q $(TEST_DIR)/web_dashboard --cov=inventario-retail/web_dashboard/api --cov=inventario-retail/web_dashboard/dashboard_app.py --cov-report=term-missing --cov-fail-under=85
 
 smoke:
 	@[ -n "$$DASHBOARD_API_KEY" ] || { echo "Falta DASHBOARD_API_KEY en entorno"; exit 2; }
