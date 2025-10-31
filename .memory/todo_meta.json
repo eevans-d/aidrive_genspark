@@ -1,33 +1,40 @@
 {
   "todos": {
     "Coordinator": {
-      "sprint_4_1": {
-        "id": "sprint_4_1",
-        "content": "SPRINT 4: Semana 4 - Migración de datos existentes",
-        "details": "- Poblar base de datos con datos iniciales de prueba\n- Migrar categorías de productos estándar\n- Crear proveedores de ejemplo (incluyendo Maxiconsumo)\n- Importar productos de muestra con precios iniciales\n- Generar datos de stock inicial para testing",
-        "status": "in_progress",
-        "priority": "high"
-      },
-      "sprint_4_2": {
-        "id": "sprint_4_2",
-        "content": "SPRINT 4: Semana 4 - Validación de integridad de datos",
-        "details": "- Ejecutar validaciones de integridad referencial\n- Verificar funcionamiento de constraints\n- Testing de triggers y funciones PL/pgSQL\n- Validar auditoría y trazabilidad\n- Generar reporte de calidad de datos",
+      "1": {
+        "id": "1",
+        "content": "Sprint 4 Optimizado: Migración de Datos con Catálogo Real",
+        "details": "1. Analizar catálogo completo (32 categorías, cientos de productos reales)\n2. Diseñar estrategia de migración masiva\n3. Implementar lógica de redondeo de precios (terminan en 0 o 00)\n4. Poblar base de datos con productos, categorías, proveedores\n5. Validar integridad de datos migrados\n6. Generar reporte de migración",
         "status": "pending",
         "priority": "high"
       },
-      "sprint_4_3": {
-        "id": "sprint_4_3",
-        "content": "SPRINT 4: Semana 4 - Implementación procedimientos almacenados",
-        "details": "- Implementar procedures de backup automatizado\n- Crear scripts de mantenimiento de base de datos\n- Configurar cron jobs para limpieza de datos\n- Implementar procedures de recuperación\n- Documentar procedimientos de administración",
+      "2": {
+        "id": "2",
+        "content": "Análisis del Catálogo Real",
+        "details": "1. Procesar archivo listas_precios_mini_m.md\n2. Extraer 32 categorías organizadas\n3. Identificar productos únicos por categoría\n4. Mapear estructura de datos necesaria\n5. Preparar datos para migración",
         "status": "pending",
         "priority": "high"
       },
-      "sprint_4_deliverables": {
-        "id": "sprint_4_deliverables",
-        "content": "SPRINT 4: Entregables base de datos poblada y funcional",
-        "details": "- Base de datos poblada con datos de prueba\n- Reporte de validación de datos completo\n- Procedimientos de backup automatizados\n- Scripts de administración y mantenimiento\n- Documentación de procedimientos de base de datos",
+      "3": {
+        "id": "3",
+        "content": "Implementación de Lógica de Redondeo",
+        "details": "1. Crear función SQL para redondear precios\n2. Aplicar regla: precios terminan en 0 o 00\n3. Implementar en funciones PL/pgSQL existentes\n4. Validar con ejemplos: 2300, 2350, 4500, 8600, 12300, 43200",
         "status": "pending",
         "priority": "high"
+      },
+      "4": {
+        "id": "4",
+        "content": "Migración Masiva de Datos",
+        "details": "1. Insertar 32 categorías en tabla categorias\n2. Migrar productos con datos completos\n3. Configurar proveedor 'Maxiconsumo Necochea'\n4. Poblar precios_proveedor con estructura\n5. Crear datos de prueba para testing",
+        "status": "pending",
+        "priority": "high"
+      },
+      "5": {
+        "id": "5",
+        "content": "Validación y Reportes",
+        "details": "1. Verificar integridad referencial\n2. Probar funciones PL/pgSQL con datos reales\n3. Validar triggers de auditoría\n4. Generar reporte de migración\n5. Documentar proceso completado",
+        "status": "pending",
+        "priority": "medium"
       }
     }
   }
