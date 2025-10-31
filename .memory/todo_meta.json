@@ -5,35 +5,35 @@
         "id": "1",
         "content": "Sprint 4 Optimizado: Migración de Datos con Catálogo Real",
         "details": "1. Analizar catálogo completo (32 categorías, cientos de productos reales)\n2. Diseñar estrategia de migración masiva\n3. Implementar lógica de redondeo de precios (terminan en 0 o 00)\n4. Poblar base de datos con productos, categorías, proveedores\n5. Validar integridad de datos migrados\n6. Generar reporte de migración",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "2": {
         "id": "2",
         "content": "Análisis del Catálogo Real",
         "details": "1. Procesar archivo listas_precios_mini_m.md\n2. Extraer 32 categorías organizadas\n3. Identificar productos únicos por categoría\n4. Mapear estructura de datos necesaria\n5. Preparar datos para migración",
-        "status": "in_progress",
+        "status": "completed",
         "priority": "high"
       },
       "3": {
         "id": "3",
         "content": "Implementación de Lógica de Redondeo",
         "details": "1. Crear función SQL para redondear precios\n2. Aplicar regla: precios terminan en 0 o 00\n3. Implementar en funciones PL/pgSQL existentes\n4. Validar con ejemplos: 2300, 2350, 4500, 8600, 12300, 43200",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "4": {
         "id": "4",
         "content": "Migración Masiva de Datos",
         "details": "1. Insertar 32 categorías en tabla categorias\n2. Migrar productos con datos completos\n3. Configurar proveedor 'Maxiconsumo Necochea'\n4. Poblar precios_proveedor con estructura\n5. Crear datos de prueba para testing",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "5": {
         "id": "5",
         "content": "Validación y Reportes",
         "details": "1. Verificar integridad referencial\n2. Probar funciones PL/pgSQL con datos reales\n3. Validar triggers de auditoría\n4. Generar reporte de migración\n5. Documentar proceso completado",
-        "status": "pending",
+        "status": "completed",
         "priority": "medium"
       }
     }
