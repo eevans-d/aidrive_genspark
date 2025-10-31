@@ -1,0 +1,424 @@
+{
+  "info": {
+    "name": "Mini Market API - Colección Completa",
+    "description": "Colección de Postman para testing de los 19 endpoints de la API Mini Market.\n\n**Configuración Inicial:**\n1. Configurar variable `baseUrl`: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket\n2. Configurar variable `token`: Tu JWT token de Supabase Auth\n3. Los endpoints públicos no requieren token\n4. Los endpoints protegidos requieren token con rol adecuado\n\n**Roles:**\n- admin: Acceso completo\n- deposito: Gestión de inventario\n- ventas: Solo lectura",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket",
+      "type": "string"
+    },
+    {
+      "key": "token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "producto_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "categoria_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Categorías",
+      "item": [
+        {
+          "name": "1. Listar Categorías",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias"]
+            },
+            "description": "Obtiene todas las categorías activas sin requerir autenticación"
+          }
+        },
+        {
+          "name": "2. Detalle de Categoría",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/categorias/{{categoria_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["categorias", "{{categoria_id}}"]
+            },
+            "description": "Obtiene el detalle de una categoría específica por ID"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Productos",
+      "item": [
+        {
+          "name": "3. Listar Productos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos?activo=true",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos"],
+              "query": [
+                {
+                  "key": "activo",
+                  "value": "true"
+                },
+                {
+                  "key": "categoria",
+                  "value": "SAL",
+                  "disabled": true
+                },
+                {
+                  "key": "marca",
+                  "value": "FELA",
+                  "disabled": true
+                },
+                {
+                  "key": "search",
+                  "value": "salchicha",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Lista productos con filtros opcionales: categoria, marca, activo, search"
+          }
+        },
+        {
+          "name": "4. Detalle de Producto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos", "{{producto_id}}"]
+            },
+            "description": "Obtiene el detalle completo de un producto específico"
+          }
+        },
+        {
+          "name": "5. Crear Producto",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sku\": \"TEST-PROD-001\",\n  \"nombre\": \"Producto de Prueba\",\n  \"categoria_id\": \"{{categoria_id}}\",\n  \"marca\": \"Marca Test\",\n  \"contenido_neto\": \"500g\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/productos",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos"]
+            },
+            "description": "Crea un nuevo producto. Requiere rol admin o deposito."
+          }
+        },
+        {
+          "name": "6. Actualizar Producto",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"nombre\": \"Producto Actualizado\",\n  \"marca\": \"Nueva Marca\",\n  \"contenido_neto\": \"600g\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos", "{{producto_id}}"]
+            },
+            "description": "Actualiza un producto existente. Requiere rol admin o deposito."
+          }
+        },
+        {
+          "name": "7. Eliminar Producto",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/productos/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["productos", "{{producto_id}}"]
+            },
+            "description": "Desactiva un producto (soft delete). Requiere rol admin."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Proveedores",
+      "item": [
+        {
+          "name": "8. Listar Proveedores",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores",
+              "host": ["{{baseUrl}}"],
+              "path": ["proveedores"]
+            },
+            "description": "Obtiene todos los proveedores activos"
+          }
+        },
+        {
+          "name": "9. Detalle de Proveedor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/proveedores/{{proveedor_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["proveedores", "{{proveedor_id}}"]
+            },
+            "description": "Obtiene el detalle de un proveedor específico"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Precios",
+      "item": [
+        {
+          "name": "10. Aplicar Precio con Redondeo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_id\": \"{{producto_id}}\",\n  \"precio_compra\": 1234.56,\n  \"margen_ganancia\": 35.5\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/precios/aplicar",
+              "host": ["{{baseUrl}}"],
+              "path": ["precios", "aplicar"]
+            },
+            "description": "Aplica precio al producto con redondeo automático a múltiplos de 50. Requiere rol admin."
+          }
+        },
+        {
+          "name": "11. Historial de Precios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/precios/producto/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["precios", "producto", "{{producto_id}}"]
+            },
+            "description": "Obtiene el historial de cambios de precio de un producto"
+          }
+        },
+        {
+          "name": "12. Redondear Precio (Utilidad)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"precio\": 2345.67\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/precios/redondear",
+              "host": ["{{baseUrl}}"],
+              "path": ["precios", "redondear"]
+            },
+            "description": "Redondea un precio a múltiplo de 50. No requiere autenticación."
+          }
+        },
+        {
+          "name": "13. Margen Sugerido",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/precios/margen-sugerido/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["precios", "margen-sugerido", "{{producto_id}}"]
+            },
+            "description": "Calcula el margen de ganancia sugerido para un producto según su categoría"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "item": [
+        {
+          "name": "14. Consultar Stock General",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock",
+              "host": ["{{baseUrl}}"],
+              "path": ["stock"]
+            },
+            "description": "Obtiene el stock de todos los productos con información detallada"
+          }
+        },
+        {
+          "name": "15. Productos Bajo Stock Mínimo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock/minimo",
+              "host": ["{{baseUrl}}"],
+              "path": ["stock", "minimo"]
+            },
+            "description": "Lista productos con stock por debajo del mínimo establecido"
+          }
+        },
+        {
+          "name": "16. Stock de Producto Específico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stock/producto/{{producto_id}}",
+              "host": ["{{baseUrl}}"],
+              "path": ["stock", "producto", "{{producto_id}}"]
+            },
+            "description": "Obtiene el stock disponible y detalle de un producto específico"
+          }
+        }
+      ]
+    },
+    {
+      "name": "Depósito",
+      "item": [
+        {
+          "name": "17. Registrar Movimiento",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_id\": \"{{producto_id}}\",\n  \"tipo_movimiento\": \"INGRESO\",\n  \"cantidad\": 50,\n  \"motivo\": \"Ingreso de mercadería nueva\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/deposito/movimiento",
+              "host": ["{{baseUrl}}"],
+              "path": ["deposito", "movimiento"]
+            },
+            "description": "Registra un movimiento de inventario (INGRESO, EGRESO, AJUSTE, DEVOLUCION). Requiere rol admin o deposito."
+          }
+        },
+        {
+          "name": "18. Historial de Movimientos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/deposito/movimientos?limit=50",
+              "host": ["{{baseUrl}}"],
+              "path": ["deposito", "movimientos"],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                },
+                {
+                  "key": "producto_id",
+                  "value": "{{producto_id}}",
+                  "disabled": true
+                },
+                {
+                  "key": "tipo_movimiento",
+                  "value": "INGRESO",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Obtiene el historial de movimientos de depósito con filtros opcionales"
+          }
+        },
+        {
+          "name": "19. Ingreso de Mercadería",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"producto_id\": \"{{producto_id}}\",\n  \"cantidad\": 100,\n  \"proveedor_id\": \"{{proveedor_id}}\",\n  \"precio_compra\": 1500.00\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/deposito/ingreso",
+              "host": ["{{baseUrl}}"],
+              "path": ["deposito", "ingreso"]
+            },
+            "description": "Registra el ingreso de mercadería al depósito con información del proveedor y precio. Requiere rol admin o deposito."
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -193,22 +193,30 @@
 **Completado:** 2025-10-31 14:15
 **Objetivo:** Migrar catálogo real con productos reales y sistema de redondeo de precios
 
-**Tareas Completadas:**
-1. ✅ Análisis y optimización catálogo real
-2. ✅ Función redondeo precios implementada (fnc_redondear_precio)
-3. ✅ Migración masiva 20 categorías nuevas
-4. ✅ Migración 198 productos con datos completos (6 lotes)
-5. ✅ Proveedor Maxiconsumo Necochea configurado
-6. ✅ Validación integridad completa ejecutada
+**Resultados:**
+- 20 categorías nuevas, 198 productos migrados del catálogo real
+- Función de redondeo de precios validada
+- Total sistema: 33 categorías, 220 productos, 11 proveedores
+
+## ✅ SPRINT 5 COMPLETADO (APIs RESTful Core)
+**Completado:** 2025-10-31 14:41
+**Objetivo:** Implementar 19 endpoints RESTful con autenticación y roles
 
 **Resultados:**
-- 20 categorías nuevas (SAL, QUE, LAC, MYC, JSA, ENE, CLA, CBO, BAL, WYG, VIN, CHA, HIG, LAV, ACE, BOL, DTE, SNA, CON, y 3 reservadas)
-- 198 productos migrados del catálogo real
-- Función de redondeo de precios validada (2345→2350, 8627→8650, etc.)
-- Stored procedure sp_aplicar_precio actualizado con redondeo automático
-- 100% integridad referencial
-- Total sistema: 33 categorías, 220 productos, 11 proveedores
+1. ✅ Edge Function api-minimarket (722 líneas TypeScript)
+2. ✅ 19 endpoints RESTful implementados (Categorías: 2, Productos: 5, Proveedores: 2, Precios: 4, Stock: 3, Depósito: 3)
+3. ✅ Sistema autenticación JWT con 3 roles (admin, deposito, ventas)
+4. ✅ Integración completa con 6 funciones PL/pgSQL del Sprint 3-4
+5. ✅ Documentación OpenAPI 3.1 (805 líneas YAML)
+6. ✅ Colección Postman (424 líneas JSON, 19 requests)
+7. ⏳ Despliegue pendiente (requiere refresh token Supabase)
+
+**Archivos Generados:**
+- `/workspace/supabase/functions/api-minimarket/index.ts` - Edge Function completa
+- `/workspace/docs/api-openapi-3.1.yaml` - Especificación OpenAPI 3.1
+- `/workspace/docs/postman-collection.json` - Colección para testing
+- `/workspace/docs/SPRINT_5_COMPLETADO.md` - Reporte detallado
 
 ---
 
-**Estado Final:** ✅ SPRINT 3 COMPLETADO | ✅ SPRINT 4 COMPLETADO
+**Estado Final:** ✅ SPRINT 3 COMPLETADO | ✅ SPRINT 4 COMPLETADO | ✅ SPRINT 5 COMPLETADO (Pendiente despliegue)

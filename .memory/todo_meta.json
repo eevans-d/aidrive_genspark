@@ -5,49 +5,49 @@
         "id": "1",
         "content": "Sprint 5: Implementación de APIs Core del Sistema",
         "details": "1. Análisis de especificaciones técnicas del Sprint 2\n2. Desarrollo de APIs RESTful para productos, categorías, proveedores\n3. Implementación de APIs para precios y pedidos\n4. APIs para gestión de inventario y stock\n5. Sistema de autenticación y autorización\n6. Testing completo de APIs\n7. Documentación de APIs",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "2": {
         "id": "2",
         "content": "Análisis de Especificaciones APIs",
         "details": "1. Revisar docs/sprint_2/apis_internas_especificacion.md\n2. Analizar endpoints requeridos\n3. Definir estructura de datos para requests/responses\n4. Mapear APIs con base de datos actual\n5. Identificar validaciones necesarias",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "3": {
         "id": "3",
         "content": "Desarrollo APIs de Productos y Categorías",
         "details": "1. GET /api/categorias - Listar categorías\n2. GET /api/productos - Listar productos con filtros\n3. GET /api/productos/{id} - Obtener producto específico\n4. POST /api/productos - Crear nuevo producto\n5. PUT /api/productos/{id} - Actualizar producto\n6. DELETE /api/productos/{id} - Eliminar producto\n7. GET /api/productos/categoria/{categoria_id} - Productos por categoría",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "4": {
         "id": "4",
         "content": "Desarrollo APIs de Proveedores y Precios",
         "details": "1. GET /api/proveedores - Listar proveedores\n2. GET /api/precios - Listar precios vigentes\n3. POST /api/precios - Asignar precio (con redondeo automático)\n4. PUT /api/precios/{id} - Actualizar precio\n5. GET /api/precios/producto/{producto_id} - Precios por producto\n6. GET /api/precios/proveedor/{proveedor_id} - Precios por proveedor",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "5": {
         "id": "5",
         "content": "APIs de Gestión de Inventario",
         "details": "1. GET /api/stock - Consultar stock disponible\n2. POST /api/stock/movimiento - Registrar movimiento de stock\n3. GET /api/stock/producto/{id} - Stock por producto\n4. GET /api/stock/minimo - Productos bajo stock mínimo\n5. POST /api/stock/ajuste - Ajustar stock (con auditoría)\n6. GET /api/deposito - Consulta de depósito",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "6": {
         "id": "6",
         "content": "Sistema de Autenticación y Seguridad",
         "details": "1. Implementar JWT tokens con Supabase Auth\n2. Crear roles: admin, deposito, ventas\n3. Middleware de autorización por endpoint\n4. Validación de permisos por rol\n5. Auditoría de accesos a APIs\n6. Rate limiting y seguridad",
-        "status": "pending",
+        "status": "completed",
         "priority": "high"
       },
       "7": {
         "id": "7",
         "content": "Testing y Documentación de APIs",
         "details": "1. Testing unitario de cada endpoint\n2. Testing de integración\n3. Testing de autenticación\n4. Generar documentación OpenAPI 3.1\n5. Crear colección Postman\n6. Documentar ejemplos de uso",
-        "status": "pending",
+        "status": "completed",
         "priority": "medium"
       }
     }

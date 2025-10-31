@@ -1,0 +1,805 @@
+openapi: 3.1.0
+info:
+  title: Mini Market API - Sistema Completo de Gestión
+  version: 1.0.0
+  description: |
+    API RESTful completa para el sistema de gestión de Mini Market y Depósito.
+    
+    ## Autenticación
+    La API utiliza JWT (JSON Web Tokens) mediante Supabase Auth.
+    
+    ## Roles de Usuario
+    - **admin**: Acceso completo a todas las operaciones
+    - **deposito**: Gestión de inventario y productos
+    - **ventas**: Solo lectura de productos y stock
+    
+    ## Sistema de Redondeo de Precios
+    Todos los precios se redondean automáticamente a múltiplos de 50:
+    - 2345 → 2350
+    - 8627 → 8650
+    - 12384 → 12400
+    
+  contact:
+    name: Soporte Mini Market
+    email: soporte@minimarket.com
+  license:
+    name: Propietario
+
+servers:
+  - url: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket
+    description: Servidor de Producción
+
+security:
+  - BearerAuth: []
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT de Supabase Auth
+  
+  schemas:
+    Categoria:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        codigo:
+          type: string
+          example: "SAL"
+        nombre:
+          type: string
+          example: "Salchichas"
+        descripcion:
+          type: string
+        margen_minimo:
+          type: number
+          format: decimal
+        margen_maximo:
+          type: number
+          format: decimal
+        activo:
+          type: boolean
+    
+    Producto:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        sku:
+          type: string
+          example: "FELA-SAL-X6"
+        nombre:
+          type: string
+          example: "Salchichas FELA x6"
+        marca:
+          type: string
+          example: "FELA"
+        contenido_neto:
+          type: string
+          example: "240g"
+        categoria_id:
+          type: string
+          format: uuid
+        activo:
+          type: boolean
+        precio_actual:
+          type: number
+          format: decimal
+        precio_costo:
+          type: number
+          format: decimal
+        margen_ganancia:
+          type: number
+          format: decimal
+    
+    Proveedor:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        nombre:
+          type: string
+          example: "Maxiconsumo Necochea"
+        contacto:
+          type: string
+        email:
+          type: string
+          format: email
+        telefono:
+          type: string
+        productos_ofrecidos:
+          type: string
+        activo:
+          type: boolean
+    
+    Stock:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        producto_id:
+          type: string
+          format: uuid
+        cantidad_fisica:
+          type: integer
+        cantidad_reservada:
+          type: integer
+        cantidad_disponible:
+          type: integer
+        stock_minimo:
+          type: integer
+        stock_maximo:
+          type: integer
+        producto:
+          $ref: '#/components/schemas/Producto'
+    
+    Movimiento:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        producto_id:
+          type: string
+          format: uuid
+        tipo_movimiento:
+          type: string
+          enum: [INGRESO, EGRESO, AJUSTE, DEVOLUCION]
+        cantidad:
+          type: integer
+        motivo:
+          type: string
+        fecha_movimiento:
+          type: string
+          format: date-time
+        usuario_id:
+          type: string
+          format: uuid
+    
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+        timestamp:
+          type: string
+          format: date-time
+    
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+        data:
+          type: object
+        message:
+          type: string
+        count:
+          type: integer
+        timestamp:
+          type: string
+          format: date-time
+
+paths:
+  /categorias:
+    get:
+      summary: Listar todas las categorías
+      tags: [Categorías]
+      security: []
+      responses:
+        '200':
+          description: Lista de categorías activas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Categoria'
+  
+  /categorias/{id}:
+    get:
+      summary: Obtener detalle de categoría
+      tags: [Categorías]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle de la categoría
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Categoria'
+        '404':
+          description: Categoría no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+  
+  /productos:
+    get:
+      summary: Listar productos con filtros opcionales
+      tags: [Productos]
+      security: []
+      parameters:
+        - name: categoria
+          in: query
+          schema:
+            type: string
+          description: Código de categoría (ej. SAL, QUE)
+        - name: marca
+          in: query
+          schema:
+            type: string
+          description: Filtrar por marca
+        - name: activo
+          in: query
+          schema:
+            type: boolean
+          description: Filtrar por estado activo
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Búsqueda por nombre o SKU
+      responses:
+        '200':
+          description: Lista de productos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Producto'
+    
+    post:
+      summary: Crear nuevo producto
+      tags: [Productos]
+      security:
+        - BearerAuth: []
+      description: Requiere rol admin o deposito
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [nombre]
+              properties:
+                sku:
+                  type: string
+                nombre:
+                  type: string
+                categoria_id:
+                  type: string
+                  format: uuid
+                marca:
+                  type: string
+                contenido_neto:
+                  type: string
+      responses:
+        '201':
+          description: Producto creado exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+        '401':
+          description: No autorizado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '403':
+          description: Acceso denegado - rol insuficiente
+  
+  /productos/{id}:
+    get:
+      summary: Obtener detalle de producto
+      tags: [Productos]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle del producto
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+        '404':
+          description: Producto no encontrado
+    
+    put:
+      summary: Actualizar producto
+      tags: [Productos]
+      security:
+        - BearerAuth: []
+      description: Requiere rol admin o deposito
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Producto'
+      responses:
+        '200':
+          description: Producto actualizado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Producto'
+    
+    delete:
+      summary: Eliminar producto (soft delete)
+      tags: [Productos]
+      security:
+        - BearerAuth: []
+      description: Requiere rol admin
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Producto desactivado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  
+  /proveedores:
+    get:
+      summary: Listar proveedores activos
+      tags: [Proveedores]
+      security: []
+      responses:
+        '200':
+          description: Lista de proveedores
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Proveedor'
+  
+  /proveedores/{id}:
+    get:
+      summary: Obtener detalle de proveedor
+      tags: [Proveedores]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Detalle del proveedor
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Proveedor'
+  
+  /precios/aplicar:
+    post:
+      summary: Aplicar precio a producto con redondeo automático
+      tags: [Precios]
+      security:
+        - BearerAuth: []
+      description: |
+        Requiere rol admin. 
+        Aplica precio de compra al producto, calcula precio de venta con margen y redondea automáticamente a múltiplos de 50.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [producto_id, precio_compra]
+              properties:
+                producto_id:
+                  type: string
+                  format: uuid
+                precio_compra:
+                  type: number
+                  format: decimal
+                margen_ganancia:
+                  type: number
+                  format: decimal
+                  description: Margen opcional (si no se especifica, usa el de la categoría)
+      responses:
+        '200':
+          description: Precio aplicado y redondeado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  
+  /precios/producto/{id}:
+    get:
+      summary: Historial de precios de un producto
+      tags: [Precios]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID del producto
+      responses:
+        '200':
+          description: Historial de cambios de precio
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            precio_anterior:
+                              type: number
+                            precio_nuevo:
+                              type: number
+                            fecha_cambio:
+                              type: string
+                              format: date-time
+                            motivo_cambio:
+                              type: string
+  
+  /precios/redondear:
+    post:
+      summary: Redondear un precio (función de utilidad)
+      tags: [Precios]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [precio]
+              properties:
+                precio:
+                  type: number
+                  format: decimal
+      responses:
+        '200':
+          description: Precio redondeado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          precio_original:
+                            type: number
+                          precio_redondeado:
+                            type: number
+  
+  /precios/margen-sugerido/{id}:
+    get:
+      summary: Calcular margen sugerido para producto
+      tags: [Precios]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID del producto
+      responses:
+        '200':
+          description: Margen sugerido calculado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          producto_id:
+                            type: string
+                            format: uuid
+                          margen_sugerido:
+                            type: number
+  
+  /stock:
+    get:
+      summary: Consultar stock general de todos los productos
+      tags: [Stock]
+      security: []
+      responses:
+        '200':
+          description: Stock de todos los productos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Stock'
+  
+  /stock/minimo:
+    get:
+      summary: Productos con stock bajo mínimo
+      tags: [Stock]
+      security: []
+      responses:
+        '200':
+          description: Lista de productos con stock crítico
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            producto_id:
+                              type: string
+                            sku:
+                              type: string
+                            nombre:
+                              type: string
+                            stock_actual:
+                              type: integer
+                            stock_minimo:
+                              type: integer
+                            deficit:
+                              type: integer
+  
+  /stock/producto/{id}:
+    get:
+      summary: Stock específico de un producto
+      tags: [Stock]
+      security: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: ID del producto
+      responses:
+        '200':
+          description: Stock del producto
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          producto_id:
+                            type: string
+                          stock_disponible:
+                            type: integer
+                          detalle:
+                            $ref: '#/components/schemas/Stock'
+  
+  /deposito/movimiento:
+    post:
+      summary: Registrar movimiento de inventario
+      tags: [Depósito]
+      security:
+        - BearerAuth: []
+      description: Requiere rol admin o deposito
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [producto_id, tipo_movimiento, cantidad]
+              properties:
+                producto_id:
+                  type: string
+                  format: uuid
+                tipo_movimiento:
+                  type: string
+                  enum: [INGRESO, EGRESO, AJUSTE, DEVOLUCION]
+                cantidad:
+                  type: integer
+                motivo:
+                  type: string
+      responses:
+        '201':
+          description: Movimiento registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+  
+  /deposito/movimientos:
+    get:
+      summary: Historial de movimientos de depósito
+      tags: [Depósito]
+      security: []
+      parameters:
+        - name: producto_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: tipo_movimiento
+          in: query
+          schema:
+            type: string
+            enum: [INGRESO, EGRESO, AJUSTE, DEVOLUCION]
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 50
+      responses:
+        '200':
+          description: Lista de movimientos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Movimiento'
+  
+  /deposito/ingreso:
+    post:
+      summary: Ingreso de mercadería al depósito
+      tags: [Depósito]
+      security:
+        - BearerAuth: []
+      description: Requiere rol admin o deposito
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [producto_id, cantidad]
+              properties:
+                producto_id:
+                  type: string
+                  format: uuid
+                cantidad:
+                  type: integer
+                proveedor_id:
+                  type: string
+                  format: uuid
+                precio_compra:
+                  type: number
+                  format: decimal
+      responses:
+        '201':
+          description: Ingreso registrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+tags:
+  - name: Categorías
+    description: Gestión de categorías de productos
+  - name: Productos
+    description: Gestión completa de productos
+  - name: Proveedores
+    description: Gestión de proveedores
+  - name: Precios
+    description: Sistema de precios con redondeo automático
+  - name: Stock
+    description: Consulta de inventario y stock
+  - name: Depósito
+    description: Operaciones de depósito y movimientos
