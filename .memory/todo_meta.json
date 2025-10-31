@@ -12,7 +12,7 @@
         "id": "2",
         "content": "Análisis del Catálogo Real",
         "details": "1. Procesar archivo listas_precios_mini_m.md\n2. Extraer 32 categorías organizadas\n3. Identificar productos únicos por categoría\n4. Mapear estructura de datos necesaria\n5. Preparar datos para migración",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "high"
       },
       "3": {
