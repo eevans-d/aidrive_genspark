@@ -10,7 +10,49 @@
     "lint": "pnpm install --prefer-offline && eslint .",
     "preview": "pnpm install --prefer-offline && vite preview",
     "install-deps": "pnpm install --prefer-offline",
-    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune"
+    "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune",
+    
+    "setup": "bash ../setup.sh",
+    "setup:dev": "bash ../setup.sh dev",
+    "setup:prod": "bash ../setup.sh prod",
+    
+    "migrate": "bash ../migrate.sh",
+    "migrate:up": "bash ../migrate.sh up",
+    "migrate:down": "bash ../migrate.sh down",
+    "migrate:status": "bash ../migrate.sh status",
+    "migrate:seed": "bash ../migrate.sh seed",
+    "migrate:reset": "bash ../migrate.sh reset",
+    "migrate:backup": "bash ../migrate.sh backup",
+    
+    "test": "bash ../test.sh",
+    "test:unit": "bash ../test.sh unit",
+    "test:integration": "bash ../test.sh integration",
+    "test:e2e": "bash ../test.sh e2e",
+    "test:load": "bash ../test.sh load",
+    "test:security": "bash ../test.sh security",
+    "test:coverage": "bash ../test.sh all true",
+    "test:verbose": "bash ../test.sh all false true",
+    
+    "deploy": "bash ../deploy.sh",
+    "deploy:dev": "bash ../deploy.sh dev",
+    "deploy:staging": "bash ../deploy.sh staging",
+    "deploy:prod": "bash ../deploy.sh production",
+    "deploy:dry-run": "bash ../deploy.sh staging true",
+    
+    "health": "curl -f http://localhost:3000/health || exit 1",
+    "logs": "tail -f ../logs/app.log",
+    "backup": "bash ../migrate.sh backup",
+    
+    "ci:setup": "npm run setup:prod && npm run migrate:up && npm run test:coverage",
+    "ci:deploy": "npm run test:coverage && npm run deploy:staging",
+    "ci:release": "npm run deploy:prod",
+    
+    "dev:full": "npm run setup:dev && npm run migrate:seed && npm run dev",
+    "prod:prepare": "npm run clean && npm run install-deps && npm run test:coverage && npm run build:prod",
+    
+    "db:reset": "bash ../migrate.sh reset",
+    "db:seed": "bash ../migrate.sh seed",
+    "db:status": "bash ../migrate.sh status"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
