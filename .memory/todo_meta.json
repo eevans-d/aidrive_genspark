@@ -3,51 +3,44 @@
     "Coordinator": {
       "1": {
         "id": "1",
-        "content": "Acceso y mapeo inicial del repositorio GitHub",
-        "details": "1. Conectar al repositorio 'aidrive_genspark_forensic' usando GitHub MCP. 2. Mapear estructura completa del proyecto. 3. Identificar archivos principales, configuración, dependencias.",
-        "status": "completed",
+        "content": "Implementación Sistema Mini Market - Desarrollo Completo",
+        "details": "DESARROLLAR sistema agéntico completo para Mini Market según roadmap generado. FASE 1: Fundación - Base de datos, APIs Maxiconsumo, precios automáticos. FASE 2: Stock Inteligente - Alertas, asignación automática. FASE 3: Analytics - Dashboard, análisis predictivo. FASE 4: Go-Live - Despliegue producción. Stack: Supabase + React + Automatización",
+        "status": "pending",
         "priority": "high"
       },
       "2": {
         "id": "2",
-        "content": "Análisis técnico exhaustivo del código",
-        "details": "1. Análisis de arquitectura y diseño. 2. Revisión de calidad del código. 3. Identificación de errores, bugs y conflictos. 4. Evaluación de dependencias y vulnerabilidades. 5. Análisis de patrones y mejores prácticas.",
-        "status": "completed",
+        "content": "Obtener credenciales Supabase",
+        "details": "OBTENER credenciales de Supabase para base de datos, autenticación, edge functions, y storage del sistema Mini Market. ESENCIAL para desarrollo backend.",
+        "status": "pending",
         "priority": "high"
       },
       "3": {
         "id": "3",
-        "content": "Evaluación de infraestructura y deployment",
-        "details": "1. Revisar configuración de deployment actual. 2. Evaluar CI/CD pipelines. 3. Analizar configuraciones de base de datos y servicios externos. 4. Identificar gaps en automatización.",
-        "status": "completed",
+        "content": "Configurar base de datos Mini Market",
+        "details": "CREAR esquema base de datos: tabla proveedores, tabla productos, tabla precios_historicos, tabla stock_deposito, tabla productos_faltantes, tabla asignaciones_proveedores. Incluir índices y relaciones.",
+        "status": "pending",
         "priority": "high"
       },
       "4": {
         "id": "4",
-        "content": "Análisis de documentación y testing",
-        "details": "1. Evaluar completitud de documentación. 2. Revisar cobertura de tests. 3. Analizar calidad de comentarios y docstrings. 4. Verificar existencia de README, API docs, etc.",
-        "status": "completed",
-        "priority": "medium"
+        "content": "Desarrollar APIs integración Maxiconsumo",
+        "details": "CREAR edge functions para scraping/automación de precios desde Maxiconsumo Necochea. Sistema de actualización automática de precios, manejo de errores, logging, y notificaciones.",
+        "status": "pending",
+        "priority": "high"
       },
       "5": {
         "id": "5",
-        "content": "FASE 5: Diagnóstico Integral - Sistema Mini Market",
-        "details": "✅ COMPLETADO: Consolidación de hallazgos específicos para sistema Mini Market. Generado diagnóstico integral con matriz de criticidad (5 críticos, 5 altos, 5 medios, 5 bajos), métricas cuantificadas (ROI 282%, Ahorros $155K anuales), y recomendaciones priorizadas. Reporte: docs/diagnostico_integral_mini_market.md",
-        "status": "completed",
+        "content": "Sistema gestión stock inteligente",
+        "details": "DESARROLLAR sistema de alertas automáticas de stock bajo, gestión productos faltantes, asignación automática a proveedores según base de datos configurada.",
+        "status": "pending",
         "priority": "high"
       },
       "6": {
         "id": "6",
-        "content": "FASE 6: Diseño de hoja de ruta y blueprint - Sistema Mini Market",
-        "details": "✅ COMPLETADO: Roadmap y blueprint detallado generado. 4 fases (22 sprints, 26 semanas), presupuesto $180K-$220K USD, checklist producción 80+ items, timeline 01/11/2025-02/05/2026. Enfoque específico: automatización Maxiconsumo, gestión stock, asignación automática, base datos proveedores. Documento: docs/roadmap_blueprint_mini_market.md",
-        "status": "completed",
-        "priority": "high"
-      },
-      "7": {
-        "id": "7",
-        "content": "FASE 7: Generación de reporte final ejecutivo",
-        "details": "✅ COMPLETADO: Reporte ejecutivo final generado. Consolidación completa de todos los análisis en documento ejecutivo accionable. Incluye: resumen ejecutivo, diagnóstico integral, matriz criticidad, roadmap detallado, métricas financieras (ROI 655%, Ahorros $415K anuales), recomendaciones prioritarias, timeline 6 meses, checklist producción completo. Documento: REPORTE_EJECUTIVO_MEGA_ANALISIS_MINI_MARKET.md",
-        "status": "completed",
+        "content": "Dashboard operativo Mini Market",
+        "details": "CREAR interfaz web completa: gestión precios, visualización stock, dashboard proveedores, reportes automáticos, sistema de alertas, gestión productos faltantes.",
+        "status": "pending",
         "priority": "high"
       }
     }
