@@ -47,7 +47,7 @@
         "id": "7",
         "content": "FASE 6: Documentación y ADRs",
         "details": "• Actualizar Architecture Decision Records\n• Documentar decisiones técnicas críticas\n• Crear runbooks de incident response\n• Documenter recovery procedures\n• Actualizar API documentation con OpenAPI 3.1",
-        "status": "pending",
+        "status": "in_progress",
         "priority": "medium"
       },
       "8": {
