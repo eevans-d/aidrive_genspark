@@ -1,0 +1,1151 @@
+{
+  "timestamp": "2025-11-02T14:40:47.618656",
+  "files_analyzed": 8,
+  "total_issues": 183,
+  "by_file": {
+    "supabase/functions/api-proveedor/index.ts": {
+      "observability_score": 0.65,
+      "total_issues": 22,
+      "structured_logging": {
+        "score": 1,
+        "structured_logs_found": 22,
+        "unstructured_logs_found": 16,
+        "issues": [
+          "❌ 16 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 763,
+            "text": "console.log('📊"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1051,
+            "text": "console.log('⚙"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 473,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 567,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 652,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 749,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 869,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 955,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 1022,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 1089,
+            "text": "console.error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "correlation_id": true,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": false,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ No hay cadenas de escalación definidas",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/scraper-maxiconsumo/index.ts": {
+      "observability_score": 2.15,
+      "total_issues": 22,
+      "structured_logging": {
+        "score": 7,
+        "structured_logs_found": 41,
+        "unstructured_logs_found": 4,
+        "issues": [
+          "❌ 4 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 3134,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 224,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 238,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 1159,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "correlation_id": true,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": false,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ No hay cadenas de escalación definidas",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/api-minimarket/index.ts": {
+      "observability_score": 1.0,
+      "total_issues": 24,
+      "structured_logging": {
+        "score": 4,
+        "structured_logs_found": 0,
+        "unstructured_logs_found": 3,
+        "issues": [
+          "❌ No se encontraron logs estructurados JSON",
+          "❌ 3 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 707,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 31,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 57,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "correlation_id": false,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ Falta correlation ID en headers/logs",
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": false,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ No hay cadenas de escalación definidas",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/cron-dashboard/index.ts": {
+      "observability_score": 1.0,
+      "total_issues": 24,
+      "structured_logging": {
+        "score": 4,
+        "structured_logs_found": 0,
+        "unstructured_logs_found": 8,
+        "issues": [
+          "❌ No se encontraron logs estructurados JSON",
+          "❌ 8 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 357,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 164,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 239,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 294,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 344,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 378,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 410,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 136,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "correlation_id": false,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ Falta correlation ID en headers/logs",
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": false,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ No hay cadenas de escalación definidas",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/cron-health-monitor/index.ts": {
+      "observability_score": 1.0,
+      "total_issues": 24,
+      "structured_logging": {
+        "score": 4,
+        "structured_logs_found": 0,
+        "unstructured_logs_found": 8,
+        "issues": [
+          "❌ No se encontraron logs estructurados JSON",
+          "❌ 8 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 156,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 195,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 653,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 128,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 605,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 641,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 718,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 100,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "correlation_id": false,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ Falta correlation ID en headers/logs",
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": false,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ No hay cadenas de escalación definidas",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/cron-jobs-maxiconsumo/index.ts": {
+      "observability_score": 0.95,
+      "total_issues": 21,
+      "structured_logging": {
+        "score": 1,
+        "structured_logs_found": 12,
+        "unstructured_logs_found": 11,
+        "issues": [
+          "❌ 11 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 1938,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 1972,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2017,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2057,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2681,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2719,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2744,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2753,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 2799,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 573,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "correlation_id": true,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": true,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/cron-notifications/index.ts": {
+      "observability_score": 0.55,
+      "total_issues": 23,
+      "structured_logging": {
+        "score": 1,
+        "structured_logs_found": 0,
+        "unstructured_logs_found": 13,
+        "issues": [
+          "❌ No se encontraron logs estructurados JSON",
+          "❌ 13 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 600,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1008,
+            "text": "console.log('["
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 569,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 956,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "console\\.error\\s*\\(\\s*[\\'\"]",
+            "line": 998,
+            "text": "console.error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 538,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 604,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 760,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 789,
+            "text": "throw new Error('"
+          },
+          {
+            "pattern": "throw new Error\\s*\\(\\s*[\\'\"]",
+            "line": 815,
+            "text": "throw new Error('"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "correlation_id": false,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ Falta correlation ID en headers/logs",
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": true,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    },
+    "supabase/functions/cron-testing-suite/index.ts": {
+      "observability_score": 0.55,
+      "total_issues": 23,
+      "structured_logging": {
+        "score": 1,
+        "structured_logs_found": 0,
+        "unstructured_logs_found": 54,
+        "issues": [
+          "❌ No se encontraron logs estructurados JSON",
+          "❌ 54 logs no estructurados detectados",
+          "❌ Falta correlation ID para trazabilidad",
+          "❌ Falta trace ID para distributed tracing"
+        ],
+        "unstructured_details": [
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 83,
+            "text": "console.log('🧪"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 87,
+            "text": "console.log('="
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 105,
+            "text": "console.log('\\"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 111,
+            "text": "console.log('="
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 149,
+            "text": "console.log('-"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1357,
+            "text": "console.log('🚀"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1359,
+            "text": "console.log('="
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1388,
+            "text": "console.log('\\"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1394,
+            "text": "console.log('\\"
+          },
+          {
+            "pattern": "console\\.log\\s*\\(\\s*[\\'\"][^{]",
+            "line": 1402,
+            "text": "console.log('\\"
+          }
+        ]
+      },
+      "metrics_coverage": {
+        "score": 0.0,
+        "red_coverage": 0.0,
+        "use_coverage": 0.0,
+        "red_metrics": {
+          "rate": false,
+          "errors": false,
+          "duration": false
+        },
+        "use_metrics": {
+          "utilization": false,
+          "saturation": false,
+          "errors": false
+        },
+        "issues": [
+          "❌ Falta métrica de Rate (requests/second)",
+          "❌ Falta métrica de Errors (error rate %)",
+          "❌ Falta métrica de Duration (response time)",
+          "❌ Falta métrica de Utilization (CPU/Memory)",
+          "❌ Falta métrica de Saturation (queue depth)",
+          "❌ Falta métrica de Errors (USE)"
+        ]
+      },
+      "tracing": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "correlation_id": false,
+          "distributed_tracing": false,
+          "span_creation": false,
+          "context_propagation": false,
+          "trace_sampling": false
+        },
+        "issues": [
+          "❌ Falta correlation ID en headers/logs",
+          "❌ No hay distributed tracing (OpenTelemetry/Jaeger)",
+          "❌ No hay creación de spans para operaciones",
+          "❌ Falta propagación de contexto entre servicios"
+        ]
+      },
+      "alerting": {
+        "score": 2.0,
+        "coverage": 20.0,
+        "features": {
+          "sli_based_alerts": false,
+          "escalation_chains": true,
+          "runbooks": false,
+          "intelligent_routing": false,
+          "noise_reduction": false
+        },
+        "issues": [
+          "❌ Faltan alertas basadas en SLI/SLO",
+          "❌ Faltan runbooks para incident response",
+          "❌ No hay routing inteligente de alertas",
+          "❌ Falta reducción de ruido/falsos positivos"
+        ]
+      },
+      "dashboard": {
+        "score": 0.0,
+        "coverage": 0.0,
+        "features": {
+          "sli_tracking": false,
+          "slo_compliance": false,
+          "golden_signals": false,
+          "business_metrics": false,
+          "operational_view": false
+        },
+        "issues": [
+          "❌ No hay tracking de SLI en dashboards",
+          "❌ No hay monitoring de SLO compliance",
+          "❌ Faltan golden signals (latencia, tráfico, errores, saturación)",
+          "❌ No hay métricas de negocio en dashboards",
+          "❌ Falta vista operacional unificada"
+        ]
+      }
+    }
+  },
+  "global_summary": {
+    "overall_observability_score": 0.98,
+    "avg_structured_logging_score": 2.88,
+    "avg_metrics_coverage_score": 0.0,
+    "avg_tracing_score": 0.75,
+    "avg_alerting_score": 0.75,
+    "avg_dashboard_score": 0.0,
+    "total_gaps_identified": 183,
+    "enterprise_readiness": "CRÍTICO"
+  },
+  "implementation_plan": {
+    "fase_1": {
+      "nombre": "Logs Estructurados JSON + Correlation IDs",
+      "duracion": "1-2 semanas",
+      "prioridad": "CRÍTICA",
+      "tareas": [
+        "Implementar structured logger (Winston/Pino) con formato JSON",
+        "Agregar correlation ID a todos los requests/responses",
+        "Configurar log levels apropiados (DEBUG, INFO, WARN, ERROR)",
+        "Implementar contexto de logs con metadata (user_id, action, etc.)",
+        "Configurar log rotation y retention policies"
+      ],
+      "costo_estimado": "40-60 horas dev",
+      "roi_esperado": "300% (debugging time reduction)"
+    },
+    "fase_2": {
+      "nombre": "Métricas RED/USE + Instrumentación",
+      "duracion": "2-3 semanas",
+      "prioridad": "ALTA",
+      "tareas": [
+        "Implementar Prometheus metrics endpoints",
+        "Configurar métricas RED: rate, errors, duration",
+        "Implementar métricas USE: utilization, saturation, errors",
+        "Agregar business metrics específicas (scraping success rate, etc.)",
+        "Configurar métricas de infraestructura (CPU, memory, disk)"
+      ],
+      "costo_estimado": "50-70 horas dev",
+      "roi_esperado": "400% (proactive issue detection)"
+    },
+    "fase_3": {
+      "nombre": "Distributed Tracing + Observabilidad Avanzada",
+      "duracion": "3-4 semanas",
+      "prioridad": "MEDIA",
+      "tareas": [
+        "Implementar OpenTelemetry para distributed tracing",
+        "Configurar Jaeger/Zipkin para trace collection",
+        "Implementar span creation para operaciones críticas",
+        "Configurar context propagation entre servicios",
+        "Implementar trace sampling strategies"
+      ],
+      "costo_estimado": "60-80 horas dev",
+      "roi_esperado": "350% (faster incident resolution)"
+    },
+    "fase_4": {
+      "nombre": "Alertas Inteligentes + SLI/SLO",
+      "duracion": "2-3 semanas",
+      "prioridad": "ALTA",
+      "tareas": [
+        "Definir SLIs críticos (availability, latency, error rate)",
+        "Establecer SLOs con error budgets",
+        "Configurar alertas basadas en SLI violations",
+        "Implementar escalation chains y runbooks",
+        "Configurar noise reduction y alert deduplication"
+      ],
+      "costo_estimado": "45-65 horas dev",
+      "roi_esperado": "500% (reduced MTTR, fewer false alarms)"
+    },
+    "fase_5": {
+      "nombre": "Dashboards Enterprise + Golden Signals",
+      "duracion": "1-2 semanas",
+      "prioridad": "MEDIA",
+      "tareas": [
+        "Crear dashboards de SLI/SLO tracking",
+        "Implementar golden signals dashboards",
+        "Configurar business metrics visualization",
+        "Crear operational overview dashboard",
+        "Implementar alerting dashboard integration"
+      ],
+      "costo_estimado": "30-40 horas dev",
+      "roi_esperado": "250% (improved operational visibility)"
+    },
+    "resumen": {
+      "total_duracion": "14 semanas",
+      "total_costo": "225-315 horas dev (5.6-7.9 semanas de 1 dev)",
+      "total_roi": "1800-2500% ROI combinado",
+      "beneficios_clave": [
+        "Reducción 80% en tiempo de debugging",
+        "Detección proactiva de 95% de issues",
+        "MTTR reducido de 4h a 15min",
+        "Eliminación 90% de falsos positivos",
+        "Visibilidad completa del sistema"
+      ]
+    }
+  }
+}
