@@ -583,7 +583,126 @@ Deno.serve(async (req) => {
             });
         }
 
-        // 17. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)
+        // 17. GET /reportes/efectividad-tareas - Métricas de efectividad por usuario
+        if (path === '/reportes/efectividad-tareas' && method === 'GET') {
+            checkRole(['admin', 'deposito', 'ventas']);
+
+            const usuarioId = url.searchParams.get('usuario_id');
+            const fechaDesde = url.searchParams.get('fecha_desde');
+            const fechaHasta = url.searchParams.get('fecha_hasta');
+
+            const queryParams = new URLSearchParams();
+            queryParams.set('select', 'asignado_a_id,estado,tiempo_resolucion,cumplimiento_sla,dias_atraso,fecha_completado');
+
+            if (usuarioId) {
+                queryParams.append('asignado_a_id', `eq.${usuarioId}`);
+            }
+            if (fechaDesde) {
+                queryParams.append('fecha_completado', `gte.${fechaDesde}`);
+            }
+            if (fechaHasta) {
+                queryParams.append('fecha_completado', `lte.${fechaHasta}`);
+            }
+
+            const reportResponse = await fetch(
+                `${supabaseUrl}/rest/v1/tareas_metricas?${queryParams.toString()}`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${serviceRoleKey}`,
+                        'apikey': serviceRoleKey,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+
+            if (!reportResponse.ok) {
+                const error = await reportResponse.text();
+                throw new Error(`Error consultando tareas_metricas: ${error}`);
+            }
+
+            const rows = await reportResponse.json();
+            const agregados = {};
+
+            for (const row of rows) {
+                const usuarioKey = row.asignado_a_id || 'sin_asignar';
+                if (!agregados[usuarioKey]) {
+                    agregados[usuarioKey] = {
+                        usuario_id: row.asignado_a_id,
+                        tareas_total: 0,
+                        tareas_completadas: 0,
+                        tiempo_resolucion_promedio_horas: 0,
+                        dias_atraso_promedio: 0,
+                        cumplimiento_sla_pct: null,
+                        sla_cumplidas: 0,
+                        sla_incumplidas: 0,
+                        _acumulado_resolucion: 0,
+                        _acumulado_atraso: 0,
+                        _count_resolucion: 0,
+                        _count_atraso: 0
+                    };
+                }
+
+                const entry = agregados[usuarioKey];
+                entry.tareas_total += 1;
+
+                if (row.estado && row.estado.toLowerCase() === 'completada') {
+                    entry.tareas_completadas += 1;
+                }
+
+                if (row.tiempo_resolucion !== null && row.tiempo_resolucion !== undefined) {
+                    entry._acumulado_resolucion += Number(row.tiempo_resolucion);
+                    entry._count_resolucion += 1;
+                }
+
+                if (row.dias_atraso !== null && row.dias_atraso !== undefined) {
+                    entry._acumulado_atraso += Number(row.dias_atraso);
+                    entry._count_atraso += 1;
+                }
+
+                if (row.cumplimiento_sla === true) {
+                    entry.sla_cumplidas += 1;
+                } else if (row.cumplimiento_sla === false) {
+                    entry.sla_incumplidas += 1;
+                }
+            }
+
+            const data = Object.values(agregados).map((entry) => {
+                const cumplimientoTotal = entry.sla_cumplidas + entry.sla_incumplidas;
+                return {
+                    usuario_id: entry.usuario_id,
+                    tareas_total: entry.tareas_total,
+                    tareas_completadas: entry.tareas_completadas,
+                    tiempo_resolucion_promedio_horas: entry._count_resolucion
+                        ? Number((entry._acumulado_resolucion / entry._count_resolucion).toFixed(2))
+                        : null,
+                    dias_atraso_promedio: entry._count_atraso
+                        ? Number((entry._acumulado_atraso / entry._count_atraso).toFixed(2))
+                        : null,
+                    cumplimiento_sla_pct: cumplimientoTotal
+                        ? Number(((entry.sla_cumplidas / cumplimientoTotal) * 100).toFixed(2))
+                        : null,
+                    sla_cumplidas: entry.sla_cumplidas,
+                    sla_incumplidas: entry.sla_incumplidas
+                };
+            });
+
+            data.sort((a, b) => b.tareas_total - a.tareas_total);
+
+            return new Response(JSON.stringify({
+                success: true,
+                data,
+                count: data.length,
+                filtros: {
+                    usuario_id: usuarioId,
+                    fecha_desde: fechaDesde,
+                    fecha_hasta: fechaHasta
+                }
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 18. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)
         if (path === '/deposito/movimiento' && method === 'POST') {
             checkRole(['admin', 'deposito']);
 
@@ -619,7 +738,7 @@ Deno.serve(async (req) => {
             });
         }
 
-        // 18. GET /deposito/movimientos - Historial de movimientos
+        // 19. GET /deposito/movimientos - Historial de movimientos
         if (path === '/deposito/movimientos' && method === 'GET') {
             const productoId = url.searchParams.get('producto_id');
             const tipoMovimiento = url.searchParams.get('tipo_movimiento');
@@ -644,7 +763,7 @@ Deno.serve(async (req) => {
             });
         }
 
-        // 19. POST /deposito/ingreso - Ingreso de mercadería (admin/deposito)
+        // 20. POST /deposito/ingreso - Ingreso de mercadería (admin/deposito)
         if (path === '/deposito/ingreso' && method === 'POST') {
             checkRole(['admin', 'deposito']);
 

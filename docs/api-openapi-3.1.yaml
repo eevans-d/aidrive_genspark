@@ -162,6 +162,34 @@ components:
         usuario_id:
           type: string
           format: uuid
+
+    EfectividadTareasUsuario:
+      type: object
+      properties:
+        usuario_id:
+          type: string
+          format: uuid
+          nullable: true
+        tareas_total:
+          type: integer
+        tareas_completadas:
+          type: integer
+        tiempo_resolucion_promedio_horas:
+          type: number
+          format: float
+          nullable: true
+        dias_atraso_promedio:
+          type: number
+          format: float
+          nullable: true
+        cumplimiento_sla_pct:
+          type: number
+          format: float
+          nullable: true
+        sla_cumplidas:
+          type: integer
+        sla_incumplidas:
+          type: integer
     
     ErrorResponse:
       type: object
@@ -600,6 +628,46 @@ paths:
                             format: uuid
                           margen_sugerido:
                             type: number
+
+  /reportes/efectividad-tareas:
+    get:
+      summary: Reporte de efectividad de tareas por usuario
+      tags: [Reportes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: usuario_id
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filtrar por usuario asignado
+        - name: fecha_desde
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Fecha mínima de completado (ISO 8601)
+        - name: fecha_hasta
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Fecha máxima de completado (ISO 8601)
+      responses:
+        '200':
+          description: Agregados de efectividad por usuario
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/EfectividadTareasUsuario'
   
   /stock:
     get:

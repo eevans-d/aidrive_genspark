@@ -18,6 +18,34 @@ Deno.serve(async (req) => {
             throw new Error('Configuración de Supabase faltante');
         }
 
+        const refreshStatus = {
+            refreshed: false,
+            error: null
+        };
+
+        try {
+            const refreshResponse = await fetch(
+                `${supabaseUrl}/rest/v1/rpc/refresh_tareas_metricas`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'apikey': serviceRoleKey,
+                        'Authorization': `Bearer ${serviceRoleKey}`,
+                        'Content-Type': 'application/json',
+                    }
+                }
+            );
+
+            if (!refreshResponse.ok) {
+                const errorBody = await refreshResponse.text();
+                throw new Error(`Refresh tareas_metricas falló: ${errorBody}`);
+            }
+
+            refreshStatus.refreshed = true;
+        } catch (error) {
+            refreshStatus.error = error.message;
+        }
+
         // Obtener tareas pendientes que necesitan notificación
         const tareasResponse = await fetch(
             `${supabaseUrl}/rest/v1/tareas_pendientes?estado=eq.pendiente&select=*`,
@@ -103,6 +131,7 @@ Deno.serve(async (req) => {
                 tareas_procesadas: tareas.length,
                 notificaciones_enviadas: notificacionesEnviadas.length,
                 notificaciones: notificacionesEnviadas,
+                tareas_metricas_refresh: refreshStatus,
                 errores: errores,
                 timestamp: new Date().toISOString()
             }
