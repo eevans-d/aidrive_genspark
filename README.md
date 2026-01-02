@@ -45,6 +45,10 @@ Ventas:            ventas@minimarket.com / password123
 
 ## 🏗️ Arquitectura del Sistema
 
+**Alcance real del monorepo**
+- Frontend React (`minimarket-system/`), backend Supabase (`supabase/`) y scripts de soporte.
+- No incluye módulos externos de APIs independientes.
+
 ### 📱 Frontend (React + TypeScript)
 ```
 📁 minimarket-system/
