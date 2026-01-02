@@ -37,8 +37,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/categorias",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorias"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias"
+              ]
             },
             "description": "Obtiene todas las categorías activas sin requerir autenticación"
           }
@@ -50,8 +54,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/categorias/{{categoria_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["categorias", "{{categoria_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "categorias",
+                "{{categoria_id}}"
+              ]
             },
             "description": "Obtiene el detalle de una categoría específica por ID"
           }
@@ -68,8 +77,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/productos?activo=true",
-              "host": ["{{baseUrl}}"],
-              "path": ["productos"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ],
               "query": [
                 {
                   "key": "activo",
@@ -102,8 +115,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/productos/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["productos", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id}}"
+              ]
             },
             "description": "Obtiene el detalle completo de un producto específico"
           }
@@ -128,8 +146,12 @@
             },
             "url": {
               "raw": "{{baseUrl}}/productos",
-              "host": ["{{baseUrl}}"],
-              "path": ["productos"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos"
+              ]
             },
             "description": "Crea un nuevo producto. Requiere rol admin o deposito."
           }
@@ -154,8 +176,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/productos/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["productos", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id}}"
+              ]
             },
             "description": "Actualiza un producto existente. Requiere rol admin o deposito."
           }
@@ -172,8 +199,13 @@
             ],
             "url": {
               "raw": "{{baseUrl}}/productos/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["productos", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "productos",
+                "{{producto_id}}"
+              ]
             },
             "description": "Desactiva un producto (soft delete). Requiere rol admin."
           }
@@ -190,8 +222,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/proveedores",
-              "host": ["{{baseUrl}}"],
-              "path": ["proveedores"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores"
+              ]
             },
             "description": "Obtiene todos los proveedores activos"
           }
@@ -203,8 +239,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/proveedores/{{proveedor_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["proveedores", "{{proveedor_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "proveedores",
+                "{{proveedor_id}}"
+              ]
             },
             "description": "Obtiene el detalle de un proveedor específico"
           }
@@ -234,8 +275,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/precios/aplicar",
-              "host": ["{{baseUrl}}"],
-              "path": ["precios", "aplicar"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "precios",
+                "aplicar"
+              ]
             },
             "description": "Aplica precio al producto con redondeo automático a múltiplos de 50. Requiere rol admin."
           }
@@ -247,8 +293,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/precios/producto/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["precios", "producto", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "precios",
+                "producto",
+                "{{producto_id}}"
+              ]
             },
             "description": "Obtiene el historial de cambios de precio de un producto"
           }
@@ -269,8 +321,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/precios/redondear",
-              "host": ["{{baseUrl}}"],
-              "path": ["precios", "redondear"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "precios",
+                "redondear"
+              ]
             },
             "description": "Redondea un precio a múltiplo de 50. No requiere autenticación."
           }
@@ -282,8 +339,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/precios/margen-sugerido/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["precios", "margen-sugerido", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "precios",
+                "margen-sugerido",
+                "{{producto_id}}"
+              ]
             },
             "description": "Calcula el margen de ganancia sugerido para un producto según su categoría"
           }
@@ -300,8 +363,12 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/stock",
-              "host": ["{{baseUrl}}"],
-              "path": ["stock"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stock"
+              ]
             },
             "description": "Obtiene el stock de todos los productos con información detallada"
           }
@@ -313,8 +380,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/stock/minimo",
-              "host": ["{{baseUrl}}"],
-              "path": ["stock", "minimo"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stock",
+                "minimo"
+              ]
             },
             "description": "Lista productos con stock por debajo del mínimo establecido"
           }
@@ -326,8 +398,14 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/stock/producto/{{producto_id}}",
-              "host": ["{{baseUrl}}"],
-              "path": ["stock", "producto", "{{producto_id}}"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stock",
+                "producto",
+                "{{producto_id}}"
+              ]
             },
             "description": "Obtiene el stock disponible y detalle de un producto específico"
           }
@@ -357,8 +435,13 @@
             },
             "url": {
               "raw": "{{baseUrl}}/deposito/movimiento",
-              "host": ["{{baseUrl}}"],
-              "path": ["deposito", "movimiento"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "deposito",
+                "movimiento"
+              ]
             },
             "description": "Registra un movimiento de inventario (INGRESO, EGRESO, AJUSTE, DEVOLUCION). Requiere rol admin o deposito."
           }
@@ -370,8 +453,13 @@
             "header": [],
             "url": {
               "raw": "{{baseUrl}}/deposito/movimientos?limit=50",
-              "host": ["{{baseUrl}}"],
-              "path": ["deposito", "movimientos"],
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "deposito",
+                "movimientos"
+              ],
               "query": [
                 {
                   "key": "limit",
@@ -412,10 +500,59 @@
             },
             "url": {
               "raw": "{{baseUrl}}/deposito/ingreso",
-              "host": ["{{baseUrl}}"],
-              "path": ["deposito", "ingreso"]
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "deposito",
+                "ingreso"
+              ]
             },
             "description": "Registra el ingreso de mercadería al depósito con información del proveedor y precio. Requiere rol admin o deposito."
+          }
+        }
+      ]
+    },
+    {
+      "name": "Reportes",
+      "item": [
+        {
+          "name": "20. Reporte Efectividad Tareas",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/reportes/efectividad-tareas?fecha_desde=2024-01-01T00:00:00Z",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "reportes",
+                "efectividad-tareas"
+              ],
+              "query": [
+                {
+                  "key": "fecha_desde",
+                  "value": "2024-01-01T00:00:00Z"
+                },
+                {
+                  "key": "fecha_hasta",
+                  "value": "2024-12-31T23:59:59Z",
+                  "disabled": true
+                },
+                {
+                  "key": "usuario_id",
+                  "value": "",
+                  "disabled": true
+                }
+              ]
+            },
+            "description": "Obtiene agregados de efectividad de tareas por usuario"
           }
         }
       ]
