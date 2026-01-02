@@ -46,6 +46,30 @@ export interface StockDeposito {
   updated_at: string
 }
 
+export interface StockReservado {
+  id: string
+  producto_id: string
+  cantidad: number
+  estado: 'activa' | 'cancelada' | 'aplicada'
+  referencia: string | null
+  usuario: string | null
+  fecha_reserva: string
+  fecha_cancelacion: string | null
+}
+
+export interface OrdenCompra {
+  id: string
+  producto_id: string
+  proveedor_id: string | null
+  cantidad: number
+  cantidad_recibida: number | null
+  estado: 'pendiente' | 'en_transito' | 'recibida' | 'cancelada'
+  fecha_orden: string
+  fecha_estimada: string | null
+  fecha_recepcion: string | null
+  referencia: string | null
+}
+
 export interface MovimientoDeposito {
   id: string
   producto_id: string
