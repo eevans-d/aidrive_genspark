@@ -257,9 +257,8 @@ DATABASE_CONNECTION_TIMEOUT=5000
 SENTRY_DSN=your_sentry_dsn_here
 LOG_LEVEL=debug
 
-# External APIs
+# External data sources (optional)
 YAHOO_FINANCE_API_KEY=your_api_key_here
-EXTERNAL_API_TIMEOUT=10000
 
 # Security
 JWT_SECRET=your_jwt_secret_here

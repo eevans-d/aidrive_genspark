@@ -596,18 +596,23 @@ pytest
 ## Arquitectura del proyecto
 ```
 workspace/
-├── browser/                 # Automatización de navegador
-├── external_api/           # APIs externas
+├── minimarket-system/      # Frontend React/TypeScript
+├── supabase/               # Backend (DB + Edge Functions + cron jobs)
 ├── tests/                  # Tests
 └── docs/                   # Documentación
 ```
 
-## Agregar nueva fuente de datos
-```python
-# 1. Crear archivo en external_api/data_sources/
-# 2. Heredar de BaseAPI
-# 3. Implementar métodos requeridos
-# 4. Agregar tests
+## Agregar nueva funcionalidad
+```markdown
+Frontend:
+1. Crear página en minimarket-system/src/pages/
+2. Conectar servicios desde minimarket-system/src/lib/
+3. Agregar rutas y permisos si aplica
+
+Backend:
+1. Crear Edge Function en supabase/functions/
+2. Registrar secretos/variables en Supabase
+3. Agregar migraciones si requiere cambios de esquema
 ```
 
 ## Convenciones de código
@@ -647,8 +652,9 @@ docker run -p 8000:8000 workspace
 ```
 
 ## Variables de entorno requeridas
-- `ENVIRONMENT`: production/staging/development
-- `API_KEYS`: Credenciales de APIs externas
+- `VITE_SUPABASE_URL`: URL del proyecto Supabase
+- `VITE_SUPABASE_ANON_KEY`: key pública para frontend
+- `SUPABASE_SERVICE_ROLE_KEY`: key de servicio para tareas backend
 - `LOG_LEVEL`: INFO/WARNING/ERROR
 ```
 
