@@ -661,6 +661,15 @@ async function clusterAndDeduplicateAlerts(alertas: AlertaCambio[]): Promise<Ale
 4. **Nivel 4:** Graceful degradation del sistema
 5. **Nivel 5:** Recuperación automática desde cache
 
+### **Fallback persistente (Supabase)**
+- **Tabla:** `cache_proveedor` (`endpoint`, `payload`, `updated_at`, `ttl_seconds`).
+- **Lectura:** cache in-memory ➜ si falta data **o** el circuito está `OPEN` ➜ consulta tabla y valida TTL.
+- **Escritura:** se persiste en Supabase cuando el in-memory no tiene entrada válida o el circuito está `OPEN` (upsert por `endpoint`).
+- **TTL persistente:**
+  - `/precios`, `/productos`: **24h**
+  - `/status`, `/health`: **5 min**
+- **Snapshot post-scrape:** tras un scrape exitoso se guarda un snapshot base de `/precios` y `/productos` para fallback.
+
 ### **Monitoring y Alertas**
 - Health checks en tiempo real
 - Métricas de performance automatizadas

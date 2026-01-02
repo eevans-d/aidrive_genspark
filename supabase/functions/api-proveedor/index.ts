@@ -33,6 +33,23 @@
 
 // OPTIMIZACIÓN: Global cache para API responses
 const API_CACHE = new Map<string, { data: any; timestamp: number; ttl: number }>();
+const PERSISTENT_CACHE_TABLE = 'cache_proveedor';
+const IN_MEMORY_CACHE_TTL_MS: Record<string, number> = {
+    status: 30000,    // 30 seconds
+    health: 15000,    // 15 seconds
+    precios: 60000,   // 1 minute
+    productos: 120000, // 2 minutes
+    alertas: 30000,   // 30 seconds
+    estadisticas: 600000 // 10 minutes
+};
+const PERSISTENT_CACHE_TTL_SECONDS: Record<string, number> = {
+    precios: 86400,   // 24 horas
+    productos: 86400, // 24 horas
+    status: 300,      // 5 minutos
+    health: 300,      // 5 minutos
+    alertas: 3600,    // 1 hora
+    estadisticas: 3600 // 1 hora
+};
 const REQUEST_METRICS = {
     total: 0,
     success: 0,
@@ -188,7 +205,12 @@ Deno.serve(async (req) => {
         const cacheableEndpoints = ['status', 'precios', 'productos', 'alertas', 'estadisticas', 'health'];
         if (cacheableEndpoints.includes(sanitizedEndpoint)) {
             const cacheKey = `${sanitizedEndpoint}:${url.searchParams.toString()}`;
-            const cached = getFromAPICache(cacheKey);
+            const circuitState = getCircuitBreakerStatus('scraper-maxiconsumo').state;
+            const cached = await getFromAPICache(cacheKey, {
+                supabaseUrl,
+                serviceRoleKey,
+                forcePersistent: circuitState === 'OPEN'
+            });
             
             if (cached) {
                 REQUEST_METRICS.cacheHits++;
@@ -260,17 +282,15 @@ Deno.serve(async (req) => {
         if (cacheableEndpoints.includes(sanitizedEndpoint)) {
             try {
                 const responseData = await response.clone().json();
-                const cacheTTL = {
-                    'status': 30000,    // 30 seconds
-                    'health': 15000,    // 15 seconds
-                    'precios': 60000,   // 1 minute
-                    'productos': 120000, // 2 minutes
-                    'alertas': 30000,   // 30 seconds
-                    'estadisticas': 600000 // 10 minutes
-                };
-                
-                const ttl = cacheTTL[sanitizedEndpoint] || 60000;
-                addToAPICache(`${sanitizedEndpoint}:${url.searchParams.toString()}`, responseData, ttl);
+                const ttlMs = IN_MEMORY_CACHE_TTL_MS[sanitizedEndpoint] || 60000;
+                const ttlSeconds = PERSISTENT_CACHE_TTL_SECONDS[sanitizedEndpoint] || Math.ceil(ttlMs / 1000);
+                const circuitState = getCircuitBreakerStatus('scraper-maxiconsumo').state;
+                await addToAPICache(`${sanitizedEndpoint}:${url.searchParams.toString()}`, responseData, ttlMs, {
+                    supabaseUrl,
+                    serviceRoleKey,
+                    ttlSeconds,
+                    forcePersistent: circuitState === 'OPEN'
+                });
             } catch (e) {
                 // Ignore cache errors
             }
@@ -327,20 +347,41 @@ Deno.serve(async (req) => {
 });
 
 // OPTIMIZACIÓN: Cache management functions
-function getFromAPICache(key: string): any | null {
+type CacheReadOptions = {
+    supabaseUrl?: string;
+    serviceRoleKey?: string;
+    forcePersistent?: boolean;
+};
+
+type CacheWriteOptions = {
+    supabaseUrl: string;
+    serviceRoleKey: string;
+    ttlSeconds: number;
+    forcePersistent?: boolean;
+};
+
+async function getFromAPICache(key: string, options: CacheReadOptions = {}): Promise<any | null> {
     const entry = API_CACHE.get(key);
-    if (!entry) return null;
-    
     const now = Date.now();
-    if (now - entry.timestamp > entry.ttl) {
+    const isEntryValid = entry && now - entry.timestamp <= entry.ttl;
+    if (entry && !isEntryValid) {
         API_CACHE.delete(key);
-        return null;
     }
-    
-    return entry.data;
+    const memoryFallback = isEntryValid ? entry?.data : null;
+
+    if (isEntryValid && !options.forcePersistent) {
+        return entry?.data ?? null;
+    }
+
+    if (!options.supabaseUrl || !options.serviceRoleKey) {
+        return memoryFallback;
+    }
+
+    const persistent = await readFromPersistentCache(key, options.supabaseUrl, options.serviceRoleKey);
+    return persistent ?? memoryFallback;
 }
 
-function addToAPICache(key: string, data: any, ttl: number): void {
+function setInMemoryCache(key: string, data: any, ttl: number): void {
     // LRU cache cleanup
     if (API_CACHE.size > 500) {
         const oldestEntries = Array.from(API_CACHE.entries())
@@ -354,6 +395,156 @@ function addToAPICache(key: string, data: any, ttl: number): void {
         timestamp: Date.now(),
         ttl
     });
+}
+
+async function addToAPICache(key: string, data: any, ttl: number, options?: CacheWriteOptions): Promise<void> {
+    const now = Date.now();
+    const existing = API_CACHE.get(key);
+    const memoryValid = existing && now - existing.timestamp <= existing.ttl;
+
+    setInMemoryCache(key, data, ttl);
+
+    if (!options) return;
+
+    const shouldPersist = options.forcePersistent || !memoryValid;
+    if (!shouldPersist) return;
+
+    await writeToPersistentCache(
+        key,
+        data,
+        options.ttlSeconds,
+        options.supabaseUrl,
+        options.serviceRoleKey
+    );
+}
+
+async function persistProveedorSnapshots(
+    supabaseUrl: string,
+    serviceRoleKey: string,
+    baseUrl: URL,
+    corsHeaders: Record<string, string>,
+    requestLog: any
+): Promise<void> {
+    const snapshotTargets = [
+        { endpoint: 'precios', handler: getPreciosActualesOptimizado },
+        { endpoint: 'productos', handler: getProductosDisponiblesOptimizado }
+    ];
+
+    for (const target of snapshotTargets) {
+        try {
+            const snapshotUrl = new URL(baseUrl.toString());
+            snapshotUrl.pathname = snapshotUrl.pathname.replace(/\/sincronizar\/?$/, `/${target.endpoint}`);
+            snapshotUrl.search = '';
+
+            const response = await target.handler(
+                supabaseUrl,
+                serviceRoleKey,
+                snapshotUrl,
+                corsHeaders,
+                true,
+                requestLog
+            );
+
+            if (!response.ok) {
+                continue;
+            }
+
+            const payload = await response.json();
+            const cacheKey = `${target.endpoint}:${snapshotUrl.searchParams.toString()}`;
+            const ttlMs = IN_MEMORY_CACHE_TTL_MS[target.endpoint] || 60000;
+            const ttlSeconds = PERSISTENT_CACHE_TTL_SECONDS[target.endpoint] || Math.ceil(ttlMs / 1000);
+
+            await addToAPICache(cacheKey, payload, ttlMs, {
+                supabaseUrl,
+                serviceRoleKey,
+                ttlSeconds,
+                forcePersistent: true
+            });
+        } catch (error) {
+            console.warn(JSON.stringify({
+                ...requestLog,
+                event: 'SNAPSHOT_WARNING',
+                endpoint: target.endpoint,
+                error: error.message
+            }));
+        }
+    }
+}
+
+async function readFromPersistentCache(
+    key: string,
+    supabaseUrl: string,
+    serviceRoleKey: string
+): Promise<any | null> {
+    try {
+        const params = new URLSearchParams({
+            select: 'endpoint,payload,updated_at,ttl_seconds',
+            endpoint: `eq.${key}`
+        });
+        const response = await fetch(`${supabaseUrl}/rest/v1/${PERSISTENT_CACHE_TABLE}?${params.toString()}`, {
+            headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`
+            }
+        });
+
+        if (!response.ok) {
+            return null;
+        }
+
+        const rows = await response.json();
+        const row = rows[0];
+        if (!row) return null;
+
+        const updatedAt = Date.parse(row.updated_at);
+        const ageMs = Date.now() - updatedAt;
+        const ttlMs = row.ttl_seconds * 1000;
+
+        if (ageMs > ttlMs) {
+            return null;
+        }
+
+        const remainingTtlMs = Math.max(ttlMs - ageMs, 0);
+        setInMemoryCache(key, row.payload, remainingTtlMs);
+        return row.payload;
+    } catch (error) {
+        return null;
+    }
+}
+
+async function writeToPersistentCache(
+    key: string,
+    payload: any,
+    ttlSeconds: number,
+    supabaseUrl: string,
+    serviceRoleKey: string
+): Promise<void> {
+    try {
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/${PERSISTENT_CACHE_TABLE}?on_conflict=endpoint`,
+            {
+                method: 'POST',
+                headers: {
+                    'apikey': serviceRoleKey,
+                    'Authorization': `Bearer ${serviceRoleKey}`,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'resolution=merge-duplicates'
+                },
+                body: JSON.stringify({
+                    endpoint: key,
+                    payload,
+                    ttl_seconds: ttlSeconds,
+                    updated_at: new Date().toISOString()
+                })
+            }
+        );
+
+        if (!response.ok) {
+            console.warn(`Error persistiendo cache ${key}: ${response.statusText}`);
+        }
+    } catch (error) {
+        console.warn(`Error persistiendo cache ${key}: ${error.message}`);
+    }
 }
 
 // OPTIMIZACIÓN: Metrics tracking
@@ -1508,6 +1699,10 @@ async function triggerSincronizacionOptimizado(
         updateCircuitBreaker(circuitKey, true);
 
         const resultadoScraping = await scrapingResponse.json();
+
+        if (resultadoScraping.success) {
+            await persistProveedorSnapshots(supabaseUrl, serviceRoleKey, url, corsHeaders, requestLog);
+        }
 
         // OPTIMIZACIÓN: Comparación paralela con circuit breaker independiente
         let resultadoComparacion = null;
