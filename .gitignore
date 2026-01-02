@@ -891,10 +891,31 @@
 **/*.zip
 
 # ==============================================================================
-# PROJECT SPECIFIC
+# PROJECT SPECIFIC - MINI MARKET INVENTORY
 # ==============================================================================
-# Add your project-specific ignores here
-# workspace/
-# data/
-# uploads/
-# downloads/
+# Browser automation artifacts
+.browser_screenshots/
+browser/screenshots/
+browser/user_data/
+
+# Agent memory/state (sensitive)
+.memory/
+memory/
+shell_output_save/
+user_input_files/
+
+# Temporary reports and test artifacts
+test_report_*.json
+report_record.txt
+deploy_url.txt
+workspace.json
+
+# Archive folder (deprecated)
+archive/
+
+# Session reports (use CHANGELOG.md instead)
+REPORTE_*.md
+SINCRONIZACION_*.md
+GIT_SYNC_STATUS.md
+test-progress*.md
+testing_reporte_*.md

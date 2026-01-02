@@ -39,7 +39,7 @@ Ventas:            ventas@minimarket.com / password123
 | Documento | Descripción |
 |-----------|-------------|
 | **[REPORTE_EJECUTIVO_MEGA_ANALISIS_MINI_MARKET.md](./REPORTE_EJECUTIVO_MEGA_ANALISIS_MINI_MARKET.md)** | Análisis ejecutivo completo |
-| **[testing_reporte_final.md](./testing_reporte_final.md)** | Reporte de testing y validación |
+| **[CHANGELOG.md](./CHANGELOG.md)** | Historial de cambios del proyecto |
 
 ---
 
