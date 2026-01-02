@@ -419,7 +419,7 @@ Deno.serve(async (req) => {
             const body = await req.json();
             const { producto_id, precio_compra, margen_ganancia } = body;
 
-            if (!producto_id || !precio_compra) {
+            if (!producto_id || precio_compra === undefined || precio_compra === null) {
                 return new Response(JSON.stringify({
                     success: false,
                     message: 'producto_id y precio_compra son requeridos'
@@ -429,11 +429,80 @@ Deno.serve(async (req) => {
                 });
             }
 
+            const precioCompraNumero = Number(precio_compra);
+
+            if (!Number.isFinite(precioCompraNumero) || precioCompraNumero <= 0) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'precio_compra debe ser mayor que 0'
+                }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const productos = await queryTable('productos', { id: producto_id }, 'id,categoria_id,precio_actual,margen_ganancia');
+
+            if (productos.length === 0) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'Producto no encontrado'
+                }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const producto = productos[0];
+            const categorias = producto.categoria_id
+                ? await queryTable('categorias', { id: producto.categoria_id }, 'id,margen_minimo')
+                : [];
+            const categoria = categorias[0];
+            const margenMinimo = categoria?.margen_minimo;
+
+            const margenGananciaNumero = margen_ganancia !== undefined && margen_ganancia !== null
+                ? Number(margen_ganancia)
+                : null;
+            const margenProductoNumero = producto.margen_ganancia !== undefined && producto.margen_ganancia !== null
+                ? Number(producto.margen_ganancia)
+                : null;
+
+            let margenProyectado = null;
+            if (Number.isFinite(margenGananciaNumero)) {
+                margenProyectado = margenGananciaNumero;
+            } else if (Number.isFinite(margenProductoNumero)) {
+                margenProyectado = margenProductoNumero;
+            } else if (producto.precio_actual !== undefined && producto.precio_actual !== null) {
+                const precioActualNumero = Number(producto.precio_actual);
+                if (Number.isFinite(precioActualNumero) && precioActualNumero > 0) {
+                    margenProyectado = ((precioActualNumero - precioCompraNumero) / precioActualNumero) * 100;
+                }
+            }
+
+            if (margenMinimo !== undefined && margenMinimo !== null && Number.isFinite(Number(margenMinimo))) {
+                if (margenProyectado !== null && margenProyectado < Number(margenMinimo)) {
+                    return new Response(JSON.stringify({
+                        success: false,
+                        message: 'Margen proyectado por debajo del mínimo de categoría. Requiere aprobación.',
+                        data: {
+                            margen_minimo: Number(margenMinimo),
+                            margen_proyectado: margenProyectado,
+                            requiere_aprobacion: true
+                        }
+                    }), {
+                        status: 409,
+                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                    });
+                }
+            }
+
             // Llamar a sp_aplicar_precio (incluye redondeo automático)
             const result = await callFunction('sp_aplicar_precio', {
                 p_producto_id: producto_id,
-                p_precio_compra: precio_compra,
-                p_margen_ganancia: margen_ganancia || null
+                p_precio_compra: precioCompraNumero,
+                p_margen_ganancia: margen_ganancia !== undefined && margen_ganancia !== null
+                    ? margen_ganancia
+                    : null
             });
 
             return new Response(JSON.stringify({
