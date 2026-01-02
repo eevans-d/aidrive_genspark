@@ -594,6 +594,7 @@
 # PostgreSQL
 **/*.backup
 **/*.sql
+!supabase/migrations/*.sql
 
 # MongoDB
 **/dump/
@@ -894,4 +895,3 @@
 # data/
 # uploads/
 # downloads/
-
