@@ -563,9 +563,11 @@ Deno.serve(async (req) => {
         // 16. GET /stock/producto/:id - Stock específico de un producto
         if (path.match(/^\/stock\/producto\/[a-f0-9-]+$/) && method === 'GET') {
             const productoId = path.split('/')[3];
+            const deposito = url.searchParams.get('deposito') || 'Principal';
 
             const stockDisponible = await callFunction('fnc_stock_disponible', {
-                p_producto_id: productoId
+                p_producto_id: productoId,
+                p_deposito: deposito
             });
 
             const stockDetalle = await queryTable('stock_deposito',
@@ -575,6 +577,7 @@ Deno.serve(async (req) => {
                 success: true,
                 data: {
                     producto_id: productoId,
+                    deposito,
                     stock_disponible: stockDisponible,
                     detalle: stockDetalle[0] || null
                 }
@@ -588,7 +591,7 @@ Deno.serve(async (req) => {
             checkRole(['admin', 'deposito']);
 
             const body = await req.json();
-            const { producto_id, tipo_movimiento, cantidad, motivo } = body;
+            const { producto_id, tipo_movimiento, cantidad, origen, destino, motivo } = body;
 
             if (!producto_id || !tipo_movimiento || !cantidad) {
                 return new Response(JSON.stringify({
@@ -603,10 +606,11 @@ Deno.serve(async (req) => {
             // Llamar a sp_movimiento_inventario
             const result = await callFunction('sp_movimiento_inventario', {
                 p_producto_id: producto_id,
-                p_tipo_movimiento: tipo_movimiento,
+                p_tipo: tipo_movimiento,
                 p_cantidad: parseInt(cantidad),
-                p_motivo: motivo || null,
-                p_usuario_id: user.id
+                p_origen: origen || motivo || null,
+                p_destino: destino || null,
+                p_usuario: user.id
             });
 
             return new Response(JSON.stringify({
@@ -649,7 +653,7 @@ Deno.serve(async (req) => {
             checkRole(['admin', 'deposito']);
 
             const body = await req.json();
-            const { producto_id, cantidad, proveedor_id, precio_compra } = body;
+            const { producto_id, cantidad, proveedor_id, precio_compra, deposito } = body;
 
             if (!producto_id || !cantidad) {
                 return new Response(JSON.stringify({
@@ -664,10 +668,11 @@ Deno.serve(async (req) => {
             // Registrar movimiento de ingreso
             const movimiento = await callFunction('sp_movimiento_inventario', {
                 p_producto_id: producto_id,
-                p_tipo_movimiento: 'INGRESO',
+                p_tipo: 'entrada',
                 p_cantidad: parseInt(cantidad),
-                p_motivo: `Ingreso de mercadería - Proveedor: ${proveedor_id || 'N/A'}`,
-                p_usuario_id: user.id
+                p_origen: `Proveedor:${proveedor_id || 'N/A'}`,
+                p_destino: deposito || 'Principal',
+                p_usuario: user.id
             });
 
             // Si hay precio de compra, registrar en precios_proveedor
@@ -684,6 +689,141 @@ Deno.serve(async (req) => {
                 success: true,
                 data: movimiento,
                 message: 'Ingreso de mercadería registrado exitosamente'
+            }), {
+                status: 201,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 20. POST /reservas - Crear reserva de stock
+        if (path === '/reservas' && method === 'POST') {
+            checkRole(['admin', 'ventas', 'deposito']);
+
+            const body = await req.json();
+            const { producto_id, cantidad, referencia, deposito } = body;
+
+            if (!producto_id || !cantidad) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'producto_id y cantidad son requeridos'
+                }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const stockInfo = await callFunction('fnc_stock_disponible', {
+                p_producto_id: producto_id,
+                p_deposito: deposito || 'Principal'
+            });
+            const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
+            const disponible = stockRow?.stock_disponible ?? 0;
+
+            if (disponible < parseInt(cantidad)) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'Stock disponible insuficiente para la reserva',
+                    data: { disponible }
+                }), {
+                    status: 409,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const reserva = await insertTable('stock_reservado', {
+                producto_id,
+                cantidad: parseInt(cantidad),
+                estado: 'activa',
+                referencia: referencia || null,
+                usuario: user.id,
+                fecha_reserva: new Date().toISOString()
+            });
+
+            return new Response(JSON.stringify({
+                success: true,
+                data: reserva[0] || reserva,
+                message: 'Reserva creada exitosamente'
+            }), {
+                status: 201,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 21. POST /reservas/:id/cancelar - Cancelar reserva
+        if (path.match(/^\/reservas\/[a-f0-9-]+\/cancelar$/) && method === 'POST') {
+            checkRole(['admin', 'ventas', 'deposito']);
+
+            const reservaId = path.split('/')[2];
+            const reserva = await updateTable('stock_reservado', reservaId, {
+                estado: 'cancelada',
+                fecha_cancelacion: new Date().toISOString()
+            });
+
+            return new Response(JSON.stringify({
+                success: true,
+                data: reserva[0] || reserva,
+                message: 'Reserva cancelada exitosamente'
+            }), {
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        // 22. POST /compras/recepcion - Registrar recepción de compra
+        if (path === '/compras/recepcion' && method === 'POST') {
+            checkRole(['admin', 'deposito']);
+
+            const body = await req.json();
+            const { orden_compra_id, cantidad, deposito } = body;
+
+            if (!orden_compra_id || !cantidad) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'orden_compra_id y cantidad son requeridos'
+                }), {
+                    status: 400,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const ordenes = await queryTable('ordenes_compra', { id: orden_compra_id });
+            const orden = ordenes[0];
+
+            if (!orden) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'Orden de compra no encontrada'
+                }), {
+                    status: 404,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const pendiente = Math.max((orden.cantidad || 0) - (orden.cantidad_recibida || 0), 0);
+            if (parseInt(cantidad) > pendiente) {
+                return new Response(JSON.stringify({
+                    success: false,
+                    message: 'Cantidad supera lo pendiente de recepción',
+                    data: { pendiente }
+                }), {
+                    status: 409,
+                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                });
+            }
+
+            const movimiento = await callFunction('sp_movimiento_inventario', {
+                p_producto_id: orden.producto_id,
+                p_tipo: 'entrada',
+                p_cantidad: parseInt(cantidad),
+                p_origen: `OC:${orden_compra_id}`,
+                p_destino: deposito || 'Principal',
+                p_usuario: user.id,
+                p_orden_compra_id: orden_compra_id
+            });
+
+            return new Response(JSON.stringify({
+                success: true,
+                data: movimiento,
+                message: 'Recepción registrada exitosamente'
             }), {
                 status: 201,
                 headers: { ...corsHeaders, 'Content-Type': 'application/json' }

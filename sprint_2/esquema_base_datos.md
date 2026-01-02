@@ -82,7 +82,7 @@ Tabla 3. Entidades principales y atributos clave por dominio
 | Proveedores | proveedores | id, nombre, ubicación, tipo, activo, configuracion_api (JSONB) | Scoring de proveedor en JSONB o tabla auxiliar |
 | Productos/Categorías | productos, categorias | productos: id, sku, barcode, nombre, marca, categoria_id, unidad, dimensiones (JSONB), activo; categorias: id, nombre, margen_min/máx, markup_default | Jerarquía por categoria_id; unicidad en sku y barcode |
 | Precios | precios_proveedor | id, producto_id, proveedor_id, precio, precio_anterior, fecha_actualizacion, fuente_actualizacion, activo | Unicidad y partición por fecha |
-| Inventario | stock_deposito | id, producto_id, deposito, stock_actual, stock_mín/máx, ubicacion_fisica, ultima_actualizacion, activo | Constraint de no negativos; agregados por producto |
+| Inventario | stock_deposito, stock_reservado, ordenes_compra | stock_deposito: id, producto_id, deposito, stock_actual, stock_mín/máx, ubicacion_fisica, ultima_actualizacion, activo; stock_reservado: id, producto_id, cantidad, estado, referencia, fecha_reserva; ordenes_compra: id, producto_id, cantidad, estado, fecha_orden, fecha_recepcion | Constraint de no negativos; reservas activas descuentan disponible; tránsito desde ordenes_compra |
 | Movimientos | movimientos_inventario, movimientos_auditoria | movimientos_inventario: id, producto_id, tipo, cantidad, origen/destino, fecha, usuario; movimientos_auditoria: id, evento, payload (JSONB) | Particionamiento por fecha |
 | Compras | pedidos, detalle_pedidos | pedidos: id, proveedor_id, fecha, estado; detalle_pedidos: id, pedido_id, producto_id, cantidad, precio | Estados y workflow |
 | Auditoría | price_history, stock_auditoria | price_history: producto_id, proveedor_id, precio_anterior, precio_nuevo, fecha, source; stock_auditoria: producto_id, deposito, stock_anterior, stock_nuevo, fecha, motivo | Inmutabilidad y retención |
@@ -295,6 +295,8 @@ Tabla 5. Matriz de constraints de integridad por tabla
 | productos | id | categoria_id -> categorias(id) | sku UNIQUE, codigo_barras UNIQUE | peso ≥ 0, unidad_medida no nula |
 | precios_proveedor | id | producto_id -> productos(id), proveedor_id -> proveedores(id) | UNIQUE (producto_id, proveedor_id, activo) parcial | precio ≥ 0 |
 | stock_deposito | id | producto_id -> productos(id) | UNIQUE (producto_id, deposito) | stock_actual ≥ 0, stock_max ≥ stock_min |
+| stock_reservado | id | producto_id -> productos(id) | — | cantidad > 0, estado IN ('activa','cancelada','aplicada') |
+| ordenes_compra | id | producto_id -> productos(id) | — | cantidad > 0, estado IN ('pendiente','en_transito','recibida','cancelada') |
 | movimientos_inventario | id | producto_id -> productos(id) | — | tipo IN (...) |
 | pedidos | id | proveedor_id -> proveedores(id) | — | estado IN (...) |
 | detalle_pedidos | id | pedido_id -> pedidos(id), producto_id -> productos(id) | — | cantidad > 0 |
@@ -558,7 +560,38 @@ CREATE TABLE stock_deposito (
 
 CREATE INDEX idx_stock_prod_dep ON stock_deposito(producto_id, deposito);
 
--- 7) Movimientos de inventario
+-- 7) Stock reservado
+CREATE TABLE stock_reservado (
+  id SERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+  estado VARCHAR(20) NOT NULL CHECK (estado IN ('activa','cancelada','aplicada')),
+  referencia VARCHAR(100),
+  usuario VARCHAR(100),
+  fecha_reserva TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  fecha_cancelacion TIMESTAMP
+);
+
+CREATE INDEX idx_stock_reservado_prod_estado ON stock_reservado(producto_id, estado);
+
+-- 8) Órdenes de compra / stock en tránsito
+CREATE TABLE ordenes_compra (
+  id SERIAL PRIMARY KEY,
+  producto_id INTEGER NOT NULL REFERENCES productos(id),
+  proveedor_id INTEGER REFERENCES proveedores(id),
+  cantidad INTEGER NOT NULL CHECK (cantidad > 0),
+  cantidad_recibida INTEGER DEFAULT 0 CHECK (cantidad_recibida >= 0),
+  estado VARCHAR(20) NOT NULL CHECK (estado IN ('pendiente','en_transito','recibida','cancelada')),
+  fecha_orden TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  fecha_estimada TIMESTAMP,
+  fecha_recepcion TIMESTAMP,
+  referencia VARCHAR(100)
+);
+
+CREATE INDEX idx_ordenes_compra_prod_estado ON ordenes_compra(producto_id, estado);
+CREATE INDEX idx_ordenes_compra_fecha ON ordenes_compra(fecha_orden DESC);
+
+-- 9) Movimientos de inventario
 CREATE TABLE movimientos_inventario (
   id SERIAL PRIMARY KEY,
   producto_id INTEGER NOT NULL REFERENCES productos(id),
@@ -568,13 +601,14 @@ CREATE TABLE movimientos_inventario (
   destino VARCHAR(100),
   fecha TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
   usuario VARCHAR(100),
-  referencia_id INTEGER
+  referencia_id INTEGER,
+  orden_compra_id INTEGER REFERENCES ordenes_compra(id)
 );
 
 CREATE INDEX idx_movimientos_prod_fecha ON movimientos_inventario(producto_id, fecha DESC);
 CREATE INDEX idx_movimientos_tipo_fecha ON movimientos_inventario(tipo, fecha DESC);
 
--- 8) Pedidos y detalles
+-- 10) Pedidos y detalles
 CREATE TABLE pedidos (
   id SERIAL PRIMARY KEY,
   proveedor_id INTEGER NOT NULL REFERENCES proveedores(id),
@@ -755,10 +789,38 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Stock disponible por producto/depósito
 CREATE OR REPLACE FUNCTION fnc_stock_disponible(p_producto_id INT, p_deposito VARCHAR)
-RETURNS TABLE (stock_actual INT, stock_minimo INT, stock_maximo INT) AS $$
+RETURNS TABLE (
+  stock_actual INT,
+  stock_minimo INT,
+  stock_maximo INT,
+  stock_reservado INT,
+  stock_disponible INT,
+  stock_transito INT
+) AS $$
+DECLARE
+  v_reservado INT;
+  v_transito INT;
 BEGIN
+  SELECT COALESCE(SUM(cantidad), 0)
+    INTO v_reservado
+  FROM stock_reservado
+  WHERE producto_id = p_producto_id
+    AND estado = 'activa';
+
+  SELECT COALESCE(SUM(cantidad - cantidad_recibida), 0)
+    INTO v_transito
+  FROM ordenes_compra
+  WHERE producto_id = p_producto_id
+    AND estado IN ('pendiente', 'en_transito');
+
   RETURN QUERY
-  SELECT s.stock_actual, s.stock_minimo, s.stock_maximo
+  SELECT
+    s.stock_actual,
+    s.stock_minimo,
+    s.stock_maximo,
+    v_reservado,
+    GREATEST(s.stock_actual - v_reservado, 0) AS stock_disponible,
+    v_transito
   FROM stock_deposito s
   WHERE s.producto_id = p_producto_id AND s.deposito = p_deposito
   LIMIT 1;
@@ -767,7 +829,13 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Movimiento de inventario con actualización de stock
 CREATE OR REPLACE FUNCTION sp_movimiento_inventario(
-  p_producto_id INT, p_tipo VARCHAR, p_cantidad INT, p_origen VARCHAR, p_destino VARCHAR, p_usuario VARCHAR
+  p_producto_id INT,
+  p_tipo VARCHAR,
+  p_cantidad INT,
+  p_origen VARCHAR,
+  p_destino VARCHAR,
+  p_usuario VARCHAR,
+  p_orden_compra_id INT DEFAULT NULL
 ) RETURNS VOID AS $$
 DECLARE
   v_deposito VARCHAR;
@@ -781,12 +849,25 @@ BEGIN
   -- Lógica por tipo
   IF p_tipo = 'entrada' THEN
     v_deposito := COALESCE(p_destino, 'Principal');
-    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario)
-    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, v_deposito, p_usuario);
+    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario, orden_compra_id)
+    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, v_deposito, p_usuario, p_orden_compra_id);
     UPDATE stock_deposito
       SET stock_actual = stock_actual + p_cantidad,
           ultima_actualizacion = CURRENT_TIMESTAMP
     WHERE producto_id = p_producto_id AND deposito = v_deposito;
+    IF p_orden_compra_id IS NOT NULL THEN
+      UPDATE ordenes_compra
+        SET cantidad_recibida = cantidad_recibida + p_cantidad,
+            estado = CASE
+              WHEN cantidad_recibida + p_cantidad >= cantidad THEN 'recibida'
+              ELSE estado
+            END,
+            fecha_recepcion = CASE
+              WHEN cantidad_recibida + p_cantidad >= cantidad THEN CURRENT_TIMESTAMP
+              ELSE fecha_recepcion
+            END
+      WHERE id = p_orden_compra_id AND producto_id = p_producto_id;
+    END IF;
   ELSIF p_tipo = 'salida' THEN
     v_deposito := COALESCE(p_origen, 'Principal');
     SELECT stock_actual INTO v_stock FROM stock_deposito
@@ -795,16 +876,16 @@ BEGIN
     IF v_stock < p_cantidad THEN
       RAISE EXCEPTION 'Stock insuficiente: producto %, depósito %, requerido %, disponible %', p_producto_id, v_deposito, p_cantidad, v_stock;
     END IF;
-    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario)
-    VALUES (p_producto_id, p_tipo, p_cantidad, v_deposito, p_destino, p_usuario);
+    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario, orden_compra_id)
+    VALUES (p_producto_id, p_tipo, p_cantidad, v_deposito, p_destino, p_usuario, p_orden_compra_id);
     UPDATE stock_deposito
       SET stock_actual = stock_actual - p_cantidad,
           ultima_actualizacion = CURRENT_TIMESTAMP
     WHERE producto_id = p_producto_id AND deposito = v_deposito;
   ELSIF p_tipo = 'ajuste' THEN
     v_deposito := COALESCE(p_origen, 'Principal');
-    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario)
-    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, p_destino, p_usuario);
+    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario, orden_compra_id)
+    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, p_destino, p_usuario, p_orden_compra_id);
     UPDATE stock_deposito
       SET stock_actual = stock_actual + p_cantidad, -- p_cantidad puede ser negativa
           ultima_actualizacion = CURRENT_TIMESTAMP
@@ -832,8 +913,8 @@ BEGIN
           ultima_actualizacion = CURRENT_TIMESTAMP
     WHERE producto_id = p_producto_id AND deposito = p_destino;
 
-    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario)
-    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, p_destino, p_usuario);
+    INSERT INTO movimientos_inventario (producto_id, tipo, cantidad, origen, destino, usuario, orden_compra_id)
+    VALUES (p_producto_id, p_tipo, p_cantidad, p_origen, p_destino, p_usuario, p_orden_compra_id);
   END IF;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;

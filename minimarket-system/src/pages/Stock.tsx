@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
-import { StockDeposito, Producto } from '../types/database'
+import { StockDeposito, Producto, StockReservado, OrdenCompra } from '../types/database'
 import { Package, AlertTriangle } from 'lucide-react'
 
 interface StockConProducto extends StockDeposito {
   producto?: Producto
+  reservado: number
+  disponible: number
+  transito: number
 }
 
 export default function Stock() {
@@ -31,9 +34,37 @@ export default function Stock() {
           .select('*')
           .in('id', productosIds)
 
+        const { data: reservas } = await supabase
+          .from<StockReservado>('stock_reservado')
+          .select('id,producto_id,cantidad,estado')
+          .eq('estado', 'activa')
+
+        const { data: ordenesCompra } = await supabase
+          .from<OrdenCompra>('ordenes_compra')
+          .select('id,producto_id,cantidad,cantidad_recibida,estado')
+          .in('estado', ['pendiente', 'en_transito'])
+
+        const reservasPorProducto = (reservas || []).reduce<Record<string, number>>((acc, reserva) => {
+          const cantidad = reserva.cantidad || 0
+          acc[reserva.producto_id] = (acc[reserva.producto_id] || 0) + cantidad
+          return acc
+        }, {})
+
+        const transitoPorProducto = (ordenesCompra || []).reduce<Record<string, number>>((acc, orden) => {
+          const pendiente = Math.max(
+            (orden.cantidad || 0) - (orden.cantidad_recibida || 0),
+            0
+          )
+          acc[orden.producto_id] = (acc[orden.producto_id] || 0) + pendiente
+          return acc
+        }, {})
+
         const stockConProducto = stockData.map(s => ({
           ...s,
-          producto: productos?.find(p => p.id === s.producto_id)
+          producto: productos?.find(p => p.id === s.producto_id),
+          reservado: reservasPorProducto[s.producto_id] || 0,
+          disponible: Math.max(s.cantidad_actual - (reservasPorProducto[s.producto_id] || 0), 0),
+          transito: transitoPorProducto[s.producto_id] || 0
         }))
 
         setStock(stockConProducto)
@@ -46,15 +77,15 @@ export default function Stock() {
   }
 
   const stockFiltrado = stock.filter(s => {
-    if (filtro === 'critico') return s.cantidad_actual === 0
-    if (filtro === 'bajo') return s.cantidad_actual > 0 && s.cantidad_actual <= s.cantidad_minima
+    if (filtro === 'critico') return s.disponible === 0
+    if (filtro === 'bajo') return s.disponible > 0 && s.disponible <= s.cantidad_minima
     return true
   })
 
   const getNivelStock = (item: StockConProducto) => {
-    if (item.cantidad_actual === 0) return 'critico'
-    if (item.cantidad_actual <= item.cantidad_minima / 2) return 'urgente'
-    if (item.cantidad_actual <= item.cantidad_minima) return 'bajo'
+    if (item.disponible === 0) return 'critico'
+    if (item.disponible <= item.cantidad_minima / 2) return 'urgente'
+    if (item.disponible <= item.cantidad_minima) return 'bajo'
     return 'normal'
   }
 
@@ -82,7 +113,7 @@ export default function Stock() {
               filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Stock Bajo ({stock.filter(s => s.cantidad_actual > 0 && s.cantidad_actual <= s.cantidad_minima).length})
+            Stock Bajo ({stock.filter(s => s.disponible > 0 && s.disponible <= s.cantidad_minima).length})
           </button>
           <button
             onClick={() => setFiltro('critico')}
@@ -90,7 +121,7 @@ export default function Stock() {
               filtro === 'critico' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Crítico ({stock.filter(s => s.cantidad_actual === 0).length})
+            Crítico ({stock.filter(s => s.disponible === 0).length})
           </button>
         </div>
       </div>
@@ -107,6 +138,15 @@ export default function Stock() {
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Cantidad Actual
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Reservado
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Disponible
+              </th>
+              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                En tránsito
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Mínimo
@@ -145,6 +185,15 @@ export default function Stock() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-gray-900">{item.cantidad_actual}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {item.reservado}
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <div className="text-sm font-bold text-gray-900">{item.disponible}</div>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {item.transito}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.cantidad_minima}
