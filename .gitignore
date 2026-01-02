@@ -601,6 +601,9 @@
 # Redis
 **/dump.rdb
 
+# Allow Supabase migrations
+!supabase/migrations/*.sql
+
 # ==============================================================================
 # DEVOPS & CONTAINERS
 # ==============================================================================
@@ -894,4 +897,3 @@
 # data/
 # uploads/
 # downloads/
-
