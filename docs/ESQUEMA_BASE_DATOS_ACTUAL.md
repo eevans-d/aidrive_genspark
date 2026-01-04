@@ -213,6 +213,8 @@
 | fecha_completado | TIMESTAMPTZ | Fecha de completitud |
 | (+ más campos) |  | Total 20 campos |
 
+**Nota:** En el repo aparecen variantes `asignada_a_*` y `fecha_completada` (frontend/funciones). La migracion agrega ambas variantes y la vista `tareas_metricas` expone `asignado_a_id`/`fecha_completado` para compatibilidad.
+
 ---
 
 ### 🔟 **notificaciones_tareas**

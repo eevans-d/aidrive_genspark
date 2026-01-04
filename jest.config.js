@@ -30,7 +30,7 @@ module.exports = {
   },
   
   // Setup files
-  setupFilesAfterEnv: ['<rootDir>/test/setup.js'],
+  setupFilesAfterEnv: ['<rootDir>/tests/setup-edge.js'],
   
   // Mocks
   clearMocks: true,

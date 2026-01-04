@@ -1,14 +1,15 @@
-Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Max-Age': '86400',
-    };
+import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+import { ok, fail } from '../_shared/response.ts';
 
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 200, headers: corsHeaders });
+Deno.serve(async (req) => {
+    const corsHeaders = getCorsHeaders();
+    const preflight = handleCors(req, corsHeaders);
+    if (preflight) {
+        return preflight;
     }
+
+    const logger = createLogger('alertas-stock');
 
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -120,41 +121,41 @@ Deno.serve(async (req) => {
                             );
 
                             if (!tareaResponse.ok) {
-                                console.error(`Error creando tarea para ${producto.nombre}`);
+                                logger.warn('Error creando tarea automatica', {
+                                    producto: producto.nombre,
+                                    status: tareaResponse.status,
+                                });
                             }
                         }
                     }
 
                 } catch (error) {
-                    console.error(`Error procesando item de stock:`, error);
+                    logger.error('Error procesando item de stock', {
+                        error: error instanceof Error ? error.message : String(error),
+                    });
                 }
             }
         }
 
-        return new Response(JSON.stringify({
-            success: true,
-            data: {
-                total_items_revisados: stockItems.length,
-                alertas_generadas: alertas.length,
-                alertas: alertas,
-                productos_con_alerta: productosConAlerta,
-                timestamp: new Date().toISOString()
-            }
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok({
+            total_items_revisados: stockItems.length,
+            alertas_generadas: alertas.length,
+            alertas: alertas,
+            productos_con_alerta: productosConAlerta,
+            timestamp: new Date().toISOString()
+        }, 200, corsHeaders);
 
     } catch (error) {
-        console.error('Error en alertas de stock:', error);
-
-        return new Response(JSON.stringify({
-            error: {
-                code: 'STOCK_ALERT_ERROR',
-                message: error.message
-            }
-        }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        logger.error('Error en alertas de stock', {
+            error: error instanceof Error ? error.message : String(error),
         });
+
+        return fail(
+            'STOCK_ALERT_ERROR',
+            error instanceof Error ? error.message : 'Error inesperado',
+            500,
+            undefined,
+            corsHeaders,
+        );
     }
 });

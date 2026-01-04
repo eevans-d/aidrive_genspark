@@ -10,7 +10,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ### Added - PRs Mergeados desde Codex
 
 #### PR #14: Métricas de Tareas (SHA: 75f5cdd)
-- Vista materializada `tareas_metricas` en `supabase/sql/tareas_metricas.sql`
+- Vista materializada `tareas_metricas` versionada en `supabase/migrations/20260104020000_create_missing_objects.sql` (antes en `supabase/sql/`)
 - Endpoint `/reportes/efectividad-tareas` para reportes de eficiencia
 - Calcula métricas como tiempo promedio de resolución y tasa de éxito
 

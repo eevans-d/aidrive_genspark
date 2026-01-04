@@ -1,14 +1,15 @@
-Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Max-Age': '86400',
-    };
+import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
+import { createLogger } from '../_shared/logger.ts';
+import { ok, fail } from '../_shared/response.ts';
 
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 200, headers: corsHeaders });
+Deno.serve(async (req) => {
+    const corsHeaders = getCorsHeaders();
+    const preflight = handleCors(req, corsHeaders);
+    if (preflight) {
+        return preflight;
     }
+
+    const logger = createLogger('reportes-automaticos');
 
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -154,24 +155,19 @@ Deno.serve(async (req) => {
             };
         }
 
-        return new Response(JSON.stringify({
-            success: true,
-            data: reportData
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(reportData, 200, corsHeaders);
 
     } catch (error) {
-        console.error('Error en reportes:', error);
-
-        return new Response(JSON.stringify({
-            error: {
-                code: 'REPORT_ERROR',
-                message: error.message
-            }
-        }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        logger.error('Error en reportes', {
+            error: error instanceof Error ? error.message : String(error),
         });
+
+        return fail(
+            'REPORT_ERROR',
+            error instanceof Error ? error.message : 'Error inesperado',
+            500,
+            undefined,
+            corsHeaders,
+        );
     }
 });

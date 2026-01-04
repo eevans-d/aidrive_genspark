@@ -15,7 +15,7 @@ export default defineConfig({
         'dist/',
         'coverage/',
         '**/*.d.ts',
-        'test/**',
+        'tests/**',
         '*.config.*'
       ],
       thresholds: {
@@ -30,12 +30,12 @@ export default defineConfig({
     
     // Test files pattern
     include: [
-      'test/**/*.{test,spec}.{js,ts}',
-      'src/**/*.{test,spec}.{js,ts}'
+      'tests/**/*.{test,spec}.{js,ts}'
     ],
-    
+
     // Setup files
-    setupFiles: ['./test/setup.js'],
+    // Nota: setup de Jest vive en tests/helpers/setup.js. Vitest no debe depender de archivos de test/ (eliminado).
+    setupFiles: [],
     
     // Global test configuration
     testTimeout: 10000,

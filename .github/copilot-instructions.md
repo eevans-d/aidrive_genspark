@@ -13,11 +13,38 @@ supabase/functions/    # Edge Functions (Deno) - 11 activas
 ├── api-proveedor/     # API proveedor Maxiconsumo (3744 líneas) ⚠️
 ├── scraper-maxiconsumo/  # Scraper de precios (3212 líneas) ⚠️
 ├── cron-jobs-maxiconsumo/ # Orquestador cron (2900 líneas) ⚠️
+├── cron-testing-suite/ # Suite de testing cron (1413 líneas)
+├── cron-notifications/ # Notificaciones cron (1184 líneas)
+├── cron-dashboard/     # Dashboard API (1130 líneas)
+├── cron-health-monitor/ # Health monitor (898 líneas)
 ├── alertas-stock/     # Alertas de inventario (160 líneas) ✓
 ├── reportes-automaticos/ # Reportes (177 líneas) ✓
 └── notificaciones-tareas/ # Notificaciones (155 líneas) ✓
 
-docs/                  # 7 archivos de documentación técnica
+supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
+supabase/migrations/   # Migraciones SQL versionadas
+supabase/config.toml   # Configuracion Supabase local
+
+docs/                  # 19 archivos de documentación + OpenAPI/Postman
+├── ANALISIS_EXHAUSTIVO_PROYECTO.md
+├── OBJETIVOS_Y_KPIS.md
+├── INVENTARIO_ACTUAL.md
+├── BASELINE_TECNICO.md
+├── DB_GAPS.md
+├── PLAN_EJECUCION.md
+├── PLAN_LIMPIEZA_CONTEXTO.md
+├── PROMPTS_CODEX_MINIMARKET.md
+├── API_README.md
+├── ARCHITECTURE_DOCUMENTATION.md
+├── CRON_JOBS_COMPLETOS.md
+├── DEPLOYMENT_GUIDE.md
+├── DOCUMENTACION_TECNICA_ACTUALIZADA.md
+├── ESQUEMA_BASE_DATOS_ACTUAL.md
+├── OPERATIONS_RUNBOOK.md
+├── api-openapi-3.1.yaml
+├── api-proveedor-openapi-3.1.yaml
+├── postman-collection.json
+└── postman-collection-proveedor.json
 ```
 
 ## Comandos (desde `minimarket-system/`)
@@ -25,6 +52,7 @@ docs/                  # 7 archivos de documentación técnica
 pnpm dev       # Desarrollo
 pnpm build     # Build
 pnpm lint      # Linter
+pnpm test      # Ejecuta `../test.sh` (runner actual)
 ```
 
 ## Patrones del Código
@@ -42,7 +70,8 @@ pnpm lint      # Linter
 
 ### Base de Datos
 - Tabla `stock_deposito`: `cantidad_actual`, `stock_minimo`, `stock_maximo`
-- Cron jobs usan tablas: `cron_jobs_execution_log`, `cron_jobs_alerts`
+- Cron jobs usan tablas: `cron_jobs_execution_log`, `cron_jobs_alerts`, `cron_jobs_metrics`, `cron_jobs_tracking`, `cron_jobs_notifications`, `cron_jobs_monitoring_history`, `cron_jobs_health_checks`
+- Vistas cron usadas por funciones: `vista_cron_jobs_dashboard`, `vista_cron_jobs_metricas_semanales`, `vista_cron_jobs_alertas_activas`
 
 ## Fuentes de Verdad
 | Qué | Dónde |
@@ -53,6 +82,7 @@ pnpm lint      # Linter
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
+| Plan de ejecución | `docs/PLAN_EJECUCION.md` |
 
 ## ⚠️ Aspectos Críticos (Requieren Atención)
 
@@ -68,6 +98,6 @@ pnpm lint      # Linter
 - `cron-health-monitor` (898 líneas)
 
 ### Notas:
-- `_archive/` contiene docs legacy (no usar para desarrollo)
 - `tests/datos_reales/results/` está en .gitignore (no versionar resultados)
 - No hay CI configurado aún
+- Tests consolidados en `tests/` (runner: `test.sh`)

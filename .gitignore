@@ -741,6 +741,13 @@
 **/tramp
 **/.org-id-locations
 **/*_archive
+
+# Carpetas legacy eliminadas (no reintroducir)
+_archive/
+
+# Reportes de tests (artefactos locales)
+test-reports/
+**/test-reports/
 **/*_flymake.*
 **/flycheck_*.el
 **/.dir-locals.el

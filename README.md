@@ -119,7 +119,7 @@ SUPABASE_SERVICE_ROLE_KEY
 
 ## 🗂️ Archivos Legacy
 
-La carpeta `_archive/` contiene documentación histórica de sprints y análisis anteriores. No es necesaria para el desarrollo actual pero se preserva como referencia.
+La carpeta legacy `_archive/` fue eliminada para reducir contexto y evitar confusiones. El histórico queda disponible en el historial de Git.
 
 ---
 
