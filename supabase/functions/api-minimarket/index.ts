@@ -591,7 +591,7 @@ Deno.serve(async (req) => {
         if (path === '/stock' && method === 'GET') {
             const stock = await queryTable('stock_deposito',
                 {},
-                'id,producto_id,cantidad_fisica,cantidad_reservada,cantidad_disponible,stock_minimo,stock_maximo',
+                'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento',
                 { order: 'producto_id' }
             );
 

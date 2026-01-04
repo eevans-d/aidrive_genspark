@@ -38,7 +38,6 @@ log_error() {
 log_info "Verificando archivos necesarios..."
 
 FILES_TO_CHECK=(
-    "/workspace/backend/migration/09_cron_jobs_tables.sql"
     "/workspace/supabase/functions/cron-jobs-maxiconsumo/index.ts"
     "/workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql"
 )
@@ -56,7 +55,7 @@ done
 # PASO 2: APLICAR MIGRACIÓN DE BASE DE DATOS
 # ===================================================================
 
-log_info "Aplicando migración de base de datos (09_cron_jobs_tables.sql)..."
+log_info "Aplicando migraciones de base de datos (supabase/migrations)..."
 
 if command -v supabase &> /dev/null; then
     cd /workspace
@@ -72,7 +71,7 @@ if command -v supabase &> /dev/null; then
 else
     log_warning "⚠️  Supabase CLI no encontrado"
     log_info "Aplicar migración manualmente en Supabase Dashboard > SQL Editor"
-    log_info "Archivo: /workspace/backend/migration/09_cron_jobs_tables.sql"
+    log_info "Carpeta: /workspace/supabase/migrations/"
 fi
 
 # ===================================================================
@@ -154,7 +153,7 @@ echo ""
 echo "⏰ Cron Jobs Configurados:"
 echo "   • Job Diario:      daily_price_update (02:00 AM)"
 echo "   • Job Semanal:     weekly_trend_analysis (Domingos 03:00)"
-echo "   • Alertas RT:      realtime_alerts (cada 15 min)"
+echo "   • Alertas RT:      realtime_change_alerts (cada 15 min)"
 echo ""
 echo "📊 Monitoreo:"
 echo "   • Logs en: cron_jobs_execution_log"
@@ -203,19 +202,19 @@ echo "🔍 COMANDOS DE VERIFICACIÓN:"
 echo "=================================================="
 echo ""
 echo "-- Ver jobs activos"
-echo "SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_alerts');"
+echo "SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts');"
 echo ""
 echo "-- Ver logs recientes"
 echo "SELECT jobname, run_time, job_pid, return_message 
 FROM cron.job_run_details 
-WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_alerts')
+WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts')
 ORDER BY run_time DESC 
 LIMIT 10;"
 echo ""
 echo "-- Ver estado de configuración"
 echo "SELECT job_name, job_type, is_active, last_execution 
 FROM cron_jobs_config 
-WHERE job_name IN ('daily-price-update', 'weekly-trend-analysis', 'realtime-alerts');"
+WHERE job_name IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts');"
 echo ""
 
 log_success "🎉 IMPLEMENTACIÓN COMPLETADA"

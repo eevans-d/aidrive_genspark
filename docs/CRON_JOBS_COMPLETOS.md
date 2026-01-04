@@ -647,16 +647,12 @@ SENTRY_DSN=your_sentry_dsn
 # 1. Deploy edge function
 supabase functions deploy cron-jobs-maxiconsumo
 
-# 2. Apply database migration
-psql -h your-db-host -U postgres -d your-db -f backend/migration/09_cron_jobs_tables.sql
+# 2. Aplicar migraciones de la base (si corresponde)
+# Si estás usando Supabase CLI en tu proyecto:
+supabase db push
 
 # 3. Setup cron jobs
-psql -h your-db-host -U postgres -d your-db -c "
-SELECT cron.schedule('daily_price_update_job', '0 2 * * *', 'CALL prc_daily_price_update()');
-SELECT cron.schedule('weekly_trend_analysis_job', '0 3 * * 0', 'CALL prc_weekly_trend_analysis()');
-SELECT cron.schedule('realtime_change_alerts_job', '*/15 * * * *', 'CALL prc_realtime_change_alerts()');
-SELECT cron.schedule('maintenance_cleanup_job', '0 1 * * 1', 'CALL prc_maintenance_cleanup()');
-"
+psql -h your-db-host -U postgres -d your-db -f supabase/cron_jobs/deploy_all_cron_jobs.sql
 
 # 4. Verify deployment
 curl -X GET "https://your-project.supabase.co/functions/v1/cron-jobs-maxiconsumo/health"

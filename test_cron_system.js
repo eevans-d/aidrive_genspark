@@ -78,7 +78,7 @@ class CronSystemTester {
             'supabase/functions/cron-notifications/index.ts',
             'supabase/functions/cron-testing-suite/index.ts',
             'supabase/functions/cron-dashboard/index.ts',
-            'backend/migration/09_cron_jobs_tables.sql',
+            'supabase/cron_jobs/deploy_all_cron_jobs.sql',
             'docs/CRON_JOBS_COMPLETOS.md',
             'docs/IMPLEMENTACION_COMPLETADA.md'
         ];
@@ -157,7 +157,7 @@ class CronSystemTester {
     }
 
     async testDatabase() {
-        const dbFile = '/workspace/backend/migration/09_cron_jobs_tables.sql';
+        const dbFile = '/workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql';
         let passed = 0;
         let failed = 0;
 
@@ -165,16 +165,11 @@ class CronSystemTester {
             const content = fs.readFileSync(dbFile, 'utf8');
             
             const validations = [
-                { test: content.includes('cron_jobs_tracking'), desc: 'Tabla cron_jobs_tracking' },
-                { test: content.includes('execution_log'), desc: 'Tabla execution_log' },
-                { test: content.includes('metrics'), desc: 'Tabla metrics' },
-                { test: content.includes('alerts'), desc: 'Tabla alerts' },
-                { test: content.includes('notifications'), desc: 'Tabla notifications' },
-                { test: content.includes('health_checks'), desc: 'Tabla health_checks' },
-                { test: content.includes('CREATE TABLE'), desc: 'Estructura CREATE TABLE' },
-                { test: content.includes('INDEX'), desc: 'Índices de optimización' },
-                { test: content.includes('TRIGGER'), desc: 'Triggers automáticos' },
-                { test: content.includes('FUNCTION'), desc: 'Funciones PL/pgSQL' }
+                { test: content.includes('cron.schedule'), desc: 'Cron jobs schedule (cron.schedule)' },
+                { test: content.includes('net.http_post'), desc: 'Invocación Edge Functions (net.http_post)' },
+                { test: content.includes('daily_price_update'), desc: 'Job diario (daily_price_update)' },
+                { test: content.includes('weekly_trend_analysis'), desc: 'Job semanal (weekly_trend_analysis)' },
+                { test: content.includes('realtime_change_alerts'), desc: 'Alertas RT (realtime_change_alerts)' }
             ];
 
             for (const validation of validations) {
@@ -188,8 +183,8 @@ class CronSystemTester {
                 this.results.totalTests++;
             }
         } else {
-            console.log(`   ${colors.red}❌ Archivo de migración NO ENCONTRADO${colors.reset}`);
-            failed += 10;
+            console.log(`   ${colors.red}❌ Script de deploy de cron jobs NO ENCONTRADO${colors.reset}`);
+            failed += 5;
         }
 
         this.results.passed += passed;

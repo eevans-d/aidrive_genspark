@@ -8,7 +8,7 @@
 - **Cron Expression**: `0 2 * * *` (02:00 AM diario)
 - **Función Edge**: `cron-jobs-maxiconsumo`
 - **Parámetros**:
-  - `job_type`: "daily-price-update"
+  - `job_type`: "daily_price_update"
   - `scraping_mode`: "full_catalog"
   - `price_change_threshold`: 2%
   - `notifications_enabled`: true
@@ -20,7 +20,7 @@
 - **Cron Expression**: `0 3 * * 0` (Domingos 03:00 AM)
 - **Función Edge**: `cron-jobs-maxiconsumo`
 - **Parámetros**:
-  - `job_type`: "weekly-trend-analysis"
+  - `job_type`: "weekly_trend_analysis"
   - `analysis_period`: "weekly"
   - `ml_predictions`: true
   - `seasonal_patterns`: true
@@ -33,7 +33,7 @@
 - **Cron Expression**: `*/15 * * * *` (cada 15 minutos)
 - **Función Edge**: `cron-jobs-maxiconsumo`
 - **Parámetros**:
-  - `job_type`: "realtime-alerts"
+  - `job_type`: "realtime_change_alerts"
   - `alert_threshold`: 15%
   - `check_frequency`: 15 minutos
   - `critical_products_only`: true
@@ -56,7 +56,7 @@ SELECT * FROM cron.job;
 
 -- Ver próximas ejecuciones
 SELECT * FROM cron.job_run_details 
-WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_alerts')
+WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts')
 ORDER BY run_time DESC;
 ```
 

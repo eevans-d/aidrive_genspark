@@ -78,14 +78,14 @@ export default function Stock() {
 
   const stockFiltrado = stock.filter(s => {
     if (filtro === 'critico') return s.disponible === 0
-    if (filtro === 'bajo') return s.disponible > 0 && s.disponible <= s.cantidad_minima
+    if (filtro === 'bajo') return s.disponible > 0 && s.disponible <= s.stock_minimo
     return true
   })
 
   const getNivelStock = (item: StockConProducto) => {
     if (item.disponible === 0) return 'critico'
-    if (item.disponible <= item.cantidad_minima / 2) return 'urgente'
-    if (item.disponible <= item.cantidad_minima) return 'bajo'
+    if (item.disponible <= item.stock_minimo / 2) return 'urgente'
+    if (item.disponible <= item.stock_minimo) return 'bajo'
     return 'normal'
   }
 
@@ -113,7 +113,7 @@ export default function Stock() {
               filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Stock Bajo ({stock.filter(s => s.disponible > 0 && s.disponible <= s.cantidad_minima).length})
+            Stock Bajo ({stock.filter(s => s.disponible > 0 && s.disponible <= s.stock_minimo).length})
           </button>
           <button
             onClick={() => setFiltro('critico')}
@@ -196,7 +196,7 @@ export default function Stock() {
                     {item.transito}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.cantidad_minima}
+                    {item.stock_minimo}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     {nivel === 'critico' && (

@@ -36,7 +36,7 @@ export default function Dashboard() {
 
       if (stock) {
         const stockBajoCount = stock.filter(
-          (s: StockDeposito) => s.cantidad_actual <= s.cantidad_minima
+          (s: StockDeposito) => s.cantidad_actual <= s.stock_minimo
         ).length
         setStockBajo(stockBajoCount)
       }

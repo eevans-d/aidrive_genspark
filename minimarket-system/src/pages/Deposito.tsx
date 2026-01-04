@@ -104,7 +104,7 @@ export default function Deposito() {
             .insert({
               producto_id: selectedProducto.id,
               cantidad_actual: parseInt(cantidad),
-              cantidad_minima: 10
+              stock_minimo: 10
             })
         }
       }

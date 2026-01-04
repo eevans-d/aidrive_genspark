@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
 
         for (const item of stockItems) {
             // Verificar si está por debajo del mínimo
-            if (item.cantidad_actual <= item.cantidad_minima) {
+            if (item.cantidad_actual <= item.stock_minimo) {
                 try {
                     // Obtener información del producto
                     const prodResponse = await fetch(
@@ -83,12 +83,12 @@ Deno.serve(async (req) => {
                         }
 
                         const nivel = item.cantidad_actual === 0 ? 'crítico' : 
-                                     item.cantidad_actual < item.cantidad_minima / 2 ? 'urgente' : 'bajo';
+                                     item.cantidad_actual < item.stock_minimo / 2 ? 'urgente' : 'bajo';
 
                         alertas.push({
                             producto: producto.nombre,
                             cantidad_actual: item.cantidad_actual,
-                            cantidad_minima: item.cantidad_minima,
+                            stock_minimo: item.stock_minimo,
                             ubicacion: item.ubicacion,
                             proveedor: proveedorNombre,
                             nivel: nivel

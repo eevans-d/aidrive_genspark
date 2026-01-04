@@ -20,8 +20,8 @@ Se ha implementado exitosamente el **sistema completo de cron jobs automáticos*
 
 #### 2. Base de Datos (ya implementado anteriormente)
 ```
-/workspace/backend/migration/
-└── 09_cron_jobs_tables.sql              # Esquema completo de BD
+/workspace/supabase/migrations/
+└── *.sql                                # Migraciones Supabase aplicables con `supabase db push`
 ```
 
 #### 3. Función Edge (ya implementado anteriormente)
@@ -93,10 +93,13 @@ Se ha implementado exitosamente el **sistema completo de cron jobs automáticos*
 ### 🚀 IMPLEMENTACIÓN
 
 #### Paso 1: Ejecutar Migración de BD
-```sql
--- En Supabase SQL Editor
-\i /workspace/backend/migration/09_cron_jobs_tables.sql
+Aplicar las migraciones del proyecto (recomendado):
+
+```bash
+supabase db push
 ```
+
+Si no usás Supabase CLI, ejecutar los `.sql` relevantes desde Supabase Dashboard > SQL Editor (carpeta `/workspace/supabase/migrations/`).
 
 #### Paso 2: Desplegar Función Edge
 ```bash
@@ -144,7 +147,7 @@ curl -X GET https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxi
 #### Verificación en BD
 ```sql
 -- Jobs activos
-SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_alerts');
+SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts');
 
 -- Logs recientes
 SELECT * FROM cron.job_run_details WHERE jobname = 'daily_price_update' ORDER BY run_time DESC LIMIT 5;

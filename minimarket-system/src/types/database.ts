@@ -38,7 +38,8 @@ export interface StockDeposito {
   id: string
   producto_id: string
   cantidad_actual: number
-  cantidad_minima: number
+  stock_minimo: number
+  stock_maximo?: number
   ubicacion: string | null
   lote: string | null
   fecha_vencimiento: string | null

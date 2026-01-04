@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
         if (stockResponse.ok) {
             const stock = await stockResponse.json();
-            const stockBajo = stock.filter((s: any) => s.cantidad_actual <= s.cantidad_minima);
+            const stockBajo = stock.filter((s: any) => s.cantidad_actual <= s.stock_minimo);
             const stockCritico = stock.filter((s: any) => s.cantidad_actual === 0);
 
             reportData.stock = {
