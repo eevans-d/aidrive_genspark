@@ -11,9 +11,9 @@
 | Métrica | Valor |
 |---------|-------|
 | **Tamaño código activo** | 3.7 MB (sin .venv/.git/node_modules) |
-| **Archivos código/docs activos** | 101 |
+| **Archivos código/docs activos** | 105 |
 | **Edge Functions** | 11 (3 críticas >2000 líneas) |
-| **Migraciones SQL** | 3 (cron/scraping/tareas versionadas; aplicado local) |
+| **Migraciones SQL** | 4 (incluye RLS; aplicado local) |
 | **Frontend pages** | 7 páginas React |
 | **Tests existentes** | 7 archivos .test.* (+ scripts auxiliares) |
 | **Documentación** | 19 archivos en docs/ |
@@ -52,7 +52,8 @@
 supabase/migrations/
 ├── 20250101000000_version_sp_aplicar_precio.sql (stored procedure)
 ├── 20251103_create_cache_proveedor.sql (tabla cache_proveedor)
-└── 20260104020000_create_missing_objects.sql (cron/scraping/views/rpc/stock-reservas)
+├── 20260104020000_create_missing_objects.sql (cron/scraping/views/rpc/stock-reservas)
+└── 20260104083000_add_rls_policies.sql (RLS + grants minimos)
 ```
 
 **Incluidos en la migración inferida (20260104020000):**
@@ -71,6 +72,7 @@ supabase/migrations/
 **NOTA:** `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` documenta 11 tablas principales, pero no incluye las tablas/vistas de cron ni las de scraping/proveedor.  
 **NOTA 2:** `supabase/cron_jobs/` contiene scripts y JSON de scheduling, pero no crea tablas.  
 **NOTA 3:** Los schemas en la migración 20260104020000 son inferidos; requieren validacion con datos reales.
+**NOTA 4:** RLS habilitada en tablas nuevas; politicas permisivas para `tareas_pendientes` y lectura en stock/transito.
 
 ### 3. Estructura Frontend - CONFIRMADO
 
@@ -285,7 +287,7 @@ Problema:
 
 #### 7. Documentación Podría Reducirse Más
 
-Los 19 archivos actuales en `docs/` suman ~496KB:
+Los 19 archivos actuales en `docs/` suman ~500KB:
 - `DEPLOYMENT_GUIDE.md` (78KB) - Muy extenso
 - `DOCUMENTACION_TECNICA_ACTUALIZADA.md` (74KB) - Extenso
 - `ARCHITECTURE_DOCUMENTATION.md` (60KB)
@@ -308,7 +310,7 @@ Incluye además OpenAPI, colecciones Postman y docs de ejecucion (KPIs, inventar
 
 | # | Tarea | Esfuerzo | Impacto |
 |---|-------|----------|---------|
-| 1 | Definir RLS/grants para tablas nuevas y aplicar migraciones en staging/prod | 4h | Alto |
+| 1 | Validar RLS/grants en staging/prod (local OK) | 2h | Alto |
 | 2 | Reemplazar console.log con logger estructurado | 4h | Medio |
 | 3 | Eliminar cypress.config.js si no se usa | 5min | Bajo |
 | 4 | Actualizar package.json raíz con scripts útiles | 30min | Medio |
@@ -392,7 +394,7 @@ aidrive_genspark/
 │   └── src/
 ├── supabase/
 │   ├── functions/                 # 11 Edge Functions
-│   ├── migrations/                # 3 migraciones
+│   ├── migrations/                # 4 migraciones
 │   ├── cron_jobs/                 # Configs y scripts de cron
 │   └── config.toml                # Configuracion Supabase local
 ├── tests/                         # Suite principal (Jest + scripts)
@@ -421,7 +423,7 @@ El proyecto tiene una **base sólida** con:
 
 **Principales áreas de mejora:**
 1. **Deuda técnica:** 3 funciones gigantes necesitan refactorización
-2. **Infraestructura/DB:** Migraciones versionadas y aplicadas localmente; falta RLS/grants y aplicarlas en staging/prod si corresponde
+2. **Infraestructura/DB:** Migraciones y RLS aplicadas localmente; falta validar staging/prod si corresponde
 3. **Observabilidad:** Logging necesita estructurarse
 4. **Testing/CI:** Configuración fragmentada y sin pipeline automatizado
 

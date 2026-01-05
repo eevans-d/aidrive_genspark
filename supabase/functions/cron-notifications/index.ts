@@ -1,7 +1,7 @@
 /**
  * SISTEMA DE NOTIFICACIONES AVANZADAS
  * Edge Function para Gestión Completa de Notificaciones Multi-Canal
- * 
+ *
  * CARACTERÍSTICAS:
  * - Templates de email profesionales con branding
  * - SMS vía Twilio para alertas críticas
@@ -9,12 +9,13 @@
  * - Webhooks personalizados
  * - Gestión de preferencias por usuario
  * - Escalamiento automático según severidad
- * 
+ *
  * @author MiniMax Agent - Sistema Automatizado
  * @version 3.0.0
  * @date 2025-11-01
  * @license Enterprise Level
  */
+import { FixedWindowRateLimiter } from '../_shared/rate-limit.ts';
 
 // =====================================================
 // INTERFACES Y TIPOS
@@ -118,6 +119,20 @@ interface EscalationRule {
     };
     isActive: boolean;
 }
+
+// =====================================================
+// RATE LIMITING (SHARED)
+// =====================================================
+
+const ONE_HOUR_MS = 60 * 60 * 1000;
+const ONE_DAY_MS = 24 * ONE_HOUR_MS;
+
+type ChannelLimiters = {
+    hourly: FixedWindowRateLimiter;
+    daily: FixedWindowRateLimiter;
+};
+
+const CHANNEL_LIMITERS = new Map<string, ChannelLimiters>();
 
 // =====================================================
 // CONFIGURACIÓN DE TEMPLATES
@@ -609,9 +624,6 @@ async function sendNotificationHandler(
         throw new Error(`Template no encontrado: ${notificationRequest.templateId}`);
     }
 
-    // Verificar rate limits
-    await checkRateLimits(notificationRequest.channels);
-
     // Generar contenido para cada canal
     const results: NotificationResult = {
         success: false,
@@ -696,13 +708,13 @@ async function sendToChannel(
 }> {
     const timestamp = new Date().toISOString();
 
-    // Verificar rate limit específico del canal
-    const rateLimitOk = await checkChannelRateLimit(channel.id);
-    if (!rateLimitOk) {
+    const rateLimitState = await enforceChannelRateLimit(channel.id);
+    if (!rateLimitState.allowed) {
+        const reason = rateLimitState.scope === 'day' ? 'diario' : rateLimitState.scope === 'db' ? 'persistente' : 'horario';
         return {
             channelId: channel.id,
             status: 'rate_limited',
-            error: 'Rate limit excedido para este canal',
+            error: `Rate limit ${reason} excedido para este canal`,
             timestamp
         };
     }
@@ -911,55 +923,105 @@ function processTemplate(template: string, data: Record<string, any>): string {
     return processed;
 }
 
-async function checkRateLimits(channelIds: string[]): Promise<void> {
-    for (const channelId of channelIds) {
-        const channel = NOTIFICATION_CHANNELS[channelId];
-        if (channel) {
-            const rateLimitOk = await checkChannelRateLimit(channelId);
-            if (!rateLimitOk) {
-                throw new Error(`Rate limit excedido para canal: ${channelId}`);
-            }
-        }
-    }
+function getChannelLimiters(channelId: string): ChannelLimiters {
+    const existing = CHANNEL_LIMITERS.get(channelId);
+    if (existing) return existing;
+
+    const channel = NOTIFICATION_CHANNELS[channelId];
+    const hourlyMax = channel?.rateLimit?.maxPerHour ?? 100;
+    const dailyMax = channel?.rateLimit?.maxPerDay ?? 1000;
+
+    const limiter: ChannelLimiters = {
+        hourly: new FixedWindowRateLimiter(hourlyMax, ONE_HOUR_MS),
+        daily: new FixedWindowRateLimiter(dailyMax, ONE_DAY_MS)
+    };
+
+    CHANNEL_LIMITERS.set(channelId, limiter);
+    return limiter;
 }
 
-async function checkChannelRateLimit(channelId: string): Promise<boolean> {
+async function enforceChannelRateLimit(channelId: string): Promise<{ allowed: boolean; scope?: 'hour' | 'day' | 'db'; resetAt?: number; }>
+{
+    const channel = NOTIFICATION_CHANNELS[channelId];
+    if (!channel) return { allowed: true };
+
+    const dbAllowed = await checkChannelRateLimitDb(channelId, channel);
+    if (!dbAllowed) {
+        return { allowed: false, scope: 'db' };
+    }
+
+    const { hourly, daily } = getChannelLimiters(channelId);
+    const hourlyState = hourly.check(`${channelId}:hour`);
+    if (!hourlyState.allowed) {
+        return { allowed: false, scope: 'hour', resetAt: hourlyState.resetAt };
+    }
+
+    const dailyState = daily.check(`${channelId}:day`);
+    if (!dailyState.allowed) {
+        return { allowed: false, scope: 'day', resetAt: dailyState.resetAt };
+    }
+
+    return { allowed: true };
+}
+
+async function checkChannelRateLimitDb(channelId: string, channel: NotificationChannel): Promise<boolean> {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
     if (!supabaseUrl || !serviceRoleKey) return true;
 
     try {
-        // Obtener conteo de últimas notificaciones
-        const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-        const response = await fetch(
-            `${supabaseUrl}/rest/v1/cron_jobs_notifications?select=count&channel_id=eq.${channelId}&sent_at=gte.${oneHourAgo}`,
-            {
-                headers: {
-                    'apikey': serviceRoleKey,
-                    'Authorization': `Bearer ${serviceRoleKey}`
-                }
-            }
-        );
+        const headers = {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Prefer': 'count=exact'
+        };
 
-        if (response.ok) {
-            const result = await response.json();
-            const count = result.length;
-            const channel = NOTIFICATION_CHANNELS[channelId];
-            
-            return count < (channel?.rateLimit.maxPerHour || 100);
-        }
+        const oneHourAgo = new Date(Date.now() - ONE_HOUR_MS).toISOString();
+        const oneDayAgo = new Date(Date.now() - ONE_DAY_MS).toISOString();
 
-        return true; // En caso de error, permitir el envío
+        const hourlyUrl = `${supabaseUrl}/rest/v1/cron_jobs_notifications?select=count&channel_id=eq.${channelId}&sent_at=gte.${oneHourAgo}`;
+        const dailyUrl = `${supabaseUrl}/rest/v1/cron_jobs_notifications?select=count&channel_id=eq.${channelId}&sent_at=gte.${oneDayAgo}`;
+
+        const [hourlyCount, dailyCount] = await Promise.all([
+            fetchNotificationCount(hourlyUrl, headers),
+            fetchNotificationCount(dailyUrl, headers)
+        ]);
+
+        if (hourlyCount >= (channel.rateLimit?.maxPerHour ?? 100)) return false;
+        if (dailyCount >= (channel.rateLimit?.maxPerDay ?? 1000)) return false;
+
+        return true;
 
     } catch (error) {
-        console.error('[NOTIFICATIONS] Error verificando rate limit:', error);
+        console.error('[NOTIFICATIONS] Error verificando rate limit persistente:', error);
         return true;
     }
 }
 
+async function fetchNotificationCount(url: string, headers: Record<string, string>): Promise<number> {
+    const response = await fetch(url, { headers });
+    if (!response.ok) return 0;
+
+    const contentRange = response.headers.get('content-range');
+    if (contentRange && contentRange.includes('/')) {
+        const total = parseInt(contentRange.split('/')[1], 10);
+        if (!Number.isNaN(total)) {
+            return total;
+        }
+    }
+
+    const body = await response.json();
+    if (Array.isArray(body)) {
+        if (typeof body[0]?.count === 'number') return body[0].count;
+        return body.length;
+    }
+
+    return 0;
+}
+
 async function updateRateLimits(channelId: string): Promise<void> {
-    // En implementación real, aquí se registraría el envío para rate limiting
+    // El rate limit en memoria se actualiza con enforceChannelRateLimit; esta función mantiene el hook para futura persistencia.
     console.log(`[NOTIFICATIONS] Rate limit actualizado para canal: ${channelId}`);
 }
 

@@ -2,12 +2,15 @@
 
 > Sistema de gestión para mini markets con React, TypeScript y Supabase.
 
+[![CI](https://github.com/[owner]/[repo]/actions/workflows/ci.yml/badge.svg)](https://github.com/[owner]/[repo]/actions/workflows/ci.yml)
+
 ## 🚀 Inicio Rápido
 
 ### Requisitos
-- Node.js 18+
-- pnpm
+- Node.js 20+
+- pnpm 9+
 - Cuenta Supabase (para backend)
+- Deno (para Edge Functions)
 
 ### Instalación
 ```bash
@@ -22,7 +25,7 @@ pnpm dev
 pnpm dev          # Desarrollo local
 pnpm build        # Build producción
 pnpm lint         # Linter
-pnpm test:unit    # Tests unitarios (delega a ../test.sh)
+npx vitest run    # Tests unitarios (Vitest)
 pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 ```
 
@@ -42,25 +45,35 @@ pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 │   └── .env.example       # Variables de entorno requeridas
 │
 ├── supabase/
-│   ├── functions/         # Edge Functions (Deno)
+│   ├── functions/         # Edge Functions (Deno) - Modularizadas
+│   │   ├── _shared/             # Utilidades compartidas (cors, logger, errors)
 │   │   ├── api-minimarket/      # API Gateway principal
+│   │   ├── api-proveedor/       # API proveedor (modular)
+│   │   ├── scraper-maxiconsumo/ # Scraping de precios (9 módulos)
+│   │   ├── cron-jobs-maxiconsumo/ # Jobs automáticos (4 jobs + orchestrator)
 │   │   ├── alertas-stock/       # Alertas de inventario
-│   │   ├── scraper-maxiconsumo/ # Scraping de precios
 │   │   └── ...
 │   ├── cron_jobs/         # Configuración de jobs automáticos
-│   └── migrations/        # Migraciones SQL
+│   └── migrations/        # Migraciones SQL versionadas
 │
 ├── docs/                  # Documentación técnica
 │   ├── API_README.md              # Guía de API
 │   ├── ESQUEMA_BASE_DATOS_ACTUAL.md  # Schema BD
 │   ├── api-openapi-3.1.yaml       # OpenAPI spec
+│   ├── PLAN_EJECUCION.md          # Plan técnico
+│   ├── CHECKLIST_CIERRE.md        # Estado del proyecto
 │   └── DEPLOYMENT_GUIDE.md        # Guía de deploy
 │
-├── tests/                 # Tests (Jest/Vitest)
+├── tests/                 # Tests (Vitest)
+│   └── unit/              # Tests unitarios (44 tests)
+│
+├── .github/workflows/     # CI/CD
+│   └── ci.yml             # Pipeline: lint → test → build
+│
 ├── setup.sh              # Script de configuración
 ├── deploy.sh             # Script de deployment
 ├── migrate.sh            # Script de migraciones
-└── test.sh               # Script de testing
+└── vitest.config.ts      # Configuración Vitest
 ```
 
 ---
@@ -72,6 +85,8 @@ pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 | Frontend | React 18, TypeScript, Vite, Tailwind CSS, Radix UI |
 | Backend | Supabase (PostgreSQL + Edge Functions en Deno) |
 | Auth | Supabase Auth con JWT |
+| Testing | Vitest + @vitest/coverage-v8 |
+| CI/CD | GitHub Actions |
 | Hosting | Supabase + CDN |
 
 ---
@@ -86,6 +101,27 @@ pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 | Productos | Catálogo con precios | `src/pages/Productos.tsx` |
 | Proveedores | Directorio de proveedores | `src/pages/Proveedores.tsx` |
 | Tareas | Gestión de pendientes | `src/pages/Tareas.tsx` |
+
+---
+
+## 🧪 Testing
+
+```bash
+# Ejecutar todos los tests
+npx vitest run
+
+# Tests con watch mode
+npx vitest
+
+# Tests con coverage
+npx vitest run --coverage
+```
+
+**Tests disponibles (44 total):**
+- `api-proveedor-routing.test.ts` - Routing y validación (17 tests)
+- `scraper-parsing.test.ts` - Parsing de productos (10 tests)
+- `scraper-matching.test.ts` - Matching de productos (7 tests)
+- `cron-jobs.test.ts` - Jobs y orquestación (8 tests)
 
 ---
 

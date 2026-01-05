@@ -8,32 +8,54 @@ minimarket-system/     # Frontend React + Vite + TS
 ├── src/pages/                # Páginas (Dashboard, Stock, etc.)
 └── src/types/database.ts     # Tipos TS
 
-supabase/functions/    # Edge Functions (Deno) - 11 activas
+supabase/functions/    # Edge Functions (Deno) - 11 activas, MODULARIZADAS
+├── _shared/           # Utilidades compartidas
+│   ├── cors.ts        # Headers CORS unificados
+│   ├── response.ts    # Respuestas ok/fail estándar
+│   ├── errors.ts      # Tipos AppError/HttpError
+│   ├── logger.ts      # Logging estructurado
+│   └── rate-limiter.ts # Rate limiting consolidado
 ├── api-minimarket/    # API Gateway principal (1050 líneas)
-├── api-proveedor/     # API proveedor Maxiconsumo (3744 líneas) ⚠️
-├── scraper-maxiconsumo/  # Scraper de precios (3212 líneas) ⚠️
-├── cron-jobs-maxiconsumo/ # Orquestador cron (2900 líneas) ⚠️
-├── cron-testing-suite/ # Suite de testing cron (1413 líneas)
-├── cron-notifications/ # Notificaciones cron (1184 líneas)
-├── cron-dashboard/     # Dashboard API (1130 líneas)
-├── cron-health-monitor/ # Health monitor (898 líneas)
-├── alertas-stock/     # Alertas de inventario (160 líneas) ✓
-├── reportes-automaticos/ # Reportes (177 líneas) ✓
-└── notificaciones-tareas/ # Notificaciones (155 líneas) ✓
+├── api-proveedor/     # API proveedor - MODULAR (router + handlers + utils)
+├── scraper-maxiconsumo/  # Scraper de precios - MODULAR (9 módulos)
+│   ├── types.ts, config.ts, cache.ts, anti-detection.ts
+│   ├── parsing.ts, matching.ts, storage.ts, scraping.ts
+│   └── index.ts (orquestador)
+├── cron-jobs-maxiconsumo/ # Orquestador cron - MODULAR (4 jobs + orchestrator)
+│   ├── jobs/daily-price-update.ts
+│   ├── jobs/realtime-alerts.ts
+│   ├── jobs/weekly-analysis.ts
+│   ├── jobs/maintenance.ts
+│   └── orchestrator.ts
+├── cron-testing-suite/ # Suite de testing cron
+├── cron-notifications/ # Notificaciones cron
+├── cron-dashboard/     # Dashboard API
+├── cron-health-monitor/ # Health monitor
+├── alertas-stock/     # Alertas de inventario ✓
+├── reportes-automaticos/ # Reportes ✓
+└── notificaciones-tareas/ # Notificaciones ✓
 
 supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
 supabase/migrations/   # Migraciones SQL versionadas
 supabase/config.toml   # Configuracion Supabase local
 
-docs/                  # 19 archivos de documentación + OpenAPI/Postman
+tests/unit/            # Tests unitarios (Vitest) - 44 tests
+├── api-proveedor-routing.test.ts  # 17 tests
+├── scraper-parsing.test.ts        # 10 tests
+├── scraper-matching.test.ts       # 7 tests
+└── cron-jobs.test.ts              # 8 tests
+
+.github/workflows/     # CI/CD
+└── ci.yml             # Pipeline: lint → test → build → typecheck
+
+docs/                  # 20 archivos de documentación + OpenAPI/Postman
+├── PLAN_EJECUCION.md           # Plan técnico (completado)
+├── CHECKLIST_CIERRE.md         # Estado del proyecto
 ├── ANALISIS_EXHAUSTIVO_PROYECTO.md
 ├── OBJETIVOS_Y_KPIS.md
 ├── INVENTARIO_ACTUAL.md
 ├── BASELINE_TECNICO.md
 ├── DB_GAPS.md
-├── PLAN_EJECUCION.md
-├── PLAN_LIMPIEZA_CONTEXTO.md
-├── PROMPTS_CODEX_MINIMARKET.md
 ├── API_README.md
 ├── ARCHITECTURE_DOCUMENTATION.md
 ├── CRON_JOBS_COMPLETOS.md
@@ -47,12 +69,17 @@ docs/                  # 19 archivos de documentación + OpenAPI/Postman
 └── postman-collection-proveedor.json
 ```
 
-## Comandos (desde `minimarket-system/`)
+## Comandos (desde raíz del proyecto)
 ```bash
+# Frontend (desde minimarket-system/)
 pnpm dev       # Desarrollo
 pnpm build     # Build
 pnpm lint      # Linter
-pnpm test      # Ejecuta `../test.sh` (runner actual)
+
+# Tests (desde raíz)
+npx vitest run              # Todos los tests
+npx vitest run tests/unit/  # Solo unit tests
+npx vitest --coverage       # Con coverage
 ```
 
 ## Patrones del Código
@@ -83,21 +110,31 @@ pnpm test      # Ejecuta `../test.sh` (runner actual)
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
 | Plan de ejecución | `docs/PLAN_EJECUCION.md` |
+| Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
 
-## ⚠️ Aspectos Críticos (Requieren Atención)
+## ✅ Estado Actual (Enero 2025)
 
-### Funciones Gigantes (>2000 líneas) - Candidatas a refactorizar:
-1. **api-proveedor** (3744 líneas): Dividir en módulos por endpoint
-2. **scraper-maxiconsumo** (3212 líneas): Separar lógica de scraping, parsing, cache
-3. **cron-jobs-maxiconsumo** (2900 líneas): Extraer jobs a archivos separados
+### Funciones Modularizadas
+1. **api-proveedor**: Router + handlers + schemas + validators + utils
+2. **scraper-maxiconsumo**: 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
+3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
 
-### Funciones Auxiliares de Cron (podrían consolidarse):
-- `cron-testing-suite` (1413 líneas)
-- `cron-notifications` (1184 líneas)
-- `cron-dashboard` (1130 líneas)
-- `cron-health-monitor` (898 líneas)
+### Testing
+- Framework: **Vitest 4.0.16**
+- Total tests: **44 pasando**
+- Ubicación: `tests/unit/*.test.ts`
+
+### CI/CD
+- Pipeline: `.github/workflows/ci.yml`
+- Jobs: lint → test → build → typecheck → edge-functions-check
+
+### Funciones Auxiliares de Cron (documentadas en CRON_AUXILIARES.md):
+- `cron-testing-suite` - Testing e2e de cron jobs
+- `cron-notifications` - Envío de notificaciones
+- `cron-dashboard` - API para dashboard
+- `cron-health-monitor` - Monitoreo de salud
 
 ### Notas:
 - `tests/datos_reales/results/` está en .gitignore (no versionar resultados)
-- No hay CI configurado aún
-- Tests consolidados en `tests/` (runner: `test.sh`)
+- CI configurado en `.github/workflows/ci.yml`
+- Tests unificados bajo Vitest (runner: `npx vitest run`)

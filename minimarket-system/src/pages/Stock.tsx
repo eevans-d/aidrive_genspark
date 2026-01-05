@@ -35,12 +35,12 @@ export default function Stock() {
           .in('id', productosIds)
 
         const { data: reservas } = await supabase
-          .from<StockReservado>('stock_reservado')
+          .from('stock_reservado')
           .select('id,producto_id,cantidad,estado')
           .eq('estado', 'activa')
 
         const { data: ordenesCompra } = await supabase
-          .from<OrdenCompra>('ordenes_compra')
+          .from('ordenes_compra')
           .select('id,producto_id,cantidad,cantidad_recibida,estado')
           .in('estado', ['pendiente', 'en_transito'])
 

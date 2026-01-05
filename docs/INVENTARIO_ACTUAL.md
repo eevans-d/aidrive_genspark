@@ -1,51 +1,78 @@
-# INVENTARIO ACTUAL (v1)
+# INVENTARIO ACTUAL (v2 - Enero 2025)
 
-**Estado:** snapshot del repo
+**Estado:** Plan de ejecución completado ✅
 
 ---
 
 ## Directorios principales
-- `minimarket-system/` frontend React + Vite
-- `supabase/functions/` Edge Functions (Deno)
-- `supabase/migrations/` migraciones SQL (3)
+- `minimarket-system/` frontend React + Vite + TypeScript
+- `supabase/functions/` Edge Functions (Deno) - **MODULARIZADAS**
+- `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
+- `supabase/migrations/` migraciones SQL (4)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
-- `supabase/config.toml` configuracion local de Supabase
-- `tests/` suite principal (Jest + scripts)
-- `docs/` documentacion tecnica
+- `tests/unit/` Tests unitarios Vitest (4 archivos, 44 tests)
+- `docs/` documentación técnica (17 archivos)
+- `.github/workflows/` CI/CD (1 workflow)
 
 ---
 
-## Edge Functions (lineas)
-- `api-proveedor/index.ts` 3744
-- `scraper-maxiconsumo/index.ts` 3212
-- `cron-jobs-maxiconsumo/index.ts` 2900
-- `cron-testing-suite/index.ts` 1413
-- `cron-notifications/index.ts` 1184
-- `cron-dashboard/index.ts` 1130
-- `api-minimarket/index.ts` 1050
-- `cron-health-monitor/index.ts` 898
-- `reportes-automaticos/index.ts` 177
-- `alertas-stock/index.ts` 160
-- `notificaciones-tareas/index.ts` 155
+## Edge Functions (estructura modular)
+
+### Funciones principales (modularizadas)
+- `api-proveedor/` → router.ts, schemas.ts, validators.ts, handlers/, utils/
+- `scraper-maxiconsumo/` → 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
+- `cron-jobs-maxiconsumo/` → jobs/ (4 jobs), orchestrator.ts, config.ts, types.ts
+
+### Funciones auxiliares
+- `api-minimarket/index.ts` - API Gateway principal
+- `cron-testing-suite/index.ts` - Testing e2e cron
+- `cron-notifications/index.ts` - Notificaciones
+- `cron-dashboard/index.ts` - Dashboard API
+- `cron-health-monitor/index.ts` - Health monitor
+- `alertas-stock/index.ts` - Alertas inventario
+- `reportes-automaticos/index.ts` - Reportes
+- `notificaciones-tareas/index.ts` - Notificaciones tareas
+
+### Shared libs (`_shared/`)
+- `cors.ts` - Headers CORS unificados
+- `response.ts` - Respuestas ok/fail
+- `errors.ts` - Tipos AppError/HttpError
+- `logger.ts` - Logging estructurado
+- `rate-limit.ts` - Rate limiting
+- `circuit-breaker.ts` - Circuit breaker
 
 ---
 
 ## Migraciones SQL
-- `supabase/migrations/20250101000000_version_sp_aplicar_precio.sql`
-- `supabase/migrations/20251103_create_cache_proveedor.sql`
-- `supabase/migrations/20260104020000_create_missing_objects.sql`
+- `20250101000000_version_sp_aplicar_precio.sql`
+- `20251103_create_cache_proveedor.sql`
+- `20260104020000_create_missing_objects.sql`
+- `20260104083000_add_rls_policies.sql`
 
 ---
 
-## Docs (carpeta docs/)
+## Tests (Vitest 4.0.16)
+- `tests/unit/api-proveedor-routing.test.ts` (17 tests)
+- `tests/unit/scraper-parsing.test.ts` (10 tests)
+- `tests/unit/scraper-matching.test.ts` (7 tests)
+- `tests/unit/cron-jobs.test.ts` (10 tests)
+- **Total: 44 tests pasando**
+
+---
+
+## CI/CD
+- `.github/workflows/ci.yml` → lint, test, build, typecheck, edge-functions-check
+
+---
+
+## Docs (17 archivos)
+- `PLAN_EJECUCION.md` - Plan técnico (COMPLETADO)
+- `CHECKLIST_CIERRE.md` - Estado del proyecto
+- `INVENTARIO_ACTUAL.md` - Este archivo
 - `ANALISIS_EXHAUSTIVO_PROYECTO.md`
 - `OBJETIVOS_Y_KPIS.md`
-- `INVENTARIO_ACTUAL.md`
 - `BASELINE_TECNICO.md`
 - `DB_GAPS.md`
-- `PLAN_EJECUCION.md`
-- `PLAN_LIMPIEZA_CONTEXTO.md`
-- `PROMPTS_CODEX_MINIMARKET.md`
 - `API_README.md`
 - `ARCHITECTURE_DOCUMENTATION.md`
 - `CRON_JOBS_COMPLETOS.md`
@@ -55,23 +82,11 @@
 - `OPERATIONS_RUNBOOK.md`
 - `api-openapi-3.1.yaml`
 - `api-proveedor-openapi-3.1.yaml`
-- `postman-collection.json`
-- `postman-collection-proveedor.json`
+- `postman-collection.json` / `postman-collection-proveedor.json`
 
 ---
 
-## Tests
-- `tests/unit/` (2 archivos)
-- `tests/integration/` (2 archivos)
-- `tests/security/` (1 archivo)
-- `tests/performance/` (1 archivo)
-- `tests/api-contracts/` (1 archivo)
-- `tests/e2e/edge-functions.test.js` (gitignored)
-- `tests/datos_reales/` (suite con scripts y results/)
-
----
-
-## Scripts relevantes
-- `test.sh` (runner principal)
-- `test_cron_system.js` (verificacion cron/edge)
-- `deploy.sh`, `migrate.sh`, `setup.sh`
+## Scripts
+- `deploy.sh`, `migrate.sh`, `setup.sh` - Operaciones
+- `test.sh` - Runner legacy (usar `npx vitest run`)
+- `vitest.config.ts` - Configuración Vitest

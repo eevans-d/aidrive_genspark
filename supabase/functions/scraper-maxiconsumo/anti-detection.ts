@@ -1,0 +1,312 @@
+/**
+ * Módulo de anti-detección para scraper-maxiconsumo
+ * Implementa técnicas para evitar bloqueos de scraping
+ * @module scraper-maxiconsumo/anti-detection
+ */
+
+import type { AntiDetectionConfig, StructuredLog } from './types.ts';
+
+// ============================================================================
+// CONFIGURACIÓN POR DEFECTO
+// ============================================================================
+
+export const DEFAULT_ANTI_DETECTION_CONFIG: AntiDetectionConfig = {
+  minDelay: 1000,
+  maxDelay: 5000,
+  jitterFactor: 0.2,
+  userAgentRotation: true,
+  headerRandomization: true,
+  captchaBypass: false
+};
+
+// ============================================================================
+// USER AGENTS
+// ============================================================================
+
+const USER_AGENTS = [
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+];
+
+const LANGUAGES = [
+  'es-AR,es;q=0.9,en;q=0.8',
+  'es-ES,es;q=0.9,en;q=0.8',
+  'es;q=0.9,en;q=0.8'
+];
+
+const TIMEZONES = [
+  'America/Argentina/Buenos_Aires',
+  'UTC',
+  'America/Mexico_City'
+];
+
+// ============================================================================
+// GENERADORES DE HEADERS
+// ============================================================================
+
+/**
+ * Genera headers aleatorios para requests
+ */
+export function generarHeadersAleatorios(): Record<string, string> {
+  return {
+    'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+    'Accept-Language': LANGUAGES[Math.floor(Math.random() * LANGUAGES.length)].split(',')[0],
+    'Accept-Encoding': 'gzip, deflate',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Cache-Control': 'max-age=0'
+  };
+}
+
+/**
+ * Genera headers avanzados con más parámetros anti-detección
+ */
+export function generateAdvancedHeaders(): Record<string, string> {
+  const acceptLanguages = LANGUAGES[Math.floor(Math.random() * LANGUAGES.length)];
+  const timezone = TIMEZONES[Math.floor(Math.random() * TIMEZONES.length)];
+  
+  const now = new Date();
+  const dayOfWeek = now.getDay();
+  const hour = now.getHours();
+  
+  // Simular comportamiento de horario comercial
+  const isBusinessHours = hour >= 9 && hour <= 17 && dayOfWeek >= 1 && dayOfWeek <= 5;
+  
+  return {
+    'User-Agent': USER_AGENTS[Math.floor(Math.random() * USER_AGENTS.length)],
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8',
+    'Accept-Language': acceptLanguages,
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'Sec-Fetch-Dest': 'document',
+    'Sec-Fetch-Mode': 'navigate',
+    'Sec-Fetch-Site': 'none',
+    'Cache-Control': isBusinessHours ? 'max-age=0' : 'max-age=3600',
+    'DNT': '1',
+    'Pragma': 'no-cache',
+    'Sec-Ch-Ua': '"Not_A Brand";v="8", "Chromium";v="120", "Google Chrome";v="120"',
+    'Sec-Ch-Ua-Mobile': '?0',
+    'Sec-Ch-Ua-Platform': '"Windows"',
+    'X-Timezone': timezone,
+    'X-Client-Time': now.toISOString()
+  };
+}
+
+// ============================================================================
+// DELAYS Y TIMING
+// ============================================================================
+
+/**
+ * Delay base con promise
+ */
+export function delay(ms: number): Promise<void> {
+  const jitter = Math.random() * 0.3 * ms;
+  return new Promise(resolve => setTimeout(resolve, ms + jitter));
+}
+
+/**
+ * Genera un delay aleatorio con jitter
+ */
+export function getRandomDelay(min: number, max: number, jitter: number = 0.2): number {
+  const baseDelay = Math.random() * (max - min) + min;
+  const jitterAmount = baseDelay * jitter * (Math.random() - 0.5) * 2;
+  return Math.max(min, baseDelay + jitterAmount);
+}
+
+/**
+ * Calcula delay exponencial para backoff
+ */
+export function calculateExponentialBackoff(
+  attempt: number,
+  baseDelay: number = 1000,
+  maxDelay: number = 30000,
+  jitter: boolean = true
+): number {
+  const exponentialDelay = Math.min(baseDelay * Math.pow(2, attempt), maxDelay);
+  
+  if (jitter) {
+    const jitterAmount = exponentialDelay * 0.2 * (Math.random() - 0.5) * 2;
+    return Math.max(baseDelay, exponentialDelay + jitterAmount);
+  }
+  
+  return exponentialDelay;
+}
+
+// ============================================================================
+// SESSION MANAGEMENT
+// ============================================================================
+
+/**
+ * Genera un ID de sesión único
+ */
+export function generateSessionId(): string {
+  return Math.random().toString(36).substring(2, 15) + 
+         Math.random().toString(36).substring(2, 15);
+}
+
+/**
+ * Genera un request ID único
+ */
+export function generateRequestId(): string {
+  return crypto.randomUUID();
+}
+
+// ============================================================================
+// FETCH CON ANTI-DETECCIÓN
+// ============================================================================
+
+/**
+ * Fetch con reintentos y anti-detección
+ */
+export async function fetchConReintentos(
+  url: string,
+  headers: Record<string, string>,
+  maxReintentos: number,
+  timeout: number = 15000
+): Promise<Response> {
+  let ultimoError: Error = new Error('Unknown error');
+
+  for (let i = 0; i < maxReintentos; i++) {
+    try {
+      const response = await fetch(url, { 
+        headers,
+        signal: AbortSignal.timeout(timeout)
+      });
+
+      if (response.ok) {
+        return response;
+      }
+
+      if (response.status === 429) {
+        // Rate limited, esperar más tiempo
+        await delay((i + 1) * 2000);
+        continue;
+      }
+
+      if (response.status >= 500) {
+        // Error del servidor, reintentar
+        await delay((i + 1) * 1000);
+        continue;
+      }
+
+      throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+
+    } catch (error) {
+      ultimoError = error as Error;
+      console.warn(`Reintento ${i + 1}/${maxReintentos} falló:`, (error as Error).message);
+      
+      if (i < maxReintentos - 1) {
+        await delay((i + 1) * 2000);
+      }
+    }
+  }
+
+  throw ultimoError;
+}
+
+/**
+ * Fetch avanzado con anti-detección completa
+ */
+export async function fetchWithAdvancedAntiDetection(
+  url: string,
+  headers: Record<string, string>,
+  structuredLog: StructuredLog,
+  timeout: number = 20000
+): Promise<Response> {
+  const requestId = structuredLog.requestId || crypto.randomUUID();
+  
+  try {
+    const requestStartTime = Date.now();
+    
+    const response = await fetch(url, { 
+      headers: {
+        ...headers,
+        'X-Request-ID': requestId,
+        'X-Client-Version': '2.0.0',
+        'X-Session-ID': generateSessionId()
+      },
+      signal: AbortSignal.timeout(timeout)
+    });
+    
+    const responseTime = Date.now() - requestStartTime;
+    
+    console.log(JSON.stringify({
+      ...structuredLog,
+      event: 'ADVANCED_FETCH_COMPLETE',
+      responseTime,
+      status: response.status,
+      requestId
+    }));
+    
+    return response;
+    
+  } catch (error) {
+    console.error(JSON.stringify({
+      ...structuredLog,
+      event: 'ADVANCED_FETCH_ERROR',
+      error: (error as Error).message
+    }));
+    throw error;
+  }
+}
+
+// ============================================================================
+// CAPTCHA HANDLING
+// ============================================================================
+
+/**
+ * Simula bypass de CAPTCHA
+ * En implementación real, integraría con servicio de resolución
+ */
+export async function handleCaptchaBypass(
+  url: string,
+  headers: Record<string, string>,
+  structuredLog: StructuredLog
+): Promise<void> {
+  console.log(JSON.stringify({ 
+    ...structuredLog, 
+    event: 'CAPTCHA_BYPASS_ATTEMPT' 
+  }));
+  
+  // Simular resolución de CAPTCHA
+  await delay(getRandomDelay(3000, 8000));
+  
+  console.log(JSON.stringify({ 
+    ...structuredLog, 
+    event: 'CAPTCHA_BYPASS_SUCCESS' 
+  }));
+}
+
+/**
+ * Detecta si una respuesta contiene CAPTCHA
+ */
+export function detectCaptcha(response: Response, html?: string): boolean {
+  // Chequear headers
+  if (response.status === 429 || response.headers.get('x-captcha-detected')) {
+    return true;
+  }
+  
+  // Chequear contenido HTML si está disponible
+  if (html) {
+    const captchaIndicators = [
+      'captcha',
+      'recaptcha',
+      'hcaptcha',
+      'cf-turnstile',
+      'challenge-form'
+    ];
+    
+    const lowerHtml = html.toLowerCase();
+    return captchaIndicators.some(indicator => lowerHtml.includes(indicator));
+  }
+  
+  return false;
+}

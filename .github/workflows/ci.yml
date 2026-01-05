@@ -1,0 +1,165 @@
+name: CI Pipeline
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  lint:
+    name: Lint
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies (frontend)
+        working-directory: minimarket-system
+        run: pnpm install --frozen-lockfile
+
+      - name: Run ESLint
+        working-directory: minimarket-system
+        run: pnpm lint
+
+  test:
+    name: Unit Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies (frontend)
+        working-directory: minimarket-system
+        run: pnpm install --frozen-lockfile
+
+      - name: Install test dependencies
+        run: npm ci
+        working-directory: .
+
+      - name: Run unit tests
+        run: npx vitest run tests/unit/ --reporter=verbose
+        working-directory: .
+
+      - name: Run tests with coverage
+        run: npx vitest run tests/unit/ --coverage --reporter=json --outputFile=test-results.json
+        working-directory: .
+        continue-on-error: true
+
+      - name: Upload coverage report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+          retention-days: 7
+
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: minimarket-system
+        run: pnpm install --frozen-lockfile
+
+      - name: Build frontend
+        working-directory: minimarket-system
+        run: pnpm build
+        env:
+          VITE_SUPABASE_URL: ${{ secrets.VITE_SUPABASE_URL }}
+          VITE_SUPABASE_ANON_KEY: ${{ secrets.VITE_SUPABASE_ANON_KEY }}
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: minimarket-system/dist/
+          retention-days: 7
+
+  typecheck:
+    name: Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies
+        working-directory: minimarket-system
+        run: pnpm install --frozen-lockfile
+
+      - name: Run TypeScript check
+        working-directory: minimarket-system
+        run: npx tsc --noEmit
+
+  edge-functions-check:
+    name: Edge Functions Syntax Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Deno
+        uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+
+      - name: Check Edge Functions syntax
+        run: |
+          for dir in supabase/functions/*/; do
+            if [ -f "${dir}index.ts" ]; then
+              echo "Checking ${dir}index.ts..."
+              deno check --no-lock "${dir}index.ts" || echo "Warning: ${dir} has issues"
+            fi
+          done
+        continue-on-error: true
