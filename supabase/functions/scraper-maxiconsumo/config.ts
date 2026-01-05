@@ -35,5 +35,5 @@ export function getDefaultScraperConfig(): ScraperConfig {
 }
 
 export const MAXICONSUMO_BREAKER_OPTIONS = {
-  failureThreshold: 5, successThreshold: 2, timeout: 60000
+  failureThreshold: 5, successThreshold: 2, openTimeoutMs: 60000
 };

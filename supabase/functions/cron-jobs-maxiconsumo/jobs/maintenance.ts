@@ -63,19 +63,34 @@ export async function executeMaintenanceCleanup(
     }
 
     // 5. Log execution
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
     await fetch(`${supabaseUrl}/rest/v1/cron_jobs_execution_log`, {
       method: 'POST',
       headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        job_id: ctx.jobId, run_id: ctx.runId, status: 'success',
-        execution_time_ms: Date.now() - startTime, metadata: metrics
+        job_id: ctx.jobId,
+        execution_id: ctx.executionId,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+        duracion_ms: durationMs,
+        estado: 'success',
+        request_id: ctx.requestId,
+        parametros_ejecucion: ctx.parameters,
+        resultado: { runId: ctx.runId, metrics, recommendations },
+        productos_procesados: totalCleaned,
+        productos_exitosos: totalCleaned,
+        productos_fallidos: 0,
+        alertas_generadas: 0,
+        emails_enviados: 0,
+        sms_enviados: 0
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', metrics, duration: Date.now() - startTime }));
+    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', metrics, duration: durationMs }));
 
     return {
-      success: true, executionTimeMs: Date.now() - startTime,
+      success: true, executionTimeMs: durationMs,
       productsProcessed: totalCleaned, productsSuccessful: totalCleaned, productsFailed: 0,
       alertsGenerated: 0, emailsSent: 0, smsSent: 0,
       metrics, errors, warnings, recommendations

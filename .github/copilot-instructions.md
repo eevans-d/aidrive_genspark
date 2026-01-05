@@ -8,18 +8,18 @@ minimarket-system/     # Frontend React + Vite + TS
 ├── src/pages/                # Páginas (Dashboard, Stock, etc.)
 └── src/types/database.ts     # Tipos TS
 
-supabase/functions/    # Edge Functions (Deno) - 11 activas, MODULARIZADAS
+supabase/functions/    # Edge Functions (Deno) - 11 activas, modularización parcial
 ├── _shared/           # Utilidades compartidas
 │   ├── cors.ts        # Headers CORS unificados
 │   ├── response.ts    # Respuestas ok/fail estándar
 │   ├── errors.ts      # Tipos AppError/HttpError
 │   ├── logger.ts      # Logging estructurado
-│   └── rate-limiter.ts # Rate limiting consolidado
+│   └── rate-limit.ts  # Rate limiting (uso inconsistente)
 ├── api-minimarket/    # API Gateway principal (1050 líneas)
 ├── api-proveedor/     # API proveedor - MODULAR (router + handlers + utils)
 ├── scraper-maxiconsumo/  # Scraper de precios - MODULAR (9 módulos)
 │   ├── types.ts, config.ts, cache.ts, anti-detection.ts
-│   ├── parsing.ts, matching.ts, storage.ts, scraping.ts
+│   ├── parsing.ts, matching.ts, alertas.ts, storage.ts, scraping.ts
 │   └── index.ts (orquestador)
 ├── cron-jobs-maxiconsumo/ # Orquestador cron - MODULAR (4 jobs + orchestrator)
 │   ├── jobs/daily-price-update.ts
@@ -39,17 +39,18 @@ supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
 supabase/migrations/   # Migraciones SQL versionadas
 supabase/config.toml   # Configuracion Supabase local
 
-tests/unit/            # Tests unitarios (Vitest) - 44 tests
+tests/unit/            # Tests unitarios (Vitest) - imports de módulos reales
 ├── api-proveedor-routing.test.ts  # 17 tests
 ├── scraper-parsing.test.ts        # 10 tests
 ├── scraper-matching.test.ts       # 7 tests
+├── scraper-alertas.test.ts        # 3 tests
 └── cron-jobs.test.ts              # 8 tests
 
 .github/workflows/     # CI/CD
 └── ci.yml             # Pipeline: lint → test → build → typecheck
 
 docs/                  # 20 archivos de documentación + OpenAPI/Postman
-├── PLAN_EJECUCION.md           # Plan técnico (completado)
+├── PLAN_EJECUCION.md           # Plan técnico (en progreso)
 ├── CHECKLIST_CIERRE.md         # Estado del proyecto
 ├── ANALISIS_EXHAUSTIVO_PROYECTO.md
 ├── OBJETIVOS_Y_KPIS.md
@@ -77,9 +78,9 @@ pnpm build     # Build
 pnpm lint      # Linter
 
 # Tests (desde raíz)
-npx vitest run              # Todos los tests
+npx vitest run              # Unit tests (según vitest.config.ts)
 npx vitest run tests/unit/  # Solo unit tests
-npx vitest --coverage       # Con coverage
+npx vitest --coverage       # Unit tests con coverage
 ```
 
 ## Patrones del Código
@@ -112,21 +113,24 @@ npx vitest --coverage       # Con coverage
 | Plan de ejecución | `docs/PLAN_EJECUCION.md` |
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
 
-## ✅ Estado Actual (Enero 2025)
+## Estado Actual (Enero 2025 - verificado)
 
 ### Funciones Modularizadas
 1. **api-proveedor**: Router + handlers + schemas + validators + utils
 2. **scraper-maxiconsumo**: 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
 3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
+   - Pendientes críticos: rate limiter API, alertas reales, y persistencia con schema DB.
 
 ### Testing
 - Framework: **Vitest 4.0.16**
-- Total tests: **44 pasando**
-- Ubicación: `tests/unit/*.test.ts`
+- Tests: imports de módulos reales (parsing/matching/alertas/router/cron)
+- Runner/scripts: `package.json` y `test.sh` alineados con Vitest
+- Nota: suites integration/e2e/seguridad/performance requieren runner/deps separados (Jest/otros)
 
 ### CI/CD
 - Pipeline: `.github/workflows/ci.yml`
 - Jobs: lint → test → build → typecheck → edge-functions-check
+- Nota: workflow activo en `master` y edge-check estricto
 
 ### Funciones Auxiliares de Cron (documentadas en CRON_AUXILIARES.md):
 - `cron-testing-suite` - Testing e2e de cron jobs
@@ -136,5 +140,5 @@ npx vitest --coverage       # Con coverage
 
 ### Notas:
 - `tests/datos_reales/results/` está en .gitignore (no versionar resultados)
-- CI configurado en `.github/workflows/ci.yml`
-- Tests unificados bajo Vitest (runner: `npx vitest run`)
+- CI configurado en `.github/workflows/ci.yml` (activo en `master`)
+- Vitest elegido; runner/scripts alineados

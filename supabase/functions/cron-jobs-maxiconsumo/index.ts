@@ -72,10 +72,10 @@ async function handleMetrics(supabaseUrl: string, serviceRoleKey: string, log: S
 
   const metrics = {
     total_executions: executions.length,
-    successful: executions.filter((e: any) => e.status === 'success').length,
-    failed: executions.filter((e: any) => e.status === 'error').length,
+    successful: executions.filter((e: any) => e.estado === 'success').length,
+    failed: executions.filter((e: any) => e.estado === 'error').length,
     avg_execution_time: executions.length > 0 
-      ? Math.round(executions.reduce((s: number, e: any) => s + (e.execution_time_ms || 0), 0) / executions.length)
+      ? Math.round(executions.reduce((s: number, e: any) => s + (e.duracion_ms || 0), 0) / executions.length)
       : 0
   };
 

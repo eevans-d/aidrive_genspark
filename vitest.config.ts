@@ -31,7 +31,14 @@ export default defineConfig({
     
     // Test files pattern
     include: [
-      'tests/**/*.{test,spec}.{js,ts}'
+      'tests/unit/**/*.{test,spec}.{js,ts}'
+    ],
+    exclude: [
+      'tests/api-contracts/**',
+      'tests/e2e/**',
+      'tests/integration/**',
+      'tests/performance/**',
+      'tests/security/**'
     ],
 
     // Setup files

@@ -27,7 +27,11 @@ export function generarSKU(nombre: string, categoria: string): string {
 }
 
 export function sanitizeProductName(name: string): string {
-  return name.replace(/\s+/g, ' ').replace(/[^\w\s\-\.]/g, '').trim().substring(0, 255);
+  return name
+    .replace(/[^\w\s\-\.]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .substring(0, 255);
 }
 
 export function calculateConfidenceScore(producto: ProductoMaxiconsumo): number {

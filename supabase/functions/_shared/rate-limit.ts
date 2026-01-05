@@ -43,6 +43,19 @@ export class FixedWindowRateLimiter {
   }
 }
 
+type AdaptiveRateLimiterOptions = {
+  initialRate?: number;
+  maxRate?: number;
+  minRate?: number;
+  errorThreshold?: number;
+  windowMs?: number;
+  baseRate?: number;
+  burstRate?: number;
+  adaptiveFactor?: number;
+  decreaseFactor?: number;
+  increaseFactor?: number;
+};
+
 export class AdaptiveRateLimiter {
   private requests: number[] = [];
   private currentRate: number;
@@ -50,19 +63,31 @@ export class AdaptiveRateLimiter {
   private readonly minRate: number;
   private readonly errorThreshold: number;
   private readonly windowMs: number;
+  private readonly decreaseFactor: number;
+  private readonly increaseFactor: number;
 
-  constructor(options: {
-    initialRate?: number;
-    maxRate?: number;
-    minRate?: number;
-    errorThreshold?: number;
-    windowMs?: number;
-  } = {}) {
-    this.currentRate = options.initialRate ?? 10;
-    this.maxRate = options.maxRate ?? 50;
-    this.minRate = options.minRate ?? 1;
+  constructor(options: AdaptiveRateLimiterOptions = {}) {
+    const initialRate = options.initialRate ?? options.baseRate ?? 10;
+    const maxRate = options.maxRate ?? options.burstRate ?? 50;
+    const minRate = options.minRate ?? 1;
+
+    this.maxRate = maxRate;
+    this.minRate = minRate;
+    this.currentRate = Math.min(maxRate, Math.max(minRate, initialRate));
     this.errorThreshold = options.errorThreshold ?? 0.1;
     this.windowMs = options.windowMs ?? 60000;
+    this.decreaseFactor = options.decreaseFactor ?? options.adaptiveFactor ?? 0.8;
+    this.increaseFactor = options.increaseFactor ?? 1.1;
+  }
+
+  tryAcquire(): boolean {
+    const now = Date.now();
+    this.requests = this.requests.filter(time => now - time < this.windowMs);
+    if (this.requests.length >= this.currentRate) {
+      return false;
+    }
+    this.requests.push(now);
+    return true;
   }
 
   async acquire(): Promise<void> {
@@ -82,10 +107,10 @@ export class AdaptiveRateLimiter {
 
   adjust(errorRate: number): void {
     if (errorRate > this.errorThreshold) {
-      this.currentRate = Math.max(this.minRate, Math.floor(this.currentRate * 0.8));
+      this.currentRate = Math.max(this.minRate, Math.floor(this.currentRate * this.decreaseFactor));
       return;
     }
-    this.currentRate = Math.min(this.maxRate, Math.ceil(this.currentRate * 1.1));
+    this.currentRate = Math.min(this.maxRate, Math.ceil(this.currentRate * this.increaseFactor));
   }
 
   getCurrentRate(): number {

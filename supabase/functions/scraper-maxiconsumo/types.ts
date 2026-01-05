@@ -183,7 +183,7 @@ export interface StructuredLog {
 export interface CircuitBreakerOptions {
   failureThreshold: number;
   successThreshold: number;
-  timeout: number;
+  openTimeoutMs: number;
 }
 
 // ============================================================================

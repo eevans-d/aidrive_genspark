@@ -12,6 +12,7 @@ import { ejecutarScrapingCompleto } from './scraping.ts';
 import { guardarProductosExtraidosOptimizado, fetchProductosProveedor, fetchProductosSistema, batchSaveComparisons, batchSaveAlerts } from './storage.ts';
 import { performAdvancedMatching, calculateMatchConfidence, generateComparacion } from './matching.ts';
 import { MAXICONSUMO_BREAKER_OPTIONS } from './config.ts';
+import { buildAlertasDesdeComparaciones } from './alertas.ts';
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -67,11 +68,34 @@ async function handleComparacion(log: StructuredLog, url: string, key: string): 
 }
 
 async function handleAlertas(log: StructuredLog, url: string, key: string): Promise<Response> {
-  // Simplified alert generation - detect price changes
   const cached = getFromCache<any>('alerts:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true });
-  
-  const result = { success: true, data: { alertas_generadas: 0, message: 'Alert system active', timestamp: new Date().toISOString() } };
+
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  const [comparacionesRes, existentesRes] = await Promise.all([
+    fetch(`${url}/rest/v1/comparacion_precios?select=*&fecha_comparacion=gte.${since}`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    }),
+    fetch(`${url}/rest/v1/alertas_cambios_precios?select=producto_id&fecha_alerta=gte.${since}`, {
+      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+    })
+  ]);
+
+  const comparaciones = comparacionesRes.ok ? await comparacionesRes.json() : [];
+  const existentes = existentesRes.ok ? await existentesRes.json() : [];
+  const existingIds = new Set((existentes || []).map((a: any) => a.producto_id).filter(Boolean));
+
+  const alertas = buildAlertasDesdeComparaciones(comparaciones, existingIds);
+
+  const guardadas = await batchSaveAlerts(alertas, url, key, log);
+  const result = {
+    success: true,
+    data: {
+      alertas_generadas: guardadas,
+      total_comparaciones: comparaciones.length,
+      timestamp: new Date().toISOString()
+    }
+  };
   addToCache('alerts:latest', result, 300000);
   return jsonResponse(result);
 }

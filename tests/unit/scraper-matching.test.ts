@@ -2,38 +2,12 @@
  * Tests para módulo de matching de scraper-maxiconsumo
  */
 import { describe, it, expect } from 'vitest';
-
-// Funciones extraídas del módulo para testing
-function normalizeProductName(name: string): string {
-  return name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
-}
-
-function calculateNameSimilarity(name1: string, name2: string): number {
-  const n1 = normalizeProductName(name1), n2 = normalizeProductName(name2);
-  if (n1 === n2) return 85;
-  const w1 = new Set(n1.split(' ')), w2 = new Set(n2.split(' '));
-  const common = [...w1].filter(w => w2.has(w)).length;
-  const total = new Set([...w1, ...w2]).size;
-  return total === 0 ? 0 : Math.round((common / total) * 80);
-}
-
-interface MatchResult {
-  producto_proveedor: { nombre: string; precio_unitario: number; sku?: string; marca?: string; codigo_barras?: string };
-  producto_sistema: { nombre: string; precio_actual: number; sku?: string; marca?: string; codigo_barras?: string };
-  confidence: number;
-}
-
-function calculateMatchConfidence(match: MatchResult): number {
-  let conf = match.confidence || 50;
-  if (match.producto_proveedor.codigo_barras && match.producto_sistema.codigo_barras) conf += 10;
-  if (match.producto_proveedor.marca && match.producto_sistema.marca) {
-    if (normalizeProductName(match.producto_proveedor.marca) === normalizeProductName(match.producto_sistema.marca)) conf += 15;
-  }
-  const pProv = match.producto_proveedor.precio_unitario || 0;
-  const pSist = match.producto_sistema.precio_actual || 0;
-  if (pProv > 0 && pSist > 0 && Math.abs(pProv - pSist) / Math.max(pProv, pSist) < 0.1) conf += 10;
-  return Math.min(100, conf);
-}
+import {
+  normalizeProductName,
+  calculateNameSimilarity,
+  calculateMatchConfidence
+} from '../../supabase/functions/scraper-maxiconsumo/matching.ts';
+import type { ProductoMaxiconsumo, MatchResult } from '../../supabase/functions/scraper-maxiconsumo/types.ts';
 
 describe('scraper-maxiconsumo/matching', () => {
   describe('normalizeProductName', () => {
@@ -64,8 +38,15 @@ describe('scraper-maxiconsumo/matching', () => {
 
   describe('calculateMatchConfidence', () => {
     it('boost por código de barras coincidente', () => {
+      const proveedor: ProductoMaxiconsumo = {
+        sku: 'SKU1',
+        nombre: 'Test',
+        precio_unitario: 100,
+        codigo_barras: '123',
+        ultima_actualizacion: ''
+      };
       const match: MatchResult = {
-        producto_proveedor: { nombre: 'Test', precio_unitario: 100, codigo_barras: '123' },
+        producto_proveedor: proveedor,
         producto_sistema: { nombre: 'Test', precio_actual: 100, codigo_barras: '123' },
         confidence: 50
       };
@@ -73,8 +54,15 @@ describe('scraper-maxiconsumo/matching', () => {
     });
 
     it('boost por marca coincidente', () => {
+      const proveedor: ProductoMaxiconsumo = {
+        sku: 'SKU2',
+        nombre: 'Test',
+        precio_unitario: 100,
+        marca: 'Arcor',
+        ultima_actualizacion: ''
+      };
       const match: MatchResult = {
-        producto_proveedor: { nombre: 'Test', precio_unitario: 100, marca: 'Arcor' },
+        producto_proveedor: proveedor,
         producto_sistema: { nombre: 'Test', precio_actual: 100, marca: 'arcor' },
         confidence: 50
       };
@@ -82,8 +70,14 @@ describe('scraper-maxiconsumo/matching', () => {
     });
 
     it('boost por precio similar (<10% diferencia)', () => {
+      const proveedor: ProductoMaxiconsumo = {
+        sku: 'SKU3',
+        nombre: 'Test',
+        precio_unitario: 100,
+        ultima_actualizacion: ''
+      };
       const match: MatchResult = {
-        producto_proveedor: { nombre: 'Test', precio_unitario: 100 },
+        producto_proveedor: proveedor,
         producto_sistema: { nombre: 'Test', precio_actual: 105 },
         confidence: 50
       };
@@ -91,8 +85,16 @@ describe('scraper-maxiconsumo/matching', () => {
     });
 
     it('no excede 100', () => {
+      const proveedor: ProductoMaxiconsumo = {
+        sku: 'SKU4',
+        nombre: 'Test',
+        precio_unitario: 100,
+        marca: 'Arcor',
+        codigo_barras: '123',
+        ultima_actualizacion: ''
+      };
       const match: MatchResult = {
-        producto_proveedor: { nombre: 'Test', precio_unitario: 100, marca: 'Arcor', codigo_barras: '123' },
+        producto_proveedor: proveedor,
         producto_sistema: { nombre: 'Test', precio_actual: 100, marca: 'Arcor', codigo_barras: '123' },
         confidence: 95
       };

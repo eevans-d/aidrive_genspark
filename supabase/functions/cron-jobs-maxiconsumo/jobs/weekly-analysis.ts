@@ -57,12 +57,20 @@ export async function executeWeeklyAnalysis(
     }
 
     // 4. Save analysis
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
+    const fechaMetricas = new Date().toISOString().split('T')[0];
     await fetch(`${supabaseUrl}/rest/v1/cron_jobs_metrics`, {
       method: 'POST',
       headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        job_id: ctx.jobId, run_id: ctx.runId, metric_type: 'weekly_analysis',
-        metric_data: trends, created_at: new Date().toISOString()
+        job_id: ctx.jobId,
+        fecha_metricas: fechaMetricas,
+        ejecuciones_totales: 1,
+        disponibilidad_porcentual: 100,
+        tiempo_promedio_ms: durationMs,
+        alertas_generadas_total: trends.alertas_semana,
+        created_at: new Date().toISOString()
       })
     });
 
@@ -71,15 +79,28 @@ export async function executeWeeklyAnalysis(
       method: 'POST',
       headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        job_id: ctx.jobId, run_id: ctx.runId, status: 'success',
-        execution_time_ms: Date.now() - startTime, metadata: trends
+        job_id: ctx.jobId,
+        execution_id: ctx.executionId,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+        duracion_ms: durationMs,
+        estado: 'success',
+        request_id: ctx.requestId,
+        parametros_ejecucion: ctx.parameters,
+        resultado: { runId: ctx.runId, trends, recommendations },
+        productos_procesados: totalChanges,
+        productos_exitosos: totalChanges,
+        productos_fallidos: 0,
+        alertas_generadas: trends.alertas_semana,
+        emails_enviados: 0,
+        sms_enviados: 0
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', trends, duration: Date.now() - startTime }));
+    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', trends, duration: durationMs }));
 
     return {
-      success: true, executionTimeMs: Date.now() - startTime,
+      success: true, executionTimeMs: durationMs,
       productsProcessed: totalChanges, productsSuccessful: totalChanges, productsFailed: 0,
       alertsGenerated: 0, emailsSent: 0, smsSent: 0,
       metrics: trends, errors, warnings, recommendations

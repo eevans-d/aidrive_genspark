@@ -48,7 +48,7 @@ export async function executeJob(
   if (!handler) throw new Error(`No handler for job: ${jobId}`);
 
   // Circuit breaker check
-  const breaker = getCircuitBreaker(`cron-${jobId}`, { failureThreshold: config.circuitBreakerThreshold, successThreshold: 2, timeout: 60000 });
+  const breaker = getCircuitBreaker(`cron-${jobId}`, { failureThreshold: config.circuitBreakerThreshold, successThreshold: 2, openTimeoutMs: 60000 });
   if (!breaker.allowRequest()) {
     throw new Error(`Circuit breaker open for job: ${jobId}`);
   }

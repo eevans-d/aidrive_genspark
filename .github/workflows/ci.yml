@@ -2,9 +2,9 @@ name: CI Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: [master, main, develop]
   pull_request:
-    branches: [main, develop]
+    branches: [master, main, develop]
 
 env:
   NODE_VERSION: '20'
@@ -159,7 +159,6 @@ jobs:
           for dir in supabase/functions/*/; do
             if [ -f "${dir}index.ts" ]; then
               echo "Checking ${dir}index.ts..."
-              deno check --no-lock "${dir}index.ts" || echo "Warning: ${dir} has issues"
+              deno check --no-lock "${dir}index.ts"
             fi
           done
-        continue-on-error: true

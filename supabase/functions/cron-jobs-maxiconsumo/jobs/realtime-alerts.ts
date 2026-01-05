@@ -63,19 +63,34 @@ export async function executeRealtimeAlerts(
     }
 
     // 3. Log execution
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
     await fetch(`${supabaseUrl}/rest/v1/cron_jobs_execution_log`, {
       method: 'POST',
       headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        job_id: ctx.jobId, run_id: ctx.runId, status: 'success',
-        alertas_generadas: alerts, execution_time_ms: Date.now() - startTime
+        job_id: ctx.jobId,
+        execution_id: ctx.executionId,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+        duracion_ms: durationMs,
+        estado: 'success',
+        request_id: ctx.requestId,
+        parametros_ejecucion: ctx.parameters,
+        resultado: { runId: ctx.runId, alerts, emails, sms },
+        alertas_generadas: alerts,
+        productos_procesados: 0,
+        productos_exitosos: 0,
+        productos_fallidos: 0,
+        emails_enviados: emails,
+        sms_enviados: sms
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', alerts, duration: Date.now() - startTime }));
+    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', alerts, duration: durationMs }));
 
     return {
-      success: true, executionTimeMs: Date.now() - startTime,
+      success: true, executionTimeMs: durationMs,
       productsProcessed: 0, productsSuccessful: 0, productsFailed: 0,
       alertsGenerated: alerts, emailsSent: emails, smsSent: sms,
       metrics: { critical_alerts: alerts }, errors, warnings, recommendations

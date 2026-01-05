@@ -104,7 +104,19 @@ export async function batchSaveComparisons(comparaciones: ComparacionPrecio[], s
   await supabaseFetch(`${supabaseUrl}/rest/v1/comparacion_precios?fecha_comparacion=lt.${thirtyDaysAgo}`, key, { method: 'DELETE' });
   
   for (const batch of splitIntoBatches(comparaciones, 100)) {
-    const res = await supabaseFetch(`${supabaseUrl}/rest/v1/comparacion_precios`, key, { method: 'POST', body: JSON.stringify(batch) });
+    const payload = batch.map(c => ({
+      producto_id: c.producto_id,
+      nombre_producto: c.nombre_producto,
+      precio_actual: c.precio_actual,
+      precio_proveedor: c.precio_proveedor,
+      diferencia_absoluta: c.diferencia_absoluta,
+      diferencia_porcentual: c.diferencia_porcentual,
+      fuente: c.fuente,
+      fecha_comparacion: c.fecha_comparacion,
+      es_oportunidad_ahorro: c.es_oportunidad_ahorro,
+      recomendacion: c.recomendacion
+    }));
+    const res = await supabaseFetch(`${supabaseUrl}/rest/v1/comparacion_precios`, key, { method: 'POST', body: JSON.stringify(payload) });
     if (res.ok) saved += batch.length;
     await delay(50);
   }
@@ -122,9 +134,17 @@ export async function batchSaveAlerts(alertas: AlertaCambio[], supabaseUrl: stri
   
   for (const batch of splitIntoBatches(alertas, 50)) {
     const data = batch.map(a => ({
-      producto_id: a.producto_id, tipo_cambio: a.tipo_cambio, valor_anterior: a.valor_anterior,
-      valor_nuevo: a.valor_nuevo, porcentaje_cambio: a.porcentaje_cambio, severidad: a.severidad,
-      mensaje: a.mensaje, accion_recomendada: a.accion_recomendada, fecha_alerta: a.fecha_alerta, procesada: false, metadata: a.metadata
+      producto_id: a.producto_id,
+      nombre_producto: a.nombre_producto,
+      tipo_cambio: a.tipo_cambio,
+      valor_anterior: a.valor_anterior ?? null,
+      valor_nuevo: a.valor_nuevo ?? null,
+      porcentaje_cambio: a.porcentaje_cambio ?? null,
+      severidad: a.severidad,
+      mensaje: a.mensaje,
+      accion_recomendada: a.accion_recomendada,
+      fecha_alerta: a.fecha_alerta,
+      procesada: false
     }));
     const res = await supabaseFetch(`${supabaseUrl}/rest/v1/alertas_cambios_precios`, key, { method: 'POST', body: JSON.stringify(data) });
     if (res.ok) saved += batch.length;

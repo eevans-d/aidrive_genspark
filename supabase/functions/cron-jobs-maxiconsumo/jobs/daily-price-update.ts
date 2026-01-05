@@ -48,21 +48,36 @@ export async function executeDailyPriceUpdate(
     }
 
     // 3. Log execution
+    const endTime = Date.now();
+    const durationMs = endTime - startTime;
     await fetch(`${supabaseUrl}/rest/v1/cron_jobs_execution_log`, {
       method: 'POST',
       headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
       body: JSON.stringify({
-        job_id: ctx.jobId, run_id: ctx.runId, status: errors.length === 0 ? 'success' : 'partial',
-        productos_procesados: processed, alertas_generadas: alerts,
-        execution_time_ms: Date.now() - startTime, errors, warnings
+        job_id: ctx.jobId,
+        execution_id: ctx.executionId,
+        start_time: new Date(startTime).toISOString(),
+        end_time: new Date(endTime).toISOString(),
+        duracion_ms: durationMs,
+        estado: errors.length === 0 ? 'success' : 'partial',
+        request_id: ctx.requestId,
+        parametros_ejecucion: ctx.parameters,
+        resultado: { runId: ctx.runId, processed, successful, failed, alerts, warnings, recommendations },
+        error_message: errors.length > 0 ? errors.join(' | ') : null,
+        productos_procesados: processed,
+        productos_exitosos: successful,
+        productos_fallidos: failed,
+        alertas_generadas: alerts,
+        emails_enviados: 0,
+        sms_enviados: 0
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', processed, alerts, duration: Date.now() - startTime }));
+    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', processed, alerts, duration: durationMs }));
 
     return {
       success: errors.length === 0,
-      executionTimeMs: Date.now() - startTime,
+      executionTimeMs: durationMs,
       productsProcessed: processed, productsSuccessful: successful, productsFailed: failed,
       alertsGenerated: alerts, emailsSent: 0, smsSent: 0,
       metrics: { scraped: processed, compared: alerts },
