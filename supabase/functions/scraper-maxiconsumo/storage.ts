@@ -6,6 +6,9 @@
 import type { ProductoMaxiconsumo, ComparacionPrecio, AlertaCambio, StructuredLog } from './types.ts';
 import { FUENTE_MAXICONSUMO } from './types.ts';
 import { delay } from './anti-detection.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('scraper-maxiconsumo:storage');
 
 function splitIntoBatches<T>(arr: T[], size: number): T[][] {
   const batches: T[][] = [];
@@ -50,7 +53,7 @@ export async function batchInsertProducts(productos: ProductoMaxiconsumo[], supa
   
   if (res.ok) {
     const inserted = await res.json();
-    console.log(JSON.stringify({ ...log, event: 'BATCH_INSERT_SUCCESS', count: inserted.length }));
+    logger.info('BATCH_INSERT_SUCCESS', { ...log, count: inserted.length });
     return inserted.length;
   }
   return 0;
@@ -72,7 +75,7 @@ export async function batchUpdateProducts(productos: ProductoMaxiconsumo[], supa
     }
     await delay(100);
   }
-  console.log(JSON.stringify({ ...log, event: 'BATCH_UPDATE_COMPLETE', count: updated }));
+  logger.info('BATCH_UPDATE_COMPLETE', { ...log, count: updated });
   return updated;
 }
 
@@ -120,7 +123,7 @@ export async function batchSaveComparisons(comparaciones: ComparacionPrecio[], s
     if (res.ok) saved += batch.length;
     await delay(50);
   }
-  console.log(JSON.stringify({ ...log, event: 'COMPARISONS_SAVED', count: saved }));
+  logger.info('COMPARISONS_SAVED', { ...log, count: saved });
   return saved;
 }
 
@@ -150,7 +153,7 @@ export async function batchSaveAlerts(alertas: AlertaCambio[], supabaseUrl: stri
     if (res.ok) saved += batch.length;
     await delay(100);
   }
-  console.log(JSON.stringify({ ...log, event: 'ALERTS_SAVED', count: saved }));
+  logger.info('ALERTS_SAVED', { ...log, count: saved });
   return saved;
 }
 

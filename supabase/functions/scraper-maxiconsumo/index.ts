@@ -13,6 +13,9 @@ import { guardarProductosExtraidosOptimizado, fetchProductosProveedor, fetchProd
 import { performAdvancedMatching, calculateMatchConfidence, generateComparacion } from './matching.ts';
 import { MAXICONSUMO_BREAKER_OPTIONS } from './config.ts';
 import { buildAlertasDesdeComparaciones } from './alertas.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('scraper-maxiconsumo:index');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -141,7 +144,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const requestId = crypto.randomUUID();
   const log: StructuredLog = { requestId, endpoint, method: request.method, timestamp: new Date().toISOString() };
 
-  console.log(JSON.stringify({ ...log, event: 'REQUEST_START' }));
+
+  logger.info('REQUEST_START', log);
   PERFORMANCE_METRICS.requestMetrics.total++;
 
   // Rate limiting
@@ -176,7 +180,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   } catch (e) {
     breaker.recordFailure();
     PERFORMANCE_METRICS.requestMetrics.failed++;
-    console.error(JSON.stringify({ ...log, event: 'ERROR', error: (e as Error).message }));
+    logger.error('ERROR', { ...log, error: (e as Error).message });
     return jsonResponse({ error: (e as Error).message }, 500);
   }
 });

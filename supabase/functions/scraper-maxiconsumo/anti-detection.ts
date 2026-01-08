@@ -5,6 +5,9 @@
  */
 
 import type { AntiDetectionConfig, StructuredLog } from './types.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('scraper-maxiconsumo:anti-detection');
 
 // ============================================================================
 // CONFIGURACIÓN POR DEFECTO
@@ -201,7 +204,7 @@ export async function fetchConReintentos(
 
     } catch (error) {
       ultimoError = error as Error;
-      console.warn(`Reintento ${i + 1}/${maxReintentos} falló:`, (error as Error).message);
+      logger.warn(`Reintento ${i + 1}/${maxReintentos} falló:`, { error: (error as Error).message });
       
       if (i < maxReintentos - 1) {
         await delay((i + 1) * 2000);
@@ -238,22 +241,20 @@ export async function fetchWithAdvancedAntiDetection(
     
     const responseTime = Date.now() - requestStartTime;
     
-    console.log(JSON.stringify({
+    logger.info('ADVANCED_FETCH_COMPLETE', {
       ...structuredLog,
-      event: 'ADVANCED_FETCH_COMPLETE',
       responseTime,
       status: response.status,
       requestId
-    }));
+    });
     
     return response;
     
   } catch (error) {
-    console.error(JSON.stringify({
+    logger.error('ADVANCED_FETCH_ERROR', {
       ...structuredLog,
-      event: 'ADVANCED_FETCH_ERROR',
       error: (error as Error).message
-    }));
+    });
     throw error;
   }
 }
@@ -271,18 +272,12 @@ export async function handleCaptchaBypass(
   headers: Record<string, string>,
   structuredLog: StructuredLog
 ): Promise<void> {
-  console.log(JSON.stringify({ 
-    ...structuredLog, 
-    event: 'CAPTCHA_BYPASS_ATTEMPT' 
-  }));
+  logger.info('CAPTCHA_BYPASS_ATTEMPT', structuredLog);
   
   // Simular resolución de CAPTCHA
   await delay(getRandomDelay(3000, 8000));
   
-  console.log(JSON.stringify({ 
-    ...structuredLog, 
-    event: 'CAPTCHA_BYPASS_SUCCESS' 
-  }));
+  logger.info('CAPTCHA_BYPASS_SUCCESS', structuredLog);
 }
 
 /**

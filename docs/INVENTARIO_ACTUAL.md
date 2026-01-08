@@ -1,6 +1,6 @@
 # INVENTARIO ACTUAL (v2 - Enero 2025)
 
-**Estado:** Plan de ejecución completado ✅
+**Estado:** Plan de ejecución **NO completado** ⚠️
 
 ---
 
@@ -10,7 +10,7 @@
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
 - `supabase/migrations/` migraciones SQL (4)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
-- `tests/unit/` Tests unitarios Vitest (4 archivos, 44 tests)
+- `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
 - `docs/` documentación técnica (17 archivos)
 - `.github/workflows/` CI/CD (1 workflow)
 
@@ -54,9 +54,10 @@
 ## Tests (Vitest 4.0.16)
 - `tests/unit/api-proveedor-routing.test.ts` (17 tests)
 - `tests/unit/scraper-parsing.test.ts` (10 tests)
-- `tests/unit/scraper-matching.test.ts` (7 tests)
-- `tests/unit/cron-jobs.test.ts` (10 tests)
-- **Total: 44 tests pasando**
+- `tests/unit/scraper-matching.test.ts` (9 tests)
+- `tests/unit/scraper-alertas.test.ts` (3 tests)
+- `tests/unit/cron-jobs.test.ts` (8 tests)
+- **Total: 47 tests pasando**
 
 ---
 
@@ -66,10 +67,9 @@
 ---
 
 ## Docs (17 archivos)
-- `PLAN_EJECUCION.md` - Plan técnico (COMPLETADO)
+- `PLAN_EJECUCION.md` - Plan técnico (NO completado)
 - `CHECKLIST_CIERRE.md` - Estado del proyecto
 - `INVENTARIO_ACTUAL.md` - Este archivo
-- `ANALISIS_EXHAUSTIVO_PROYECTO.md`
 - `OBJETIVOS_Y_KPIS.md`
 - `BASELINE_TECNICO.md`
 - `DB_GAPS.md`

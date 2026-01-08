@@ -16,6 +16,10 @@
  * @license Enterprise Level
  */
 
+import { createLogger } from '../_shared/logger.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
+
+const logger = createLogger('cron-dashboard');
 // =====================================================
 // INTERFACES Y TIPOS
 // =====================================================
@@ -110,13 +114,9 @@ interface ChartData {
 // =====================================================
 
 Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    const corsHeaders = getCorsHeaders({
         'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
-        'Access-Control-Max-Age': '86400',
-        'Content-Type': 'application/json'
-    };
+    });
 
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 200, headers: corsHeaders });
@@ -127,7 +127,7 @@ Deno.serve(async (req) => {
         const path = url.pathname.split('/').pop() || 'dashboard';
         const action = url.searchParams.get('action') || 'overview';
 
-        console.log(`[DASHBOARD] Path: ${path}, Action: ${action}`);
+        logger.info('REQUEST_START', { path, action });
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -161,7 +161,7 @@ Deno.serve(async (req) => {
         return response;
 
     } catch (error) {
-        console.error('[DASHBOARD] Error:', error);
+        logger.error('ERROR', { error: (error as Error).message });
         
         return new Response(JSON.stringify({
             success: false,
@@ -190,7 +190,7 @@ async function getDashboardHandler(
     serviceRoleKey: string,
     corsHeaders: Record<string, string>
 ): Promise<Response> {
-    console.log(`[DASHBOARD] Getting dashboard data: ${action}`);
+    logger.info('GET_DASHBOARD_DATA', { action });
 
     try {
         // Obtener datos del sistema
@@ -236,7 +236,7 @@ async function getDashboardHandler(
         });
 
     } catch (error) {
-        console.error('[DASHBOARD] Error getting dashboard data:', error);
+        logger.error('GET_DASHBOARD_ERROR', { error: (error as Error).message });
         throw error;
     }
 }
@@ -250,7 +250,7 @@ async function getChartsHandler(
     serviceRoleKey: string,
     corsHeaders: Record<string, string>
 ): Promise<Response> {
-    console.log(`[DASHBOARD] Getting charts: ${action}`);
+    logger.info('GET_CHARTS', { action });
 
     try {
         let charts: ChartData[] = [];
@@ -291,7 +291,7 @@ async function getChartsHandler(
         });
 
     } catch (error) {
-        console.error('[DASHBOARD] Error getting charts:', error);
+        logger.error('GET_CHARTS_ERROR', { error: (error as Error).message });
         throw error;
     }
 }
@@ -307,7 +307,7 @@ async function controlPanelHandler(
 ): Promise<Response> {
     const { action, jobId, parameters } = await req.json();
 
-    console.log(`[DASHBOARD] Control action: ${action} for job: ${jobId}`);
+    logger.info('CONTROL_ACTION', { action, jobId });
 
     try {
         let result: any;
@@ -341,7 +341,7 @@ async function controlPanelHandler(
         });
 
     } catch (error) {
-        console.error('[DASHBOARD] Error in control panel:', error);
+        logger.error('CONTROL_PANEL_ERROR', { error: (error as Error).message });
         throw error;
     }
 }
@@ -354,7 +354,7 @@ async function getRealtimeDataHandler(
     serviceRoleKey: string,
     corsHeaders: Record<string, string>
 ): Promise<Response> {
-    console.log('[DASHBOARD] Getting realtime data');
+    logger.info('GET_REALTIME_DATA');
 
     try {
         // Obtener datos en tiempo real
@@ -375,7 +375,7 @@ async function getRealtimeDataHandler(
         });
 
     } catch (error) {
-        console.error('[DASHBOARD] Error getting realtime data:', error);
+        logger.error('GET_REALTIME_ERROR', { error: (error as Error).message });
         throw error;
     }
 }
@@ -393,7 +393,7 @@ async function getHistoryHandler(
     const period = url.searchParams.get('period') || '24h';
     const jobId = url.searchParams.get('jobId');
 
-    console.log(`[DASHBOARD] Getting history: ${period} for job: ${jobId}`);
+    logger.info('GET_HISTORY', { period, jobId });
 
     try {
         const historyData = await getHistoricalData(period, jobId, supabaseUrl, serviceRoleKey);
@@ -407,7 +407,7 @@ async function getHistoryHandler(
         });
 
     } catch (error) {
-        console.error('[DASHBOARD] Error getting history:', error);
+        logger.error('GET_HISTORY_ERROR', { error: (error as Error).message });
         throw error;
     }
 }

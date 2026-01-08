@@ -5,6 +5,9 @@
 
 import type { MatchResult, ComparacionPrecio, StructuredLog } from './types.ts';
 import { FUENTE_MAXICONSUMO } from './types.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('scraper-maxiconsumo:matching');
 
 export function normalizeProductName(name: string): string {
   return name.toLowerCase().replace(/[^\w\s]/g, '').replace(/\s+/g, ' ').trim();
@@ -72,7 +75,7 @@ export async function performAdvancedMatching(
     }
   }
   
-  console.log(JSON.stringify({ ...structuredLog, event: 'MATCHING_COMPLETE', total: matches.length }));
+  logger.info('MATCHING_COMPLETE', { ...structuredLog, total: matches.length });
   return matches;
 }
 

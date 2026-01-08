@@ -1,5 +1,8 @@
 import { validateProductosParams } from '../validators.ts';
 import { calculateCompetitivenessScore, calculateRelevanceScore, formatPrecio, generateSearchTags, generateSlug } from '../utils/format.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('api-proveedor:productos');
 
 export async function getProductosDisponiblesOptimizado(
     supabaseUrl: string,
@@ -11,11 +14,10 @@ export async function getProductosDisponiblesOptimizado(
 ): Promise<Response> {
     const { busqueda, categoria, marca, limite, soloConStock, ordenarPor } = validateProductosParams(url);
 
-    console.log(JSON.stringify({
+    logger.info('PRODUCTOS_REQUEST', {
         ...requestLog,
-        event: 'PRODUCTOS_REQUEST',
         busqueda, categoria, marca, limite
-    }));
+    });
 
     try {
         const filtros = buildProductoFiltros(busqueda, categoria, marca, soloConStock);
@@ -91,23 +93,21 @@ export async function getProductosDisponiblesOptimizado(
             }
         };
 
-        console.log(JSON.stringify({
+        logger.info('PRODUCTOS_SUCCESS', {
             ...requestLog,
-            event: 'PRODUCTOS_SUCCESS',
             productos: productosFinales.length,
             cache_score: 'high'
-        }));
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error(JSON.stringify({
+        logger.error('PRODUCTOS_ERROR', {
             ...requestLog,
-            event: 'PRODUCTOS_ERROR',
             error: (error as Error).message
-        }));
+        });
 
         throw new Error(`Error obteniendo productos optimizado: ${(error as Error).message}`);
     }

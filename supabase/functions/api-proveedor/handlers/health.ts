@@ -15,6 +15,9 @@ import {
     generateHealthAlerts,
     generateHealthRecommendations
 } from '../utils/health.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('api-proveedor:health');
 
 export async function getHealthCheckOptimizado(
     supabaseUrl: string,
@@ -22,7 +25,7 @@ export async function getHealthCheckOptimizado(
     corsHeaders: Record<string, string>,
     requestLog: any
 ): Promise<Response> {
-    console.log(JSON.stringify({ ...requestLog, event: 'HEALTH_REQUEST' }));
+    logger.info('HEALTH_REQUEST', { ...requestLog });
 
     try {
         const healthChecks = await Promise.allSettled([
@@ -67,26 +70,20 @@ export async function getHealthCheckOptimizado(
             }
         };
 
-        console.log(
-            JSON.stringify({
-                ...requestLog,
-                event: 'HEALTH_SUCCESS',
-                score: overallHealthScore,
-                status: systemStatus.status
-            })
-        );
+        logger.info('HEALTH_SUCCESS', {
+            ...requestLog,
+            score: overallHealthScore,
+            status: systemStatus.status
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     } catch (error) {
-        console.error(
-            JSON.stringify({
-                ...requestLog,
-                event: 'HEALTH_ERROR',
-                error: (error as Error).message
-            })
-        );
+        logger.error('HEALTH_ERROR', {
+            ...requestLog,
+            error: (error as Error).message
+        });
 
         return new Response(
             JSON.stringify({

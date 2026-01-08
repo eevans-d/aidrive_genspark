@@ -6,6 +6,9 @@
 import { executeJob, createExecutionContext, getJobStatus } from './orchestrator.ts';
 import { getJobConfig, getAllJobConfigs } from './config.ts';
 import type { StructuredLog } from './types.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('cron-jobs-maxiconsumo:index');
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -33,7 +36,7 @@ async function handleExecute(req: Request, supabaseUrl: string, serviceRoleKey: 
   if (!config) return jsonResponse({ error: `Job not found: ${jobId}` }, 404);
 
   const ctx = createExecutionContext(jobId, log.requestId, 'api', body.parameters);
-  console.log(JSON.stringify({ ...log, event: 'EXECUTE_JOB', jobId, runId: ctx.runId }));
+  logger.info('EXECUTE_JOB', { ...log, jobId, runId: ctx.runId });
 
   try {
     const result = await executeJob(jobId, ctx, supabaseUrl, serviceRoleKey, log);
@@ -105,7 +108,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
   const requestId = crypto.randomUUID();
   const log: StructuredLog = { requestId, action, method: req.method, timestamp: new Date().toISOString() };
 
-  console.log(JSON.stringify({ ...log, event: 'REQUEST_START' }));
+  logger.info('REQUEST_START', log);
 
   try {
     const supabaseUrl = getEnvOrThrow('SUPABASE_URL');
@@ -120,7 +123,7 @@ Deno.serve(async (req: Request): Promise<Response> => {
       default: return jsonResponse({ error: 'Unknown action', available: ['execute', 'status', 'metrics', 'health', 'list'] }, 404);
     }
   } catch (e) {
-    console.error(JSON.stringify({ ...log, event: 'ERROR', error: (e as Error).message }));
+    logger.error('ERROR', { ...log, error: (e as Error).message });
     return jsonResponse({ error: (e as Error).message }, 500);
   }
 });

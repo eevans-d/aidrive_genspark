@@ -9,9 +9,13 @@ import {
     estimateOptimalTiming,
     forecastScrapingSuccess,
     identifyAnomalies,
+    identifyAnomalies,
     predictPerformanceTrends
 } from '../utils/estadisticas.ts';
+import { createLogger } from '../../_shared/logger.ts';
 import { validateEstadisticasParams } from '../validators.ts';
+
+const logger = createLogger('api-proveedor:estadisticas');
 
 export async function getEstadisticasScrapingOptimizado(
     supabaseUrl: string,
@@ -23,15 +27,12 @@ export async function getEstadisticasScrapingOptimizado(
 ): Promise<Response> {
     const { dias, categoria, granularidad, incluirPredicciones } = validateEstadisticasParams(url);
 
-    console.log(
-        JSON.stringify({
-            ...requestLog,
-            event: 'ESTADISTICAS_REQUEST',
-            dias,
-            categoria,
-            granularidad
-        })
-    );
+    logger.info('ESTADISTICAS_REQUEST', {
+        ...requestLog,
+        dias,
+        categoria,
+        granularidad
+    });
 
     try {
         const fechaInicio = new Date();
@@ -103,26 +104,20 @@ export async function getEstadisticasScrapingOptimizado(
             }
         };
 
-        console.log(
-            JSON.stringify({
-                ...requestLog,
-                event: 'ESTADISTICAS_SUCCESS',
-                estadisticas: estadisticas.length,
-                predicciones: incluirPredicciones
-            })
-        );
+        logger.info('ESTADISTICAS_SUCCESS', {
+            ...requestLog,
+            estadisticas: estadisticas.length,
+            predicciones: incluirPredicciones
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     } catch (error) {
-        console.error(
-            JSON.stringify({
-                ...requestLog,
-                event: 'ESTADISTICAS_ERROR',
-                error: (error as Error).message
-            })
-        );
+        logger.error('ESTADISTICAS_ERROR', {
+            ...requestLog,
+            error: (error as Error).message
+        });
 
         throw new Error(`Error obteniendo estadísticas optimizado: ${(error as Error).message}`);
     }

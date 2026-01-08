@@ -16,6 +16,10 @@
  * @license Enterprise Level
  */
 
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('cron-testing-suite');
+
 // =====================================================
 // CONFIGURACIÓN DE TESTING
 // =====================================================
@@ -80,12 +84,13 @@ class CronJobsTestSuite {
         results: TestResult[];
         report: TestReport;
     }> {
-        console.log('🧪 INICIANDO SUITE COMPLETA DE TESTING - CRON JOBS AUTOMÁTICOS');
-        console.log(`📋 Configuración: ${this.config.environment}`);
-        console.log(`⏰ Timeout: ${this.config.timeout}ms`);
-        console.log(`🔄 Retries: ${this.config.retries}`);
-        console.log('='.repeat(80));
 
+        logger.info('TEST_SUITE_START', { 
+            config: this.config.environment,
+            timeout: this.config.timeout,
+            retries: this.config.retries
+        });
+        
         this.startTime = Date.now();
 
         try {
@@ -102,13 +107,14 @@ class CronJobsTestSuite {
             const total = this.results.length;
             const coverage = this.calculateCoverage();
 
-            console.log('\n📊 RESUMEN DE TESTING COMPLETADO');
-            console.log(`⏱️  Duración total: ${duration}ms`);
-            console.log(`✅ Tests pasados: ${passed}/${total}`);
-            console.log(`❌ Tests fallidos: ${failed}`);
-            console.log(`⏭️  Tests omitidos: ${skipped}`);
-            console.log(`📈 Cobertura: ${coverage}%`);
-            console.log('='.repeat(80));
+            logger.info('TEST_SUITE_COMPLETE', {
+                duration,
+                passed,
+                failed,
+                skipped,
+                total,
+                coverage
+            });
 
             return {
                 passed,
@@ -122,7 +128,7 @@ class CronJobsTestSuite {
             };
 
         } catch (error) {
-            console.error('💥 Error crítico en testing:', error);
+            logger.error('CRITICAL_TEST_ERROR', { error: (error as Error).message });
             throw error;
         }
     }
@@ -145,8 +151,7 @@ class CronJobsTestSuite {
     }
 
     private async runTestSuite(suite: TestSuite): Promise<void> {
-        console.log(`\n🧪 Ejecutando Suite: ${suite.name}`);
-        console.log('-'.repeat(60));
+        logger.info('SUITE_START', { suite: suite.name });
 
         try {
             // Setup
@@ -175,7 +180,7 @@ class CronJobsTestSuite {
             }
 
         } catch (error) {
-            console.error(`❌ Error en suite ${suite.name}:`, error);
+            logger.error('SUITE_ERROR', { suite: suite.name, error: (error as Error).message });
         }
     }
 
@@ -183,7 +188,7 @@ class CronJobsTestSuite {
         const testStartTime = Date.now();
         const timeout = testCase.timeout || this.config.timeout;
 
-        console.log(`  🔍 ${testCase.name}`);
+        logger.info('TEST_START', { test: testCase.name });
 
         try {
             // Ejecutar con timeout
@@ -203,7 +208,7 @@ class CronJobsTestSuite {
                 duration
             });
 
-            console.log(`    ✅ PASSED (${duration}ms)`);
+            logger.info('TEST_PASSED', { test: testCase.name, duration });
 
         } catch (error) {
             const duration = Date.now() - testStartTime;
@@ -216,7 +221,7 @@ class CronJobsTestSuite {
 
             while (retryCount < retries) {
                 retryCount++;
-                console.log(`    🔄 Retry ${retryCount}/${retries}...`);
+                logger.info('TEST_RETRY', { test: testCase.name, retry: retryCount, maxRetries: retries });
                 
                 try {
                     await testCase.fn();
@@ -228,7 +233,7 @@ class CronJobsTestSuite {
                         duration: Date.now() - testStartTime
                     });
 
-                    console.log(`    ✅ PASSED after retry ${retryCount}`);
+                    logger.info('TEST_PASSED_AFTER_RETRY', { test: testCase.name, retry: retryCount });
                     return;
 
                 } catch (retryError) {
@@ -244,7 +249,7 @@ class CronJobsTestSuite {
                 error: finalError
             });
 
-            console.log(`    ❌ FAILED: ${finalError}`);
+            logger.error('TEST_FAILED', { test: testCase.name, error: finalError });
         }
     }
 
@@ -579,7 +584,7 @@ class CronJobsTestSuite {
                         throw new Error(`Health check too slow: ${duration}ms (max: 5000ms)`);
                     }
                     
-                    console.log(`    ⚡ Response time: ${duration}ms`);
+                    logger.info('PERF_RESPONSE_TIME', { duration });
                 }
             },
             {
@@ -609,7 +614,7 @@ class CronJobsTestSuite {
                         throw new Error(`Too many job failures: ${successfulJobs}/${concurrentJobs} succeeded`);
                     }
                     
-                    console.log(`    ⚡ Concurrent jobs: ${concurrentJobs}, Duration: ${duration}ms`);
+                    logger.info('PERF_CONCURRENT_JOBS', { concurrentJobs, duration });
                 },
                 timeout: 45000
             },
@@ -642,7 +647,7 @@ class CronJobsTestSuite {
                         throw new Error(`Low success rate under load: ${successRate}%`);
                     }
                     
-                    console.log(`    ⚡ Load test: ${successRate}% success rate in ${duration}ms`);
+                    logger.info('PERF_LOAD_TEST', { successRate, duration });
                 },
                 timeout: 30000
             },
@@ -674,7 +679,7 @@ class CronJobsTestSuite {
                         throw new Error(`High memory usage detected: ${maxMemory}%`);
                     }
                     
-                    console.log(`    📊 Memory usage: avg ${avgMemory.toFixed(1)}%, max ${maxMemory.toFixed(1)}%`);
+                    logger.info('PERF_MEMORY_USAGE', { avgMemory, maxMemory });
                 }
             }
         ];
@@ -713,7 +718,7 @@ class CronJobsTestSuite {
                         throw new Error('No recovery actions were executed');
                     }
 
-                    console.log(`    🔧 Recovery executed ${recoveryData.data.actionsExecuted} actions`);
+                    logger.info('RECOVERY_EXECUTED', { actions: recoveryData.data.actionsExecuted });
                 }
             },
             {
@@ -743,7 +748,7 @@ class CronJobsTestSuite {
                         throw new Error(`Health score degraded after recovery: ${initialScore} → ${finalScore}`);
                     }
 
-                    console.log(`    🔧 Health recovery: ${initialScore} → ${finalScore}`);
+                    logger.info('RECOVERY_HEALTH_IMPROVED', { initial: initialScore, final: finalScore });
                 }
             },
             {
@@ -766,7 +771,7 @@ class CronJobsTestSuite {
                     
                     // 2. Verificar que el sistema detecta el fallo
                     if (jobData.success === false) {
-                        console.log(`    ✅ Job failure detected as expected`);
+                        logger.info('RECOVERY_FAILURE_DETECTED');
                     }
 
                     // 3. Verificar que el sistema se recupera
@@ -779,7 +784,7 @@ class CronJobsTestSuite {
                         throw new Error('System did not recover from job failure');
                     }
 
-                    console.log(`    🔧 System recovered from job failure`);
+                    logger.info('RECOVERY_SYSTEM_RECOVERED');
                 },
                 timeout: 60000
             }
@@ -820,7 +825,7 @@ class CronJobsTestSuite {
                         throw new Error('Email notification test failed');
                     }
 
-                    console.log(`    📧 Email notification processed successfully`);
+                    logger.info('NOTIF_EMAIL_SUCCESS');
                 }
             },
             {
@@ -850,7 +855,7 @@ class CronJobsTestSuite {
                         throw new Error('SMS notification test failed');
                     }
 
-                    console.log(`    📱 SMS notification processed successfully`);
+                    logger.info('NOTIF_SMS_SUCCESS');
                 }
             },
             {
@@ -877,7 +882,7 @@ class CronJobsTestSuite {
                         throw new Error('Slack notification test failed');
                     }
 
-                    console.log(`    💬 Slack notification processed successfully`);
+                    logger.info('NOTIF_SLACK_SUCCESS');
                 }
             },
             {
@@ -904,7 +909,7 @@ class CronJobsTestSuite {
                         r.value.json().then((data: any) => !data.success && data.data?.status === 'rate_limited')
                     ).length;
 
-                    console.log(`    🚦 Rate limiting: ${successful} successful, ${rateLimited} rate limited`);
+                    logger.info('RATE_LIMIT_TEST', { successful, rateLimited });
                 }
             }
         ];
@@ -932,7 +937,7 @@ class CronJobsTestSuite {
                         throw new Error('Invalid database health status');
                     }
 
-                    console.log(`    💾 Database health: ${dbHealth.status} (${dbHealth.responseTime}ms)`);
+                    logger.info('HEALTH_DB_STATUS', { status: dbHealth.status, responseTime: dbHealth.responseTime });
                 }
             },
             {
@@ -951,7 +956,7 @@ class CronJobsTestSuite {
                         throw new Error(`High memory usage: ${memoryUsage}%`);
                     }
 
-                    console.log(`    🧠 Memory health: ${memoryHealth.status} (${memoryUsage}% used)`);
+                    logger.info('HEALTH_MEMORY_STATUS', { status: memoryHealth.status, usage: memoryUsage });
                 }
             },
             {
@@ -969,7 +974,7 @@ class CronJobsTestSuite {
                         throw new Error('Critical jobs health issues detected');
                     }
 
-                    console.log(`    🔄 Jobs health: ${jobsHealth.status} (${jobsHealth.details.totalJobs} total jobs)`);
+                    logger.info('HEALTH_JOBS_STATUS', { status: jobsHealth.status, totalJobs: jobsHealth.details.totalJobs });
                 }
             },
             {
@@ -991,7 +996,7 @@ class CronJobsTestSuite {
                         throw new Error(`Inconsistent health status: ${health.overall} vs expected ${expectedStatus}`);
                     }
 
-                    console.log(`    📊 Health score: ${health.score} (${health.overall})`);
+                    logger.info('HEALTH_SCORE_STATUS', { score: health.score, overall: health.overall });
                 }
             }
         ];
@@ -1026,7 +1031,7 @@ class CronJobsTestSuite {
                         }
                     }
 
-                    console.log(`    🔧 Circuit breakers: ${Object.keys(breakers).length} configured`);
+                    logger.info('CIRCUIT_CONFIG_STATUS', { count: Object.keys(breakers).length });
                 }
             },
             {
@@ -1052,9 +1057,9 @@ class CronJobsTestSuite {
                     const failures = results.filter(r => r.status === 'rejected').length;
 
                     if (failures === 0) {
-                        console.log(`    ⚠️  No failures detected in test (may be normal)`);
+                        logger.warn('CIRCUIT_NO_FAILURES');
                     } else {
-                        console.log(`    🔧 Detected ${failures} failures as expected`);
+                        logger.info('CIRCUIT_FAILURES_DETECTED', { failures });
                     }
                 },
                 timeout: 30000
@@ -1079,7 +1084,7 @@ class CronJobsTestSuite {
                     const finalResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
                     const finalData = await finalResponse.json();
                     
-                    console.log(`    🔧 Circuit breaker recovery executed successfully`);
+                    logger.info('CIRCUIT_RECOVERY_SUCCESS');
                 }
             }
         ];
@@ -1109,7 +1114,7 @@ class CronJobsTestSuite {
                     ).length;
                     const failed = results.length - successful;
 
-                    console.log(`    🚦 Rate limit test: ${successful} successful, ${failed} failed`);
+                    logger.info('RATE_LIMIT_API_RESULT', { successful, failed });
                     
                     // Es normal que algunos fallen por rate limiting
                     if (successful < 5) {
@@ -1150,7 +1155,7 @@ class CronJobsTestSuite {
                         )
                     ).length;
 
-                    console.log(`    🚦 Notification rate limiting: ${successful} sent, ${rateLimited} rate limited`);
+                    logger.info('RATE_LIMIT_NOTIF_RESULT', { successful, rateLimited });
                 },
                 timeout: 30000
             }

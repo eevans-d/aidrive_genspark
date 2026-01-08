@@ -5,6 +5,9 @@ import { fetchWithRetry } from '../utils/http.ts';
 import { validateSincronizacionParams } from '../validators.ts';
 import { getPreciosActualesOptimizado } from './precios.ts';
 import { getProductosDisponiblesOptimizado } from './productos.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('api-proveedor:sincronizar');
 
 export async function triggerSincronizacionOptimizado(
     supabaseUrl: string,
@@ -16,15 +19,12 @@ export async function triggerSincronizacionOptimizado(
 ): Promise<Response> {
     const { categoria, forceFull, priority } = validateSincronizacionParams(url);
 
-    console.log(
-        JSON.stringify({
-            ...requestLog,
-            event: 'SINCRONIZACION_REQUEST',
-            categoria,
-            force_full: forceFull,
-            priority
-        })
-    );
+    logger.info('SINCRONIZACION_REQUEST', {
+        ...requestLog,
+        categoria,
+        force_full: forceFull,
+        priority
+    });
 
     try {
         const circuitKey = 'scraper-maxiconsumo';
@@ -99,13 +99,10 @@ export async function triggerSincronizacionOptimizado(
                     resultadoComparacion = await comparacionResponse.json();
                 }
             } catch (error) {
-                console.warn(
-                    JSON.stringify({
-                        ...requestLog,
-                        event: 'COMPARACION_WARNING',
-                        error: (error as Error).message
-                    })
-                );
+                logger.warn('COMPARACION_WARNING', {
+                    ...requestLog,
+                    error: (error as Error).message
+                });
             }
         }
 
@@ -137,26 +134,20 @@ export async function triggerSincronizacionOptimizado(
             }
         };
 
-        console.log(
-            JSON.stringify({
-                ...requestLog,
-                event: 'SINCRONIZACION_SUCCESS',
-                productos: syncMetrics.productos_procesados,
-                duracion: syncMetrics.duracion_total
-            })
-        );
+        logger.info('SINCRONIZACION_SUCCESS', {
+            ...requestLog,
+            productos: syncMetrics.productos_procesados,
+            duracion: syncMetrics.duracion_total
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     } catch (error) {
-        console.error(
-            JSON.stringify({
-                ...requestLog,
-                event: 'SINCRONIZACION_ERROR',
-                error: (error as Error).message
-            })
-        );
+        logger.error('SINCRONIZACION_ERROR', {
+            ...requestLog,
+            error: (error as Error).message
+        });
 
         throw new Error(`Error en sincronización optimizado: ${(error as Error).message}`);
     }
@@ -203,14 +194,11 @@ async function persistProveedorSnapshots(
                 forcePersistent: true
             });
         } catch (error) {
-            console.warn(
-                JSON.stringify({
-                    ...requestLog,
-                    event: 'SNAPSHOT_WARNING',
-                    endpoint: target.endpoint,
-                    error: (error as Error).message
-                })
-            );
+            logger.warn('SNAPSHOT_WARNING', {
+                ...requestLog,
+                endpoint: target.endpoint,
+                error: (error as Error).message
+            });
         }
     }
 }
