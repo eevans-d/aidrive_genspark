@@ -1,7 +1,7 @@
 import { ReactNode } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
+import { useAuth } from '../hooks/useAuth'
 
 interface LayoutProps {
   children: ReactNode

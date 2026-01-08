@@ -9,7 +9,12 @@ const LEVEL_ORDER: Record<LogLevel, number> = {
 };
 
 function resolveLevel(): LogLevel {
-  const raw = (Deno.env.get('LOG_LEVEL') || 'info').toLowerCase();
+  const denoRaw = (globalThis as unknown as { Deno?: { env?: { get?: (k: string) => string | undefined } } })
+    .Deno?.env?.get?.('LOG_LEVEL');
+  const nodeRaw =
+    typeof process !== 'undefined' && typeof process.env !== 'undefined' ? process.env.LOG_LEVEL : undefined;
+
+  const raw = (denoRaw || nodeRaw || 'info').toLowerCase();
   if (raw === 'debug' || raw === 'info' || raw === 'warn' || raw === 'error') {
     return raw;
   }
