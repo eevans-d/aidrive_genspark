@@ -12,6 +12,9 @@ import {
     generateAlertRecommendations,
     predictAlertTrends
 } from '../utils/alertas.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('api-proveedor:alertas');
 
 export async function getAlertasActivasOptimizado(
     supabaseUrl: string,
@@ -23,15 +26,12 @@ export async function getAlertasActivasOptimizado(
 ): Promise<Response> {
     const { severidad, tipo, limite, soloNoProcesadas, incluirAnalisis } = validateAlertasParams(url);
 
-    console.log(
-        JSON.stringify({
-            ...requestLog,
-            event: 'ALERTAS_REQUEST',
-            severidad,
-            tipo,
-            limite
-        })
-    );
+    logger.info('ALERTAS_REQUEST', {
+        ...requestLog,
+        severidad,
+        tipo,
+        limite
+    });
 
     try {
         const query = buildAlertasQuery(severidad, tipo, limite);
@@ -112,26 +112,20 @@ export async function getAlertasActivasOptimizado(
             }
         };
 
-        console.log(
-            JSON.stringify({
-                ...requestLog,
-                event: 'ALERTAS_SUCCESS',
-                alertas: alertasFinales.length,
-                analisis: incluirAnalisis
-            })
-        );
+        logger.info('ALERTAS_SUCCESS', {
+            ...requestLog,
+            alertas: alertasFinales.length,
+            analisis: incluirAnalisis
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     } catch (error) {
-        console.error(
-            JSON.stringify({
-                ...requestLog,
-                event: 'ALERTAS_ERROR',
-                error: (error as Error).message
-            })
-        );
+        logger.error('ALERTAS_ERROR', {
+            ...requestLog,
+            error: (error as Error).message
+        });
 
         throw new Error(`Error obteniendo alertas optimizado: ${(error as Error).message}`);
     }

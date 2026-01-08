@@ -117,10 +117,11 @@ npx vitest
 npx vitest run --coverage
 ```
 
-**Tests disponibles (44 total):**
+**Tests disponibles (47 total):**
 - `api-proveedor-routing.test.ts` - Routing y validación (17 tests)
 - `scraper-parsing.test.ts` - Parsing de productos (10 tests)
-- `scraper-matching.test.ts` - Matching de productos (7 tests)
+- `scraper-matching.test.ts` - Matching de productos (9 tests)
+- `scraper-alertas.test.ts` - Alertas de precios (3 tests)
 - `cron-jobs.test.ts` - Jobs y orquestación (8 tests)
 
 ---

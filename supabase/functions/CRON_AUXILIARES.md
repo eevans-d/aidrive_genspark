@@ -22,15 +22,27 @@ Las siguientes funciones cron auxiliares están activas:
 3. **Deploy independiente**: Cambios en una no afectan otras
 4. **Circuit breakers aislados**: Fallos no se propagan
 
-### Módulos Compartidos Creados:
+### Módulos Compartidos Disponibles:
 
-Los siguientes módulos en `_shared/` son utilizados por todas las funciones cron:
+Los siguientes módulos en `_shared/` están disponibles para uso:
 
+- `cors.ts` - Headers CORS unificados
 - `logger.ts` - Logging estructurado con niveles
 - `errors.ts` - Manejo de errores estandarizado
 - `response.ts` - Helpers para respuestas HTTP
 - `rate-limit.ts` - Rate limiters adaptativos
 - `circuit-breaker.ts` - Circuit breakers
+
+**Estado de adopción actual:**
+
+| Función | Usa `_shared/`? | Módulos |
+|---------|-----------------|---------|
+| `cron-notifications` | ⚠️ Parcial | Solo `rate-limit.ts` |
+| `cron-testing-suite` | ❌ No | Pendiente migración |
+| `cron-dashboard` | ❌ No | Pendiente migración |
+| `cron-health-monitor` | ❌ No | Pendiente migración |
+
+> **PENDIENTE:** Migrar las funciones que aún no usan `_shared/` para unificar patrones.
 
 ## Integración Recomendada
 

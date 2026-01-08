@@ -4,6 +4,9 @@
  */
 
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('cron-jobs-maxiconsumo:job:realtime-alerts');
 
 export async function executeRealtimeAlerts(
   ctx: JobExecutionContext,
@@ -11,8 +14,8 @@ export async function executeRealtimeAlerts(
   serviceRoleKey: string,
   log: StructuredLog
 ): Promise<JobResult> {
-  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId, event: 'JOB_START' };
-  console.log(JSON.stringify(jobLog));
+  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId };
+  logger.info('JOB_START', jobLog);
 
   const startTime = Date.now();
   const errors: string[] = [], warnings: string[] = [], recommendations: string[] = [];
@@ -36,7 +39,7 @@ export async function executeRealtimeAlerts(
       });
 
       alerts = critical.length;
-      console.log(JSON.stringify({ ...jobLog, event: 'CHANGES_DETECTED', total: changes.length, critical: alerts }));
+      logger.info('CHANGES_DETECTED', { ...jobLog, total: changes.length, critical: alerts });
 
       // 2. Create alerts for critical changes
       if (alerts > 0) {
@@ -87,7 +90,7 @@ export async function executeRealtimeAlerts(
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', alerts, duration: durationMs }));
+    logger.info('JOB_COMPLETE', { ...jobLog, alerts, duration: durationMs });
 
     return {
       success: true, executionTimeMs: durationMs,
@@ -96,7 +99,7 @@ export async function executeRealtimeAlerts(
       metrics: { critical_alerts: alerts }, errors, warnings, recommendations
     };
   } catch (e) {
-    console.error(JSON.stringify({ ...jobLog, event: 'JOB_ERROR', error: (e as Error).message }));
+    logger.error('JOB_ERROR', { ...jobLog, error: (e as Error).message });
     return {
       success: false, executionTimeMs: Date.now() - startTime,
       productsProcessed: 0, productsSuccessful: 0, productsFailed: 0,

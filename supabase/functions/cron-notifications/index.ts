@@ -16,6 +16,10 @@
  * @license Enterprise Level
  */
 import { FixedWindowRateLimiter } from '../_shared/rate-limit.ts';
+import { createLogger } from '../_shared/logger.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
+
+const logger = createLogger('cron-notifications');
 
 // =====================================================
 // INTERFACES Y TIPOS
@@ -528,13 +532,9 @@ const NOTIFICATION_CHANNELS: Record<string, NotificationChannel> = {
 // =====================================================
 
 Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    const corsHeaders = getCorsHeaders({
         'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
-        'Access-Control-Max-Age': '86400',
-        'Content-Type': 'application/json'
-    };
+    });
 
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 200, headers: corsHeaders });
@@ -544,7 +544,7 @@ Deno.serve(async (req) => {
         const url = new URL(req.url);
         const action = url.pathname.split('/').pop() || 'send';
 
-        console.log(`[NOTIFICATIONS] Acción: ${action}`);
+        logger.info('ACTION_START', { action });
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -581,13 +581,15 @@ Deno.serve(async (req) => {
         return response;
 
     } catch (error) {
-        console.error('[NOTIFICATIONS] Error:', error);
+        // Safe cast error
+        const err = error as Error;
+        logger.error('ERROR', { error: err.message });
         
         return new Response(JSON.stringify({
             success: false,
             error: {
                 code: 'NOTIFICATION_ERROR',
-                message: error.message,
+                message: err.message,
                 timestamp: new Date().toISOString()
             }
         }), {
@@ -612,7 +614,7 @@ async function sendNotificationHandler(
 ): Promise<Response> {
     const notificationRequest: NotificationRequest = await req.json();
     
-    console.log('[NOTIFICATIONS] Enviando notificación:', notificationRequest.templateId);
+    logger.info('SEND_NOTIFICATION', { templateId: notificationRequest.templateId });
 
     // Validar request
     if (!notificationRequest.templateId || !notificationRequest.channels || !notificationRequest.recipients) {
@@ -676,7 +678,7 @@ async function sendNotificationHandler(
 
     results.success = results.totalSent > 0;
 
-    console.log(`[NOTIFICATIONS] Resultado: ${results.totalSent} enviados, ${results.totalFailed} fallidos`);
+    logger.info('SEND_RESULT', { sent: results.totalSent, failed: results.totalFailed });
 
     return new Response(JSON.stringify({
         success: results.success,
@@ -750,7 +752,7 @@ async function sendToChannel(
         };
 
     } catch (error) {
-        console.error(`[NOTIFICATIONS] Error enviando a ${channel.id}:`, error);
+        logger.error('SEND_CHANNEL_ERROR', { channelId: channel.id, error: (error as Error).message });
         return {
             channelId: channel.id,
             status: 'failed',
@@ -779,9 +781,11 @@ async function sendEmail(
 
     // En implementación real, aquí se enviaría el email
     // Por ahora simulamos el envío
-    console.log(`[EMAIL] Enviando a: ${request.recipients.email?.join(', ')}`);
-    console.log(`[EMAIL] Subject: ${subject}`);
-    console.log(`[EMAIL] HTML Body: ${htmlBody.substring(0, 200)}...`);
+    logger.info('SIMULATION_EMAIL_SEND', { 
+        to: request.recipients.email?.join(', '),
+        subject,
+        preview: htmlBody.substring(0, 200)
+    });
 
     // Simular delay de envío
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -806,8 +810,10 @@ async function sendSMS(
         .substring(0, 160);
 
     // En implementación real, aquí se enviaría SMS via Twilio
-    console.log(`[SMS] Enviando a: ${request.recipients.phone?.join(', ')}`);
-    console.log(`[SMS] Message: ${message}`);
+    logger.info('SIMULATION_SMS_SEND', {
+        to: request.recipients.phone?.join(', '),
+        message
+    });
 
     // Simular delay de envío
     await new Promise(resolve => setTimeout(resolve, 200));
@@ -860,8 +866,10 @@ async function sendSlack(
     };
 
     // En implementación real, aquí se enviaría a Slack
-    console.log(`[SLACK] Enviando a canal: ${channel.config.channel}`);
-    console.log(`[SLACK] Webhook URL configurada: ${!!channel.config.webhookUrl}`);
+    logger.info('SIMULATION_SLACK_SEND', {
+        channel: channel.config.channel,
+        hasWebhook: !!channel.config.webhookUrl
+    });
 
     // Simular delay de envío
     await new Promise(resolve => setTimeout(resolve, 150));
@@ -892,8 +900,10 @@ async function sendWebhook(
     };
 
     // En implementación real, aquí se enviaría el webhook
-    console.log(`[WEBHOOK] Enviando a: ${channel.config.webhookUrl}`);
-    console.log(`[WEBHOOK] Payload:`, payload);
+    logger.info('SIMULATION_WEBHOOK_SEND', {
+        url: channel.config.webhookUrl,
+        payload
+    });
 
     // Simular delay de envío
     await new Promise(resolve => setTimeout(resolve, 100));
@@ -994,7 +1004,7 @@ async function checkChannelRateLimitDb(channelId: string, channel: NotificationC
         return true;
 
     } catch (error) {
-        console.error('[NOTIFICATIONS] Error verificando rate limit persistente:', error);
+        logger.error('DB_RATE_LIMIT_ERROR', { error: (error as Error).message });
         return true;
     }
 }
@@ -1022,7 +1032,7 @@ async function fetchNotificationCount(url: string, headers: Record<string, strin
 
 async function updateRateLimits(channelId: string): Promise<void> {
     // El rate limit en memoria se actualiza con enforceChannelRateLimit; esta función mantiene el hook para futura persistencia.
-    console.log(`[NOTIFICATIONS] Rate limit actualizado para canal: ${channelId}`);
+    logger.debug('RATE_LIMIT_UPDATE', { channelId });
 }
 
 async function recordNotificationLog(
@@ -1057,7 +1067,7 @@ async function recordNotificationLog(
             });
         }
     } catch (error) {
-        console.error('[NOTIFICATIONS] Error registrando log:', error);
+        logger.error('LOG_RECORD_ERROR', { error: (error as Error).message });
     }
 }
 
@@ -1067,7 +1077,7 @@ async function triggerEscalation(
     supabaseUrl: string,
     serviceRoleKey: string
 ): Promise<void> {
-    console.log('[NOTIFICATIONS] Triggering escalation for failed notifications');
+    logger.info('ESCALATION_TRIGGER', { totalFailed: result.totalFailed });
 
     // Crear alerta de escalamiento
     const escalationData = {

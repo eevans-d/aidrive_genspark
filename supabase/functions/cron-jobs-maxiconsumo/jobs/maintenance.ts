@@ -4,6 +4,9 @@
  */
 
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('cron-jobs-maxiconsumo:job:maintenance');
 
 export async function executeMaintenanceCleanup(
   ctx: JobExecutionContext,
@@ -11,8 +14,8 @@ export async function executeMaintenanceCleanup(
   serviceRoleKey: string,
   log: StructuredLog
 ): Promise<JobResult> {
-  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId, event: 'JOB_START' };
-  console.log(JSON.stringify(jobLog));
+  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId };
+  logger.info('JOB_START', jobLog);
 
   const startTime = Date.now();
   const errors: string[] = [], warnings: string[] = [], recommendations: string[] = [];
@@ -32,7 +35,7 @@ export async function executeMaintenanceCleanup(
       }
     );
     metrics.logs_deleted = logsRes.ok ? (await logsRes.json()).length : 0;
-    console.log(JSON.stringify({ ...jobLog, event: 'LOGS_CLEANED', count: metrics.logs_deleted }));
+    logger.info('LOGS_CLEANED', { ...jobLog, count: metrics.logs_deleted });
 
     // 2. Clean old metrics
     const metricsDate = new Date(Date.now() - daysMetrics * 24 * 60 * 60 * 1000).toISOString();
@@ -87,7 +90,7 @@ export async function executeMaintenanceCleanup(
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', metrics, duration: durationMs }));
+    logger.info('JOB_COMPLETE', { ...jobLog, metrics, duration: durationMs });
 
     return {
       success: true, executionTimeMs: durationMs,
@@ -96,7 +99,7 @@ export async function executeMaintenanceCleanup(
       metrics, errors, warnings, recommendations
     };
   } catch (e) {
-    console.error(JSON.stringify({ ...jobLog, event: 'JOB_ERROR', error: (e as Error).message }));
+    logger.error('JOB_ERROR', { ...jobLog, error: (e as Error).message });
     return {
       success: false, executionTimeMs: Date.now() - startTime,
       productsProcessed: 0, productsSuccessful: 0, productsFailed: 0,

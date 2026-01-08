@@ -15,6 +15,10 @@
  * @license Enterprise Level
  */
 
+import { createLogger } from '../_shared/logger.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
+
+const logger = createLogger('cron-health-monitor');
 // =====================================================
 // INTERFACES Y TIPOS
 // =====================================================
@@ -75,13 +79,9 @@ const DEGRADED_THRESHOLD = 85;
 // =====================================================
 
 Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+    const corsHeaders = getCorsHeaders({
         'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
-        'Access-Control-Max-Age': '86400',
-        'Content-Type': 'application/json'
-    };
+    });
 
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 200, headers: corsHeaders });
@@ -91,7 +91,7 @@ Deno.serve(async (req) => {
         const url = new URL(req.url);
         const action = url.pathname.split('/').pop() || 'health-check';
 
-        console.log(`[HEALTH_MONITOR] Acción: ${action}`);
+        logger.info('ACTION_START', { action });
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -125,7 +125,7 @@ Deno.serve(async (req) => {
         return response;
 
     } catch (error) {
-        console.error('[HEALTH_MONITOR] Error:', error);
+        logger.error('ERROR', { error: (error as Error).message });
         
         return new Response(JSON.stringify({
             success: false,
@@ -153,7 +153,7 @@ async function executeHealthCheck(
     serviceRoleKey: string,
     corsHeaders: Record<string, string>
 ): Promise<Response> {
-    console.log('[HEALTH_MONITOR] Iniciando health check completo');
+    logger.info('HEALTH_CHECK_START');
 
     const startTime = Date.now();
     const healthResults: SystemHealth = {
@@ -192,7 +192,7 @@ async function executeHealthCheck(
 
     // Ejecutar recovery automático si es necesario
     if (healthResults.autoRecovery) {
-        console.log('[HEALTH_MONITOR] Ejecutando recovery automático');
+        logger.info('AUTO_RECOVERY_TRIGGER');
         await executeAutoRecovery(supabaseUrl, serviceRoleKey, corsHeaders);
     }
 
@@ -202,7 +202,7 @@ async function executeHealthCheck(
     }
 
     const duration = Date.now() - startTime;
-    console.log(`[HEALTH_MONITOR] Health check completado en ${duration}ms`);
+    logger.info('HEALTH_CHECK_COMPLETE', { duration });
 
     return new Response(JSON.stringify({
         success: true,
@@ -602,7 +602,7 @@ async function recordMonitoringMetrics(
         });
 
     } catch (error) {
-        console.error('[HEALTH_MONITOR] Error registrando métricas:', error);
+        logger.error('METRICS_RECORD_ERROR', { error: (error as Error).message });
     }
 }
 
@@ -638,7 +638,7 @@ async function createSystemHealthAlert(
         });
 
     } catch (error) {
-        console.error('[HEALTH_MONITOR] Error creando alerta de salud:', error);
+        logger.error('CREATE_ALERT_ERROR', { error: (error as Error).message });
     }
 }
 
@@ -650,7 +650,7 @@ async function executeAutoRecovery(
     serviceRoleKey: string,
     corsHeaders: Record<string, string>
 ): Promise<Response> {
-    console.log('[HEALTH_MONITOR] Ejecutando auto recovery');
+    logger.info('AUTO_RECOVERY_EXECUTION');
 
     const recoveryActions: RecoveryAction[] = [];
 
@@ -698,7 +698,7 @@ async function executeAutoRecovery(
                 executedActions.push(action);
             } catch (error) {
                 action.status = 'failed';
-                console.error(`[HEALTH_MONITOR] Recovery action failed:`, error);
+                logger.error('RECOVERY_ACTION_FAILED', { error: (error as Error).message, action });
             }
         }
 
@@ -715,7 +715,7 @@ async function executeAutoRecovery(
         });
 
     } catch (error) {
-        console.error('[HEALTH_MONITOR] Error en auto recovery:', error);
+        logger.error('AUTO_RECOVERY_ERROR', { error: (error as Error).message });
         throw error;
     }
 }

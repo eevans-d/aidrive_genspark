@@ -1,5 +1,8 @@
 import { validatePreciosParams } from '../validators.ts';
 import { formatTiempoTranscurrido, getMemoryUsage } from '../utils/format.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('api-proveedor:precios');
 
 export async function getPreciosActualesOptimizado(
     supabaseUrl: string,
@@ -11,7 +14,7 @@ export async function getPreciosActualesOptimizado(
 ): Promise<Response> {
     const { categoria, limite, offset, activo } = validatePreciosParams(url);
 
-    console.log(JSON.stringify({ ...requestLog, event: 'PRECIOS_REQUEST', categoria, limite, offset }));
+    logger.info('PRECIOS_REQUEST', { ...requestLog, categoria, limite, offset });
 
     try {
         const queries = await Promise.allSettled([
@@ -78,23 +81,21 @@ export async function getPreciosActualesOptimizado(
             }
         };
 
-        console.log(JSON.stringify({
+        logger.info('PRECIOS_SUCCESS', {
             ...requestLog,
-            event: 'PRECIOS_SUCCESS',
             productos: productosFinales.length,
             total: total
-        }));
+        });
 
         return new Response(JSON.stringify(resultado), {
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
 
     } catch (error) {
-        console.error(JSON.stringify({
+        logger.error('PRECIOS_ERROR', {
             ...requestLog,
-            event: 'PRECIOS_ERROR',
             error: (error as Error).message
-        }));
+        });
 
         throw new Error(`Error obteniendo precios optimizado: ${(error as Error).message}`);
     }

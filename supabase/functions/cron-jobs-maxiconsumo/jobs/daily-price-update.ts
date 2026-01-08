@@ -4,6 +4,9 @@
  */
 
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
+import { createLogger } from '../../_shared/logger.ts';
+
+const logger = createLogger('cron-jobs-maxiconsumo:job:daily-price-update');
 
 export async function executeDailyPriceUpdate(
   ctx: JobExecutionContext,
@@ -11,8 +14,8 @@ export async function executeDailyPriceUpdate(
   serviceRoleKey: string,
   log: StructuredLog
 ): Promise<JobResult> {
-  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId, event: 'JOB_START' };
-  console.log(JSON.stringify(jobLog));
+  const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId };
+  logger.info('JOB_START', jobLog);
 
   const startTime = Date.now();
   const errors: string[] = [], warnings: string[] = [], recommendations: string[] = [];
@@ -30,7 +33,7 @@ export async function executeDailyPriceUpdate(
       const data = await scraperRes.json();
       processed = data.data?.productos_extraidos || 0;
       successful = data.data?.guardados || 0;
-      console.log(JSON.stringify({ ...jobLog, event: 'SCRAPING_COMPLETE', processed, successful }));
+      logger.info('SCRAPING_COMPLETE', { ...jobLog, processed, successful });
     } else {
       errors.push(`Scraper error: ${scraperRes.status}`);
     }
@@ -73,7 +76,7 @@ export async function executeDailyPriceUpdate(
       })
     });
 
-    console.log(JSON.stringify({ ...jobLog, event: 'JOB_COMPLETE', processed, alerts, duration: durationMs }));
+    logger.info('JOB_COMPLETE', { ...jobLog, processed, alerts, duration: durationMs });
 
     return {
       success: errors.length === 0,
@@ -84,7 +87,7 @@ export async function executeDailyPriceUpdate(
       errors, warnings, recommendations
     };
   } catch (e) {
-    console.error(JSON.stringify({ ...jobLog, event: 'JOB_ERROR', error: (e as Error).message }));
+    logger.error('JOB_ERROR', { ...jobLog, error: (e as Error).message });
     return {
       success: false, executionTimeMs: Date.now() - startTime,
       productsProcessed: processed, productsSuccessful: successful, productsFailed: failed,

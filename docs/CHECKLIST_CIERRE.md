@@ -95,7 +95,7 @@ Pendientes críticos detectados:
 | Tests ejecutables | ~10 | Tests reales (Vitest) |
 | Framework testing | Jest+Vitest mezclados | Vitest elegido (scripts alineados) |
 | CI/CD | Ninguno | Pipeline activo en `master` |
-| Shared libs | Dispersas | 5 módulos `_shared/` (adopción parcial) |
+| Shared libs | Dispersas | 6 módulos `_shared/` (adopción parcial) |
 | Logging estructurado | Parcial | Parcial (handlers con `console.log`) |
 
 ---
@@ -109,7 +109,8 @@ supabase/functions/
 │   ├── response.ts
 │   ├── errors.ts
 │   ├── logger.ts
-│   └── rate-limit.ts
+│   ├── rate-limit.ts
+│   └── circuit-breaker.ts
 ├── api-proveedor/        # Modular (router + handlers + utils)
 ├── scraper-maxiconsumo/  # Modular (9 módulos especializados)
 ├── cron-jobs-maxiconsumo/# Modular (4 jobs + orchestrator)
@@ -118,7 +119,7 @@ supabase/functions/
 tests/unit/
 ├── api-proveedor-routing.test.ts  # 17 tests
 ├── scraper-parsing.test.ts        # 10 tests
-├── scraper-matching.test.ts       # 7 tests
+├── scraper-matching.test.ts       # 9 tests
 ├── scraper-alertas.test.ts        # 3 tests
 └── cron-jobs.test.ts              # 8 tests (imports reales)
 
@@ -157,7 +158,7 @@ tests/unit/
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |
 | [API_README.md](API_README.md) | ✅ Vigente | Endpoints documentados |
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ⚠️ Revisar | Actualizar con nueva modularización |
-| [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ⚠️ Revisar | Verificar adopción real de _shared |
+| [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 
 ---
 

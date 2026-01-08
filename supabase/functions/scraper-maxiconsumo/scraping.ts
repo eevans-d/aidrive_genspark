@@ -8,12 +8,14 @@ import { MAXICONSUMO_BASE_URL } from './types.ts';
 import { delay, getRandomDelay, generateAdvancedHeaders, fetchWithAdvancedAntiDetection, handleCaptchaBypass } from './anti-detection.ts';
 import { extractProductosConOptimizacion, calculateConfidenceScore, generateContentHash } from './parsing.ts';
 import { obtenerConfiguracionCategorias } from './config.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('scraper-maxiconsumo:scraping');
 
 export async function scrapeCategoriaOptimizado(
   categoria: string, config: CategoriaConfig, structuredLog: StructuredLog
 ): Promise<ProductoMaxiconsumo[]> {
-  const log = { ...structuredLog, event: 'CATEGORY_SCRAPING_START', categoria };
-  console.log(JSON.stringify(log));
+  logger.info('CATEGORY_SCRAPING_START', { ...structuredLog, categoria });
 
   const headers = generateAdvancedHeaders();
   let captchaDetected = false, retryCount = 0;
@@ -32,8 +34,11 @@ export async function scrapeCategoriaOptimizado(
         break;
       } catch (e) {
         retryCount++;
-        console.warn(JSON.stringify({ ...log, event: 'RETRY', attempt: retryCount, error: (e as Error).message }));
-        if (retryCount >= maxRetries) throw new Error(`Max retries: ${(e as Error).message}`);
+        if (retryCount >= maxRetries) {
+          logger.warn('RETRY_MAX_REACHED', { ...structuredLog, categoria, attempt: retryCount, error: (e as Error).message });
+          throw new Error(`Max retries: ${(e as Error).message}`);
+        }
+        logger.warn('RETRY', { ...structuredLog, categoria, attempt: retryCount, error: (e as Error).message });
       }
     }
 
@@ -50,10 +55,10 @@ export async function scrapeCategoriaOptimizado(
       p.metadata = { ...p.metadata, extracted_at: new Date().toISOString(), captcha_encountered: captchaDetected, retry_count: retryCount };
     }
     
-    console.log(JSON.stringify({ ...log, event: 'EXTRACTION_COMPLETE', count: productos.length }));
+    logger.info('EXTRACTION_COMPLETE', { ...structuredLog, categoria, count: productos.length });
     return productos;
   } catch (e) {
-    console.error(JSON.stringify({ ...log, event: 'CATEGORY_ERROR', error: (e as Error).message }));
+    logger.error('CATEGORY_ERROR', { ...structuredLog, categoria, error: (e as Error).message });
     throw e;
   }
 }
@@ -62,7 +67,7 @@ export async function ejecutarScrapingCompleto(structuredLog: StructuredLog, sup
   productos: ProductoMaxiconsumo[], categorias_procesadas: number, errores: string[]
 }> {
   const log = { ...structuredLog, event: 'SCRAPING_START' };
-  console.log(JSON.stringify(log));
+  logger.info('SCRAPING_START', structuredLog);
   
   const categorias = obtenerConfiguracionCategorias();
   const productos: ProductoMaxiconsumo[] = [];
@@ -82,6 +87,6 @@ export async function ejecutarScrapingCompleto(structuredLog: StructuredLog, sup
     }
   }
   
-  console.log(JSON.stringify({ ...log, event: 'SCRAPING_COMPLETE', productos: productos.length, categorias: categoriasOk, errores: errores.length }));
+  logger.info('SCRAPING_COMPLETE', { ...structuredLog, productos: productos.length, categorias: categoriasOk, errores: errores.length });
   return { productos, categorias_procesadas: categoriasOk, errores };
 }

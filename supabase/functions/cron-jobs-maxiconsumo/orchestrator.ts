@@ -10,6 +10,9 @@ import { executeRealtimeAlerts } from './jobs/realtime-alerts.ts';
 import { executeWeeklyAnalysis } from './jobs/weekly-analysis.ts';
 import { executeMaintenanceCleanup } from './jobs/maintenance.ts';
 import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('cron-jobs-maxiconsumo:orchestrator');
 
 const JOB_HANDLERS: Record<string, JobHandler> = {
   'daily_price_update': executeDailyPriceUpdate,
@@ -54,7 +57,7 @@ export async function executeJob(
   }
 
   const jobLog: StructuredLog = { ...log, jobId, runId: ctx.runId };
-  console.log(JSON.stringify({ ...jobLog, event: 'ORCHESTRATOR_EXECUTE_START' }));
+  logger.info('ORCHESTRATOR_EXECUTE_START', jobLog);
 
   try {
     const result = await Promise.race([
