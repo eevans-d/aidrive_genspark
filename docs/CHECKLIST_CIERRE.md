@@ -11,7 +11,7 @@ El plan de ejecución de 6 semanas está avanzado, pero NO está cerrado. Se log
 - Modularización base de las 3 funciones críticas (con pendientes técnicos)
 - Migraciones versionadas en local
 - Tests reales con Vitest y runner alineado
-- CI activo en `master` con edge-check estricto
+- CI activo en `main` con edge-check estricto
 
 Pendientes críticos detectados:
 - Logging estructurado no unificado en handlers críticos
@@ -78,7 +78,7 @@ Pendientes críticos detectados:
 - [ ] Logs guardan en `cron_jobs_execution_log` (payload no coincide con schema)
 
 ### F6: CI/CD
-- [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `master`)
+- [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
   - Job: test (Vitest)
   - Job: build (Vite)
@@ -94,7 +94,7 @@ Pendientes críticos detectados:
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
 | Tests ejecutables | ~10 | Tests reales (Vitest) |
 | Framework testing | Jest+Vitest mezclados | Vitest elegido (scripts alineados) |
-| CI/CD | Ninguno | Pipeline activo en `master` |
+| CI/CD | Ninguno | Pipeline activo en `main` |
 | Shared libs | Dispersas | 6 módulos `_shared/` (adopción parcial) |
 | Logging estructurado | Parcial | Parcial (handlers con `console.log`) |
 

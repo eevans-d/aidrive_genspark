@@ -130,7 +130,7 @@ npx vitest --coverage       # Unit tests con coverage
 ### CI/CD
 - Pipeline: `.github/workflows/ci.yml`
 - Jobs: lint → test → build → typecheck → edge-functions-check
-- Nota: workflow activo en `master` y edge-check estricto
+- Nota: workflow activo en `main` y edge-check estricto
 
 ### Funciones Auxiliares de Cron (documentadas en CRON_AUXILIARES.md):
 - `cron-testing-suite` - Testing e2e de cron jobs
@@ -140,5 +140,5 @@ npx vitest --coverage       # Unit tests con coverage
 
 ### Notas:
 - `tests/datos_reales/results/` está en .gitignore (no versionar resultados)
-- CI configurado en `.github/workflows/ci.yml` (activo en `master`)
+- CI configurado en `.github/workflows/ci.yml` (activo en `main`)
 - Vitest elegido; runner/scripts alineados

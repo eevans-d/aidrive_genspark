@@ -926,4 +926,7 @@ SINCRONIZACION_*.md
 GIT_SYNC_STATUS.md
 test-progress*.md
 testing_reporte_*.md
-tests/datos_reales/results/
+
+# Allow repo lockfiles for reproducible installs
+!package-lock.json
+!minimarket-system/pnpm-lock.yaml

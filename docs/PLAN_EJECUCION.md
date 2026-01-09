@@ -252,7 +252,7 @@ Estabilizar y modularizar el sistema para que sea **mantenible, observable, test
 
 **M6.1 CI minimo**
 - [x] ~~Workflow con lint/tests/build.~~  
-  Obs: workflow actualizado para `master` y edge-check estricto (falla en errores).
+  Obs: workflow actualizado para `main` y edge-check estricto (falla en errores).
 
 **M7.1 Alineacion de docs**
 - [ ] Actualizar `docs/` y checklist final.  
@@ -327,8 +327,8 @@ Estabilizar y modularizar el sistema para que sea **mantenible, observable, test
 - [x] ~~SP4.2 Reescribir tests inlined para importar modulos reales.~~
 
 ### SP5 CI/CD
-- [x] ~~SP5.1 Activar workflow en `master`.~~  
-  Obs: branches incluyen `master`.
+- [x] ~~SP5.1 Activar workflow en `main`.~~  
+  Obs: branches incluyen `main`.
 - [x] ~~SP5.2 Hacer que edge-check falle en errores.~~  
   Obs: deno check ahora falla en errores.
 
