@@ -1,7 +1,8 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** Enero 2025  
+**Fecha:** 2026-01-09  
 **Estado:** ⚠️ Plan NO completado (verificado)
+**Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
 ---
 
@@ -17,7 +18,7 @@ Pendientes críticos detectados:
 - Logging estructurado no unificado en handlers críticos
 - Validacion runtime de alertas y cron persistence pendiente
 - Observabilidad incompleta (metricas y trazabilidad parcial)
-- Suites integration/e2e/seguridad usan Jest y requieren dependencias/runner separados
+- Suites integration/e2e/seguridad no están integradas al runner actual (ver WS2 en `docs/ROADMAP.md`)
 
 ---
 
@@ -165,4 +166,4 @@ tests/unit/
 ## ✍️ Estado de Cierre
 
 - **Cierre:** Pendiente (plan no completado)
-- **Próxima revisión:** Febrero 2025
+- **Próxima revisión:** 2026-02-09

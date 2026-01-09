@@ -1,6 +1,7 @@
-# INVENTARIO ACTUAL (v2 - Enero 2025)
+# INVENTARIO ACTUAL (v3 - 2026-01-09)
 
-**Estado:** Plan de ejecución **NO completado** ⚠️
+**Estado:** Plan histórico no completado ⚠️  
+**Plan vigente:** ver `docs/ROADMAP.md`
 
 ---
 
@@ -11,7 +12,7 @@
 - `supabase/migrations/` migraciones SQL (4)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
 - `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
-- `docs/` documentación técnica (17 archivos)
+- `docs/` documentación técnica (19 archivos)
 - `.github/workflows/` CI/CD (1 workflow)
 
 ---
@@ -67,7 +68,9 @@
 ---
 
 ## Docs (17 archivos)
-- `PLAN_EJECUCION.md` - Plan técnico (NO completado)
+- `PLAN_EJECUCION.md` - Plan técnico (histórico)
+- `ROADMAP.md` - Plan vigente (rolling)
+- `DECISION_LOG.md` - Decisiones vigentes
 - `CHECKLIST_CIERRE.md` - Estado del proyecto
 - `INVENTARIO_ACTUAL.md` - Este archivo
 - `OBJETIVOS_Y_KPIS.md`

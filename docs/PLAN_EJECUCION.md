@@ -1,5 +1,8 @@
 # PLAN DE EJECUCION DEFINITIVO (6 semanas)
 
+> **Nota:** este plan es **histórico** y describe la ejecución de 6 semanas.  
+> El plan vigente y las decisiones actuales están en `docs/ROADMAP.md` y `docs/DECISION_LOG.md`.
+
 **Proyecto:** Mini Market (Frontend `minimarket-system/` + Supabase Edge Functions `supabase/functions/`)  
 **Inicio:** inmediato (Semana 1, Dia 1)  
 **Horizonte:** 6 semanas, ejecucion secuencial por fases  

@@ -146,6 +146,8 @@ SUPABASE_SERVICE_ROLE_KEY
 
 | Documento | Descripción |
 |-----------|-------------|
+| [docs/ROADMAP.md](docs/ROADMAP.md) | Plan vigente (rolling 90 días) |
+| [docs/DECISION_LOG.md](docs/DECISION_LOG.md) | Decisiones para evitar ambigüedades |
 | [docs/API_README.md](docs/API_README.md) | Endpoints y ejemplos de uso |
 | [docs/ESQUEMA_BASE_DATOS_ACTUAL.md](docs/ESQUEMA_BASE_DATOS_ACTUAL.md) | Tablas, campos e índices |
 | [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md) | Guía de deployment |

@@ -1,7 +1,8 @@
-# OBJETIVOS Y KPIS (v1, borrador)
+# OBJETIVOS Y KPIS (v2)
 
-**Estado:** borrador para confirmacion  
-**Alcance:** plan de 6 semanas (refactor + DB + testing + CI/CD)
+**Estado:** vigente  
+**Última actualización:** 2026-01-09  
+**Alcance:** roadmap rolling 90 días (`docs/ROADMAP.md`)
 
 ---
 
@@ -33,7 +34,8 @@
 ### Testing/CI
 - **Framework de tests unificado:** no -> si
 - **Tests ejecutables en CI:** no -> si
-- **Cobertura minima core modules:** TBD -> >= 60%
+- **Cobertura mínima módulos críticos:** TBD -> >= 80% (propuesto)
+- **Cobertura mínima total:** TBD -> >= 60% (propuesto)
 
 ### Operacion (cron/scraper)
 - **Ejecuciones cron exitosas (7 dias):** TBD -> >= 98%
@@ -41,7 +43,7 @@
 
 ---
 
-## Pendientes de confirmacion
-- Umbrales finales de cobertura.
-- SLOs de cron (exitos/latencia).
-- Limites de lineas por modulo.
+## Decisiones pendientes (ver `docs/DECISION_LOG.md`)
+- D-004: Runner de integración.
+- D-005: Estándar de logging.
+- D-006: Umbrales finales de cobertura.

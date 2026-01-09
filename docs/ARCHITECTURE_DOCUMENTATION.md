@@ -3,8 +3,11 @@
 
 **Versión:** 2.0.0  
 **Fecha:** 1 de noviembre de 2025  
-**Estado:** PRODUCCIÓN ENTERPRISE  
+**Estado:** REFERENCIAL (requiere actualización)  
 **Target:** Arquitectos, DevOps, Senior Engineers  
+
+> **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
+> Para el estado real y plan vigente, ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
 
 ---
 

@@ -42,17 +42,18 @@ supabase/config.toml   # Configuracion Supabase local
 tests/unit/            # Tests unitarios (Vitest) - imports de módulos reales
 ├── api-proveedor-routing.test.ts  # 17 tests
 ├── scraper-parsing.test.ts        # 10 tests
-├── scraper-matching.test.ts       # 7 tests
+├── scraper-matching.test.ts       # 9 tests
 ├── scraper-alertas.test.ts        # 3 tests
 └── cron-jobs.test.ts              # 8 tests
 
 .github/workflows/     # CI/CD
 └── ci.yml             # Pipeline: lint → test → build → typecheck
 
-docs/                  # 20 archivos de documentación + OpenAPI/Postman
+docs/                  # 19 archivos de documentación + OpenAPI/Postman
 ├── PLAN_EJECUCION.md           # Plan técnico (en progreso)
 ├── CHECKLIST_CIERRE.md         # Estado del proyecto
-├── ANALISIS_EXHAUSTIVO_PROYECTO.md
+├── ROADMAP.md                  # Plan vigente (rolling 90 días)
+├── DECISION_LOG.md             # Decisiones vigentes
 ├── OBJETIVOS_Y_KPIS.md
 ├── INVENTARIO_ACTUAL.md
 ├── BASELINE_TECNICO.md
@@ -110,7 +111,8 @@ npx vitest --coverage       # Unit tests con coverage
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
-| Plan de ejecución | `docs/PLAN_EJECUCION.md` |
+| Plan vigente | `docs/ROADMAP.md` |
+| Decisiones | `docs/DECISION_LOG.md` |
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
 
 ## Estado Actual (Enero 2025 - verificado)
@@ -119,7 +121,7 @@ npx vitest --coverage       # Unit tests con coverage
 1. **api-proveedor**: Router + handlers + schemas + validators + utils
 2. **scraper-maxiconsumo**: 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
 3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
-   - Pendientes críticos: rate limiter API, alertas reales, y persistencia con schema DB.
+   - Pendientes críticos: logging unificado en handlers, validación runtime y persistencia de cron (ver `docs/ROADMAP.md`).
 
 ### Testing
 - Framework: **Vitest 4.0.16**
@@ -139,6 +141,6 @@ npx vitest --coverage       # Unit tests con coverage
 - `cron-health-monitor` - Monitoreo de salud
 
 ### Notas:
-- `tests/datos_reales/results/` está en .gitignore (no versionar resultados)
 - CI configurado en `.github/workflows/ci.yml` (activo en `main`)
 - Vitest elegido; runner/scripts alineados
+- Plan vigente en `docs/ROADMAP.md` (si no está allí, no está planificado)
