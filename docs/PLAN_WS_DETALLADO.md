@@ -72,6 +72,10 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
   Campos: `productos_procesados`, `productos_exitosos`, `productos_fallidos`, `alertas_generadas`.  
   Aceptacion: `cron-dashboard` puede leer valores sin nulls en ejecuciones exitosas.
 
+- **WS1.6 Logging en entrypoints y auxiliares** (Owner: Backend)  
+  Scope: `api-minimarket/index.ts`, `notificaciones-tareas/index.ts`, y utils de cache (`api-proveedor/utils/cache.ts`).  
+  Aceptacion: `console.*` eliminado o redirigido a `_shared/logger`; `rg -n "console\\." supabase/functions` solo muestra `_shared/logger.ts` y suites de testing.
+
 ### Evidencia WS1
 - `rg -n "console\\.log" supabase/functions/api-proveedor` => 0  
 - `rg -n "console\\.log" supabase/functions/scraper-maxiconsumo` => 0  
