@@ -72,26 +72,26 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 ## Estructura del Proyecto
 
 ```
-inventario-retail/          # Aplicación principal Mini Market
-├── agente_deposito/        # Agente de gestión de stock
-├── agente_negocio/         # Agente de reglas de negocio
-├── web_dashboard/          # Dashboard React + Python backend
-├── config/                 # Configuraciones
-├── database/               # Modelos y migraciones locales
-├── ml/                     # Modelos de Machine Learning
-└── tests/                  # Tests unitarios e integración
-
-minimarket-system/          # Frontend React (Supabase)
+minimarket-system/          # Frontend React + Vite + TypeScript
 ├── src/                    # Código fuente React
-└── supabase/               # Edge Functions + Migraciones
 
-scripts/                    # Scripts de operaciones
-tests/                      # Tests de sistema
+supabase/                   # Edge Functions + migraciones + cron jobs
+├── functions/              # Edge Functions (Deno)
+├── migrations/             # Migraciones SQL versionadas
+├── cron_jobs/              # Configuración de jobs
+
+docs/                       # Documentación técnica
+tests/                      # Tests (unit/integration/e2e/performance)
+.github/workflows/          # CI/CD
+deploy.sh                   # Script de deployment
+setup.sh                    # Script de configuración
+migrate.sh                  # Script de migraciones
+test.sh                     # Runner legacy de tests
 ```
 
 ## Convenciones
 
 - Todas las migraciones SQL en `supabase/migrations/`
 - Edge Functions en TypeScript bajo `supabase/functions/`
-- Tests deben pasar antes de merge a master
+- Tests deben pasar antes de merge a main
 - Documentación actualizada en cada PR
