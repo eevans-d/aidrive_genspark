@@ -78,6 +78,12 @@ Pendientes críticos detectados:
 - [ ] Métricas básicas: duración, errores, items procesados (parcial)
 - [ ] Logs guardan en `cron_jobs_execution_log` (payload no coincide con schema)
 
+### WS1: Inventario y migración de logs
+- [x] WS1.0.1 Inventario `console.log|console.error` en `supabase/functions` (2026-01-09).
+- [x] WS1.0.1 Resultado: `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/cron-testing-suite/index.ts` (testing), `supabase/functions/_shared/logger.ts` (interno).
+- [x] WS1.6 Migración console.* en `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/api-proveedor/utils/cache.ts`.
+- [x] WS1.6 Verificación: `rg -n "console\\." supabase/functions` solo muestra `_shared/logger.ts` y `cron-testing-suite`.
+
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)

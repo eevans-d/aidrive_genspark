@@ -1,3 +1,7 @@
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('notificaciones-tareas');
+
 Deno.serve(async (req) => {
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
@@ -9,6 +13,19 @@ Deno.serve(async (req) => {
     if (req.method === 'OPTIONS') {
         return new Response(null, { status: 200, headers: corsHeaders });
     }
+
+    const url = new URL(req.url);
+    const requestId =
+        req.headers.get('x-request-id') || crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    const jobId = 'notificaciones-tareas';
+    const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+    const requestLog = {
+        requestId,
+        jobId,
+        runId,
+        method: req.method,
+        path: url.pathname
+    };
 
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -140,12 +157,13 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('Error en notificaciones:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('NOTIFICACIONES_ERROR', { ...requestLog, error: errorMessage });
 
         return new Response(JSON.stringify({
             error: {
                 code: 'NOTIFICATION_ERROR',
-                message: error.message
+                message: errorMessage
             }
         }), {
             status: 500,

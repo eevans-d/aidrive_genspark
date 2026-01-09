@@ -1,3 +1,5 @@
+import { createLogger } from '../../_shared/logger.ts';
+
 export type CacheReadOptions = {
     supabaseUrl?: string;
     serviceRoleKey?: string;
@@ -9,7 +11,10 @@ export type CacheWriteOptions = {
     serviceRoleKey: string;
     ttlSeconds: number;
     forcePersistent?: boolean;
+    logMeta?: Record<string, unknown>;
 };
+
+const logger = createLogger('api-proveedor:cache');
 
 export const API_CACHE = new Map<string, { data: any; timestamp: number; ttl: number }>();
 const PERSISTENT_CACHE_TABLE = 'cache_proveedor';
@@ -75,7 +80,14 @@ export async function addToAPICache(key: string, data: any, ttl: number, options
     const shouldPersist = options.forcePersistent || !memoryValid;
     if (!shouldPersist) return;
 
-    await writeToPersistentCache(key, data, options.ttlSeconds, options.supabaseUrl, options.serviceRoleKey);
+    await writeToPersistentCache(
+        key,
+        data,
+        options.ttlSeconds,
+        options.supabaseUrl,
+        options.serviceRoleKey,
+        options.logMeta
+    );
 }
 
 export async function invalidateRelatedCaches(categoria: string): Promise<number> {
@@ -100,7 +112,8 @@ async function writeToPersistentCache(
     payload: any,
     ttlSeconds: number,
     supabaseUrl: string,
-    serviceRoleKey: string
+    serviceRoleKey: string,
+    logMeta: Record<string, unknown> = {}
 ): Promise<void> {
     try {
         const response = await fetch(
@@ -123,10 +136,16 @@ async function writeToPersistentCache(
         );
 
         if (!response.ok) {
-            console.warn(`Error persistiendo cache ${key}: ${response.statusText}`);
+            logger.warn('CACHE_PERSIST_FAILED', {
+                ...logMeta,
+                cache_key: key,
+                status: response.status,
+                status_text: response.statusText
+            });
         }
     } catch (error) {
-        console.warn(`Error persistiendo cache ${key}: ${(error as Error).message}`);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.warn('CACHE_PERSIST_FAILED', { ...logMeta, cache_key: key, error: errorMessage });
     }
 }
 

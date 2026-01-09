@@ -5,6 +5,10 @@
 // Integración completa con funciones PL/pgSQL del Sprint 3-4
 // ============================================================================
 
+import { createLogger } from '../_shared/logger.ts';
+
+const logger = createLogger('api-minimarket');
+
 Deno.serve(async (req) => {
     const corsHeaders = {
         'Access-Control-Allow-Origin': '*',
@@ -18,11 +22,19 @@ Deno.serve(async (req) => {
         return new Response(null, { status: 200, headers: corsHeaders });
     }
 
-    try {
-        const url = new URL(req.url);
-        const path = url.pathname;
-        const method = req.method;
+    const url = new URL(req.url);
+    const path = url.pathname;
+    const method = req.method;
+    const requestId =
+        req.headers.get('x-request-id') || crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
+    const requestLog = {
+        requestId,
+        method,
+        path,
+        timestamp: new Date().toISOString()
+    };
 
+    try {
         // Configuración Supabase
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
@@ -1032,18 +1044,19 @@ Deno.serve(async (req) => {
         });
 
     } catch (error) {
-        console.error('Error en API:', error);
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        logger.error('API_MINIMARKET_ERROR', { ...requestLog, error: errorMessage });
 
         return new Response(JSON.stringify({
             success: false,
             error: {
                 code: 'API_ERROR',
-                message: error.message
+                message: errorMessage
             },
             timestamp: new Date().toISOString()
         }), {
-            status: error.message.includes('No autorizado') ? 401 : 
-                   error.message.includes('Acceso denegado') ? 403 : 500,
+            status: errorMessage.includes('No autorizado') ? 401 :
+                   errorMessage.includes('Acceso denegado') ? 403 : 500,
             headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
     }

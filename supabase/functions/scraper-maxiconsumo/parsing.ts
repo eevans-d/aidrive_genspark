@@ -3,7 +3,10 @@
  * @module scraper-maxiconsumo/parsing
  */
 
+import { createLogger } from '../_shared/logger.ts';
 import type { ProductoMaxiconsumo, StructuredLog } from './types.ts';
+
+const logger = createLogger('scraper-maxiconsumo:parsing');
 
 // Marcas conocidas
 const MARCAS_CONOCIDAS = [
@@ -88,7 +91,8 @@ export async function extractProductosConOptimizacion(
           });
         }
       } catch (e) {
-        console.warn(JSON.stringify({ ...structuredLog, event: 'PRODUCT_EXTRACTION_ERROR', error: (e as Error).message }));
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        logger.warn('PRODUCT_EXTRACTION_ERROR', { ...structuredLog, error: errorMessage });
       }
     }
     if (productos.length > 10) break;

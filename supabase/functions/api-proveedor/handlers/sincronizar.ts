@@ -191,7 +191,8 @@ async function persistProveedorSnapshots(
                 supabaseUrl,
                 serviceRoleKey,
                 ttlSeconds,
-                forcePersistent: true
+                forcePersistent: true,
+                logMeta: { ...requestLog, endpoint: target.endpoint }
             });
         } catch (error) {
             logger.warn('SNAPSHOT_WARNING', {
