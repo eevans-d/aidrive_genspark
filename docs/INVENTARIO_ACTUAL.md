@@ -12,7 +12,7 @@
 - `supabase/migrations/` migraciones SQL (4)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
 - `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
-- `docs/` documentación técnica (19 archivos)
+- `docs/` documentación técnica (20 archivos)
 - `.github/workflows/` CI/CD (1 workflow)
 
 ---
@@ -73,6 +73,7 @@
 - `DECISION_LOG.md` - Decisiones vigentes
 - `CHECKLIST_CIERRE.md` - Estado del proyecto
 - `INVENTARIO_ACTUAL.md` - Este archivo
+- `ESTADO_ACTUAL.md` - Estado aproximado hacia producción
 - `OBJETIVOS_Y_KPIS.md`
 - `BASELINE_TECNICO.md`
 - `DB_GAPS.md`

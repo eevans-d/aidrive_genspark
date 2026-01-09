@@ -154,6 +154,9 @@ tests/unit/
 | Documento | Estado | Notas |
 |-----------|--------|-------|
 | [PLAN_EJECUCION.md](PLAN_EJECUCION.md) | ⚠️ Actualizado | Plan no completado |
+| [ROADMAP.md](ROADMAP.md) | ✅ Vigente | Plan rolling 90 días |
+| [DECISION_LOG.md](DECISION_LOG.md) | ✅ Vigente | Decisiones confirmadas |
+| [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md) | ✅ Vigente | Progreso aproximado hacia producción |
 | [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) | ✅ Vigente | Refleja estructura modular |
 | [BASELINE_TECNICO.md](BASELINE_TECNICO.md) | ✅ Vigente | Punto de partida documentado |
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |

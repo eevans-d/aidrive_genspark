@@ -43,7 +43,7 @@
 
 ---
 
-## Decisiones pendientes (ver `docs/DECISION_LOG.md`)
-- D-004: Runner de integración.
-- D-005: Estándar de logging.
-- D-006: Umbrales finales de cobertura.
+## Decisiones vigentes (ver `docs/DECISION_LOG.md`)
+- D-004: Runner de integración (Vitest + Supabase local).
+- D-005: Estándar de logging (`_shared/logger` + ids).
+- D-006: Umbrales de cobertura (80% críticos / 60% total).
