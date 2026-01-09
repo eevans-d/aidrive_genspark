@@ -22,8 +22,8 @@
 | Cron Jobs (`cron-jobs-maxiconsumo`) | 70 | Orquestador + jobs; persistencia validada runtime; validaciones de alertas pendientes. |
 | API Gateway (`api-minimarket`) | 70 | Funcional; logging estructurado incorporado. |
 | Shared libs (`_shared/`) | 80 | Bases listas; adopción inconsistente en auxiliares. |
-| DB/Migraciones | 70 | Versionado local OK; falta verificación staging/prod. |
-| Testing/QA | 45 | Unit tests OK; runner integración Supabase local listo; e2e/perf pendientes. |
+| DB/Migraciones | 72 | Migración `precios_proveedor` versionada; falta verificación staging/prod. |
+| Testing/QA | 55 | Unit + integration OK; smoke e2e listo; perf/seguridad pendientes. |
 | Observabilidad | 50 | Logger adoptado en críticos; métricas/persistencia en cron listos; falta cobertura total. |
 | CI/CD | 85 | Pipeline completo; faltan pruebas de integración. |
 | Seguridad | 45 | RLS mínima; auditoría y hardening pendiente. |
@@ -34,7 +34,7 @@
 
 ## Avance global estimado (ponderado)
 
-**Progreso total aproximado:** **69%**
+**Progreso total aproximado:** **71%**
 
 **Pesos usados (para transparencia):**
 - Backend crítico (API Proveedor + Scraper + Cron): 45%
@@ -51,17 +51,15 @@
 
 ## Bloqueadores / pendientes críticos (para llegar a producción)
 - Validaciones runtime (alertas/comparaciones).
-- Smoke tests e2e mínimos sobre Supabase local.
 - Verificación de migraciones en staging/prod con evidencia.
 - Auditoría RLS y revisión de permisos.
 
 ---
 
 ## Próximos pasos inmediatos (orden sugerido)
-1. WS2.2 (Testing): smoke tests e2e mínimos.
-2. WS3.1 (DB): verificar migraciones en staging/prod y documentar rollback.
-3. WS4.1 (Cron): validar runtime de alertas/comparaciones.
-4. WS6.1 (CI): integrar tests de integración en pipeline.
+1. WS3.1 (DB): verificar migraciones en staging/prod y documentar rollback.
+2. WS4.1 (Cron): validar runtime de alertas/comparaciones.
+3. WS6.1 (CI): integrar tests de integración en pipeline.
 
 ---
 

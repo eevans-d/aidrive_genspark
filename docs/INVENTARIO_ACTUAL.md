@@ -1,4 +1,4 @@
-# INVENTARIO ACTUAL (v3 - 2026-01-09)
+# INVENTARIO ACTUAL (v4 - 2026-01-09)
 
 **Estado:** Plan histórico no completado ⚠️  
 **Plan vigente:** ver `docs/ROADMAP.md`
@@ -9,9 +9,14 @@
 - `minimarket-system/` frontend React + Vite + TypeScript
 - `supabase/functions/` Edge Functions (Deno) - **MODULARIZADAS**
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
-- `supabase/migrations/` migraciones SQL (4)
+- `supabase/migrations/` migraciones SQL (5)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
 - `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
+- `tests/integration/` Tests integración Vitest (2 archivos, 31 tests)
+- `tests/e2e/` Smoke tests E2E Vitest (2 archivos, 4 tests)
+- `tests/performance/` Performance tests (legacy/Jest)
+- `tests/security/` Security tests (legacy/Jest)
+- `tests/api-contracts/` API contracts (legacy/Jest)
 - `docs/` documentación técnica (21 archivos)
 - `.github/workflows/` CI/CD (1 workflow)
 
@@ -49,6 +54,7 @@
 - `20251103_create_cache_proveedor.sql`
 - `20260104020000_create_missing_objects.sql`
 - `20260104083000_add_rls_policies.sql`
+- `20260109060000_create_precios_proveedor.sql`
 
 ---
 
@@ -58,7 +64,16 @@
 - `tests/unit/scraper-matching.test.ts` (9 tests)
 - `tests/unit/scraper-alertas.test.ts` (3 tests)
 - `tests/unit/cron-jobs.test.ts` (8 tests)
-- **Total: 47 tests pasando**
+- `tests/integration/api-scraper.integration.test.ts` (integration)
+- `tests/integration/database.integration.test.ts` (integration)
+- `tests/e2e/api-proveedor.smoke.test.ts` (smoke)
+- `tests/e2e/cron.smoke.test.ts` (smoke)
+- **Total: 82 tests pasando (unit + integration + e2e)**
+
+Suites legacy (pendientes de migración a Vitest):
+- `tests/performance/load-testing.test.js`
+- `tests/security/security-tests.test.js`
+- `tests/api-contracts/openapi-compliance.test.js`
 
 ---
 
@@ -67,7 +82,7 @@
 
 ---
 
-## Docs (17 archivos)
+## Docs (21 archivos)
 - `PLAN_EJECUCION.md` - Plan técnico (histórico)
 - `ROADMAP.md` - Plan vigente (rolling)
 - `DECISION_LOG.md` - Decisiones vigentes
@@ -93,5 +108,9 @@
 
 ## Scripts
 - `deploy.sh`, `migrate.sh`, `setup.sh` - Operaciones
+- `scripts/run-integration-tests.sh` - Supabase local + integration
+- `scripts/run-e2e-tests.sh` - Supabase local + E2E smoke
 - `test.sh` - Runner legacy (usar `npx vitest run`)
-- `vitest.config.ts` - Configuración Vitest
+- `vitest.config.ts` - Configuración Vitest (unit)
+- `vitest.integration.config.ts` - Configuración Vitest (integration)
+- `vitest.e2e.config.ts` - Configuración Vitest (e2e)

@@ -138,6 +138,7 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 ### Evidencia WS2
 - Comandos en README o `docs/OPERATIONS_RUNBOOK.md` con resultados reproducibles.  
 - `npx vitest run tests/integration` pasa local con Supabase.
+- `npm run test:e2e` pasa local con Supabase.
 
 ---
 
