@@ -9,7 +9,6 @@ import {
     estimateOptimalTiming,
     forecastScrapingSuccess,
     identifyAnomalies,
-    identifyAnomalies,
     predictPerformanceTrends
 } from '../utils/estadisticas.ts';
 import { createLogger } from '../../_shared/logger.ts';
@@ -60,16 +59,16 @@ export async function getEstadisticasScrapingOptimizado(
             calcularMetricasScrapingOptimizado(estadisticas)
         ]);
 
-        const prediccionesPromise = incluirPredicciones
-            ? Promise.allSettled([
+        const prediccionesResults = incluirPredicciones
+            ? await Promise.allSettled([
                   predictPerformanceTrends(estadisticas),
                   forecastScrapingSuccess(estadisticas),
                   estimateOptimalTiming(estadisticas)
               ])
-            : Promise.resolve(null);
+            : null;
 
         const [performance, trends, anomalies, baseMetrics] = await metricasPromise;
-        const [perfPred, successPred, timingPred] = await prediccionesPromise;
+        const [perfPred, successPred, timingPred] = prediccionesResults ?? [];
 
         const metricasTemporales = aggregateTemporalMetrics(estadisticas, granularidad);
 

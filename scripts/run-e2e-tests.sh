@@ -12,9 +12,6 @@ fi
 echo "Iniciando Supabase local..."
 supabase start
 
-echo "Reiniciando base de datos local..."
-supabase db reset
-
 if supabase status -o env >/dev/null 2>&1; then
   eval "$(supabase status -o env)"
   export SUPABASE_URL="${SUPABASE_URL:-${API_URL:-}}"
@@ -22,5 +19,5 @@ if supabase status -o env >/dev/null 2>&1; then
   export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
 fi
 
-echo "Ejecutando tests de integracion con Vitest..."
-npx vitest run --config vitest.integration.config.ts
+echo "Ejecutando smoke tests E2E con Vitest..."
+npx vitest run --config vitest.e2e.config.ts

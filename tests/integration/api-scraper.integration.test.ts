@@ -3,7 +3,7 @@
  * Tests de integración end-to-end entre API y sistema de scraping
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } = require('vitest');
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock global
 global.fetch = vi.fn();
@@ -12,6 +12,15 @@ global.fetch = vi.fn();
 const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
 const API_URL = `${SUPABASE_URL}/functions/v1/api-proveedor`;
 const SCRAPER_URL = `${SUPABASE_URL}/functions/v1/scraper-maxiconsumo`;
+
+const mockResponse = (body: unknown, ok = true) => ({
+  ok,
+  json: () => Promise.resolve(body)
+});
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
   
@@ -194,16 +203,16 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
         }
       ];
       
-      // Mock respuesta de base de datos
-      fetch
-        .mockResolvedValueOnce({ // Consulta precios
-          ok: true,
-          json: () => Promise.resolve(productosScraped)
+      // Mock respuesta de API
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            productos: productosScraped,
+            filtros_aplicados: { categoria: 'bebidas' }
+          }
         })
-        .mockResolvedValueOnce({ // Count total
-          ok: true,
-          json: () => Promise.resolve([{ count: 2 }])
-        });
+      );
       
       // Llamar API de precios
       const preciosResult = await fetch(`${API_URL}/precios?categoria=bebidas&limit=10`, {
@@ -242,10 +251,19 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
         }
       ];
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(oportunidades)
-      });
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            oportunidades,
+            estadisticas: {
+              total_oportunidades: 2,
+              ahorro_total_estimado: 120,
+              mejor_oportunidad: { diferencia_porcentual: 27.27 }
+            }
+          }
+        })
+      );
       
       const comparacionResult = await fetch(`${API_URL}/comparacion?solo_oportunidades=true&min_diferencia=10`, {
         headers: { 'Authorization': 'Bearer test-token' }
@@ -285,10 +303,20 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
         }
       ];
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(alertas)
-      });
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            alertas,
+            estadisticas: {
+              criticas: 1,
+              altas: 1,
+              aumentos: 1,
+              disminuciones: 1
+            }
+          }
+        })
+      );
       
       const alertasResult = await fetch(`${API_URL}/alertas?severidad=critica&limit=10`, {
         headers: { 'Authorization': 'Bearer test-token' }
@@ -312,30 +340,27 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
     test('debe ejecutar sincronización manual end-to-end', async () => {
       const mockAuth = 'Bearer valid-test-token';
       
-      // Mock secuencia completa de sincronización
-      fetch
-        .mockResolvedValueOnce({ // Trigger scraper
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: {
-              scraping_completo: true,
-              productos_extraidos: 1500,
-              productos_guardados: 1450,
-              estadisticas: { tiempo_ejecucion: 120000 }
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            sincronizacion: {
+              data: {
+                productos_guardados: 1450
+              }
+            },
+            comparacion_generada: {
+              data: {
+                oportunidades_ahorro: 180
+              }
+            },
+            parametros: {
+              categoria: 'bebidas',
+              force_full: true
             }
-          })
+          }
         })
-        .mockResolvedValueOnce({ // Comparación automática
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: {
-              comparaciones_realizadas: 1000,
-              oportunidades_ahorro: 180
-            }
-          })
-        });
+      );
       
       // Llamar endpoint de sincronización
       const syncResult = await fetch(`${API_URL}/sincronizar?categoria=bebidas&force_full=true`, {
@@ -357,6 +382,15 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
     });
     
     test('debe requerir autenticación para sincronización', async () => {
+      fetch.mockResolvedValueOnce(
+        mockResponse(
+          {
+            success: false,
+            error: { code: 'AUTH_REQUIRED' }
+          },
+          false
+        )
+      );
       const syncResult = await fetch(`${API_URL}/sincronizar`, {
         method: 'POST'
         // Sin headers de autenticación
@@ -401,10 +435,24 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
         }
       ];
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve(estadisticasScraping)
-      });
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            ejecuciones: estadisticasScraping,
+            metricas_agregadas: {
+              total_ejecuciones: 2,
+              productos_promedio: 1000,
+              tasa_exito: 100,
+              tiempo_promedio_ms: 40000
+            },
+            parametros: {
+              dias_analizados: 7,
+              categoria: 'bebidas'
+            }
+          }
+        })
+      );
       
       const statsResult = await fetch(`${API_URL}/estadisticas?dias=7&categoria=bebidas`, {
         headers: { 'Authorization': 'Bearer test-token' }
@@ -449,10 +497,18 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
         updated_at: '2025-11-01T09:30:00Z'
       };
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([configuracion])
-      });
+      fetch.mockResolvedValueOnce(
+        mockResponse({
+          success: true,
+          data: {
+            configuracion,
+            parametros_disponibles: {
+              frecuencia_scraping: ['diaria', 'semanal'],
+              severidad_alertas: ['critica', 'alta', 'media', 'baja']
+            }
+          }
+        })
+      );
       
       const configResult = await fetch(`${API_URL}/configuracion`, {
         headers: { 'Authorization': 'Bearer test-token' }
@@ -480,24 +536,26 @@ describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
       
       // Simular que el scraper actualizó productos
       fetch
-        .mockResolvedValueOnce({ // Consultar productos para API
-          ok: true,
-          json: () => Promise.resolve(productosEnScraper)
-        })
-        .mockResolvedValueOnce({ // Count
-          ok: true,
-          json: () => Promise.resolve([{ count: 2 }])
-        })
-        .mockResolvedValueOnce({ // Oportunidades
-          ok: true,
-          json: () => Promise.resolve([
-            {
-              diferencia_absoluta: 20,
-              diferencia_porcentual: 20,
-              es_oportunidad_ahorro: true
+        .mockResolvedValueOnce(
+          mockResponse({
+            success: true,
+            data: { productos: productosEnScraper }
+          })
+        )
+        .mockResolvedValueOnce(
+          mockResponse({
+            success: true,
+            data: {
+              oportunidades: [
+                {
+                  diferencia_absoluta: 20,
+                  diferencia_porcentual: 20,
+                  es_oportunidad_ahorro: true
+                }
+              ]
             }
-          ])
-        });
+          })
+        );
       
       // Verificar que la API refleja los cambios del scraper
       const productosResult = await fetch(`${API_URL}/productos?busqueda=Producto`, {

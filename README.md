@@ -118,6 +118,9 @@ npx vitest run --coverage
 
 # Tests de integración (Supabase local)
 npm run test:integration
+
+# Smoke tests E2E (Supabase local)
+npm run test:e2e
 ```
 
 **Tests disponibles (47 total):**

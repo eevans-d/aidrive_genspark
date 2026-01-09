@@ -3,7 +3,7 @@
  * Tests de integración con la base de datos Supabase
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } = require('vitest');
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
 
 // Mock de la configuración de Supabase para testing
 const SUPABASE_CONFIG = {
@@ -13,6 +13,15 @@ const SUPABASE_CONFIG = {
 
 // Mock fetch global
 global.fetch = vi.fn();
+
+const mockResponse = (body: unknown, ok = true) => ({
+  ok,
+  json: () => Promise.resolve(body)
+});
+
+beforeEach(() => {
+  vi.resetAllMocks();
+});
 
 describe('🗄️ INTEGRATION TESTS - Database', () => {
   
@@ -189,9 +198,8 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
     test('debe consultar vista de oportunidades de ahorro', async () => {
       const query = `${SUPABASE_CONFIG.url}/rest/v1/vista_oportunidades_ahorro?select=*&order=diferencia_absoluta.desc&limit=50`;
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([
+      fetch.mockResolvedValueOnce(
+        mockResponse([
           {
             id: 'opp1',
             nombre_producto: 'Producto 1',
@@ -199,10 +207,11 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
             precio_proveedor: 75,
             diferencia_absoluta: 25,
             diferencia_porcentual: 33.33,
+            es_oportunidad_ahorro: true,
             recomendacion: 'OPORTUNIDAD CRÍTICA'
           }
         ])
-      });
+      );
       
       const result = await fetch(query, {
         headers: {
@@ -258,9 +267,8 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
     test('debe consultar vista de alertas activas', async () => {
       const query = `${SUPABASE_CONFIG.url}/rest/v1/vista_alertas_activas?select=*&order=fecha_alerta.desc&limit=20`;
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([
+      fetch.mockResolvedValueOnce(
+        mockResponse([
           {
             id: 'alert1',
             nombre_producto: 'Producto con Alerta',
@@ -268,10 +276,11 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
             porcentaje_cambio: -20.00,
             severidad: 'alta',
             mensaje: 'Precio disminuyó 20.0%',
-            fecha_alerta: new Date().toISOString()
+            fecha_alerta: new Date().toISOString(),
+            procesada: false
           }
         ])
-      });
+      );
       
       const result = await fetch(query, {
         headers: {
@@ -357,9 +366,8 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
       
       const query = `${SUPABASE_CONFIG.url}/rest/v1/estadisticas_scraping?select=*&created_at=gte.${fechaInicio.toISOString()}&order=created_at.desc`;
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([
+      fetch.mockResolvedValueOnce(
+        mockResponse([
           {
             id: 'stats1',
             fuente: 'Maxiconsumo Necochea',
@@ -369,7 +377,7 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
             created_at: new Date().toISOString()
           }
         ])
-      });
+      );
       
       const result = await fetch(query, {
         headers: {
@@ -414,10 +422,14 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
         }
       };
       
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve([{ id: 'config-123' }])
-      });
+      fetch.mockResolvedValueOnce(
+        mockResponse([
+          {
+            id: 'config-123',
+            ...configuracion
+          }
+        ])
+      );
       
       const result = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/configuracion_proveedor`, {
         method: 'POST',
@@ -532,6 +544,7 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
     
     test('debe ejecutar función de actualización de estadísticas', async () => {
       // Simular llamada a función stored procedure
+      fetch.mockResolvedValueOnce(mockResponse({ success: true }));
       const callResult = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/fnc_actualizar_estadisticas_scraping`, {
         method: 'POST',
         headers: {
@@ -556,6 +569,7 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
     });
     
     test('debe ejecutar función de limpieza de datos antiguos', async () => {
+      fetch.mockResolvedValueOnce(mockResponse(3));
       const callResult = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/fnc_limpiar_datos_antiguos`, {
         method: 'POST',
         headers: {
@@ -573,6 +587,7 @@ describe('🗄️ INTEGRATION TESTS - Database', () => {
     });
     
     test('debe ejecutar función de detección de cambios significativos', async () => {
+      fetch.mockResolvedValueOnce(mockResponse(5));
       const callResult = await fetch(`${SUPABASE_CONFIG.url}/rest/v1/rpc/fnc_deteccion_cambios_significativos`, {
         method: 'POST',
         headers: {

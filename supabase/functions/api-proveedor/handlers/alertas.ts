@@ -48,15 +48,15 @@ export async function getAlertasActivasOptimizado(
         }
 
         const alertas = await response.json();
-        const analisisPromise = incluirAnalisis
-            ? Promise.allSettled([
+        const analisisResults = incluirAnalisis
+            ? await Promise.allSettled([
                   detectAlertPatterns(alertas),
                   predictAlertTrends(alertas),
                   calculateAlertRiskScore(alertas)
               ])
-            : Promise.resolve(null);
+            : null;
 
-        const [patterns, trends, riskScores] = await analisisPromise;
+        const [patterns, trends, riskScores] = analisisResults ?? [];
 
         const alertasEnriquecidas = await Promise.allSettled(
             alertas.map(async (alerta: any) => ({
