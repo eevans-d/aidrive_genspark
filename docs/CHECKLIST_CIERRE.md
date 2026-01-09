@@ -155,6 +155,7 @@ tests/unit/
 |-----------|--------|-------|
 | [PLAN_EJECUCION.md](PLAN_EJECUCION.md) | ⚠️ Actualizado | Plan no completado |
 | [ROADMAP.md](ROADMAP.md) | ✅ Vigente | Plan rolling 90 días |
+| [PLAN_WS_DETALLADO.md](PLAN_WS_DETALLADO.md) | ✅ Vigente | Plan operativo por workstreams |
 | [DECISION_LOG.md](DECISION_LOG.md) | ✅ Vigente | Decisiones confirmadas |
 | [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md) | ✅ Vigente | Progreso aproximado hacia producción |
 | [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) | ✅ Vigente | Refleja estructura modular |

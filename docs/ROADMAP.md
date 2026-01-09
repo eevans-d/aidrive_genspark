@@ -13,6 +13,7 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 - Si una tarea no está aquí, **no está planificada**.
 - Cada item incluye **criterio de aceptación**, **dependencias** y **prioridad**.
 - Al cerrar un item, actualizar `docs/CHECKLIST_CIERRE.md` y dejar evidencia (test, log, captura o link).
+- Para detalle operativo por tarea, ver `docs/PLAN_WS_DETALLADO.md`.
 
 ## Workstreams (por módulos/subsistemas)
 
@@ -137,5 +138,6 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 
 ## Control de cambios
 1. Actualizar `docs/ROADMAP.md`.
-2. Registrar decisión en `docs/DECISION_LOG.md` si aplica.
-3. Reflejar estado en `docs/CHECKLIST_CIERRE.md`.
+2. Actualizar `docs/PLAN_WS_DETALLADO.md` si cambian tareas operativas.
+3. Registrar decisión en `docs/DECISION_LOG.md` si aplica.
+4. Reflejar estado en `docs/CHECKLIST_CIERRE.md`.

@@ -49,11 +49,12 @@ tests/unit/            # Tests unitarios (Vitest) - imports de módulos reales
 .github/workflows/     # CI/CD
 └── ci.yml             # Pipeline: lint → test → build → typecheck
 
-docs/                  # 20 archivos de documentación + OpenAPI/Postman
+docs/                  # 21 archivos de documentación + OpenAPI/Postman
 ├── PLAN_EJECUCION.md           # Plan técnico (en progreso)
 ├── CHECKLIST_CIERRE.md         # Estado del proyecto
 ├── ESTADO_ACTUAL.md            # Progreso aproximado hacia producción
 ├── ROADMAP.md                  # Plan vigente (rolling 90 días)
+├── PLAN_WS_DETALLADO.md         # Plan operativo por workstreams
 ├── DECISION_LOG.md             # Decisiones vigentes
 ├── OBJETIVOS_Y_KPIS.md
 ├── INVENTARIO_ACTUAL.md
@@ -113,6 +114,7 @@ npx vitest --coverage       # Unit tests con coverage
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
 | Plan vigente | `docs/ROADMAP.md` |
+| Plan operativo | `docs/PLAN_WS_DETALLADO.md` |
 | Decisiones | `docs/DECISION_LOG.md` |
 | Estado actual | `docs/ESTADO_ACTUAL.md` |
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |

@@ -148,6 +148,7 @@ SUPABASE_SERVICE_ROLE_KEY
 |-----------|-------------|
 | [docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md) | Progreso aproximado hacia producción |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Plan vigente (rolling 90 días) |
+| [docs/PLAN_WS_DETALLADO.md](docs/PLAN_WS_DETALLADO.md) | Plan operativo por workstreams |
 | [docs/DECISION_LOG.md](docs/DECISION_LOG.md) | Decisiones para evitar ambigüedades |
 | [docs/API_README.md](docs/API_README.md) | Endpoints y ejemplos de uso |
 | [docs/ESQUEMA_BASE_DATOS_ACTUAL.md](docs/ESQUEMA_BASE_DATOS_ACTUAL.md) | Tablas, campos e índices |
