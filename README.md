@@ -115,6 +115,9 @@ npx vitest
 
 # Tests con coverage
 npx vitest run --coverage
+
+# Tests de integración (Supabase local)
+npm run test:integration
 ```
 
 **Tests disponibles (47 total):**

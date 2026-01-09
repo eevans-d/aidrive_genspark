@@ -3,14 +3,15 @@
  * Tests de integración end-to-end entre API y sistema de scraping
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } = require('vitest');
 
 // Mock global
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 // URLs de testing
-const API_URL = 'https://test-project.supabase.co/functions/v1/api-proveedor';
-const SCRAPER_URL = 'https://test-project.supabase.co/functions/v1/scraper-maxiconsumo';
+const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
+const API_URL = `${SUPABASE_URL}/functions/v1/api-proveedor`;
+const SCRAPER_URL = `${SUPABASE_URL}/functions/v1/scraper-maxiconsumo`;
 
 describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
   
@@ -586,5 +587,5 @@ beforeAll(() => {
 });
 
 afterAll(() => {
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });

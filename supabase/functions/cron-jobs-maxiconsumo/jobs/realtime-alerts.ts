@@ -5,6 +5,7 @@
 
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { writeExecutionLog } from '../execution-log.ts';
 
 const logger = createLogger('cron-jobs-maxiconsumo:job:realtime-alerts');
 
@@ -68,26 +69,21 @@ export async function executeRealtimeAlerts(
     // 3. Log execution
     const endTime = Date.now();
     const durationMs = endTime - startTime;
-    await fetch(`${supabaseUrl}/rest/v1/cron_jobs_execution_log`, {
-      method: 'POST',
-      headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        job_id: ctx.jobId,
-        execution_id: ctx.executionId,
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
-        duracion_ms: durationMs,
-        estado: 'success',
-        request_id: ctx.requestId,
-        parametros_ejecucion: ctx.parameters,
-        resultado: { runId: ctx.runId, alerts, emails, sms },
-        alertas_generadas: alerts,
-        productos_procesados: 0,
-        productos_exitosos: 0,
-        productos_fallidos: 0,
-        emails_enviados: emails,
-        sms_enviados: sms
-      })
+    await writeExecutionLog(supabaseUrl, serviceRoleKey, {
+      ctx,
+      startTimeMs: startTime,
+      endTimeMs: endTime,
+      estado: 'exitoso',
+      resultado: { runId: ctx.runId, alerts, emails, sms },
+      metrics: {
+        productosProcesados: 0,
+        productosExitosos: 0,
+        productosFallidos: 0,
+        alertasGeneradas: alerts,
+        emailsEnviados: emails,
+        smsEnviados: sms
+      },
+      logMeta: jobLog
     });
 
     logger.info('JOB_COMPLETE', { ...jobLog, alerts, duration: durationMs });
@@ -99,12 +95,31 @@ export async function executeRealtimeAlerts(
       metrics: { critical_alerts: alerts }, errors, warnings, recommendations
     };
   } catch (e) {
-    logger.error('JOB_ERROR', { ...jobLog, error: (e as Error).message });
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    logger.error('JOB_ERROR', { ...jobLog, error: errorMessage });
+    const endTime = Date.now();
+    await writeExecutionLog(supabaseUrl, serviceRoleKey, {
+      ctx,
+      startTimeMs: startTime,
+      endTimeMs: endTime,
+      estado: 'fallido',
+      errorMessage,
+      resultado: { runId: ctx.runId, alerts, emails, sms },
+      metrics: {
+        productosProcesados: 0,
+        productosExitosos: 0,
+        productosFallidos: 0,
+        alertasGeneradas: alerts,
+        emailsEnviados: 0,
+        smsEnviados: 0
+      },
+      logMeta: jobLog
+    });
     return {
       success: false, executionTimeMs: Date.now() - startTime,
       productsProcessed: 0, productsSuccessful: 0, productsFailed: 0,
       alertsGenerated: alerts, emailsSent: 0, smsSent: 0,
-      metrics: {}, errors: [(e as Error).message], warnings, recommendations
+      metrics: {}, errors: [errorMessage], warnings, recommendations
     };
   }
 }

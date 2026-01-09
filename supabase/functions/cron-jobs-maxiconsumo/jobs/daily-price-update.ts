@@ -5,6 +5,7 @@
 
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { writeExecutionLog } from '../execution-log.ts';
 
 const logger = createLogger('cron-jobs-maxiconsumo:job:daily-price-update');
 
@@ -53,27 +54,22 @@ export async function executeDailyPriceUpdate(
     // 3. Log execution
     const endTime = Date.now();
     const durationMs = endTime - startTime;
-    await fetch(`${supabaseUrl}/rest/v1/cron_jobs_execution_log`, {
-      method: 'POST',
-      headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}`, 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        job_id: ctx.jobId,
-        execution_id: ctx.executionId,
-        start_time: new Date(startTime).toISOString(),
-        end_time: new Date(endTime).toISOString(),
-        duracion_ms: durationMs,
-        estado: errors.length === 0 ? 'success' : 'partial',
-        request_id: ctx.requestId,
-        parametros_ejecucion: ctx.parameters,
-        resultado: { runId: ctx.runId, processed, successful, failed, alerts, warnings, recommendations },
-        error_message: errors.length > 0 ? errors.join(' | ') : null,
-        productos_procesados: processed,
-        productos_exitosos: successful,
-        productos_fallidos: failed,
-        alertas_generadas: alerts,
-        emails_enviados: 0,
-        sms_enviados: 0
-      })
+    await writeExecutionLog(supabaseUrl, serviceRoleKey, {
+      ctx,
+      startTimeMs: startTime,
+      endTimeMs: endTime,
+      estado: errors.length === 0 ? 'exitoso' : 'parcial',
+      errorMessage: errors.length > 0 ? errors.join(' | ') : null,
+      resultado: { runId: ctx.runId, processed, successful, failed, alerts, warnings, recommendations },
+      metrics: {
+        productosProcesados: processed,
+        productosExitosos: successful,
+        productosFallidos: failed,
+        alertasGeneradas: alerts,
+        emailsEnviados: 0,
+        smsEnviados: 0
+      },
+      logMeta: jobLog
     });
 
     logger.info('JOB_COMPLETE', { ...jobLog, processed, alerts, duration: durationMs });
@@ -87,12 +83,31 @@ export async function executeDailyPriceUpdate(
       errors, warnings, recommendations
     };
   } catch (e) {
-    logger.error('JOB_ERROR', { ...jobLog, error: (e as Error).message });
+    const errorMessage = e instanceof Error ? e.message : String(e);
+    logger.error('JOB_ERROR', { ...jobLog, error: errorMessage });
+    const endTime = Date.now();
+    await writeExecutionLog(supabaseUrl, serviceRoleKey, {
+      ctx,
+      startTimeMs: startTime,
+      endTimeMs: endTime,
+      estado: 'fallido',
+      errorMessage,
+      resultado: { runId: ctx.runId, processed, successful, failed, alerts, warnings, recommendations },
+      metrics: {
+        productosProcesados: processed,
+        productosExitosos: successful,
+        productosFallidos: failed,
+        alertasGeneradas: alerts,
+        emailsEnviados: 0,
+        smsEnviados: 0
+      },
+      logMeta: jobLog
+    });
     return {
       success: false, executionTimeMs: Date.now() - startTime,
       productsProcessed: processed, productsSuccessful: successful, productsFailed: failed,
       alertsGenerated: alerts, emailsSent: 0, smsSent: 0,
-      metrics: {}, errors: [(e as Error).message], warnings, recommendations
+      metrics: {}, errors: [errorMessage], warnings, recommendations
     };
   }
 }

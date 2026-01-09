@@ -74,15 +74,22 @@ Pendientes críticos detectados:
   - Obs: `npx vitest run` OK (solo unit tests).
 
 ### F5: Observabilidad
-- [ ] Logging estructurado con requestId/jobId/runId (parcial)
-- [ ] Métricas básicas: duración, errores, items procesados (parcial)
-- [ ] Logs guardan en `cron_jobs_execution_log` (payload no coincide con schema)
+- [ ] Logging estructurado con requestId/jobId/runId (parcial; cron jobs y api-minimarket listos)
+- [ ] Métricas básicas: duración, errores, items procesados (cron jobs listos; falta cobertura total)
+- [x] Logs guardan en `cron_jobs_execution_log` (payload validado runtime)
 
 ### WS1: Inventario y migración de logs
 - [x] WS1.0.1 Inventario `console.log|console.error` en `supabase/functions` (2026-01-09).
 - [x] WS1.0.1 Resultado: `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/cron-testing-suite/index.ts` (testing), `supabase/functions/_shared/logger.ts` (interno).
 - [x] WS1.6 Migración console.* en `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/api-proveedor/utils/cache.ts`.
 - [x] WS1.6 Verificación: `rg -n "console\\." supabase/functions` solo muestra `_shared/logger.ts` y `cron-testing-suite`.
+- [x] WS1.4.1 Payload alineado con schema y estados `exitoso|fallido|parcial` en `supabase/functions/cron-jobs-maxiconsumo/execution-log.ts`.
+- [x] WS1.4.2 Validación runtime de payload (estado/tipos) antes de insertar en `cron_jobs_execution_log`.
+- [x] WS1.5.1 Métricas por job (`productos_*`, `alertas_*`, `emails_*`, `sms_*`) persistidas en `cron_jobs_execution_log`.
+
+### WS2: Runner de integración (Supabase local)
+- [x] WS2.1.1 Script: `scripts/run-integration-tests.sh` ejecuta `supabase start` + `supabase db reset`.
+- [x] WS2.1.2 Config: `vitest.integration.config.ts` + tests/integration en Vitest; comando `npm run test:integration`.
 
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)

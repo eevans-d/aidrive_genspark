@@ -3,16 +3,16 @@
  * Tests de integración con la base de datos Supabase
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } = require('vitest');
 
 // Mock de la configuración de Supabase para testing
 const SUPABASE_CONFIG = {
-  url: 'https://test-project.supabase.co',
-  serviceKey: 'test-service-key'
+  url: process.env.SUPABASE_URL || 'http://localhost:54321',
+  serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY || 'test-service-key'
 };
 
 // Mock fetch global
-global.fetch = jest.fn();
+global.fetch = vi.fn();
 
 describe('🗄️ INTEGRATION TESTS - Database', () => {
   
@@ -717,5 +717,5 @@ beforeAll(() => {
 
 afterAll(() => {
   // Limpiar mocks
-  jest.clearAllMocks();
+  vi.clearAllMocks();
 });

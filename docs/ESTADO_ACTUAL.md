@@ -19,12 +19,12 @@
 | Frontend (`minimarket-system`) | 75 | Build y lint OK; warning de chunk >500k; optimización pendiente. |
 | API Proveedor (`api-proveedor`) | 75 | Modularizado; logging base unificado; validación runtime pendiente. |
 | Scraper (`scraper-maxiconsumo`) | 75 | Modular + tests reales; logging consistente; validación runtime pendiente. |
-| Cron Jobs (`cron-jobs-maxiconsumo`) | 65 | Orquestador + jobs; validación runtime y persistencia parcial. |
+| Cron Jobs (`cron-jobs-maxiconsumo`) | 70 | Orquestador + jobs; persistencia validada runtime; validaciones de alertas pendientes. |
 | API Gateway (`api-minimarket`) | 70 | Funcional; logging estructurado incorporado. |
 | Shared libs (`_shared/`) | 80 | Bases listas; adopción inconsistente en auxiliares. |
 | DB/Migraciones | 70 | Versionado local OK; falta verificación staging/prod. |
-| Testing/QA | 40 | Unit tests OK; integración/e2e/perf no integrados. |
-| Observabilidad | 45 | Logger adoptado en críticos; métricas y persistencia pendientes. |
+| Testing/QA | 45 | Unit tests OK; runner integración Supabase local listo; e2e/perf pendientes. |
+| Observabilidad | 50 | Logger adoptado en críticos; métricas/persistencia en cron listos; falta cobertura total. |
 | CI/CD | 85 | Pipeline completo; faltan pruebas de integración. |
 | Seguridad | 45 | RLS mínima; auditoría y hardening pendiente. |
 | Ops/Runbook | 60 | Runbook existe; no validado en entorno real. |
@@ -34,7 +34,7 @@
 
 ## Avance global estimado (ponderado)
 
-**Progreso total aproximado:** **67%**
+**Progreso total aproximado:** **69%**
 
 **Pesos usados (para transparencia):**
 - Backend crítico (API Proveedor + Scraper + Cron): 45%
@@ -50,20 +50,18 @@
 ---
 
 ## Bloqueadores / pendientes críticos (para llegar a producción)
-- Persistencia y métricas en `cron_jobs_execution_log` (WS1.4/WS1.5).
-- Validaciones runtime (alertas/comparaciones y persistencia de cron).
-- Tests de integración y e2e mínimos con Supabase local.
+- Validaciones runtime (alertas/comparaciones).
+- Smoke tests e2e mínimos sobre Supabase local.
 - Verificación de migraciones en staging/prod con evidencia.
 - Auditoría RLS y revisión de permisos.
 
 ---
 
 ## Próximos pasos inmediatos (orden sugerido)
-1. WS1 (Observabilidad): completar persistencia + métricas (`cron_jobs_execution_log`).
-2. WS2 (Testing): definir runner de integración y smoke tests e2e.
-3. WS3 (DB): verificar migraciones en staging/prod y documentar rollback.
-4. WS4 (Cron): validar runtime y persistencia.
-5. WS6 (CI): integrar tests de integración en pipeline.
+1. WS2.2 (Testing): smoke tests e2e mínimos.
+2. WS3.1 (DB): verificar migraciones en staging/prod y documentar rollback.
+3. WS4.1 (Cron): validar runtime de alertas/comparaciones.
+4. WS6.1 (CI): integrar tests de integración en pipeline.
 
 ---
 
