@@ -60,54 +60,29 @@ export default function Deposito() {
     setMensaje(null)
 
     try {
-      // Registrar movimiento
-      const { error: movError } = await supabase
-        .from('movimientos_deposito')
-        .insert({
-          producto_id: selectedProducto.id,
-          tipo: tipo,
-          cantidad: parseInt(cantidad),
-          destino: tipo === 'salida' ? destino : null,
-          proveedor_id: tipo === 'entrada' ? proveedorId : null,
-          observaciones: observaciones || null,
-          usuario_id: user?.id || null,
-          usuario_nombre: user?.user_metadata?.nombre || user?.email || 'Usuario',
-          fecha: new Date().toISOString()
-        })
+      const cantidadNumero = parseInt(cantidad, 10)
+      if (!Number.isFinite(cantidadNumero) || cantidadNumero <= 0) {
+        setMensaje({ tipo: 'error', texto: 'La cantidad debe ser mayor a 0' })
+        return
+      }
+
+      const motivo = tipo === 'entrada'
+        ? (proveedorId ? `Entrada proveedor ${proveedorId}` : 'Entrada manual')
+        : (destino ? `Salida a ${destino}` : 'Salida')
+
+      const { error: movError } = await supabase.rpc('sp_movimiento_inventario', {
+        p_producto_id: selectedProducto.id,
+        p_tipo: tipo,
+        p_cantidad: cantidadNumero,
+        p_origen: motivo,
+        p_destino: 'Principal',
+        p_usuario: user?.id ?? null,
+        p_orden_compra_id: null,
+        p_proveedor_id: tipo === 'entrada' && proveedorId ? proveedorId : null,
+        p_observaciones: observaciones || null
+      })
 
       if (movError) throw movError
-
-      // Actualizar stock
-      const { data: stockActual } = await supabase
-        .from('stock_deposito')
-        .select('*')
-        .eq('producto_id', selectedProducto.id)
-        .maybeSingle()
-
-      if (stockActual) {
-        const nuevaCantidad = tipo === 'entrada'
-          ? stockActual.cantidad_actual + parseInt(cantidad)
-          : stockActual.cantidad_actual - parseInt(cantidad)
-
-        await supabase
-          .from('stock_deposito')
-          .update({ 
-            cantidad_actual: Math.max(0, nuevaCantidad),
-            updated_at: new Date().toISOString()
-          })
-          .eq('id', stockActual.id)
-      } else {
-        // Crear registro de stock si no existe
-        if (tipo === 'entrada') {
-          await supabase
-            .from('stock_deposito')
-            .insert({
-              producto_id: selectedProducto.id,
-              cantidad_actual: parseInt(cantidad),
-              stock_minimo: 10
-            })
-        }
-      }
 
       setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente' })
       
@@ -121,7 +96,10 @@ export default function Deposito() {
       
     } catch (error: any) {
       console.error('Error:', error)
-      setMensaje({ tipo: 'error', texto: 'Error al registrar el movimiento' })
+      const mensajeError = error?.message?.includes('Stock insuficiente')
+        ? 'Stock insuficiente para registrar la salida'
+        : 'Error al registrar el movimiento'
+      setMensaje({ tipo: 'error', texto: mensajeError })
     } finally {
       setLoading(false)
     }

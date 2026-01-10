@@ -72,8 +72,45 @@
 
 ---
 
-### 3️⃣ **precios_proveedor** (NUEVO - FASE 1) ✨
-**Propósito:** Gestión de precios de compra vigentes e históricos por proveedor
+### 3️⃣ **precios_proveedor** (scraping - vigente)
+**Propósito:** Precios scrapeados de proveedores externos (Maxiconsumo Necochea y otros locales de la zona)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| sku | TEXT | SKU del proveedor |
+| nombre | TEXT | Nombre del producto |
+| marca | TEXT | Marca |
+| categoria | TEXT | Categoría |
+| precio_unitario | DECIMAL(12,2) | Precio unitario |
+| precio_promocional | DECIMAL(12,2) | Precio promocional |
+| precio_actual | DECIMAL(12,2) | Precio actual |
+| precio_anterior | DECIMAL(12,2) | Precio anterior |
+| stock_disponible | INTEGER | Stock informado |
+| stock_nivel_minimo | INTEGER | Umbral de stock |
+| codigo_barras | TEXT | Código de barras |
+| url_producto | TEXT | URL del producto |
+| imagen_url | TEXT | URL de imagen |
+| descripcion | TEXT | Descripción |
+| hash_contenido | TEXT | Hash para detectar cambios |
+| score_confiabilidad | NUMERIC(5,2) | Score de confiabilidad |
+| ultima_actualizacion | TIMESTAMPTZ | Última actualización |
+| fuente | TEXT | Origen del scraping |
+| activo | BOOLEAN | Estado |
+| metadata | JSONB | Datos extra |
+| created_at | TIMESTAMPTZ | Fecha de creación |
+| updated_at | TIMESTAMPTZ | Última modificación |
+
+**Índices actuales:**
+- `idx_precios_proveedor_sku` (UNIQUE)
+- `idx_precios_proveedor_fuente`
+- `idx_precios_proveedor_categoria`
+- `idx_precios_proveedor_activo`
+
+**Nota:** Esta tabla NO representa precios de compra internos.
+
+#### **precios_compra_proveedor** (pendiente)
+**Propósito:** Gestión de precios de compra vigentes e históricos por proveedor (cuando se habilite la carga interna)
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
@@ -85,7 +122,7 @@
 | fecha_vigencia_desde | TIMESTAMPTZ | Inicio de vigencia |
 | fecha_vigencia_hasta | TIMESTAMPTZ | Fin de vigencia (NULL si vigente) |
 | moneda | VARCHAR(3) | Moneda (ARS, USD, etc.) |
-| **es_precio_vigente** | BOOLEAN | TRUE solo para precio actual |
+| es_precio_vigente | BOOLEAN | TRUE solo para precio actual |
 | descuento_volumen | JSONB | [{cantidad_min, descuento_%}] |
 | condiciones_pago | VARCHAR(100) | Términos de pago |
 | tiempo_entrega_dias | INTEGER | SLA de entrega |
@@ -94,12 +131,12 @@
 | created_at | TIMESTAMPTZ | Fecha de creación |
 | updated_at | TIMESTAMPTZ | Última modificación |
 
-**Índices:**
-- `idx_precios_proveedor_vigente_unico` ⭐ **(UNIQUE parcial: solo 1 precio vigente por producto-proveedor)**
-- `idx_precios_proveedor_producto`
-- `idx_precios_proveedor_proveedor`
-- `idx_precios_proveedor_fecha_vigencia`
-- `idx_precios_proveedor_descuento_gin` (GIN)
+**Índices sugeridos:**
+- `idx_precios_compra_proveedor_vigente_unico` (UNIQUE parcial: solo 1 precio vigente por producto-proveedor)
+- `idx_precios_compra_proveedor_producto`
+- `idx_precios_compra_proveedor_proveedor`
+- `idx_precios_compra_proveedor_fecha_vigencia`
+- `idx_precios_compra_proveedor_descuento_gin` (GIN)
 
 **Constraint destacado:** Solo puede haber 1 precio vigente por combinación producto-proveedor
 

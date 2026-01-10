@@ -9,6 +9,57 @@ export type RateLimitResult = {
   resetAt: number;
 };
 
+export type RateLimitHeaders = {
+  'RateLimit-Limit': string;
+  'RateLimit-Remaining': string;
+  'RateLimit-Reset': string;
+  'Retry-After'?: string;
+};
+
+/**
+ * Builds standard rate limit headers from a RateLimitResult.
+ * Follows IETF draft-ietf-httpapi-ratelimit-headers-07.
+ *
+ * Header semantics:
+ * - RateLimit-Limit: Maximum requests allowed in window
+ * - RateLimit-Remaining: Requests remaining in current window
+ * - RateLimit-Reset: Seconds until window resets (delta-seconds, not epoch)
+ * - Retry-After: Seconds to wait before retrying (only on 429)
+ */
+export function buildRateLimitHeaders(
+  result: RateLimitResult,
+  limit: number,
+): RateLimitHeaders {
+  // delta-seconds: time remaining until reset (per IETF draft)
+  const resetDeltaSeconds = Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000));
+
+  const headers: RateLimitHeaders = {
+    'RateLimit-Limit': String(limit),
+    'RateLimit-Remaining': String(Math.max(0, result.remaining)),
+    'RateLimit-Reset': String(resetDeltaSeconds),
+  };
+
+  if (!result.allowed) {
+    headers['Retry-After'] = String(resetDeltaSeconds);
+  }
+
+  return headers;
+}
+
+/**
+ * Merges rate limit headers into an existing headers object.
+ */
+export function withRateLimitHeaders(
+  headers: Record<string, string>,
+  result: RateLimitResult,
+  limit: number,
+): Record<string, string> {
+  return {
+    ...headers,
+    ...buildRateLimitHeaders(result, limit),
+  };
+}
+
 export class FixedWindowRateLimiter {
   private readonly max: number;
   private readonly windowMs: number;
@@ -40,6 +91,21 @@ export class FixedWindowRateLimiter {
 
   reset(key: string): void {
     this.buckets.delete(key);
+  }
+
+  getLimit(): number {
+    return this.max;
+  }
+
+  /**
+   * Checks rate limit and returns headers to include in response.
+   */
+  checkWithHeaders(key: string): { result: RateLimitResult; headers: RateLimitHeaders } {
+    const result = this.check(key);
+    return {
+      result,
+      headers: buildRateLimitHeaders(result, this.max),
+    };
   }
 }
 

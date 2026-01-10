@@ -6,209 +6,377 @@
 // ============================================================================
 
 import { createLogger } from '../_shared/logger.ts';
+import {
+  parseAllowedOrigins,
+  validateOrigin,
+  handleCors,
+} from '../_shared/cors.ts';
+import { ok, fail } from '../_shared/response.ts';
+import {
+  toAppError,
+  fromFetchResponse,
+  getErrorStatus,
+  isAppError,
+} from '../_shared/errors.ts';
 
 const logger = createLogger('api-minimarket');
 
-Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS, PUT, DELETE, PATCH',
-        'Access-Control-Max-Age': '86400',
-        'Access-Control-Allow-Credentials': 'false'
-    };
+const FUNCTION_BASE_PATH = '/api-minimarket';
 
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 200, headers: corsHeaders });
+function normalizePathname(pathname: string): string {
+  if (pathname === FUNCTION_BASE_PATH) return '/';
+  if (pathname.startsWith(`${FUNCTION_BASE_PATH}/`)) {
+    const stripped = pathname.slice(FUNCTION_BASE_PATH.length);
+    return stripped === '' ? '/' : stripped;
+  }
+  return pathname;
+}
+
+function generateRequestId(req: Request): string {
+  return (
+    req.headers.get('x-request-id') ||
+    crypto.randomUUID?.() ||
+    `${Date.now()}-${Math.random().toString(36).slice(2)}`
+  );
+}
+
+Deno.serve(async (req) => {
+  const requestId = generateRequestId(req);
+  const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
+  const corsResult = validateOrigin(req, allowedOrigins);
+  const corsHeaders = corsResult.headers;
+  const responseHeaders = { ...corsHeaders, 'x-request-id': requestId };
+
+  // CORS: Block disallowed origins with standard error response
+  if (!corsResult.allowed) {
+    logger.warn('CORS_BLOCKED', { requestId, origin: corsResult.origin });
+    return fail(
+      'CORS_ORIGIN_NOT_ALLOWED',
+      'Origin not allowed by CORS policy',
+      403,
+      responseHeaders,
+      { requestId },
+    );
+  }
+
+  // Handle OPTIONS preflight
+  const preflightResponse = handleCors(req, responseHeaders);
+  if (preflightResponse) {
+    return preflightResponse;
+  }
+
+  const url = new URL(req.url);
+  const path = normalizePathname(url.pathname);
+  const method = req.method;
+  const requestLog = {
+    requestId,
+    method,
+    path,
+    timestamp: new Date().toISOString(),
+  };
+
+  try {
+    // Configuración Supabase
+    const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+
+    if (!supabaseUrl || !supabaseAnonKey) {
+      throw toAppError(
+        new Error('Configuración de Supabase faltante'),
+        'CONFIG_ERROR',
+        500,
+      );
     }
 
-    const url = new URL(req.url);
-    const path = url.pathname;
-    const method = req.method;
-    const requestId =
-        req.headers.get('x-request-id') || crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
-    const requestLog = {
-        requestId,
-        method,
-        path,
-        timestamp: new Date().toISOString()
+    // Autenticación
+    const authHeader = req.headers.get('authorization');
+    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
+    let user = null;
+    let userRole: string | null = null;
+
+    if (token) {
+      const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          apikey: supabaseAnonKey,
+        },
+      });
+
+      if (userResponse.ok) {
+        user = await userResponse.json();
+        const rawRole = user.app_metadata?.role ?? user.user_metadata?.role ?? null;
+        userRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : null;
+      }
+    }
+
+    // Helper: Verificar permisos por rol
+    const BASE_ROLES = ['admin', 'deposito', 'ventas'];
+    const checkRole = (allowedRoles: string[]) => {
+      if (!user) {
+        throw toAppError(
+          new Error('No autorizado - requiere autenticación'),
+          'UNAUTHORIZED',
+          401,
+        );
+      }
+      const normalizedRoles = allowedRoles.map((role) => role.toLowerCase());
+      if (!userRole || !normalizedRoles.includes(userRole)) {
+        throw toAppError(
+          new Error(`Acceso denegado - requiere rol: ${allowedRoles.join(' o ')}`),
+          'FORBIDDEN',
+          403,
+        );
+      }
     };
 
-    try {
-        // Configuración Supabase
-        const supabaseUrl = Deno.env.get('SUPABASE_URL');
-        const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    const requestHeaders = (extraHeaders: Record<string, string> = {}) => ({
+      Authorization: `Bearer ${token || supabaseAnonKey}`,
+      apikey: supabaseAnonKey,
+      'Content-Type': 'application/json',
+      'x-request-id': requestId,
+      ...extraHeaders,
+    });
 
-        if (!supabaseUrl || !serviceRoleKey) {
-            throw new Error('Configuración de Supabase faltante');
+    const buildQueryUrl = (
+      table: string,
+      filters: Record<string, unknown> = {},
+      select = '*',
+      options: { order?: string; limit?: number; offset?: number } = {},
+    ) => {
+      const params = new URLSearchParams();
+      params.set('select', select);
+
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, `eq.${String(value)}`);
         }
+      });
 
-        // Autenticación
-        const authHeader = req.headers.get('authorization');
-        const token = authHeader ? authHeader.replace('Bearer ', '') : null;
-        let user = null;
-        let userRole = null;
+      if (options.order) params.set('order', options.order);
+      if (options.limit !== undefined) params.set('limit', String(options.limit));
+      if (options.offset !== undefined) params.set('offset', String(options.offset));
 
-        if (token) {
-            const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'apikey': serviceRoleKey
-                }
-            });
+      return `${supabaseUrl}/rest/v1/${table}?${params.toString()}`;
+    };
 
-            if (userResponse.ok) {
-                user = await userResponse.json();
-                userRole = user.user_metadata?.role || 'ventas'; // Default role
-            }
-        }
+    const parseContentRange = (value: string | null): number | null => {
+      if (!value) return null;
+      const parts = value.split('/');
+      if (parts.length < 2) return null;
+      const total = parts[1];
+      if (total === '*') return null;
+      const count = Number(total);
+      return Number.isFinite(count) ? count : null;
+    };
 
-        // Helper: Verificar permisos por rol
-        const checkRole = (allowedRoles) => {
-            if (!user) {
-                throw new Error('No autorizado - requiere autenticación');
-            }
-            if (!allowedRoles.includes(userRole)) {
-                throw new Error(`Acceso denegado - requiere rol: ${allowedRoles.join(' o ')}`);
-            }
-        };
+    // Helper: Query directo a PostgREST
+    const queryTable = async (
+      table: string,
+      filters: Record<string, unknown> = {},
+      select = '*',
+      options: { order?: string; limit?: number; offset?: number } = {},
+    ) => {
+      const queryUrl = buildQueryUrl(table, filters, select, options);
 
-        // Helper: Query directo a PostgREST
-        const queryTable = async (table, filters = {}, select = '*', options = {}) => {
-            let queryUrl = `${supabaseUrl}/rest/v1/${table}?select=${select}`;
-            
-            Object.entries(filters).forEach(([key, value]) => {
-                if (value !== undefined && value !== null) {
-                    queryUrl += `&${key}=eq.${value}`;
-                }
-            });
+      const response = await fetch(queryUrl, {
+        method: 'GET',
+        headers: requestHeaders(),
+      });
 
-            if (options.order) queryUrl += `&order=${options.order}`;
-            if (options.limit) queryUrl += `&limit=${options.limit}`;
+      if (!response.ok) {
+        throw await fromFetchResponse(response, `Error query ${table}`);
+      }
 
-            const response = await fetch(queryUrl, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                    'apikey': serviceRoleKey,
-                    'Content-Type': 'application/json'
-                }
-            });
+      return await response.json();
+    };
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Error query ${table}: ${error}`);
-            }
+    const queryTableWithCount = async (
+      table: string,
+      filters: Record<string, unknown> = {},
+      select = '*',
+      options: { order?: string; limit?: number; offset?: number } = {},
+    ) => {
+      const queryUrl = buildQueryUrl(table, filters, select, options);
 
-            return await response.json();
-        };
+      const response = await fetch(queryUrl, {
+        method: 'GET',
+        headers: requestHeaders({ Prefer: 'count=exact' }),
+      });
 
-        // Helper: INSERT a tabla
-        const insertTable = async (table, data) => {
-            const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                    'apikey': serviceRoleKey,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(data)
-            });
+      if (!response.ok) {
+        throw await fromFetchResponse(response, `Error query ${table}`);
+      }
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Error insertando en ${table}: ${error}`);
-            }
+      const data = await response.json();
+      const count = parseContentRange(response.headers.get('content-range'));
+      return { data, count: count ?? data.length };
+    };
 
-            return await response.json();
-        };
+    // Helper: INSERT a tabla
+    const insertTable = async (table: string, data: unknown) => {
+      const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+        method: 'POST',
+        headers: requestHeaders({ Prefer: 'return=representation' }),
+        body: JSON.stringify(data),
+      });
 
-        // Helper: UPDATE tabla
-        const updateTable = async (table, id, data) => {
-            const response = await fetch(`${supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                    'apikey': serviceRoleKey,
-                    'Content-Type': 'application/json',
-                    'Prefer': 'return=representation'
-                },
-                body: JSON.stringify(data)
-            });
+      if (!response.ok) {
+        throw await fromFetchResponse(response, `Error insertando en ${table}`);
+      }
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Error actualizando ${table}: ${error}`);
-            }
+      return await response.json();
+    };
 
-            return await response.json();
-        };
+    // Helper: UPDATE tabla
+    const updateTable = async (table: string, id: string, data: unknown) => {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/${table}?id=eq.${id}`,
+        {
+          method: 'PATCH',
+          headers: requestHeaders({ Prefer: 'return=representation' }),
+          body: JSON.stringify(data),
+        },
+      );
 
-        // Helper: Ejecutar función PL/pgSQL
-        const callFunction = async (functionName, params = {}) => {
-            const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${functionName}`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                    'apikey': serviceRoleKey,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(params)
-            });
+      if (!response.ok) {
+        throw await fromFetchResponse(response, `Error actualizando ${table}`);
+      }
 
-            if (!response.ok) {
-                const error = await response.text();
-                throw new Error(`Error llamando ${functionName}: ${error}`);
-            }
+      return await response.json();
+    };
 
-            return await response.json();
-        };
+    // Helper: Ejecutar función PL/pgSQL
+    const callFunction = async (
+      functionName: string,
+      params: Record<string, unknown> = {},
+    ) => {
+      const response = await fetch(
+        `${supabaseUrl}/rest/v1/rpc/${functionName}`,
+        {
+          method: 'POST',
+          headers: requestHeaders(),
+          body: JSON.stringify(params),
+        },
+      );
 
-        // ====================================================================
-        // ENDPOINTS: CATEGORÍAS (2 endpoints)
-        // ====================================================================
+      if (!response.ok) {
+        throw await fromFetchResponse(response, `Error llamando ${functionName}`);
+      }
 
-        // 1. GET /categorias - Listar todas las categorías
-        if (path === '/categorias' && method === 'GET') {
-            const categorias = await queryTable('categorias', 
-                { activo: true }, 
-                'id,codigo,nombre,descripcion,margen_minimo,margen_maximo',
-                { order: 'nombre' }
-            );
-            
-            return new Response(JSON.stringify({
-                success: true,
-                data: categorias,
-                count: categorias.length,
-                message: 'Categorías obtenidas exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
+      return await response.json();
+    };
 
-        // 2. GET /categorias/:id - Detalle de categoría específica
-        if (path.match(/^\/categorias\/[a-f0-9-]+$/) && method === 'GET') {
-            const id = path.split('/')[2];
-            const categorias = await queryTable('categorias', { id });
+    const respondOk = <T>(
+      data: T,
+      status = 200,
+      options: { message?: string; extra?: Record<string, unknown> } = {},
+    ) => ok(data, status, responseHeaders, { requestId, ...options });
 
-            if (categorias.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Categoría no encontrada'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
-            }
+    const respondFail = (
+      code: string,
+      message: string,
+      status = 400,
+      options: { details?: unknown; message?: string; extra?: Record<string, unknown> } = {},
+    ) => fail(code, message, status, responseHeaders, { requestId, ...options });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: categorias[0]
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
-        }
+    const parseJsonBody = async <T = Record<string, unknown>>(): Promise<T | Response> => {
+      try {
+        return (await req.json()) as T;
+      } catch {
+        return respondFail('INVALID_JSON', 'Cuerpo JSON invalido', 400);
+      }
+    };
+
+    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
+
+    const isUuid = (value: string | null): value is string =>
+      typeof value === 'string' && UUID_REGEX.test(value);
+
+    const parsePositiveNumber = (value: unknown): number | null => {
+      if (typeof value !== 'string' && typeof value !== 'number') return null;
+      const num = Number(value);
+      return Number.isFinite(num) && num > 0 ? num : null;
+    };
+
+    const parseNonNegativeNumber = (value: unknown): number | null => {
+      if (typeof value !== 'string' && typeof value !== 'number') return null;
+      const num = Number(value);
+      return Number.isFinite(num) && num >= 0 ? num : null;
+    };
+
+    const parsePositiveInt = (value: unknown): number | null => {
+      if (typeof value !== 'string' && typeof value !== 'number') return null;
+      const num = Number(value);
+      return Number.isInteger(num) && num > 0 ? num : null;
+    };
+
+    const parseNonNegativeInt = (value: unknown): number | null => {
+      if (typeof value !== 'string' && typeof value !== 'number') return null;
+      const num = Number(value);
+      return Number.isInteger(num) && num >= 0 ? num : null;
+    };
+
+    const getPagination = (
+      limitParam: string | null,
+      offsetParam: string | null,
+      defaultLimit: number,
+      maxLimit: number,
+    ): { limit: number; offset: number } | Response => {
+      const limitValue = limitParam === null ? defaultLimit : parsePositiveInt(limitParam);
+      if (limitValue === null) {
+        return respondFail('VALIDATION_ERROR', 'limit debe ser un entero > 0', 400);
+      }
+      const offsetValue = offsetParam === null ? 0 : parseNonNegativeInt(offsetParam);
+      if (offsetValue === null) {
+        return respondFail('VALIDATION_ERROR', 'offset debe ser un entero >= 0', 400);
+      }
+      return {
+        limit: Math.min(limitValue, maxLimit),
+        offset: offsetValue,
+      };
+    };
+
+    const sanitizeTextParam = (value: string): string =>
+      value.trim().replace(/[^a-zA-Z0-9 _.-]/g, '');
+
+    const VALID_MOVIMIENTO_TIPOS = new Set(['entrada', 'salida', 'ajuste', 'transferencia']);
+
+    // ====================================================================
+    // ENDPOINTS: CATEGORÍAS (2 endpoints)
+    // ====================================================================
+
+    // 1. GET /categorias - Listar todas las categorías
+    if (path === '/categorias' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const categorias = await queryTable(
+        'categorias',
+        { activo: true },
+        'id,codigo,nombre,descripcion,margen_minimo,margen_maximo',
+        { order: 'nombre' },
+      );
+
+      return respondOk(categorias, 200, {
+        message: 'Categorias obtenidas exitosamente',
+      });
+    }
+
+    // 2. GET /categorias/:id - Detalle de categoría específica
+    if (path.match(/^\/categorias\/[a-f0-9-]+$/) && method === 'GET') {
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de categoria invalido', 400);
+      }
+
+      checkRole(BASE_ROLES);
+      const categorias = await queryTable('categorias', { id });
+
+      if (categorias.length === 0) {
+        return respondFail('NOT_FOUND', 'Categoria no encontrada', 404);
+      }
+
+      return respondOk(categorias[0]);
+    }
 
         // ====================================================================
         // ENDPOINTS: PRODUCTOS (5 endpoints)
@@ -246,12 +414,8 @@ Deno.serve(async (req) => {
                 });
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: filteredProductos,
-                count: filteredProductos.length
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            return respondOk(filteredProductos, 200, {
+              extra: { count: filteredProductos.length },
             });
         }
 
@@ -261,21 +425,10 @@ Deno.serve(async (req) => {
             const productos = await queryTable('productos', { id });
 
             if (productos.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Producto no encontrado'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: productos[0]
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(productos[0]);
         }
 
         // 5. POST /productos - Crear nuevo producto (admin/deposito)
@@ -286,13 +439,7 @@ Deno.serve(async (req) => {
             const { sku, nombre, categoria_id, marca, contenido_neto } = body;
 
             if (!nombre) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'El nombre es requerido'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'El nombre es requerido', 400);
             }
 
             const producto = await insertTable('productos', {
@@ -305,14 +452,7 @@ Deno.serve(async (req) => {
                 created_by: user.id
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: producto[0],
-                message: 'Producto creado exitosamente'
-            }), {
-                status: 201,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(producto[0], 201, { message: 'Producto creado exitosamente' });
         }
 
         // 6. PUT /productos/:id - Actualizar producto (admin/deposito)
@@ -329,22 +469,10 @@ Deno.serve(async (req) => {
             });
 
             if (producto.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Producto no encontrado'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: producto[0],
-                message: 'Producto actualizado exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(producto[0], 200, { message: 'Producto actualizado exitosamente' });
         }
 
         // 7. DELETE /productos/:id - Eliminar producto (soft delete - admin)
@@ -359,21 +487,10 @@ Deno.serve(async (req) => {
             });
 
             if (producto.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Producto no encontrado'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                message: 'Producto desactivado exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(null, 200, { message: 'Producto desactivado exitosamente' });
         }
 
         // ====================================================================
@@ -388,13 +505,7 @@ Deno.serve(async (req) => {
                 { order: 'nombre' }
             );
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: proveedores,
-                count: proveedores.length
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(proveedores, 200, { extra: { count: proveedores.length } });
         }
 
         // 9. GET /proveedores/:id - Detalle de proveedor
@@ -403,21 +514,10 @@ Deno.serve(async (req) => {
             const proveedores = await queryTable('proveedores', { id });
 
             if (proveedores.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Proveedor no encontrado'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Proveedor no encontrado', 404);
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: proveedores[0]
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(proveedores[0]);
         }
 
         // ====================================================================
@@ -432,37 +532,19 @@ Deno.serve(async (req) => {
             const { producto_id, precio_compra, margen_ganancia } = body;
 
             if (!producto_id || precio_compra === undefined || precio_compra === null) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'producto_id y precio_compra son requeridos'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'producto_id y precio_compra son requeridos', 400);
             }
 
             const precioCompraNumero = Number(precio_compra);
 
             if (!Number.isFinite(precioCompraNumero) || precioCompraNumero <= 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'precio_compra debe ser mayor que 0'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'precio_compra debe ser mayor que 0', 400);
             }
 
             const productos = await queryTable('productos', { id: producto_id }, 'id,categoria_id,precio_actual,margen_ganancia');
 
             if (productos.length === 0) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Producto no encontrado'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
             }
 
             const producto = productos[0];
@@ -493,18 +575,18 @@ Deno.serve(async (req) => {
 
             if (margenMinimo !== undefined && margenMinimo !== null && Number.isFinite(Number(margenMinimo))) {
                 if (margenProyectado !== null && margenProyectado < Number(margenMinimo)) {
-                    return new Response(JSON.stringify({
-                        success: false,
-                        message: 'Margen proyectado por debajo del mínimo de categoría. Requiere aprobación.',
-                        data: {
-                            margen_minimo: Number(margenMinimo),
-                            margen_proyectado: margenProyectado,
-                            requiere_aprobacion: true
-                        }
-                    }), {
-                        status: 409,
-                        headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                    });
+                                        return respondFail(
+                                            'MARGIN_BELOW_MINIMUM',
+                                            'Margen proyectado por debajo del mínimo de categoría. Requiere aprobación.',
+                                            409,
+                                            {
+                                                details: {
+                                                    margen_minimo: Number(margenMinimo),
+                                                    margen_proyectado: margenProyectado,
+                                                    requiere_aprobacion: true,
+                                                },
+                                            },
+                                        );
                 }
             }
 
@@ -517,13 +599,7 @@ Deno.serve(async (req) => {
                     : null
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: result,
-                message: 'Precio aplicado y redondeado exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(result, 200, { message: 'Precio aplicado y redondeado exitosamente' });
         }
 
         // 11. GET /precios/producto/:id - Historial de precios de un producto
@@ -536,13 +612,7 @@ Deno.serve(async (req) => {
                 { order: 'fecha_cambio.desc', limit: 50 }
             );
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: historial,
-                count: historial.length
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(historial, 200, { extra: { count: historial.length } });
         }
 
         // 12. POST /precios/redondear - Redondear un precio (función de utilidad)
@@ -551,29 +621,21 @@ Deno.serve(async (req) => {
             const { precio } = body;
 
             if (!precio) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'El precio es requerido'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'El precio es requerido', 400);
             }
 
             const result = await callFunction('fnc_redondear_precio', {
                 precio: parseFloat(precio)
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: {
-                    precio_original: parseFloat(precio),
-                    precio_redondeado: result
-                },
-                message: 'Precio redondeado exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+                        return respondOk(
+                            {
+                                precio_original: parseFloat(precio),
+                                precio_redondeado: result,
+                            },
+                            200,
+                            { message: 'Precio redondeado exitosamente' },
+                        );
         }
 
         // 13. GET /precios/margen-sugerido/:id - Calcular margen sugerido para producto
@@ -584,14 +646,9 @@ Deno.serve(async (req) => {
                 p_producto_id: productoId
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: {
-                    producto_id: productoId,
-                    margen_sugerido: result
-                }
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            return respondOk({
+              producto_id: productoId,
+              margen_sugerido: result,
             });
         }
 
@@ -618,26 +675,16 @@ Deno.serve(async (req) => {
                 producto: productosMap[s.producto_id]
             }));
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: stockConNombres,
-                count: stockConNombres.length
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(stockConNombres, 200, { extra: { count: stockConNombres.length } });
         }
 
         // 15. GET /stock/minimo - Productos con stock bajo mínimo
         if (path === '/stock/minimo' && method === 'GET') {
             const result = await callFunction('fnc_productos_bajo_minimo');
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: result,
-                count: result?.length || 0,
-                message: 'Productos bajo stock mínimo consultados'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            return respondOk(result, 200, {
+              message: 'Productos bajo stock mínimo consultados',
+              extra: { count: (result as unknown[] | null)?.length || 0 },
             });
         }
 
@@ -654,16 +701,11 @@ Deno.serve(async (req) => {
             const stockDetalle = await queryTable('stock_deposito',
                 { producto_id: productoId });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: {
-                    producto_id: productoId,
-                    deposito,
-                    stock_disponible: stockDisponible,
-                    detalle: stockDetalle[0] || null
-                }
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            return respondOk({
+              producto_id: productoId,
+              deposito,
+              stock_disponible: stockDisponible,
+              detalle: stockDetalle[0] || null,
             });
         }
 
@@ -691,17 +733,12 @@ Deno.serve(async (req) => {
             const reportResponse = await fetch(
                 `${supabaseUrl}/rest/v1/tareas_metricas?${queryParams.toString()}`,
                 {
-                    headers: {
-                        'Authorization': `Bearer ${serviceRoleKey}`,
-                        'apikey': serviceRoleKey,
-                        'Content-Type': 'application/json'
-                    }
+                    headers: requestHeaders()
                 }
             );
 
             if (!reportResponse.ok) {
-                const error = await reportResponse.text();
-                throw new Error(`Error consultando tareas_metricas: ${error}`);
+              throw await fromFetchResponse(reportResponse, 'Error consultando tareas_metricas');
             }
 
             const rows = await reportResponse.json();
@@ -772,17 +809,15 @@ Deno.serve(async (req) => {
 
             data.sort((a, b) => b.tareas_total - a.tareas_total);
 
-            return new Response(JSON.stringify({
-                success: true,
-                data,
+            return respondOk(data, 200, {
+              extra: {
                 count: data.length,
                 filtros: {
-                    usuario_id: usuarioId,
-                    fecha_desde: fechaDesde,
-                    fecha_hasta: fechaHasta
-                }
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                  usuario_id: usuarioId,
+                  fecha_desde: fechaDesde,
+                  fecha_hasta: fechaHasta,
+                },
+              },
             });
         }
 
@@ -794,13 +829,11 @@ Deno.serve(async (req) => {
             const { producto_id, tipo_movimiento, cantidad, origen, destino, motivo } = body;
 
             if (!producto_id || !tipo_movimiento || !cantidad) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'producto_id, tipo_movimiento y cantidad son requeridos'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail(
+                'VALIDATION_ERROR',
+                'producto_id, tipo_movimiento y cantidad son requeridos',
+                400,
+              );
             }
 
             // Llamar a sp_movimiento_inventario
@@ -813,14 +846,7 @@ Deno.serve(async (req) => {
                 p_usuario: user.id
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: result,
-                message: 'Movimiento registrado exitosamente'
-            }), {
-                status: 201,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(result, 201, { message: 'Movimiento registrado exitosamente' });
         }
 
         // 19. GET /deposito/movimientos - Historial de movimientos
@@ -839,13 +865,7 @@ Deno.serve(async (req) => {
                 { order: 'fecha_movimiento.desc', limit: parseInt(limit) }
             );
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: movimientos,
-                count: movimientos.length
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(movimientos, 200, { extra: { count: movimientos.length } });
         }
 
         // 20. POST /deposito/ingreso - Ingreso de mercadería (admin/deposito)
@@ -856,13 +876,7 @@ Deno.serve(async (req) => {
             const { producto_id, cantidad, proveedor_id, precio_compra, deposito } = body;
 
             if (!producto_id || !cantidad) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'producto_id y cantidad son requeridos'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'producto_id y cantidad son requeridos', 400);
             }
 
             // Registrar movimiento de ingreso
@@ -885,14 +899,7 @@ Deno.serve(async (req) => {
                 });
             }
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: movimiento,
-                message: 'Ingreso de mercadería registrado exitosamente'
-            }), {
-                status: 201,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(movimiento, 201, { message: 'Ingreso de mercadería registrado exitosamente' });
         }
 
         // 20. POST /reservas - Crear reserva de stock
@@ -903,13 +910,7 @@ Deno.serve(async (req) => {
             const { producto_id, cantidad, referencia, deposito } = body;
 
             if (!producto_id || !cantidad) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'producto_id y cantidad son requeridos'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'producto_id y cantidad son requeridos', 400);
             }
 
             const stockInfo = await callFunction('fnc_stock_disponible', {
@@ -920,14 +921,12 @@ Deno.serve(async (req) => {
             const disponible = stockRow?.stock_disponible ?? 0;
 
             if (disponible < parseInt(cantidad)) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Stock disponible insuficiente para la reserva',
-                    data: { disponible }
-                }), {
-                    status: 409,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail(
+                'INSUFFICIENT_STOCK',
+                'Stock disponible insuficiente para la reserva',
+                409,
+                { details: { disponible } },
+              );
             }
 
             const reserva = await insertTable('stock_reservado', {
@@ -939,14 +938,7 @@ Deno.serve(async (req) => {
                 fecha_reserva: new Date().toISOString()
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: reserva[0] || reserva,
-                message: 'Reserva creada exitosamente'
-            }), {
-                status: 201,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(reserva[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
         }
 
         // 21. POST /reservas/:id/cancelar - Cancelar reserva
@@ -959,13 +951,7 @@ Deno.serve(async (req) => {
                 fecha_cancelacion: new Date().toISOString()
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: reserva[0] || reserva,
-                message: 'Reserva cancelada exitosamente'
-            }), {
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(reserva[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
         }
 
         // 22. POST /compras/recepcion - Registrar recepción de compra
@@ -976,38 +962,24 @@ Deno.serve(async (req) => {
             const { orden_compra_id, cantidad, deposito } = body;
 
             if (!orden_compra_id || !cantidad) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'orden_compra_id y cantidad son requeridos'
-                }), {
-                    status: 400,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('VALIDATION_ERROR', 'orden_compra_id y cantidad son requeridos', 400);
             }
 
             const ordenes = await queryTable('ordenes_compra', { id: orden_compra_id });
             const orden = ordenes[0];
 
             if (!orden) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Orden de compra no encontrada'
-                }), {
-                    status: 404,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail('NOT_FOUND', 'Orden de compra no encontrada', 404);
             }
 
             const pendiente = Math.max((orden.cantidad || 0) - (orden.cantidad_recibida || 0), 0);
             if (parseInt(cantidad) > pendiente) {
-                return new Response(JSON.stringify({
-                    success: false,
-                    message: 'Cantidad supera lo pendiente de recepción',
-                    data: { pendiente }
-                }), {
-                    status: 409,
-                    headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-                });
+              return respondFail(
+                'CONFLICT',
+                'Cantidad supera lo pendiente de recepción',
+                409,
+                { details: { pendiente } },
+              );
             }
 
             const movimiento = await callFunction('sp_movimiento_inventario', {
@@ -1020,44 +992,41 @@ Deno.serve(async (req) => {
                 p_orden_compra_id: orden_compra_id
             });
 
-            return new Response(JSON.stringify({
-                success: true,
-                data: movimiento,
-                message: 'Recepción registrada exitosamente'
-            }), {
-                status: 201,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-            });
+            return respondOk(movimiento, 201, { message: 'Recepción registrada exitosamente' });
         }
 
         // ====================================================================
         // RUTA NO ENCONTRADA
         // ====================================================================
 
-        return new Response(JSON.stringify({
-            success: false,
-            message: `Ruta no encontrada: ${method} ${path}`,
-            timestamp: new Date().toISOString()
-        }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return fail(
+          'NOT_FOUND',
+          `Ruta no encontrada: ${method} ${path}`,
+          404,
+          responseHeaders,
+          { requestId },
+        );
+  } catch (error) {
+    const appError = isAppError(error)
+      ? error
+      : toAppError(error, 'API_ERROR', getErrorStatus(error));
 
-    } catch (error) {
-        const errorMessage = error instanceof Error ? error.message : String(error);
-        logger.error('API_MINIMARKET_ERROR', { ...requestLog, error: errorMessage });
+    logger.error('API_MINIMARKET_ERROR', {
+      ...requestLog,
+      code: appError.code,
+      message: appError.message,
+      status: appError.status,
+    });
 
-        return new Response(JSON.stringify({
-            success: false,
-            error: {
-                code: 'API_ERROR',
-                message: errorMessage
-            },
-            timestamp: new Date().toISOString()
-        }), {
-            status: errorMessage.includes('No autorizado') ? 401 :
-                   errorMessage.includes('Acceso denegado') ? 403 : 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-    }
+    return fail(
+      appError.code,
+      appError.message,
+      appError.status,
+      responseHeaders,
+      {
+        requestId,
+        details: appError.details,
+      },
+    );
+  }
 });

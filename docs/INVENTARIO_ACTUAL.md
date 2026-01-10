@@ -9,7 +9,7 @@
 - `minimarket-system/` frontend React + Vite + TypeScript
 - `supabase/functions/` Edge Functions (Deno) - **MODULARIZADAS**
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
-- `supabase/migrations/` migraciones SQL (5)
+- `supabase/migrations/` migraciones SQL (7)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
 - `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
 - `tests/integration/` Tests integración Vitest (2 archivos, 31 tests)
@@ -55,6 +55,8 @@
 - `20260104020000_create_missing_objects.sql`
 - `20260104083000_add_rls_policies.sql`
 - `20260109060000_create_precios_proveedor.sql`
+- `20260110000000_fix_constraints_and_indexes.sql`
+- `20260110100000_fix_rls_security_definer.sql`
 
 ---
 

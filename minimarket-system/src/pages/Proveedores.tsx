@@ -11,40 +11,79 @@ export default function Proveedores() {
   const [proveedores, setProveedores] = useState<ProveedorConProductos[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProveedor, setSelectedProveedor] = useState<ProveedorConProductos | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [totalProveedores, setTotalProveedores] = useState(0)
+  const pageSize = 20
 
   useEffect(() => {
     loadProveedores()
-  }, [])
+  }, [page])
 
   async function loadProveedores() {
     try {
-      const { data: proveedoresData } = await supabase
+      setLoading(true)
+      setError(null)
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      const { data: proveedoresData, count, error: proveedoresError } = await supabase
         .from('proveedores')
-        .select('*')
+        .select(
+          'id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at',
+          { count: 'exact' }
+        )
         .eq('activo', true)
         .order('nombre')
+        .range(from, to)
+
+      if (proveedoresError) throw proveedoresError
+      setTotalProveedores(count ?? 0)
 
       if (proveedoresData) {
-        // Cargar productos de cada proveedor
-        const proveedoresConProductos = await Promise.all(
-          proveedoresData.map(async (prov) => {
-            const { data: productos } = await supabase
-              .from('productos')
-              .select('*')
-              .eq('proveedor_principal_id', prov.id)
-              .eq('activo', true)
+        const proveedorIds = proveedoresData.map((prov) => prov.id)
+        let productosPorProveedor: Record<string, Producto[]> = {}
 
-            return {
-              ...prov,
-              productos: productos || []
-            }
-          })
-        )
+        if (proveedorIds.length > 0) {
+          const { data: productosData, error: productosError } = await supabase
+            .from('productos')
+            .select('id,nombre,categoria,precio_actual,margen_ganancia,proveedor_principal_id')
+            .in('proveedor_principal_id', proveedorIds)
+            .eq('activo', true)
+
+          if (productosError) throw productosError
+
+          productosPorProveedor = (productosData || []).reduce<Record<string, Producto[]>>(
+            (acc, producto) => {
+              const key = producto.proveedor_principal_id || 'sin_proveedor'
+              if (!acc[key]) acc[key] = []
+              acc[key].push(producto)
+              return acc
+            },
+            {}
+          )
+        }
+
+        const proveedoresConProductos = proveedoresData.map((prov) => ({
+          ...prov,
+          productos: productosPorProveedor[prov.id] || []
+        }))
 
         setProveedores(proveedoresConProductos)
+        setSelectedProveedor((prev) => {
+          if (!prev) return null
+          return proveedoresConProductos.find((prov) => prov.id === prev.id) || null
+        })
+      } else {
+        setProveedores([])
+        setSelectedProveedor(null)
       }
     } catch (error) {
       console.error('Error cargando proveedores:', error)
+      setError('No pudimos cargar los proveedores. Intente nuevamente.')
+      setProveedores([])
+      setSelectedProveedor(null)
     } finally {
       setLoading(false)
     }
@@ -54,9 +93,48 @@ export default function Proveedores() {
     return <div className="text-center py-8">Cargando...</div>
   }
 
+  const totalPages = Math.max(1, Math.ceil(totalProveedores / pageSize))
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Gestión de Proveedores</h1>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={loadProveedores}
+            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="text-sm text-gray-600">
+          Mostrando {proveedores.length} de {totalProveedores} proveedores
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page === 1 || loading}
+            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-600">
+            Página {page} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={page === totalPages || loading}
+            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lista de proveedores */}

@@ -42,13 +42,11 @@ export default function Dashboard() {
       }
 
       // Cargar total de productos
-      const { data: productos } = await supabase
+      const { count } = await supabase
         .from('productos')
-        .select('*', { count: 'exact', head: true })
+        .select('id', { count: 'exact', head: true })
 
-      if (productos) {
-        setTotalProductos(productos.length || 0)
-      }
+      setTotalProductos(count ?? 0)
 
     } catch (error) {
       console.error('Error cargando dashboard:', error)

@@ -12,40 +12,77 @@ export default function Productos() {
   const [productos, setProductos] = useState<ProductoConHistorial[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedProducto, setSelectedProducto] = useState<ProductoConHistorial | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+  const [totalProductos, setTotalProductos] = useState(0)
+  const pageSize = 20
 
   useEffect(() => {
     loadProductos()
-  }, [])
+  }, [page])
 
   async function loadProductos() {
     try {
-      const { data: productosData } = await supabase
+      setLoading(true)
+      setError(null)
+
+      const from = (page - 1) * pageSize
+      const to = from + pageSize - 1
+
+      const { data: productosData, count, error: productosError } = await supabase
         .from('productos')
-        .select('*')
+        .select(
+          'id,nombre,categoria,codigo_barras,precio_actual,precio_costo,proveedor_principal_id,margen_ganancia',
+          { count: 'exact' }
+        )
         .eq('activo', true)
         .order('nombre')
+        .range(from, to)
+
+      if (productosError) throw productosError
+
+      setTotalProductos(count ?? 0)
 
       if (productosData) {
+        const proveedorIds = Array.from(
+          new Set(
+            productosData
+              .map((prod) => prod.proveedor_principal_id)
+              .filter((id): id is string => Boolean(id))
+          )
+        )
+
+        let proveedoresMap: Record<string, Proveedor> = {}
+        if (proveedorIds.length > 0) {
+          const { data: proveedoresData, error: proveedoresError } = await supabase
+            .from('proveedores')
+            .select('id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at')
+            .in('id', proveedorIds)
+            .eq('activo', true)
+
+          if (proveedoresError) throw proveedoresError
+          proveedoresMap = Object.fromEntries(
+            (proveedoresData || []).map((prov) => [prov.id, prov])
+          )
+        }
+
         // Cargar historial de precios
         const productosConDatos = await Promise.all(
           productosData.map(async (prod) => {
-            const { data: historial } = await supabase
+            const { data: historial, error: historialError } = await supabase
               .from('precios_historicos')
-              .select('*')
+              .select('id,producto_id,precio,fuente,fecha,cambio_porcentaje')
               .eq('producto_id', prod.id)
               .order('fecha', { ascending: false })
               .limit(5)
 
-            let proveedor = undefined
-            if (prod.proveedor_principal_id) {
-              const { data: provData } = await supabase
-                .from('proveedores')
-                .select('*')
-                .eq('id', prod.proveedor_principal_id)
-                .maybeSingle()
-              
-              proveedor = provData || undefined
+            if (historialError) {
+              console.error('Error cargando historial:', historialError)
             }
+
+            const proveedor = prod.proveedor_principal_id
+              ? proveedoresMap[prod.proveedor_principal_id]
+              : undefined
 
             return {
               ...prod,
@@ -56,9 +93,19 @@ export default function Productos() {
         )
 
         setProductos(productosConDatos)
+        setSelectedProducto((prev) => {
+          if (!prev) return null
+          return productosConDatos.find((prod) => prod.id === prev.id) || null
+        })
+      } else {
+        setProductos([])
+        setSelectedProducto(null)
       }
     } catch (error) {
       console.error('Error cargando productos:', error)
+      setError('No pudimos cargar los productos. Intente nuevamente.')
+      setProductos([])
+      setSelectedProducto(null)
     } finally {
       setLoading(false)
     }
@@ -68,9 +115,48 @@ export default function Productos() {
     return <div className="text-center py-8">Cargando...</div>
   }
 
+  const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize))
+
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos y Precios</h1>
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
+          <span>{error}</span>
+          <button
+            onClick={loadProductos}
+            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Reintentar
+          </button>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+        <div className="text-sm text-gray-600">
+          Mostrando {productos.length} de {totalProductos} productos
+        </div>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+            disabled={page === 1 || loading}
+            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+          >
+            Anterior
+          </button>
+          <span className="text-sm text-gray-600">
+            Página {page} de {totalPages}
+          </span>
+          <button
+            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+            disabled={page === totalPages || loading}
+            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Lista de productos */}

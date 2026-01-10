@@ -82,6 +82,22 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 - **WS5.2 Error boundaries y fallback UI**  
   **Aceptación:** cobertura en rutas críticas; fallback visible.
 
+- **WS5.3 Fix conteo de productos en Dashboard (P0)**  
+  **Aceptación:** usa `count` real de Supabase; no depende de `data.length`.  
+  **Dependencias:** ninguna.
+
+- **WS5.4 Movimiento de depósito atómico (P0)**  
+  **Aceptación:** stock + movimiento se actualizan en una sola operación (RPC); no permite salidas sin stock.  
+  **Dependencias:** RPC `sp_movimiento_inventario`.
+
+- **WS5.5 Paginación + select de columnas mínimas (P1)**  
+  **Aceptación:** listas largas no cargan todo el dataset; payload reducido.  
+  **Dependencias:** queries ajustadas.
+
+- **WS5.6 Capa de datos con caching (P1)**  
+  **Aceptación:** caching, reintentos y estados uniformes en pantallas críticas.  
+  **Dependencias:** decisión de librería (React Query/SWR).
+
 ### WS6 — CI/CD y Release (P1)
 **Objetivo:** pipeline confiable y reproducible.
 
@@ -102,6 +118,18 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 - **WS7.2 Escaneo de dependencias**  
   **Aceptación:** `npm audit` y Snyk (si token) en CI con umbral definido.
 
+- **WS7.3 Gateway sin service role para queries normales (P0)**  
+  **Aceptación:** queries usan JWT de usuario + anon key; service role sólo para tareas admin.  
+  **Dependencias:** env `SUPABASE_ANON_KEY`.
+
+- **WS7.4 CORS restringido por origen (P0)**  
+  **Aceptación:** orígenes permitidos definidos por env; requests no autorizadas fallan.  
+  **Dependencias:** `ALLOWED_ORIGINS`.
+
+- **WS7.5 Roles server-side (P1)**  
+  **Aceptación:** rol no se toma de `user_metadata`; se valida contra tabla/claims.  
+  **Dependencias:** DB y auth.
+
 ### WS8 — Documentación & Gobernanza (P0)
 **Objetivo:** documentación alineada y sin contradicciones.
 
@@ -111,6 +139,29 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 
 - **WS8.2 Handoff y fuentes de verdad**  
   **Aceptación:** `docs/DECISION_LOG.md` y `docs/ROADMAP.md` referenciados en README y `.github/copilot-instructions.md`.
+
+- **WS8.3 Reporte final de análisis**  
+  **Aceptación:** reporte consolidado en `docs/REPORTE_ANALISIS_PROYECTO.md`.  
+  **Dependencias:** revisión final.
+
+- **WS8.4 Backlog priorizado**  
+  **Aceptación:** backlog con puntajes en `docs/BACKLOG_PRIORIZADO.md`.  
+  **Dependencias:** WS8.3.
+
+### WS9 — Evolución funcional (P2)
+**Objetivo:** mejoras orientadas a operación y toma de decisiones.
+
+- **WS9.1 Alertas proactivas de stock**  
+  **Aceptación:** notificaciones automáticas cuando stock cae bajo umbral.
+
+- **WS9.2 Reposición sugerida**  
+  **Aceptación:** sugerencias basadas en stock mínimo y rotación.
+
+- **WS9.3 Kardex e historial de movimientos**  
+  **Aceptación:** vista filtrable y exportable por producto/lote/usuario.
+
+- **WS9.4 Panel de rentabilidad**  
+  **Aceptación:** margen real y rotación por producto visibles en UI.
 
 ---
 

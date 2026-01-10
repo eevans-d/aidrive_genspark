@@ -179,6 +179,28 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 - **WS5.1** Reducir warning chunk >500k o documentar excepcion.  
 - **WS5.2** Error boundaries en rutas criticas.
 
+### WS5.3 Fix conteo de productos (P0)
+- **WS5.3.1 Ajustar query de Dashboard** (Owner: Frontend)  
+  Pasos: usar `count` de Supabase con `head: true`.  
+  Aceptacion: total de productos coincide con DB y no depende de `data.length`.
+
+### WS5.4 Movimiento de deposito atomico (P0)
+- **WS5.4.1 RPC de movimiento** (Owner: Frontend/DB)  
+  Pasos: llamar `sp_movimiento_inventario` desde UI y evitar inserts separados.  
+  Aceptacion: stock y movimiento se actualizan en un solo paso; sin salidas con stock insuficiente.
+
+### WS5.5 Paginacion + select minimo (P1)
+- **WS5.5.1 Paginar productos/proveedores/stock** (Owner: Frontend)  
+  Pasos: limitar queries y agregar UI de paginado.  
+  Aceptacion: no se carga el catalogo completo en un solo fetch.
+
+### WS5.6 Capa de datos con caching (P1)
+- **WS5.6.1 Evaluar React Query/SWR** (Owner: Frontend)  
+  Aceptacion: decision documentada en `docs/DECISION_LOG.md`.
+- **WS5.6.2 Implementar en pantallas criticas** (Owner: Frontend)  
+  Scope: Dashboard, Stock, Productos, Proveedores.  
+  Aceptacion: reintentos y estados uniformes.
+
 ## WS6 - CI/CD (P1)
 - **WS6.1** Integrar pruebas de integracion en pipeline.  
 - **WS6.2** Validacion de envs requeridas.
@@ -187,6 +209,47 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 - **WS7.1** Auditoria RLS.  
 - **WS7.2** Escaneo dependencias (npm audit + Snyk).
 
+### WS7.3 Gateway sin service role (P0)
+- **WS7.3.1 Cambiar auth headers** (Owner: Backend)  
+  Pasos: usar JWT del usuario + anon key para PostgREST.  
+  Aceptacion: queries no usan service role por defecto.
+
+### WS7.4 CORS restringido (P0)
+- **WS7.4.1 Origenes permitidos por env** (Owner: Backend/Ops)  
+  Pasos: leer `ALLOWED_ORIGINS` y bloquear origenes no permitidos.  
+  Aceptacion: preflight y requests no autorizadas retornan 403.
+
+### WS7.5 Roles server-side (P1)
+- **WS7.5.1 Definir tabla/claims** (Owner: Backend/DB)  
+  Aceptacion: rol validado en server, no en `user_metadata`.
+
 ## WS8 - Documentacion y Gobernanza (P0)
 - **WS8.1** Actualizar `docs/ARCHITECTURE_DOCUMENTATION.md` a estado real.  
 - **WS8.2** Handoff: verificar que ROADMAP/DECISION_LOG estan referenciados.
+
+### WS8.3 Reporte final de analisis
+- **WS8.3.1 Consolidar hallazgos** (Owner: Docs)  
+  Aceptacion: reporte en `docs/REPORTE_ANALISIS_PROYECTO.md`.
+
+### WS8.4 Backlog priorizado
+- **WS8.4.1 Crear backlog con puntajes** (Owner: Docs/PM)  
+  Aceptacion: `docs/BACKLOG_PRIORIZADO.md` con top 5 y tabla completa.
+
+## WS9 - Evolucion funcional (P2)
+**Objetivo:** mejoras orientadas a operacion y decisiones del negocio.
+
+### WS9.1 Alertas proactivas de stock
+- **WS9.1.1 Job de alertas** (Owner: Backend)  
+  Aceptacion: notificaciones generadas automaticamente con umbrales configurables.
+
+### WS9.2 Reposicion sugerida
+- **WS9.2.1 Calculo de sugerencias** (Owner: Backend/DB)  
+  Aceptacion: lista de reposicion basada en stock minimo y rotacion.
+
+### WS9.3 Kardex e historial de movimientos
+- **WS9.3.1 Vista filtrable + export** (Owner: Frontend)  
+  Aceptacion: filtro por producto/lote/usuario y export CSV.
+
+### WS9.4 Panel de rentabilidad
+- **WS9.4.1 KPI de margen/rotacion** (Owner: Frontend/DB)  
+  Aceptacion: tablero con margen real y rotacion por producto.
