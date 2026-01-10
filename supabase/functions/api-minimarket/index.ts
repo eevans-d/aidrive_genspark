@@ -378,634 +378,1008 @@ Deno.serve(async (req) => {
       return respondOk(categorias[0]);
     }
 
-        // ====================================================================
-        // ENDPOINTS: PRODUCTOS (5 endpoints)
-        // ====================================================================
+    // ====================================================================
+    // ENDPOINTS: PRODUCTOS (5 endpoints)
+    // ====================================================================
 
-        // 3. GET /productos - Listar productos con filtros
-        if (path === '/productos' && method === 'GET') {
-            const categoria = url.searchParams.get('categoria');
-            const marca = url.searchParams.get('marca');
-            const activo = url.searchParams.get('activo');
-            const search = url.searchParams.get('search');
+    // 3. GET /productos - Listar productos con filtros
+    if (path === '/productos' && method === 'GET') {
+      checkRole(BASE_ROLES);
 
-            let filters = {};
-            if (activo !== null) filters.activo = activo === 'true';
+      const categoria = url.searchParams.get('categoria');
+      const marca = url.searchParams.get('marca');
+      const activo = url.searchParams.get('activo');
+      const search = url.searchParams.get('search');
 
-            const productos = await queryTable('productos', filters,
-                'id,sku,nombre,marca,contenido_neto,activo,precio_actual,precio_costo,margen_ganancia,categoria_id',
-                { order: 'nombre', limit: 100 }
-            );
+      const pagination = getPagination(
+        url.searchParams.get('limit'),
+        url.searchParams.get('offset'),
+        100,
+        200,
+      );
+      if (pagination instanceof Response) return pagination;
+      const { limit, offset } = pagination;
 
-            // Filtros adicionales en memoria (PostgREST tiene limitaciones)
-            let filteredProductos = productos;
-            
-            if (categoria || marca || search) {
-                const categorias = await queryTable('categorias');
-                const categoriasMap = Object.fromEntries(categorias.map(c => [c.id, c]));
+      if (activo !== null && activo !== 'true' && activo !== 'false') {
+        return respondFail('VALIDATION_ERROR', 'activo debe ser true o false', 400);
+      }
 
-                filteredProductos = productos.filter(p => {
-                    const cat = categoriasMap[p.categoria_id];
-                    if (categoria && cat?.codigo !== categoria) return false;
-                    if (marca && !p.marca?.toLowerCase().includes(marca.toLowerCase())) return false;
-                    if (search && !(p.nombre?.toLowerCase().includes(search.toLowerCase()) || 
-                                    p.sku?.toLowerCase().includes(search.toLowerCase()))) return false;
-                    return true;
-                });
-            }
-
-            return respondOk(filteredProductos, 200, {
-              extra: { count: filteredProductos.length },
-            });
+      let categoriaId: string | null = null;
+      if (categoria) {
+        const categoriaCodigo = categoria.trim();
+        if (!/^[a-zA-Z0-9_-]+$/.test(categoriaCodigo)) {
+          return respondFail('VALIDATION_ERROR', 'categoria invalida', 400);
         }
-
-        // 4. GET /productos/:id - Detalle de producto específico
-        if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'GET') {
-            const id = path.split('/')[2];
-            const productos = await queryTable('productos', { id });
-
-            if (productos.length === 0) {
-              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
-            }
-
-            return respondOk(productos[0]);
+        const categorias = await queryTable('categorias', { codigo: categoriaCodigo }, 'id', {
+          limit: 1,
+        });
+        if (categorias.length === 0) {
+          return respondOk([], 200, { extra: { count: 0 } });
         }
+        categoriaId = categorias[0].id;
+      }
 
-        // 5. POST /productos - Crear nuevo producto (admin/deposito)
-        if (path === '/productos' && method === 'POST') {
-            checkRole(['admin', 'deposito']);
+      const filters: Record<string, unknown> = {};
+      if (activo !== null) filters.activo = activo === 'true';
+      if (categoriaId) filters.categoria_id = categoriaId;
 
-            const body = await req.json();
-            const { sku, nombre, categoria_id, marca, contenido_neto } = body;
+      const params = new URLSearchParams();
+      params.set(
+        'select',
+        'id,sku,nombre,marca,contenido_neto,activo,precio_actual,precio_costo,margen_ganancia,categoria_id',
+      );
 
-            if (!nombre) {
-              return respondFail('VALIDATION_ERROR', 'El nombre es requerido', 400);
-            }
-
-            const producto = await insertTable('productos', {
-                sku,
-                nombre,
-                categoria_id,
-                marca,
-                contenido_neto,
-                activo: true,
-                created_by: user.id
-            });
-
-            return respondOk(producto[0], 201, { message: 'Producto creado exitosamente' });
+      Object.entries(filters).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          params.append(key, `eq.${String(value)}`);
         }
+      });
 
-        // 6. PUT /productos/:id - Actualizar producto (admin/deposito)
-        if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'PUT') {
-            checkRole(['admin', 'deposito']);
-
-            const id = path.split('/')[2];
-            const body = await req.json();
-
-            const producto = await updateTable('productos', id, {
-                ...body,
-                updated_at: new Date().toISOString(),
-                updated_by: user.id
-            });
-
-            if (producto.length === 0) {
-              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
-            }
-
-            return respondOk(producto[0], 200, { message: 'Producto actualizado exitosamente' });
+      if (marca) {
+        const sanitized = sanitizeTextParam(marca);
+        if (!sanitized) {
+          return respondFail('VALIDATION_ERROR', 'marca invalida', 400);
         }
+        params.append('marca', `ilike.*${sanitized}*`);
+      }
 
-        // 7. DELETE /productos/:id - Eliminar producto (soft delete - admin)
-        if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'DELETE') {
-            checkRole(['admin']);
-
-            const id = path.split('/')[2];
-            const producto = await updateTable('productos', id, {
-                activo: false,
-                updated_at: new Date().toISOString(),
-                updated_by: user.id
-            });
-
-            if (producto.length === 0) {
-              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
-            }
-
-            return respondOk(null, 200, { message: 'Producto desactivado exitosamente' });
+      if (search) {
+        const sanitized = sanitizeTextParam(search);
+        if (!sanitized) {
+          return respondFail('VALIDATION_ERROR', 'search invalido', 400);
         }
+        params.append('or', `(nombre.ilike.*${sanitized}*,sku.ilike.*${sanitized}*)`);
+      }
 
-        // ====================================================================
-        // ENDPOINTS: PROVEEDORES (2 endpoints)
-        // ====================================================================
+      params.set('order', 'nombre');
+      params.set('limit', String(limit));
+      params.set('offset', String(offset));
 
-        // 8. GET /proveedores - Listar proveedores
-        if (path === '/proveedores' && method === 'GET') {
-            const proveedores = await queryTable('proveedores', 
-                { activo: true }, 
-                'id,nombre,contacto,email,telefono,productos_ofrecidos',
-                { order: 'nombre' }
-            );
+      const productosResponse = await fetch(
+        `${supabaseUrl}/rest/v1/productos?${params.toString()}`,
+        {
+          method: 'GET',
+          headers: requestHeaders({ Prefer: 'count=exact' }),
+        },
+      );
 
-            return respondOk(proveedores, 200, { extra: { count: proveedores.length } });
+      if (!productosResponse.ok) {
+        throw await fromFetchResponse(productosResponse, 'Error query productos');
+      }
+
+      const productos = await productosResponse.json();
+      const count = parseContentRange(productosResponse.headers.get('content-range'));
+
+      return respondOk(productos, 200, {
+        extra: { count: count ?? productos.length },
+      });
+    }
+
+    // 4. GET /productos/:id - Detalle de producto específico
+    if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
+
+      const productos = await queryTable('productos', { id });
+
+      if (productos.length === 0) {
+        return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
+      }
+
+      return respondOk(productos[0]);
+    }
+
+    // 5. POST /productos - Crear nuevo producto (admin/deposito)
+    if (path === '/productos' && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { sku, nombre, categoria_id, marca, contenido_neto } = bodyResult as Record<
+        string,
+        unknown
+      >;
+
+      if (typeof nombre !== 'string' || nombre.trim() === '') {
+        return respondFail('VALIDATION_ERROR', 'nombre es requerido', 400);
+      }
+
+      if (categoria_id !== undefined && categoria_id !== null && !isUuid(String(categoria_id))) {
+        return respondFail('VALIDATION_ERROR', 'categoria_id invalido', 400);
+      }
+
+      const payload: Record<string, unknown> = {
+        nombre: nombre.trim(),
+        activo: true,
+        created_by: user.id,
+      };
+
+      if (typeof sku === 'string' && sku.trim()) {
+        payload.sku = sku.trim();
+      }
+      if (categoria_id !== undefined && categoria_id !== null) {
+        payload.categoria_id = String(categoria_id);
+      }
+      if (typeof marca === 'string' && marca.trim()) {
+        payload.marca = marca.trim();
+      }
+      if (typeof contenido_neto === 'string' && contenido_neto.trim()) {
+        payload.contenido_neto = contenido_neto.trim();
+      }
+      if (typeof contenido_neto === 'number') {
+        payload.contenido_neto = String(contenido_neto);
+      }
+
+      const producto = await insertTable('productos', payload);
+
+      return respondOk(producto[0], 201, { message: 'Producto creado exitosamente' });
+    }
+
+    // 6. PUT /productos/:id - Actualizar producto (admin/deposito)
+    if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'PUT') {
+      checkRole(['admin', 'deposito']);
+
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const body = bodyResult as Record<string, unknown>;
+      const updates: Record<string, unknown> = {};
+
+      if (body.sku !== undefined) {
+        if (typeof body.sku !== 'string' || !body.sku.trim()) {
+          return respondFail('VALIDATION_ERROR', 'sku invalido', 400);
         }
+        updates.sku = body.sku.trim();
+      }
 
-        // 9. GET /proveedores/:id - Detalle de proveedor
-        if (path.match(/^\/proveedores\/[a-f0-9-]+$/) && method === 'GET') {
-            const id = path.split('/')[2];
-            const proveedores = await queryTable('proveedores', { id });
-
-            if (proveedores.length === 0) {
-              return respondFail('NOT_FOUND', 'Proveedor no encontrado', 404);
-            }
-
-            return respondOk(proveedores[0]);
+      if (body.nombre !== undefined) {
+        if (typeof body.nombre !== 'string' || !body.nombre.trim()) {
+          return respondFail('VALIDATION_ERROR', 'nombre invalido', 400);
         }
+        updates.nombre = body.nombre.trim();
+      }
 
-        // ====================================================================
-        // ENDPOINTS: PRECIOS (4 endpoints)
-        // ====================================================================
-
-        // 10. POST /precios/aplicar - Aplicar precio a producto con redondeo automático (admin)
-        if (path === '/precios/aplicar' && method === 'POST') {
-            checkRole(['admin']);
-
-            const body = await req.json();
-            const { producto_id, precio_compra, margen_ganancia } = body;
-
-            if (!producto_id || precio_compra === undefined || precio_compra === null) {
-              return respondFail('VALIDATION_ERROR', 'producto_id y precio_compra son requeridos', 400);
-            }
-
-            const precioCompraNumero = Number(precio_compra);
-
-            if (!Number.isFinite(precioCompraNumero) || precioCompraNumero <= 0) {
-              return respondFail('VALIDATION_ERROR', 'precio_compra debe ser mayor que 0', 400);
-            }
-
-            const productos = await queryTable('productos', { id: producto_id }, 'id,categoria_id,precio_actual,margen_ganancia');
-
-            if (productos.length === 0) {
-              return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
-            }
-
-            const producto = productos[0];
-            const categorias = producto.categoria_id
-                ? await queryTable('categorias', { id: producto.categoria_id }, 'id,margen_minimo')
-                : [];
-            const categoria = categorias[0];
-            const margenMinimo = categoria?.margen_minimo;
-
-            const margenGananciaNumero = margen_ganancia !== undefined && margen_ganancia !== null
-                ? Number(margen_ganancia)
-                : null;
-            const margenProductoNumero = producto.margen_ganancia !== undefined && producto.margen_ganancia !== null
-                ? Number(producto.margen_ganancia)
-                : null;
-
-            let margenProyectado = null;
-            if (Number.isFinite(margenGananciaNumero)) {
-                margenProyectado = margenGananciaNumero;
-            } else if (Number.isFinite(margenProductoNumero)) {
-                margenProyectado = margenProductoNumero;
-            } else if (producto.precio_actual !== undefined && producto.precio_actual !== null) {
-                const precioActualNumero = Number(producto.precio_actual);
-                if (Number.isFinite(precioActualNumero) && precioActualNumero > 0) {
-                    margenProyectado = ((precioActualNumero - precioCompraNumero) / precioActualNumero) * 100;
-                }
-            }
-
-            if (margenMinimo !== undefined && margenMinimo !== null && Number.isFinite(Number(margenMinimo))) {
-                if (margenProyectado !== null && margenProyectado < Number(margenMinimo)) {
-                                        return respondFail(
-                                            'MARGIN_BELOW_MINIMUM',
-                                            'Margen proyectado por debajo del mínimo de categoría. Requiere aprobación.',
-                                            409,
-                                            {
-                                                details: {
-                                                    margen_minimo: Number(margenMinimo),
-                                                    margen_proyectado: margenProyectado,
-                                                    requiere_aprobacion: true,
-                                                },
-                                            },
-                                        );
-                }
-            }
-
-            // Llamar a sp_aplicar_precio (incluye redondeo automático)
-            const result = await callFunction('sp_aplicar_precio', {
-                p_producto_id: producto_id,
-                p_precio_compra: precioCompraNumero,
-                p_margen_ganancia: margen_ganancia !== undefined && margen_ganancia !== null
-                    ? margen_ganancia
-                    : null
-            });
-
-            return respondOk(result, 200, { message: 'Precio aplicado y redondeado exitosamente' });
+      if (body.categoria_id !== undefined) {
+        if (body.categoria_id === null) {
+          updates.categoria_id = null;
+        } else if (!isUuid(String(body.categoria_id))) {
+          return respondFail('VALIDATION_ERROR', 'categoria_id invalido', 400);
+        } else {
+          updates.categoria_id = String(body.categoria_id);
         }
+      }
 
-        // 11. GET /precios/producto/:id - Historial de precios de un producto
-        if (path.match(/^\/precios\/producto\/[a-f0-9-]+$/) && method === 'GET') {
-            const productoId = path.split('/')[3];
-            
-            const historial = await queryTable('precios_historicos',
-                { producto_id: productoId },
-                'id,producto_id,precio_anterior,precio_nuevo,fecha_cambio,motivo_cambio',
-                { order: 'fecha_cambio.desc', limit: 50 }
-            );
-
-            return respondOk(historial, 200, { extra: { count: historial.length } });
+      if (body.marca !== undefined) {
+        if (body.marca === null) {
+          updates.marca = null;
+        } else if (typeof body.marca !== 'string' || !body.marca.trim()) {
+          return respondFail('VALIDATION_ERROR', 'marca invalida', 400);
+        } else {
+          updates.marca = body.marca.trim();
         }
+      }
 
-        // 12. POST /precios/redondear - Redondear un precio (función de utilidad)
-        if (path === '/precios/redondear' && method === 'POST') {
-            const body = await req.json();
-            const { precio } = body;
-
-            if (!precio) {
-              return respondFail('VALIDATION_ERROR', 'El precio es requerido', 400);
-            }
-
-            const result = await callFunction('fnc_redondear_precio', {
-                precio: parseFloat(precio)
-            });
-
-                        return respondOk(
-                            {
-                                precio_original: parseFloat(precio),
-                                precio_redondeado: result,
-                            },
-                            200,
-                            { message: 'Precio redondeado exitosamente' },
-                        );
+      if (body.contenido_neto !== undefined) {
+        if (body.contenido_neto === null) {
+          updates.contenido_neto = null;
+        } else if (typeof body.contenido_neto === 'string' && body.contenido_neto.trim()) {
+          updates.contenido_neto = body.contenido_neto.trim();
+        } else if (typeof body.contenido_neto === 'number') {
+          updates.contenido_neto = String(body.contenido_neto);
+        } else {
+          return respondFail('VALIDATION_ERROR', 'contenido_neto invalido', 400);
         }
+      }
 
-        // 13. GET /precios/margen-sugerido/:id - Calcular margen sugerido para producto
-        if (path.match(/^\/precios\/margen-sugerido\/[a-f0-9-]+$/) && method === 'GET') {
-            const productoId = path.split('/')[3];
-
-            const result = await callFunction('fnc_margen_sugerido', {
-                p_producto_id: productoId
-            });
-
-            return respondOk({
-              producto_id: productoId,
-              margen_sugerido: result,
-            });
+      if (body.activo !== undefined) {
+        if (typeof body.activo !== 'boolean') {
+          return respondFail('VALIDATION_ERROR', 'activo invalido', 400);
         }
+        updates.activo = body.activo;
+      }
 
-        // ====================================================================
-        // ENDPOINTS: STOCK E INVENTARIO (6 endpoints)
-        // ====================================================================
-
-        // 14. GET /stock - Consultar stock general de todos los productos
-        if (path === '/stock' && method === 'GET') {
-            const stock = await queryTable('stock_deposito',
-                {},
-                'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento',
-                { order: 'producto_id' }
-            );
-
-            // Obtener nombres de productos
-            const productoIds = [...new Set(stock.map(s => s.producto_id))];
-            const productos = await queryTable('productos', {}, 
-                'id,sku,nombre,marca');
-            const productosMap = Object.fromEntries(productos.map(p => [p.id, p]));
-
-            const stockConNombres = stock.map(s => ({
-                ...s,
-                producto: productosMap[s.producto_id]
-            }));
-
-            return respondOk(stockConNombres, 200, { extra: { count: stockConNombres.length } });
+      if (body.precio_actual !== undefined) {
+        const valor = parseNonNegativeNumber(body.precio_actual);
+        if (valor === null) {
+          return respondFail('VALIDATION_ERROR', 'precio_actual invalido', 400);
         }
+        updates.precio_actual = valor;
+      }
 
-        // 15. GET /stock/minimo - Productos con stock bajo mínimo
-        if (path === '/stock/minimo' && method === 'GET') {
-            const result = await callFunction('fnc_productos_bajo_minimo');
-
-            return respondOk(result, 200, {
-              message: 'Productos bajo stock mínimo consultados',
-              extra: { count: (result as unknown[] | null)?.length || 0 },
-            });
+      if (body.precio_costo !== undefined) {
+        const valor = parseNonNegativeNumber(body.precio_costo);
+        if (valor === null) {
+          return respondFail('VALIDATION_ERROR', 'precio_costo invalido', 400);
         }
+        updates.precio_costo = valor;
+      }
 
-        // 16. GET /stock/producto/:id - Stock específico de un producto
-        if (path.match(/^\/stock\/producto\/[a-f0-9-]+$/) && method === 'GET') {
-            const productoId = path.split('/')[3];
-            const deposito = url.searchParams.get('deposito') || 'Principal';
-
-            const stockDisponible = await callFunction('fnc_stock_disponible', {
-                p_producto_id: productoId,
-                p_deposito: deposito
-            });
-
-            const stockDetalle = await queryTable('stock_deposito',
-                { producto_id: productoId });
-
-            return respondOk({
-              producto_id: productoId,
-              deposito,
-              stock_disponible: stockDisponible,
-              detalle: stockDetalle[0] || null,
-            });
+      if (body.margen_ganancia !== undefined) {
+        const valor = parseNonNegativeNumber(body.margen_ganancia);
+        if (valor === null) {
+          return respondFail('VALIDATION_ERROR', 'margen_ganancia invalido', 400);
         }
+        updates.margen_ganancia = valor;
+      }
 
-        // 17. GET /reportes/efectividad-tareas - Métricas de efectividad por usuario
-        if (path === '/reportes/efectividad-tareas' && method === 'GET') {
-            checkRole(['admin', 'deposito', 'ventas']);
+      if (Object.keys(updates).length === 0) {
+        return respondFail('VALIDATION_ERROR', 'Sin campos validos para actualizar', 400);
+      }
 
-            const usuarioId = url.searchParams.get('usuario_id');
-            const fechaDesde = url.searchParams.get('fecha_desde');
-            const fechaHasta = url.searchParams.get('fecha_hasta');
+      const producto = await updateTable('productos', id, {
+        ...updates,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
+      });
 
-            const queryParams = new URLSearchParams();
-            queryParams.set('select', 'asignado_a_id,estado,tiempo_resolucion,cumplimiento_sla,dias_atraso,fecha_completado');
+      if (producto.length === 0) {
+        return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
+      }
 
-            if (usuarioId) {
-                queryParams.append('asignado_a_id', `eq.${usuarioId}`);
-            }
-            if (fechaDesde) {
-                queryParams.append('fecha_completado', `gte.${fechaDesde}`);
-            }
-            if (fechaHasta) {
-                queryParams.append('fecha_completado', `lte.${fechaHasta}`);
-            }
+      return respondOk(producto[0], 200, { message: 'Producto actualizado exitosamente' });
+    }
 
-            const reportResponse = await fetch(
-                `${supabaseUrl}/rest/v1/tareas_metricas?${queryParams.toString()}`,
-                {
-                    headers: requestHeaders()
-                }
-            );
+    // 7. DELETE /productos/:id - Eliminar producto (soft delete - admin)
+    if (path.match(/^\/productos\/[a-f0-9-]+$/) && method === 'DELETE') {
+      checkRole(['admin']);
 
-            if (!reportResponse.ok) {
-              throw await fromFetchResponse(reportResponse, 'Error consultando tareas_metricas');
-            }
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
 
-            const rows = await reportResponse.json();
-            const agregados = {};
+      const producto = await updateTable('productos', id, {
+        activo: false,
+        updated_at: new Date().toISOString(),
+        updated_by: user.id,
+      });
 
-            for (const row of rows) {
-                const usuarioKey = row.asignado_a_id || 'sin_asignar';
-                if (!agregados[usuarioKey]) {
-                    agregados[usuarioKey] = {
-                        usuario_id: row.asignado_a_id,
-                        tareas_total: 0,
-                        tareas_completadas: 0,
-                        tiempo_resolucion_promedio_horas: 0,
-                        dias_atraso_promedio: 0,
-                        cumplimiento_sla_pct: null,
-                        sla_cumplidas: 0,
-                        sla_incumplidas: 0,
-                        _acumulado_resolucion: 0,
-                        _acumulado_atraso: 0,
-                        _count_resolucion: 0,
-                        _count_atraso: 0
-                    };
-                }
+      if (producto.length === 0) {
+        return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
+      }
 
-                const entry = agregados[usuarioKey];
-                entry.tareas_total += 1;
+      return respondOk(producto[0], 200, { message: 'Producto desactivado exitosamente' });
+    }
 
-                if (row.estado && row.estado.toLowerCase() === 'completada') {
-                    entry.tareas_completadas += 1;
-                }
+    // ====================================================================
+    // ENDPOINTS: PROVEEDORES (2 endpoints)
+    // ====================================================================
 
-                if (row.tiempo_resolucion !== null && row.tiempo_resolucion !== undefined) {
-                    entry._acumulado_resolucion += Number(row.tiempo_resolucion);
-                    entry._count_resolucion += 1;
-                }
+    // 8. GET /proveedores - Listar proveedores
+    if (path === '/proveedores' && method === 'GET') {
+      checkRole(['admin', 'deposito']);
 
-                if (row.dias_atraso !== null && row.dias_atraso !== undefined) {
-                    entry._acumulado_atraso += Number(row.dias_atraso);
-                    entry._count_atraso += 1;
-                }
+      const proveedores = await queryTable(
+        'proveedores',
+        { activo: true },
+        'id,nombre,contacto,email,telefono,productos_ofrecidos',
+        { order: 'nombre' },
+      );
 
-                if (row.cumplimiento_sla === true) {
-                    entry.sla_cumplidas += 1;
-                } else if (row.cumplimiento_sla === false) {
-                    entry.sla_incumplidas += 1;
-                }
-            }
+      return respondOk(proveedores, 200, { extra: { count: proveedores.length } });
+    }
 
-            const data = Object.values(agregados).map((entry) => {
-                const cumplimientoTotal = entry.sla_cumplidas + entry.sla_incumplidas;
-                return {
-                    usuario_id: entry.usuario_id,
-                    tareas_total: entry.tareas_total,
-                    tareas_completadas: entry.tareas_completadas,
-                    tiempo_resolucion_promedio_horas: entry._count_resolucion
-                        ? Number((entry._acumulado_resolucion / entry._count_resolucion).toFixed(2))
-                        : null,
-                    dias_atraso_promedio: entry._count_atraso
-                        ? Number((entry._acumulado_atraso / entry._count_atraso).toFixed(2))
-                        : null,
-                    cumplimiento_sla_pct: cumplimientoTotal
-                        ? Number(((entry.sla_cumplidas / cumplimientoTotal) * 100).toFixed(2))
-                        : null,
-                    sla_cumplidas: entry.sla_cumplidas,
-                    sla_incumplidas: entry.sla_incumplidas
-                };
-            });
+    // 9. GET /proveedores/:id - Detalle de proveedor
+    if (path.match(/^\/proveedores\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(['admin', 'deposito']);
 
-            data.sort((a, b) => b.tareas_total - a.tareas_total);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de proveedor invalido', 400);
+      }
 
-            return respondOk(data, 200, {
-              extra: {
-                count: data.length,
-                filtros: {
-                  usuario_id: usuarioId,
-                  fecha_desde: fechaDesde,
-                  fecha_hasta: fechaHasta,
+      const proveedores = await queryTable('proveedores', { id });
+
+      if (proveedores.length === 0) {
+        return respondFail('NOT_FOUND', 'Proveedor no encontrado', 404);
+      }
+
+      return respondOk(proveedores[0]);
+    }
+
+    // ====================================================================
+    // ENDPOINTS: PRECIOS (4 endpoints)
+    // ====================================================================
+
+    // 10. POST /precios/aplicar - Aplicar precio a producto con redondeo automático (admin)
+    if (path === '/precios/aplicar' && method === 'POST') {
+      checkRole(['admin']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { producto_id, precio_compra, margen_ganancia } = bodyResult as Record<
+        string,
+        unknown
+      >;
+
+      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
+      }
+
+      const precioCompraNumero = parsePositiveNumber(precio_compra);
+      if (precioCompraNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'precio_compra debe ser mayor que 0', 400);
+      }
+
+      let margenGananciaNumero: number | null = null;
+      if (margen_ganancia !== undefined && margen_ganancia !== null) {
+        const parsed = parseNonNegativeNumber(margen_ganancia);
+        if (parsed === null) {
+          return respondFail('VALIDATION_ERROR', 'margen_ganancia invalido', 400);
+        }
+        margenGananciaNumero = parsed;
+      }
+
+      const productos = await queryTable(
+        'productos',
+        { id: producto_id },
+        'id,categoria_id,precio_actual,margen_ganancia',
+      );
+
+      if (productos.length === 0) {
+        return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
+      }
+
+      const producto = productos[0];
+      const categorias = producto.categoria_id
+        ? await queryTable('categorias', { id: producto.categoria_id }, 'id,margen_minimo')
+        : [];
+      const categoria = categorias[0];
+      const margenMinimo = categoria?.margen_minimo;
+
+      const margenProductoNumero = parseNonNegativeNumber(producto.margen_ganancia);
+
+      let margenProyectado: number | null = null;
+      if (margenGananciaNumero !== null) {
+        margenProyectado = margenGananciaNumero;
+      } else if (margenProductoNumero !== null) {
+        margenProyectado = margenProductoNumero;
+      } else if (producto.precio_actual !== undefined && producto.precio_actual !== null) {
+        const precioActualNumero = parsePositiveNumber(producto.precio_actual);
+        if (precioActualNumero !== null) {
+          margenProyectado = ((precioActualNumero - precioCompraNumero) / precioActualNumero) * 100;
+        }
+      }
+
+      if (margenMinimo !== undefined && margenMinimo !== null) {
+        const margenMinimoNumero = parseNonNegativeNumber(margenMinimo);
+        if (margenMinimoNumero !== null && margenProyectado !== null) {
+          if (margenProyectado < margenMinimoNumero) {
+            return respondFail(
+              'MARGIN_BELOW_MINIMUM',
+              'Margen proyectado por debajo del minimo de categoria. Requiere aprobacion.',
+              409,
+              {
+                details: {
+                  margen_minimo: margenMinimoNumero,
+                  margen_proyectado: margenProyectado,
+                  requiere_aprobacion: true,
                 },
               },
-            });
-        }
-
-        // 18. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)
-        if (path === '/deposito/movimiento' && method === 'POST') {
-            checkRole(['admin', 'deposito']);
-
-            const body = await req.json();
-            const { producto_id, tipo_movimiento, cantidad, origen, destino, motivo } = body;
-
-            if (!producto_id || !tipo_movimiento || !cantidad) {
-              return respondFail(
-                'VALIDATION_ERROR',
-                'producto_id, tipo_movimiento y cantidad son requeridos',
-                400,
-              );
-            }
-
-            // Llamar a sp_movimiento_inventario
-            const result = await callFunction('sp_movimiento_inventario', {
-                p_producto_id: producto_id,
-                p_tipo: tipo_movimiento,
-                p_cantidad: parseInt(cantidad),
-                p_origen: origen || motivo || null,
-                p_destino: destino || null,
-                p_usuario: user.id
-            });
-
-            return respondOk(result, 201, { message: 'Movimiento registrado exitosamente' });
-        }
-
-        // 19. GET /deposito/movimientos - Historial de movimientos
-        if (path === '/deposito/movimientos' && method === 'GET') {
-            const productoId = url.searchParams.get('producto_id');
-            const tipoMovimiento = url.searchParams.get('tipo_movimiento');
-            const limit = url.searchParams.get('limit') || '50';
-
-            let filters = {};
-            if (productoId) filters.producto_id = productoId;
-            if (tipoMovimiento) filters.tipo_movimiento = tipoMovimiento;
-
-            const movimientos = await queryTable('movimientos_deposito',
-                filters,
-                'id,producto_id,tipo_movimiento,cantidad,motivo,fecha_movimiento,usuario_id',
-                { order: 'fecha_movimiento.desc', limit: parseInt(limit) }
             );
+          }
+        }
+      }
 
-            return respondOk(movimientos, 200, { extra: { count: movimientos.length } });
+      // Llamar a sp_aplicar_precio (incluye redondeo automático)
+      const result = await callFunction('sp_aplicar_precio', {
+        p_producto_id: producto_id,
+        p_precio_compra: precioCompraNumero,
+        p_margen_ganancia: margenGananciaNumero,
+      });
+
+      return respondOk(result, 200, { message: 'Precio aplicado y redondeado exitosamente' });
+    }
+
+    // 11. GET /precios/producto/:id - Historial de precios de un producto
+    if (path.match(/^\/precios\/producto\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const productoId = path.split('/')[3];
+      if (!isUuid(productoId)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
+
+      const pagination = getPagination(
+        url.searchParams.get('limit'),
+        url.searchParams.get('offset'),
+        50,
+        200,
+      );
+      if (pagination instanceof Response) return pagination;
+      const { limit, offset } = pagination;
+
+      const { data: historial, count } = await queryTableWithCount(
+        'precios_historicos',
+        { producto_id: productoId },
+        'id,producto_id,precio_anterior,precio_nuevo,fecha_cambio,motivo_cambio',
+        { order: 'fecha_cambio.desc', limit, offset },
+      );
+
+      return respondOk(historial, 200, { extra: { count } });
+    }
+
+    // 12. POST /precios/redondear - Redondear un precio (función de utilidad)
+    if (path === '/precios/redondear' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { precio } = bodyResult as Record<string, unknown>;
+      const precioNumero = parsePositiveNumber(precio);
+
+      if (precioNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'precio debe ser mayor que 0', 400);
+      }
+
+      const result = await callFunction('fnc_redondear_precio', {
+        precio: precioNumero,
+      });
+
+      return respondOk(
+        {
+          precio_original: precioNumero,
+          precio_redondeado: result,
+        },
+        200,
+        { message: 'Precio redondeado exitosamente' },
+      );
+    }
+
+    // 13. GET /precios/margen-sugerido/:id - Calcular margen sugerido para producto
+    if (path.match(/^\/precios\/margen-sugerido\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const productoId = path.split('/')[3];
+      if (!isUuid(productoId)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
+
+      const result = await callFunction('fnc_margen_sugerido', {
+        p_producto_id: productoId,
+      });
+
+      return respondOk({
+        producto_id: productoId,
+        margen_sugerido: result,
+      });
+    }
+
+    // ====================================================================
+    // ENDPOINTS: STOCK E INVENTARIO (6 endpoints)
+    // ====================================================================
+
+    // 14. GET /stock - Consultar stock general de todos los productos
+    if (path === '/stock' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const stock = await queryTable(
+        'stock_deposito',
+        {},
+        'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento',
+        { order: 'producto_id' },
+      );
+
+      // Obtener nombres de productos
+      const productos = await queryTable('productos', {}, 'id,sku,nombre,marca');
+      const productosMap = Object.fromEntries(productos.map((p) => [p.id, p]));
+
+      const stockConNombres = stock.map((s) => ({
+        ...s,
+        producto: productosMap[s.producto_id],
+      }));
+
+      return respondOk(stockConNombres, 200, { extra: { count: stockConNombres.length } });
+    }
+
+    // 15. GET /stock/minimo - Productos con stock bajo mínimo
+    if (path === '/stock/minimo' && method === 'GET') {
+      checkRole(['admin', 'deposito']);
+
+      const result = await callFunction('fnc_productos_bajo_minimo');
+
+      return respondOk(result, 200, {
+        message: 'Productos bajo stock minimo consultados',
+        extra: { count: (result as unknown[] | null)?.length || 0 },
+      });
+    }
+
+    // 16. GET /stock/producto/:id - Stock específico de un producto
+    if (path.match(/^\/stock\/producto\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const productoId = path.split('/')[3];
+      if (!isUuid(productoId)) {
+        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+      }
+
+      const depositoParam = url.searchParams.get('deposito');
+      const deposito = depositoParam && depositoParam.trim() ? depositoParam.trim() : 'Principal';
+
+      const stockDisponible = await callFunction('fnc_stock_disponible', {
+        p_producto_id: productoId,
+        p_deposito: deposito,
+      });
+
+      const stockDetalle = await queryTable('stock_deposito', { producto_id: productoId });
+
+      return respondOk({
+        producto_id: productoId,
+        deposito,
+        stock_disponible: stockDisponible,
+        detalle: stockDetalle[0] || null,
+      });
+    }
+
+    // 17. GET /reportes/efectividad-tareas - Métricas de efectividad por usuario
+    if (path === '/reportes/efectividad-tareas' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const usuarioId = url.searchParams.get('usuario_id');
+      const fechaDesde = url.searchParams.get('fecha_desde');
+      const fechaHasta = url.searchParams.get('fecha_hasta');
+
+      if (usuarioId && !isUuid(usuarioId)) {
+        return respondFail('VALIDATION_ERROR', 'usuario_id invalido', 400);
+      }
+
+      const fechaDesdeMs = fechaDesde ? Date.parse(fechaDesde) : null;
+      if (fechaDesde && Number.isNaN(fechaDesdeMs)) {
+        return respondFail('VALIDATION_ERROR', 'fecha_desde invalida', 400);
+      }
+
+      const fechaHastaMs = fechaHasta ? Date.parse(fechaHasta) : null;
+      if (fechaHasta && Number.isNaN(fechaHastaMs)) {
+        return respondFail('VALIDATION_ERROR', 'fecha_hasta invalida', 400);
+      }
+
+      if (fechaDesdeMs !== null && fechaHastaMs !== null && fechaDesdeMs > fechaHastaMs) {
+        return respondFail('VALIDATION_ERROR', 'fecha_desde debe ser <= fecha_hasta', 400);
+      }
+
+      const queryParams = new URLSearchParams();
+      queryParams.set(
+        'select',
+        'asignado_a_id,estado,tiempo_resolucion,cumplimiento_sla,dias_atraso,fecha_completado',
+      );
+
+      if (usuarioId) {
+        queryParams.append('asignado_a_id', `eq.${usuarioId}`);
+      }
+      if (fechaDesde) {
+        queryParams.append('fecha_completado', `gte.${fechaDesde}`);
+      }
+      if (fechaHasta) {
+        queryParams.append('fecha_completado', `lte.${fechaHasta}`);
+      }
+
+      const reportResponse = await fetch(
+        `${supabaseUrl}/rest/v1/tareas_metricas?${queryParams.toString()}`,
+        {
+          headers: requestHeaders(),
+        },
+      );
+
+      if (!reportResponse.ok) {
+        throw await fromFetchResponse(reportResponse, 'Error consultando tareas_metricas');
+      }
+
+      const rows = await reportResponse.json();
+      const agregados: Record<string, Record<string, unknown>> = {};
+
+      for (const row of rows) {
+        const usuarioKey = row.asignado_a_id || 'sin_asignar';
+        if (!agregados[usuarioKey]) {
+          agregados[usuarioKey] = {
+            usuario_id: row.asignado_a_id,
+            tareas_total: 0,
+            tareas_completadas: 0,
+            tiempo_resolucion_promedio_horas: 0,
+            dias_atraso_promedio: 0,
+            cumplimiento_sla_pct: null,
+            sla_cumplidas: 0,
+            sla_incumplidas: 0,
+            _acumulado_resolucion: 0,
+            _acumulado_atraso: 0,
+            _count_resolucion: 0,
+            _count_atraso: 0,
+          };
         }
 
-        // 20. POST /deposito/ingreso - Ingreso de mercadería (admin/deposito)
-        if (path === '/deposito/ingreso' && method === 'POST') {
-            checkRole(['admin', 'deposito']);
+        const entry = agregados[usuarioKey];
+        entry.tareas_total = Number(entry.tareas_total) + 1;
 
-            const body = await req.json();
-            const { producto_id, cantidad, proveedor_id, precio_compra, deposito } = body;
-
-            if (!producto_id || !cantidad) {
-              return respondFail('VALIDATION_ERROR', 'producto_id y cantidad son requeridos', 400);
-            }
-
-            // Registrar movimiento de ingreso
-            const movimiento = await callFunction('sp_movimiento_inventario', {
-                p_producto_id: producto_id,
-                p_tipo: 'entrada',
-                p_cantidad: parseInt(cantidad),
-                p_origen: `Proveedor:${proveedor_id || 'N/A'}`,
-                p_destino: deposito || 'Principal',
-                p_usuario: user.id
-            });
-
-            // Si hay precio de compra, registrar en precios_proveedor
-            if (precio_compra && proveedor_id) {
-                await insertTable('precios_proveedor', {
-                    proveedor_id,
-                    producto_id,
-                    precio: parseFloat(precio_compra),
-                    fecha_actualizacion: new Date().toISOString()
-                });
-            }
-
-            return respondOk(movimiento, 201, { message: 'Ingreso de mercadería registrado exitosamente' });
+        if (row.estado && row.estado.toLowerCase() === 'completada') {
+          entry.tareas_completadas = Number(entry.tareas_completadas) + 1;
         }
 
-        // 20. POST /reservas - Crear reserva de stock
-        if (path === '/reservas' && method === 'POST') {
-            checkRole(['admin', 'ventas', 'deposito']);
-
-            const body = await req.json();
-            const { producto_id, cantidad, referencia, deposito } = body;
-
-            if (!producto_id || !cantidad) {
-              return respondFail('VALIDATION_ERROR', 'producto_id y cantidad son requeridos', 400);
-            }
-
-            const stockInfo = await callFunction('fnc_stock_disponible', {
-                p_producto_id: producto_id,
-                p_deposito: deposito || 'Principal'
-            });
-            const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
-            const disponible = stockRow?.stock_disponible ?? 0;
-
-            if (disponible < parseInt(cantidad)) {
-              return respondFail(
-                'INSUFFICIENT_STOCK',
-                'Stock disponible insuficiente para la reserva',
-                409,
-                { details: { disponible } },
-              );
-            }
-
-            const reserva = await insertTable('stock_reservado', {
-                producto_id,
-                cantidad: parseInt(cantidad),
-                estado: 'activa',
-                referencia: referencia || null,
-                usuario: user.id,
-                fecha_reserva: new Date().toISOString()
-            });
-
-            return respondOk(reserva[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
+        if (row.tiempo_resolucion !== null && row.tiempo_resolucion !== undefined) {
+          entry._acumulado_resolucion = Number(entry._acumulado_resolucion) + Number(
+            row.tiempo_resolucion,
+          );
+          entry._count_resolucion = Number(entry._count_resolucion) + 1;
         }
 
-        // 21. POST /reservas/:id/cancelar - Cancelar reserva
-        if (path.match(/^\/reservas\/[a-f0-9-]+\/cancelar$/) && method === 'POST') {
-            checkRole(['admin', 'ventas', 'deposito']);
-
-            const reservaId = path.split('/')[2];
-            const reserva = await updateTable('stock_reservado', reservaId, {
-                estado: 'cancelada',
-                fecha_cancelacion: new Date().toISOString()
-            });
-
-            return respondOk(reserva[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
+        if (row.dias_atraso !== null && row.dias_atraso !== undefined) {
+          entry._acumulado_atraso = Number(entry._acumulado_atraso) + Number(row.dias_atraso);
+          entry._count_atraso = Number(entry._count_atraso) + 1;
         }
 
-        // 22. POST /compras/recepcion - Registrar recepción de compra
-        if (path === '/compras/recepcion' && method === 'POST') {
-            checkRole(['admin', 'deposito']);
-
-            const body = await req.json();
-            const { orden_compra_id, cantidad, deposito } = body;
-
-            if (!orden_compra_id || !cantidad) {
-              return respondFail('VALIDATION_ERROR', 'orden_compra_id y cantidad son requeridos', 400);
-            }
-
-            const ordenes = await queryTable('ordenes_compra', { id: orden_compra_id });
-            const orden = ordenes[0];
-
-            if (!orden) {
-              return respondFail('NOT_FOUND', 'Orden de compra no encontrada', 404);
-            }
-
-            const pendiente = Math.max((orden.cantidad || 0) - (orden.cantidad_recibida || 0), 0);
-            if (parseInt(cantidad) > pendiente) {
-              return respondFail(
-                'CONFLICT',
-                'Cantidad supera lo pendiente de recepción',
-                409,
-                { details: { pendiente } },
-              );
-            }
-
-            const movimiento = await callFunction('sp_movimiento_inventario', {
-                p_producto_id: orden.producto_id,
-                p_tipo: 'entrada',
-                p_cantidad: parseInt(cantidad),
-                p_origen: `OC:${orden_compra_id}`,
-                p_destino: deposito || 'Principal',
-                p_usuario: user.id,
-                p_orden_compra_id: orden_compra_id
-            });
-
-            return respondOk(movimiento, 201, { message: 'Recepción registrada exitosamente' });
+        if (row.cumplimiento_sla === true) {
+          entry.sla_cumplidas = Number(entry.sla_cumplidas) + 1;
+        } else if (row.cumplimiento_sla === false) {
+          entry.sla_incumplidas = Number(entry.sla_incumplidas) + 1;
         }
+      }
 
-        // ====================================================================
-        // RUTA NO ENCONTRADA
-        // ====================================================================
+      const data = Object.values(agregados).map((entry) => {
+        const cumplimientoTotal = Number(entry.sla_cumplidas) + Number(entry.sla_incumplidas);
+        return {
+          usuario_id: entry.usuario_id,
+          tareas_total: entry.tareas_total,
+          tareas_completadas: entry.tareas_completadas,
+          tiempo_resolucion_promedio_horas: Number(entry._count_resolucion)
+            ? Number(
+                (Number(entry._acumulado_resolucion) / Number(entry._count_resolucion)).toFixed(2),
+              )
+            : null,
+          dias_atraso_promedio: Number(entry._count_atraso)
+            ? Number((Number(entry._acumulado_atraso) / Number(entry._count_atraso)).toFixed(2))
+            : null,
+          cumplimiento_sla_pct: cumplimientoTotal
+            ? Number(((Number(entry.sla_cumplidas) / cumplimientoTotal) * 100).toFixed(2))
+            : null,
+          sla_cumplidas: entry.sla_cumplidas,
+          sla_incumplidas: entry.sla_incumplidas,
+        };
+      });
 
-        return fail(
-          'NOT_FOUND',
-          `Ruta no encontrada: ${method} ${path}`,
-          404,
-          responseHeaders,
-          { requestId },
+      data.sort((a, b) => Number(b.tareas_total) - Number(a.tareas_total));
+
+      return respondOk(data, 200, {
+        extra: {
+          count: data.length,
+          filtros: {
+            usuario_id: usuarioId,
+            fecha_desde: fechaDesde,
+            fecha_hasta: fechaHasta,
+          },
+        },
+      });
+    }
+
+    // 18. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)
+    if (path === '/deposito/movimiento' && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { producto_id, tipo_movimiento, cantidad, origen, destino, motivo } = bodyResult as Record<
+        string,
+        unknown
+      >;
+
+      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
+      }
+      if (typeof tipo_movimiento !== 'string' || !tipo_movimiento.trim()) {
+        return respondFail('VALIDATION_ERROR', 'tipo_movimiento es requerido', 400);
+      }
+      const tipoMovimiento = tipo_movimiento.trim().toLowerCase();
+      if (!VALID_MOVIMIENTO_TIPOS.has(tipoMovimiento)) {
+        return respondFail(
+          'VALIDATION_ERROR',
+          'tipo_movimiento invalido. Valores permitidos: entrada, salida, ajuste, transferencia',
+          400,
         );
+      }
+
+      const cantidadNumero = parsePositiveInt(cantidad);
+      if (cantidadNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
+      }
+
+      const origenValue =
+        typeof origen === 'string' && origen.trim()
+          ? origen.trim()
+          : typeof motivo === 'string' && motivo.trim()
+            ? motivo.trim()
+            : null;
+      const destinoValue = typeof destino === 'string' && destino.trim() ? destino.trim() : null;
+
+      // Llamar a sp_movimiento_inventario
+      const result = await callFunction('sp_movimiento_inventario', {
+        p_producto_id: producto_id,
+        p_tipo: tipoMovimiento,
+        p_cantidad: cantidadNumero,
+        p_origen: origenValue,
+        p_destino: destinoValue,
+        p_usuario: user.id,
+      });
+
+      return respondOk(result, 201, { message: 'Movimiento registrado exitosamente' });
+    }
+
+    // 19. GET /deposito/movimientos - Historial de movimientos
+    if (path === '/deposito/movimientos' && method === 'GET') {
+      checkRole(['admin', 'deposito']);
+
+      const productoId = url.searchParams.get('producto_id');
+      if (productoId && !isUuid(productoId)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
+      }
+
+      const tipoMovimiento = url.searchParams.get('tipo_movimiento');
+      let tipoMovimientoFiltro: string | null = null;
+      if (tipoMovimiento) {
+        const normalized = tipoMovimiento.trim().toLowerCase();
+        if (!VALID_MOVIMIENTO_TIPOS.has(normalized)) {
+          return respondFail(
+            'VALIDATION_ERROR',
+            'tipo_movimiento invalido. Valores permitidos: entrada, salida, ajuste, transferencia',
+            400,
+          );
+        }
+        tipoMovimientoFiltro = normalized;
+      }
+
+      const pagination = getPagination(
+        url.searchParams.get('limit'),
+        url.searchParams.get('offset'),
+        50,
+        200,
+      );
+      if (pagination instanceof Response) return pagination;
+      const { limit, offset } = pagination;
+
+      const filters: Record<string, unknown> = {};
+      if (productoId) filters.producto_id = productoId;
+      if (tipoMovimientoFiltro) filters.tipo_movimiento = tipoMovimientoFiltro;
+
+      const { data: movimientos, count } = await queryTableWithCount(
+        'movimientos_deposito',
+        filters,
+        'id,producto_id,tipo_movimiento,cantidad,motivo,fecha_movimiento,usuario_id',
+        { order: 'fecha_movimiento.desc', limit, offset },
+      );
+
+      return respondOk(movimientos, 200, { extra: { count } });
+    }
+
+    // 20. POST /deposito/ingreso - Ingreso de mercadería (admin/deposito)
+    if (path === '/deposito/ingreso' && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { producto_id, cantidad, proveedor_id, precio_compra, deposito } = bodyResult as Record<
+        string,
+        unknown
+      >;
+
+      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
+      }
+
+      const cantidadNumero = parsePositiveInt(cantidad);
+      if (cantidadNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
+      }
+
+      let proveedorId: string | null = null;
+      if (proveedor_id !== undefined && proveedor_id !== null) {
+        if (typeof proveedor_id !== 'string' || !isUuid(proveedor_id)) {
+          return respondFail('VALIDATION_ERROR', 'proveedor_id invalido', 400);
+        }
+        proveedorId = proveedor_id;
+      }
+
+      let precioCompraNumero: number | null = null;
+      if (precio_compra !== undefined && precio_compra !== null && precio_compra !== '') {
+        const parsed = parsePositiveNumber(precio_compra);
+        if (parsed === null) {
+          return respondFail('VALIDATION_ERROR', 'precio_compra invalido', 400);
+        }
+        precioCompraNumero = parsed;
+      }
+
+      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
+
+      // Registrar movimiento de ingreso
+      const movimiento = await callFunction('sp_movimiento_inventario', {
+        p_producto_id: producto_id,
+        p_tipo: 'entrada',
+        p_cantidad: cantidadNumero,
+        p_origen: `Proveedor:${proveedorId || 'N/A'}`,
+        p_destino: depositoValue,
+        p_usuario: user.id,
+        p_proveedor_id: proveedorId,
+      });
+
+      // Si hay precio de compra, registrar en precios_proveedor
+      if (precioCompraNumero !== null && proveedorId) {
+        await insertTable('precios_proveedor', {
+          proveedor_id: proveedorId,
+          producto_id,
+          precio: precioCompraNumero,
+          fecha_actualizacion: new Date().toISOString(),
+        });
+      }
+
+      return respondOk(movimiento, 201, { message: 'Ingreso de mercaderia registrado exitosamente' });
+    }
+
+    // 20. POST /reservas - Crear reserva de stock
+    if (path === '/reservas' && method === 'POST') {
+      checkRole(['admin', 'ventas', 'deposito']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { producto_id, cantidad, referencia, deposito } = bodyResult as Record<string, unknown>;
+
+      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
+      }
+
+      const cantidadNumero = parsePositiveInt(cantidad);
+      if (cantidadNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
+      }
+
+      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
+      const referenciaValue =
+        typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
+
+      const stockInfo = await callFunction('fnc_stock_disponible', {
+        p_producto_id: producto_id,
+        p_deposito: depositoValue,
+      });
+      const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
+      const disponible = Number(stockRow?.stock_disponible ?? 0);
+      const disponibleNumero = Number.isFinite(disponible) ? disponible : 0;
+
+      if (disponibleNumero < cantidadNumero) {
+        return respondFail(
+          'INSUFFICIENT_STOCK',
+          'Stock disponible insuficiente para la reserva',
+          409,
+          { details: { disponible: disponibleNumero } },
+        );
+      }
+
+      const reserva = await insertTable('stock_reservado', {
+        producto_id,
+        cantidad: cantidadNumero,
+        estado: 'activa',
+        referencia: referenciaValue,
+        usuario: user.id,
+        fecha_reserva: new Date().toISOString(),
+      });
+
+      return respondOk(reserva[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
+    }
+
+    // 21. POST /reservas/:id/cancelar - Cancelar reserva
+    if (path.match(/^\/reservas\/[a-f0-9-]+\/cancelar$/) && method === 'POST') {
+      checkRole(['admin', 'ventas', 'deposito']);
+
+      const reservaId = path.split('/')[2];
+      if (!isUuid(reservaId)) {
+        return respondFail('VALIDATION_ERROR', 'id de reserva invalido', 400);
+      }
+
+      const reserva = await updateTable('stock_reservado', reservaId, {
+        estado: 'cancelada',
+        fecha_cancelacion: new Date().toISOString(),
+      });
+
+      if (reserva.length === 0) {
+        return respondFail('NOT_FOUND', 'Reserva no encontrada', 404);
+      }
+
+      return respondOk(reserva[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
+    }
+
+    // 22. POST /compras/recepcion - Registrar recepción de compra
+    if (path === '/compras/recepcion' && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const { orden_compra_id, cantidad, deposito } = bodyResult as Record<string, unknown>;
+
+      if (typeof orden_compra_id !== 'string' || !isUuid(orden_compra_id)) {
+        return respondFail('VALIDATION_ERROR', 'orden_compra_id invalido', 400);
+      }
+
+      const cantidadNumero = parsePositiveInt(cantidad);
+      if (cantidadNumero === null) {
+        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
+      }
+
+      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
+
+      const ordenes = await queryTable('ordenes_compra', { id: orden_compra_id });
+      const orden = ordenes[0];
+
+      if (!orden) {
+        return respondFail('NOT_FOUND', 'Orden de compra no encontrada', 404);
+      }
+
+      if (typeof orden.producto_id !== 'string' || !isUuid(orden.producto_id)) {
+        return respondFail('VALIDATION_ERROR', 'producto_id en orden invalido', 400);
+      }
+
+      const total = Number(orden.cantidad ?? 0);
+      const recibida = Number(orden.cantidad_recibida ?? 0);
+      const pendiente = Math.max(
+        (Number.isFinite(total) ? total : 0) - (Number.isFinite(recibida) ? recibida : 0),
+        0,
+      );
+
+      if (cantidadNumero > pendiente) {
+        return respondFail(
+          'CONFLICT',
+          'Cantidad supera lo pendiente de recepcion',
+          409,
+          { details: { pendiente } },
+        );
+      }
+
+      const movimiento = await callFunction('sp_movimiento_inventario', {
+        p_producto_id: orden.producto_id,
+        p_tipo: 'entrada',
+        p_cantidad: cantidadNumero,
+        p_origen: `OC:${orden_compra_id}`,
+        p_destino: depositoValue,
+        p_usuario: user.id,
+        p_orden_compra_id: orden_compra_id,
+      });
+
+      return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
+    }
+
+    // ====================================================================
+    // RUTA NO ENCONTRADA
+    // ====================================================================
+
+    return respondFail('NOT_FOUND', `Ruta no encontrada: ${method} ${path}`, 404);
   } catch (error) {
     const appError = isAppError(error)
       ? error

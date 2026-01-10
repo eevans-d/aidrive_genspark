@@ -1,7 +1,7 @@
 # PLAN DE EJECUCION: TRES PUNTOS SOLICITADOS
 
-**Estado:** borrador operativo  
-**Fecha:** 2026-01-09  
+**Estado:** en progreso (FASE 5 completada)  
+**Fecha:** 2026-01-10  
 **Alcance:** documentar el trabajo para (1) reporte final, (2) fixes prioritarios, (3) backlog priorizado.
 
 ---
@@ -97,7 +97,7 @@
 ---
 
 ## Siguiente paso inmediato
-Crear el reporte final (Punto 1) y, en paralelo, abrir el backlog base (Punto 3) para sostener la priorizacion.
+Continuar con FASE 6 (API proveedor) y preparar el reporte final (Punto 1) y el backlog base (Punto 3).
 
 ---
 
@@ -307,6 +307,12 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
 
 **6. CRITERIO DE EXITO:**
    - Endpoints respetan roles, validaciones y respuestas consistentes.
+
+**7. ESTADO ACTUAL (2026-01-10):**
+   - Auth/roles endurecidos sin rol por defecto; lecturas requieren JWT valido.
+   - Validaciones de UUID/numeros y whitelist en payloads criticos.
+   - Conteo real con `Prefer: count=exact` en listados paginados.
+   - Tests: `bash scripts/run-integration-tests.sh` (31 tests OK).
 
 ---
 
