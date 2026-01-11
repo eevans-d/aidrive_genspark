@@ -15,7 +15,7 @@ import {
   getEffectiveProxyUrl
 } from './anti-detection.ts';
 import { extractProductosConOptimizacion, calculateConfidenceScore, generateContentHash } from './parsing.ts';
-import { obtenerConfiguracionCategorias, validateOptionalFeatures } from './config.ts';
+import { obtenerConfiguracionCategorias, validateOptionalFeatures, getRequestTimeoutMs } from './config.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { isCookieJarEnabled, getCookieJarStats } from './utils/cookie-jar.ts';
 
@@ -62,6 +62,7 @@ export async function scrapeCategoriaOptimizado(
   const headers = generateAdvancedHeaders();
   let captchaDetected = false, retryCount = 0;
   const maxRetries = 5;
+  const timeoutMs = getRequestTimeoutMs();
 
   try {
     const ts = Date.now(), rand = Math.random().toString(36).substring(2, 8);
@@ -76,7 +77,7 @@ export async function scrapeCategoriaOptimizado(
       try {
         const baseDelay = Math.min(2000 * Math.pow(1.5, retryCount), 15000);
         await delay(getRandomDelay(baseDelay * 0.8, baseDelay * 1.2));
-        response = await fetchWithAdvancedAntiDetection(urlCategoria, headers, structuredLog);
+        response = await fetchWithAdvancedAntiDetection(urlCategoria, headers, structuredLog, timeoutMs);
         break;
       } catch (e) {
         retryCount++;
@@ -93,6 +94,10 @@ export async function scrapeCategoriaOptimizado(
     }
 
     const html = await response.text();
+    if (!html || !html.trim()) {
+      logger.warn('EMPTY_HTML', { requestId, categoria });
+      throw new Error('Empty HTML received from source');
+    }
     const productos = await extractProductosConOptimizacion(html, categoria, MAXICONSUMO_BASE_URL, structuredLog);
     
     for (const p of productos) {

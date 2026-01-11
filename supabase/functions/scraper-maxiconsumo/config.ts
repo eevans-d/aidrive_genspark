@@ -8,6 +8,18 @@ import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('scraper-maxiconsumo:config');
 
+function getEnvValue(key: string): string {
+  try {
+    // Prefer Deno.env pero hacer fallback a process.env en tests
+    // @ts-ignore Deno may not exist in some runtimes
+    const denoVal = typeof Deno !== 'undefined' && Deno?.env?.get ? Deno.env.get(key) : undefined;
+    if (denoVal !== undefined) return denoVal;
+  } catch {
+    // ignore
+  }
+  return (typeof process !== 'undefined' && process.env?.[key]) || '';
+}
+
 // ============================================================================
 // FLAGS DE CARACTERÍSTICAS OPCIONALES (ENV)
 // ============================================================================
@@ -16,28 +28,40 @@ const logger = createLogger('scraper-maxiconsumo:config');
  * Flag para habilitar proxy (default: false)
  * Requiere PROXY_URL si está habilitado
  */
-export const ENABLE_PROXY = Deno.env.get('ENABLE_PROXY') === 'true';
+export const ENABLE_PROXY = getEnvValue('ENABLE_PROXY') === 'true';
 
 /**
  * Flag para habilitar servicio de CAPTCHA (default: false)
  * Requiere CAPTCHA_PROVIDER y CAPTCHA_API_KEY si está habilitado
  */
-export const ENABLE_CAPTCHA = Deno.env.get('ENABLE_CAPTCHA') === 'true';
+export const ENABLE_CAPTCHA = getEnvValue('ENABLE_CAPTCHA') === 'true';
 
 /**
  * URL del proxy (solo se usa si ENABLE_PROXY=true)
  */
-export const PROXY_URL = Deno.env.get('PROXY_URL') || '';
+export const PROXY_URL = getEnvValue('PROXY_URL') || '';
 
 /**
  * Provider de CAPTCHA (ej: '2captcha', 'anticaptcha')
  */
-export const CAPTCHA_PROVIDER = Deno.env.get('CAPTCHA_PROVIDER') || '';
+export const CAPTCHA_PROVIDER = getEnvValue('CAPTCHA_PROVIDER') || '';
 
 /**
  * API Key del provider de CAPTCHA
  */
-export const CAPTCHA_API_KEY = Deno.env.get('CAPTCHA_API_KEY') || '';
+export const CAPTCHA_API_KEY = getEnvValue('CAPTCHA_API_KEY') || '';
+
+/**
+ * Timeout en ms para requests de scraping. Se puede ajustar vía SCRAPER_TIMEOUT_MS.
+ * Rango permitido: 5000 - 60000. Default: 25000.
+ */
+export function getRequestTimeoutMs(): number {
+  const raw = Number(getEnvValue('SCRAPER_TIMEOUT_MS'));
+  if (Number.isFinite(raw) && raw > 0) {
+    return Math.min(Math.max(raw, 5000), 60000);
+  }
+  return 25000;
+}
 
 /**
  * Valida la configuración de proxy/captcha y loggea warnings si hay inconsistencias.
@@ -137,7 +161,7 @@ export function getDefaultScraperConfig(): ScraperConfig {
     antiDetection: DEFAULT_ANTI_DETECTION,
     batchSize: 50,
     maxRetries: 5,
-    timeout: 25000
+    timeout: getRequestTimeoutMs()
   };
 }
 

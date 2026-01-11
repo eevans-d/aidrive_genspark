@@ -255,4 +255,43 @@ describe('scraper-maxiconsumo/config - Optional Features', () => {
       expect(categorias['almacen']).toBeDefined();
     });
   });
+
+  describe('Timeout de scraping', () => {
+    it('usa default 25000 ms si no hay SCRAPER_TIMEOUT_MS', async () => {
+      const { getRequestTimeoutMs } = await import(
+        '../../supabase/functions/scraper-maxiconsumo/config.ts'
+      );
+      expect(getRequestTimeoutMs()).toBe(25000);
+    });
+
+    it('acepta valor válido y lo clampa entre 5000 y 60000', async () => {
+      mockEnv.set('SCRAPER_TIMEOUT_MS', '10000');
+      const { getRequestTimeoutMs } = await import(
+        '../../supabase/functions/scraper-maxiconsumo/config.ts'
+      );
+      expect(getRequestTimeoutMs()).toBe(10000);
+
+      mockEnv.set('SCRAPER_TIMEOUT_MS', '2000'); // debajo del mínimo
+      vi.resetModules();
+      const { getRequestTimeoutMs: getMin } = await import(
+        '../../supabase/functions/scraper-maxiconsumo/config.ts'
+      );
+      expect(getMin()).toBe(5000);
+
+      mockEnv.set('SCRAPER_TIMEOUT_MS', '120000'); // por encima del máximo
+      vi.resetModules();
+      const { getRequestTimeoutMs: getMax } = await import(
+        '../../supabase/functions/scraper-maxiconsumo/config.ts'
+      );
+      expect(getMax()).toBe(60000);
+    });
+
+    it('ignora valores no numéricos y usa default', async () => {
+      mockEnv.set('SCRAPER_TIMEOUT_MS', 'not-a-number');
+      const { getRequestTimeoutMs } = await import(
+        '../../supabase/functions/scraper-maxiconsumo/config.ts'
+      );
+      expect(getRequestTimeoutMs()).toBe(25000);
+    });
+  });
 });
