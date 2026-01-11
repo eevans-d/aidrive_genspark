@@ -923,6 +923,7 @@ archive/
 
 # Session reports (use CHANGELOG.md instead)
 REPORTE_*.md
+!docs/REPORTE_ANALISIS_PROYECTO.md
 SINCRONIZACION_*.md
 GIT_SYNC_STATUS.md
 test-progress*.md
