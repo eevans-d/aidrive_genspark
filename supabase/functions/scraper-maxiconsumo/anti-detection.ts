@@ -14,24 +14,26 @@ const logger = createLogger('scraper-maxiconsumo:anti-detection');
 // ============================================================================
 
 export const DEFAULT_ANTI_DETECTION_CONFIG: AntiDetectionConfig = {
-  minDelay: 1000,
-  maxDelay: 5000,
-  jitterFactor: 0.2,
+  minDelay: 1500,
+  maxDelay: 6000,
+  jitterFactor: 0.25,
   userAgentRotation: true,
   headerRandomization: true,
   captchaBypass: false
 };
 
 // ============================================================================
-// USER AGENTS
+// USER AGENTS (actualizado 2025)
 // ============================================================================
 
 const USER_AGENTS = [
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/120.0',
-  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
-  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:123.0) Gecko/20100101 Firefox/123.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.3 Safari/605.1.15',
+  'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+  'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36 Edg/121.0.0.0',
+  'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36'
 ];
 
 const LANGUAGES = [
@@ -173,7 +175,7 @@ export async function fetchConReintentos(
   url: string,
   headers: Record<string, string>,
   maxReintentos: number,
-  timeout: number = 15000
+  timeout: number = 25000
 ): Promise<Response> {
   let ultimoError: Error = new Error('Unknown error');
 
@@ -216,47 +218,79 @@ export async function fetchConReintentos(
 }
 
 /**
- * Fetch avanzado con anti-detección completa
+ * Fetch avanzado con anti-deteccion completa y manejo de rate limiting
  */
 export async function fetchWithAdvancedAntiDetection(
   url: string,
   headers: Record<string, string>,
   structuredLog: StructuredLog,
-  timeout: number = 20000
+  timeout: number = 25000,
+  maxRetries: number = 3
 ): Promise<Response> {
   const requestId = structuredLog.requestId || crypto.randomUUID();
-  
-  try {
-    const requestStartTime = Date.now();
-    
-    const response = await fetch(url, { 
-      headers: {
-        ...headers,
-        'X-Request-ID': requestId,
-        'X-Client-Version': '2.0.0',
-        'X-Session-ID': generateSessionId()
-      },
-      signal: AbortSignal.timeout(timeout)
-    });
-    
-    const responseTime = Date.now() - requestStartTime;
-    
-    logger.info('ADVANCED_FETCH_COMPLETE', {
-      ...structuredLog,
-      responseTime,
-      status: response.status,
-      requestId
-    });
-    
-    return response;
-    
-  } catch (error) {
-    logger.error('ADVANCED_FETCH_ERROR', {
-      ...structuredLog,
-      error: (error as Error).message
-    });
-    throw error;
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt < maxRetries; attempt++) {
+    try {
+      const requestStartTime = Date.now();
+
+      const response = await fetch(url, {
+        headers: {
+          ...headers,
+          'X-Request-ID': requestId,
+          'X-Client-Version': '2.0.0',
+          'X-Session-ID': generateSessionId()
+        },
+        signal: AbortSignal.timeout(timeout)
+      });
+
+      const responseTime = Date.now() - requestStartTime;
+
+      if (response.status === 429 || response.status === 503) {
+        const backoffMs = calculateExponentialBackoff(attempt, 2000, 30000);
+        logger.warn('RATE_LIMITED', {
+          requestId,
+          status: response.status,
+          attempt,
+          backoffMs
+        });
+        await delay(backoffMs);
+        continue;
+      }
+
+      logger.info('ADVANCED_FETCH_COMPLETE', {
+        ...structuredLog,
+        responseTime,
+        status: response.status,
+        requestId,
+        attempt
+      });
+
+      return response;
+
+    } catch (error) {
+      lastError = error as Error;
+      const isTimeout = lastError.name === 'TimeoutError' || lastError.message.includes('timeout');
+      logger.warn('FETCH_ATTEMPT_FAILED', {
+        requestId,
+        attempt,
+        isTimeout,
+        errorName: lastError.name
+      });
+
+      if (attempt < maxRetries - 1) {
+        const backoffMs = calculateExponentialBackoff(attempt, 1000, 15000);
+        await delay(backoffMs);
+      }
+    }
   }
+
+  logger.error('ADVANCED_FETCH_ERROR', {
+    ...structuredLog,
+    requestId,
+    error: lastError?.message || 'Unknown error'
+  });
+  throw lastError || new Error('Fetch failed after retries');
 }
 
 // ============================================================================

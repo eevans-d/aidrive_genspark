@@ -6,8 +6,12 @@
 import type { CategoriaConfig, ScraperConfig, AntiDetectionConfig } from './types.ts';
 
 export const DEFAULT_ANTI_DETECTION: AntiDetectionConfig = {
-  minDelay: 1000, maxDelay: 5000, jitterFactor: 0.2,
-  userAgentRotation: true, headerRandomization: true, captchaBypass: false
+  minDelay: 1500,
+  maxDelay: 6000,
+  jitterFactor: 0.25,
+  userAgentRotation: true,
+  headerRandomization: true,
+  captchaBypass: false
 };
 
 export function obtenerConfiguracionCategorias(): Record<string, CategoriaConfig> {
@@ -30,10 +34,12 @@ export function getDefaultScraperConfig(): ScraperConfig {
     antiDetection: DEFAULT_ANTI_DETECTION,
     batchSize: 50,
     maxRetries: 5,
-    timeout: 20000
+    timeout: 25000
   };
 }
 
 export const MAXICONSUMO_BREAKER_OPTIONS = {
-  failureThreshold: 5, successThreshold: 2, openTimeoutMs: 60000
+  failureThreshold: 5,
+  successThreshold: 2,
+  openTimeoutMs: 90000
 };

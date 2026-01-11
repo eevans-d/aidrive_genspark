@@ -216,6 +216,7 @@ echo "3. Run 'supabase start' to start local database"
 | **VITE_SUPABASE_URL** | Supabase project URL | `https://xxx.supabase.co` | ✅ |
 | **VITE_SUPABASE_ANON_KEY** | Public anon key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
 | **SUPABASE_SERVICE_ROLE_KEY** | Service role key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
+| **API_PROVEEDOR_SECRET** | Shared secret para API proveedor interna | `min-32-random-chars-here` | ✅ |
 | **SCRAPING_INTERVAL** | Scraping frequency | `86400000` (24h) | ✅ |
 | **MAX_CONCURRENT_REQUESTS** | Rate limiting | `5` | ✅ |
 | **CACHE_TTL** | Cache expiration | `3600000` (1h) | ✅ |
@@ -232,6 +233,10 @@ echo "3. Run 'supabase start' to start local database"
 VITE_SUPABASE_URL=https://your-project.supabase.co
 VITE_SUPABASE_ANON_KEY=your_anon_key_here
 SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
+
+# API Proveedor Security (internal API authentication)
+# Generate with: openssl rand -base64 32
+API_PROVEEDOR_SECRET=your-random-32-chars-minimum-secret-here
 
 # Application Settings
 NODE_ENV=development
@@ -1343,7 +1348,94 @@ echo "✅ PASSED: Response time OK (${response_time}s)"
 echo "🎉 All smoke tests passed!"
 ```
 
-#### 4.2.2 Performance Testing
+#### 4.2.3 E2E and Integration Tests Configuration
+
+**Environment Variables Required for Tests:**
+
+Tests E2E e integración requieren variables de entorno para conectar con Supabase local o staging:
+
+| Variable | Descripción | Ejemplo | Usado en |
+|----------|-------------|---------|----------|
+| `SUPABASE_URL` | URL de Supabase | `http://127.0.0.1:54321` | E2E, Integration |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | `eyJhbGciOiJIUzI1NiIs...` | E2E, Integration |
+| `SUPABASE_ANON_KEY` | Anonymous key | `eyJhbGciOiJIUzI1NiIs...` | E2E, Integration |
+| `API_PROVEEDOR_SECRET` | Shared secret para API proveedor | `test-secret-min-32-chars` | E2E API Proveedor |
+
+**Configuración Local (Supabase local activo):**
+
+```bash
+# 1. Iniciar Supabase local
+supabase start
+
+# 2. Exportar variables de entorno (automatico con .env.test)
+# Crear archivo .env.test en la raiz del proyecto:
+cat > .env.test << 'EOF'
+SUPABASE_URL=http://127.0.0.1:54321
+SUPABASE_ANON_KEY=sb_publishable_ACJWlzQHlZjBrEguHvfOxg_3BJgxAaH
+SUPABASE_SERVICE_ROLE_KEY=sb_secret_N7UND0UgjKTVK-Uodkm0Hg_xSvEMPvz
+API_PROVEEDOR_SECRET=test-secret-for-local-development-minimum-32-characters
+EOF
+
+# 3. Cargar variables antes de tests
+source .env.test
+
+# 4. Ejecutar tests E2E
+npx vitest run tests/e2e/api-proveedor.smoke.test.ts --config vitest.e2e.config.ts
+
+# 5. Ejecutar tests de integracion
+bash scripts/run-integration-tests.sh
+```
+
+**Configuración Staging/CI:**
+
+```bash
+# En CI/CD pipeline (GitHub Actions, GitLab CI, etc.)
+# Configurar secretos en el repositorio:
+
+export SUPABASE_URL=${{ secrets.SUPABASE_STAGING_URL }}
+export SUPABASE_SERVICE_ROLE_KEY=${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
+export SUPABASE_ANON_KEY=${{ secrets.SUPABASE_STAGING_ANON_KEY }}
+export API_PROVEEDOR_SECRET=${{ secrets.API_PROVEEDOR_SECRET_STAGING }}
+
+# Ejecutar suite completa
+npm run test:e2e
+npm run test:integration
+```
+
+**Obtener Keys de Supabase Local:**
+
+```bash
+# Opcion 1: Ver status de Supabase
+supabase status
+
+# Opcion 2: Leer directamente de archivos generados
+# (Supabase local genera keys en consola al hacer 'supabase start')
+
+# Opcion 3: Usar valores por defecto de Supabase local (si no cambiaste config):
+# ANON_KEY: visible en 'supabase status' como 'Publishable key'
+# SERVICE_ROLE_KEY: visible en 'supabase status' como 'Secret key'
+```
+
+**Troubleshooting Tests E2E:**
+
+```bash
+# Error: "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY"
+# Solucion: Verificar que .env.test existe y esta cargado
+ls -la .env.test
+source .env.test
+echo $SUPABASE_URL  # Debe mostrar URL
+
+# Error: "Connection refused to 127.0.0.1:54321"
+# Solucion: Verificar que Supabase esta activo
+pgrep -f supabase  # Debe mostrar procesos
+supabase status    # Debe mostrar "running"
+
+# Error: "Auth failed" en tests de api-proveedor
+# Solucion: Verificar que API_PROVEEDOR_SECRET esta configurado
+echo $API_PROVEEDOR_SECRET  # Debe tener al menos 32 chars
+```
+
+#### 4.2.4 Performance Testing
 
 ```javascript
 // tests/performance/load-test.js

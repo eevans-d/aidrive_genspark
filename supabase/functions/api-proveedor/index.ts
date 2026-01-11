@@ -1,5 +1,28 @@
 /**
  * API proveedor modularizada: orquesta routing, CORS, rate limiting y circuit breaker.
+ *
+ * ## Autenticación
+ * Esta API usa autenticación mediante shared secret, enviado en el header `x-api-secret`.
+ * El valor debe coincidir con la variable de entorno `API_PROVEEDOR_SECRET`.
+ *
+ * ## Cómo consumir desde api-minimarket (gateway)
+ * Las llamadas server-to-server no requieren CORS. Ejemplo de fetch interno:
+ * ```ts
+ * const proveedorSecret = Deno.env.get('API_PROVEEDOR_SECRET');
+ * const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`, {
+ *   method: 'GET',
+ *   headers: {
+ *     'x-api-secret': proveedorSecret,
+ *     'Content-Type': 'application/json',
+ *     'x-request-id': requestId, // propagate for tracing
+ *   },
+ * });
+ * ```
+ *
+ * ## Formato de respuestas
+ * Todas las respuestas siguen el formato estándar:
+ * - Éxito: { success: true, data: ..., requestId: string }
+ * - Error: { success: false, error: { code, message, details? }, requestId: string }
  */
 
 import { FixedWindowRateLimiter } from '../_shared/rate-limit.ts';
@@ -155,7 +178,8 @@ function buildContext(
 function rateLimitRequest(
     endpoint: EndpointName,
     request: Request,
-    corsHeaders: Record<string, string>
+    corsHeaders: Record<string, string>,
+    requestId: string
 ): Response | null {
     const clientId =
         request.headers.get('x-client-id') ||
@@ -167,14 +191,14 @@ function rateLimitRequest(
     const rate = limiter.check(limiterKey);
 
     if (!rate.allowed) {
-        const body = {
-            error: 'Rate limit exceeded',
-            retry_after_ms: Math.max(rate.resetAt - Date.now(), 0)
-        };
-        return new Response(JSON.stringify(body), {
-            status: 429,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        const retryAfterMs = Math.max(rate.resetAt - Date.now(), 0);
+        return fail(
+            'RATE_LIMIT_EXCEEDED',
+            'Límite de peticiones excedido',
+            429,
+            corsHeaders,
+            { requestId, extra: { retry_after_ms: retryAfterMs } }
+        );
     }
 
     return null;
@@ -183,17 +207,20 @@ function rateLimitRequest(
 Deno.serve(async (request: Request): Promise<Response> => {
     const start = performance.now();
     const url = new URL(request.url);
+    const requestId = request.headers.get('x-request-id') ||
+        crypto.randomUUID?.() ||
+        `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 
     const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
     const corsOverrides = {
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-secret'
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-secret, x-request-id'
     };
     const corsResult = validateOrigin(request, allowedOrigins, corsOverrides);
-    const corsHeaders = corsResult.headers;
+    const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
 
     if (!corsResult.allowed) {
-        logger.warn('CORS_BLOCKED', { path: url.pathname, origin: corsResult.origin });
-        return createCorsErrorResponse(undefined, corsHeaders);
+        logger.warn('CORS_BLOCKED', { path: url.pathname, origin: corsResult.origin, requestId });
+        return createCorsErrorResponse(requestId, corsHeaders);
     }
 
     const preflight = handleCors(request, corsHeaders);
@@ -203,27 +230,30 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     const endpointRaw = getEndpointFromPath(url.pathname);
     if (!isEndpointName(endpointRaw)) {
-        return new Response(JSON.stringify({ error: 'Endpoint no soportado' }), {
-            status: 404,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return fail(
+            'ENDPOINT_NOT_FOUND',
+            `Endpoint no soportado: ${endpointRaw}`,
+            404,
+            corsHeaders,
+            { requestId }
+        );
     }
 
     const requestLog = {
         endpoint: endpointRaw,
         method: request.method,
         path: url.pathname,
-        requestId: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`
+        requestId
     };
 
-    const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders);
+    const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders, requestId);
     if (rateLimited) {
         return rateLimited;
     }
 
     if (!circuitBreaker.allowRequest()) {
-        logger.warn('Circuit breaker open', { requestId: requestLog.requestId });
-        return fail('CIRCUIT_OPEN', 'Circuit breaker abierto', 503, undefined, corsHeaders);
+        logger.warn('Circuit breaker open', { requestId });
+        return fail('CIRCUIT_OPEN', 'Circuit breaker abierto', 503, corsHeaders, { requestId });
     }
 
     try {
@@ -241,6 +271,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
         const retryable = isRetryableAPIError(appError);
         logger.error('Request failed', { ...requestLog, error: appError.message, code: appError.code, retryable });
 
-        return fail(appError.code, appError.message, appError.status, { retryable }, corsHeaders);
+        return fail(
+            appError.code,
+            appError.message,
+            appError.status,
+            corsHeaders,
+            { requestId, extra: { retryable } }
+        );
     }
 });

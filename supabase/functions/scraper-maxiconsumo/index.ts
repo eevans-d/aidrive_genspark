@@ -14,12 +14,13 @@ import { performAdvancedMatching, calculateMatchConfidence, generateComparacion 
 import { MAXICONSUMO_BREAKER_OPTIONS } from './config.ts';
 import { buildAlertasDesdeComparaciones } from './alertas.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { parseAllowedOrigins, validateOrigin, handleCors, createCorsErrorResponse } from '../_shared/cors.ts';
 
 const logger = createLogger('scraper-maxiconsumo:index');
 
-const corsHeaders = {
+const DEFAULT_CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
 };
 
@@ -36,29 +37,50 @@ function getEnvOrThrow(name: string): string {
   return val;
 }
 
-function jsonResponse(data: unknown, status = 200): Response {
-  return new Response(JSON.stringify(data), { status, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+function jsonResponse(
+  data: unknown,
+  status = 200,
+  corsHeaders: Record<string, string> = DEFAULT_CORS_HEADERS,
+  requestId?: string
+): Response {
+  const headers = { ...corsHeaders, 'Content-Type': 'application/json' };
+  if (requestId) headers['x-request-id'] = requestId;
+  const body =
+    requestId && typeof data === 'object' && data !== null && !Array.isArray(data) && !(data as Record<string, unknown>).requestId
+      ? { ...(data as Record<string, unknown>), requestId }
+      : data;
+  return new Response(JSON.stringify(body), { status, headers });
 }
 
 // ============================================================================
 // HANDLERS
 // ============================================================================
 
-async function handleScraping(log: StructuredLog, url: string, key: string): Promise<Response> {
+async function handleScraping(
+  log: StructuredLog,
+  url: string,
+  key: string,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
   const cached = getFromCache<any>('scraping:latest');
-  if (cached) return jsonResponse({ ...cached, fromCache: true });
+  if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const { productos, categorias_procesadas, errores } = await ejecutarScrapingCompleto(log, url, key);
   const guardados = await guardarProductosExtraidosOptimizado(productos, url, key, log);
   
   const result = { success: true, data: { productos_extraidos: productos.length, guardados, categorias_procesadas, errores, timestamp: new Date().toISOString() } };
   addToCache('scraping:latest', result, 300000);
-  return jsonResponse(result);
+  return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
-async function handleComparacion(log: StructuredLog, url: string, key: string): Promise<Response> {
+async function handleComparacion(
+  log: StructuredLog,
+  url: string,
+  key: string,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
   const cached = getFromCache<any>('comparison:latest');
-  if (cached) return jsonResponse({ ...cached, fromCache: true });
+  if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const [pProv, pSist] = await Promise.all([fetchProductosProveedor(url, key), fetchProductosSistema(url, key)]);
   const matches = await performAdvancedMatching(pProv, pSist, log);
@@ -67,12 +89,17 @@ async function handleComparacion(log: StructuredLog, url: string, key: string): 
   await batchSaveComparisons(comparaciones, url, key, log);
   const result = { success: true, data: { comparaciones: comparaciones.length, oportunidades: comparaciones.filter(c => c.es_oportunidad_ahorro).length, top: comparaciones.slice(0, 50), timestamp: new Date().toISOString() } };
   addToCache('comparison:latest', result, 600000);
-  return jsonResponse(result);
+  return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
-async function handleAlertas(log: StructuredLog, url: string, key: string): Promise<Response> {
+async function handleAlertas(
+  log: StructuredLog,
+  url: string,
+  key: string,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
   const cached = getFromCache<any>('alerts:latest');
-  if (cached) return jsonResponse({ ...cached, fromCache: true });
+  if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
   const [comparacionesRes, existentesRes] = await Promise.all([
@@ -100,12 +127,17 @@ async function handleAlertas(log: StructuredLog, url: string, key: string): Prom
     }
   };
   addToCache('alerts:latest', result, 300000);
-  return jsonResponse(result);
+  return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
-async function handleStatus(log: StructuredLog, url: string, key: string): Promise<Response> {
+async function handleStatus(
+  log: StructuredLog,
+  url: string,
+  key: string,
+  corsHeaders: Record<string, string>
+): Promise<Response> {
   const cached = getFromCache<any>('status:latest');
-  if (cached) return jsonResponse({ ...cached, fromCache: true });
+  if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const cacheStats = getCacheStats();
   const breakers = Object.fromEntries(getCircuitBreakersSnapshot().map(([n, b]) => [n, { state: b.state, failures: b.failures }]));
@@ -118,17 +150,32 @@ async function handleStatus(log: StructuredLog, url: string, key: string): Promi
     }
   };
   addToCache('status:latest', result, 60000);
-  return jsonResponse(result);
+  return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
-async function handleHealth(url: string, key: string): Promise<Response> {
+async function handleHealth(
+  url: string,
+  key: string,
+  corsHeaders: Record<string, string>,
+  requestId: string
+): Promise<Response> {
   try {
     const res = await fetch(`${url}/rest/v1/precios_proveedor?select=count&limit=1`, {
       headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
     });
-    return jsonResponse({ status: res.ok ? 'healthy' : 'degraded', db: res.ok, timestamp: new Date().toISOString() });
+    return jsonResponse(
+      { status: res.ok ? 'healthy' : 'degraded', db: res.ok, timestamp: new Date().toISOString() },
+      200,
+      corsHeaders,
+      requestId
+    );
   } catch {
-    return jsonResponse({ status: 'unhealthy', db: false, timestamp: new Date().toISOString() }, 503);
+    return jsonResponse(
+      { status: 'unhealthy', db: false, timestamp: new Date().toISOString() },
+      503,
+      corsHeaders,
+      requestId
+    );
   }
 }
 
@@ -137,11 +184,21 @@ async function handleHealth(url: string, key: string): Promise<Response> {
 // ============================================================================
 
 Deno.serve(async (request: Request): Promise<Response> => {
-  if (request.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
-
   const url = new URL(request.url);
-  const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
   const requestId = crypto.randomUUID();
+
+  const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
+  const corsResult = validateOrigin(request, allowedOrigins, DEFAULT_CORS_HEADERS);
+  const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
+
+  if (!corsResult.allowed) {
+    return createCorsErrorResponse(requestId, corsHeaders);
+  }
+
+  const preflight = handleCors(request, corsHeaders);
+  if (preflight) return preflight;
+
+  const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
   const log: StructuredLog = { requestId, endpoint, method: request.method, timestamp: new Date().toISOString() };
 
 
@@ -151,13 +208,13 @@ Deno.serve(async (request: Request): Promise<Response> => {
   // Rate limiting
   const clientId = request.headers.get('x-client-id') || 'anonymous';
   if (!rateLimiter.tryAcquire(clientId)) {
-    return jsonResponse({ error: 'Rate limit exceeded' }, 429);
+    return jsonResponse({ error: 'Rate limit exceeded' }, 429, corsHeaders, requestId);
   }
 
   // Circuit breaker
   const breaker = getCircuitBreaker('scraper-main', MAXICONSUMO_BREAKER_OPTIONS);
   if (!breaker.allowRequest()) {
-    return jsonResponse({ error: 'Service temporarily unavailable' }, 503);
+    return jsonResponse({ error: 'Service temporarily unavailable' }, 503, corsHeaders, requestId);
   }
 
   try {
@@ -166,12 +223,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     let response: Response;
     switch (endpoint) {
-      case 'scraping': case 'scrape': response = await handleScraping(log, supabaseUrl, serviceRoleKey); break;
-      case 'comparacion': case 'compare': response = await handleComparacion(log, supabaseUrl, serviceRoleKey); break;
-      case 'alertas': case 'alerts': response = await handleAlertas(log, supabaseUrl, serviceRoleKey); break;
-      case 'status': response = await handleStatus(log, supabaseUrl, serviceRoleKey); break;
-      case 'health': response = await handleHealth(supabaseUrl, serviceRoleKey); break;
-      default: response = jsonResponse({ error: 'Unknown endpoint', available: ['scraping', 'comparacion', 'alertas', 'status', 'health'] }, 404);
+      case 'scraping': case 'scrape': response = await handleScraping(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
+      case 'comparacion': case 'compare': response = await handleComparacion(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
+      case 'alertas': case 'alerts': response = await handleAlertas(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
+      case 'status': response = await handleStatus(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
+      case 'health': response = await handleHealth(supabaseUrl, serviceRoleKey, corsHeaders, requestId); break;
+      default: response = jsonResponse({ error: 'Unknown endpoint', available: ['scraping', 'comparacion', 'alertas', 'status', 'health'] }, 404, corsHeaders, requestId);
     }
 
     breaker.recordSuccess();
@@ -181,6 +238,6 @@ Deno.serve(async (request: Request): Promise<Response> => {
     breaker.recordFailure();
     PERFORMANCE_METRICS.requestMetrics.failed++;
     logger.error('ERROR', { ...log, error: (e as Error).message });
-    return jsonResponse({ error: (e as Error).message }, 500);
+    return jsonResponse({ error: (e as Error).message }, 500, corsHeaders, requestId);
   }
 });

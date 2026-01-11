@@ -217,12 +217,77 @@ Usar este ID para debugging y correlación de logs.
 
 ---
 
+---
+
+## 🔗 API Proveedor (api-proveedor)
+
+### URL Base
+```
+# Producción
+https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-proveedor
+
+# Desarrollo local
+http://127.0.0.1:54321/functions/v1/api-proveedor
+```
+
+### Autenticación
+`api-proveedor` usa **shared secret** en lugar de JWT. Enviar el header `x-api-secret`:
+
+```bash
+# Header requerido
+x-api-secret: <valor de API_PROVEEDOR_SECRET>
+```
+
+### Endpoints Disponibles
+| Endpoint | Método | Descripción |
+|----------|--------|-------------|
+| `/precios` | GET | Precios actuales del proveedor |
+| `/productos` | GET | Productos disponibles |
+| `/comparacion` | GET | Comparación con sistema interno |
+| `/sincronizar` | POST | Disparar sincronización |
+| `/status` | GET | Estado del sistema de scraping |
+| `/alertas` | GET | Alertas activas de precios |
+| `/estadisticas` | GET | Estadísticas de scraping |
+| `/configuracion` | GET/POST | Configuración del proveedor |
+| `/health` | GET | Health check (sin auth) |
+
+### Headers de Respuesta
+Igual que `api-minimarket`:
+- `x-request-id` en header y body
+- Formato estándar `{ success, data/error, requestId }`
+
+### Llamadas Server-to-Server (desde gateway)
+Para llamar desde `api-minimarket`:
+```ts
+const proveedorSecret = Deno.env.get('API_PROVEEDOR_SECRET');
+const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`, {
+  method: 'GET',
+  headers: {
+    'x-api-secret': proveedorSecret,
+    'Content-Type': 'application/json',
+    'x-request-id': requestId, // propagar para tracing
+  },
+});
+```
+
+### Rate Limiting
+- 120 requests por minuto por cliente
+- Header `retry_after_ms` en error 429
+
+### Circuit Breaker
+- Se activa tras múltiples fallos
+- Código `CIRCUIT_OPEN` con status 503
+
+---
+
 ## 📖 Documentación Adicional
 
 | Recurso | Archivo |
 |---------|---------|
 | OpenAPI 3.1 | `docs/api-openapi-3.1.yaml` |
+| OpenAPI Proveedor | `docs/api-proveedor-openapi-3.1.yaml` |
 | Postman Collection | `docs/postman-collection.json` |
+| Postman Proveedor | `docs/postman-collection-proveedor.json` |
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Schema BD | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 | Guía Deploy | `docs/DEPLOYMENT_GUIDE.md` |
@@ -251,4 +316,4 @@ Usar este ID para debugging y correlación de logs.
 
 ---
 
-*Última actualización: 2026-01-10*
+*Última actualización: 2025-01-10*

@@ -190,10 +190,31 @@ export interface CircuitBreakerOptions {
 // CONSTANTES
 // ============================================================================
 
-export const MAXICONSUMO_BASE_URL = 'https://maxiconsumo.com/sucursal_necochea/';
-export const FUENTE_MAXICONSUMO = 'Maxiconsumo Necochea';
+export const MAXICONSUMO_BASE_URL = 'https://maxiconsumo.com/sucursal_necochea/' as const;
+export const FUENTE_MAXICONSUMO = 'Maxiconsumo Necochea' as const;
 export const DEFAULT_BATCH_SIZE = 50;
 export const DEFAULT_MAX_RETRIES = 5;
-export const DEFAULT_TIMEOUT = 20000;
+export const DEFAULT_TIMEOUT = 25000;
 export const CACHE_MAX_SIZE = 1000;
-export const CACHE_DEFAULT_TTL = 300000; // 5 minutes
+export const CACHE_DEFAULT_TTL = 300000;
+
+const ALLOWED_HOSTS = ['maxiconsumo.com', 'www.maxiconsumo.com'] as const;
+const SLUG_PATTERN = /^[a-z0-9-]+$/;
+
+export function isValidScraperUrl(url: string): boolean {
+  try {
+    const parsed = new URL(url);
+    if (parsed.protocol !== 'https:') return false;
+    if (!ALLOWED_HOSTS.includes(parsed.hostname as typeof ALLOWED_HOSTS[number])) return false;
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function sanitizeSlug(slug: string): string | null {
+  const trimmed = slug.trim().toLowerCase();
+  if (trimmed.length === 0 || trimmed.length > 64) return null;
+  if (!SLUG_PATTERN.test(trimmed)) return null;
+  return trimmed;
+}

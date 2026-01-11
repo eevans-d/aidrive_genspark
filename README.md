@@ -130,6 +130,30 @@ npm run test:e2e
 - `scraper-alertas.test.ts` - Alertas de precios (3 tests)
 - `cron-jobs.test.ts` - Jobs y orquestación (8 tests)
 
+**Configuración para tests E2E/Integración:**
+
+Para ejecutar tests E2E e integración, configurar variables de entorno:
+
+```bash
+# 1. Copiar template de variables de test
+cp .env.test.example .env.test
+
+# 2. Iniciar Supabase local
+supabase start
+
+# 3. Obtener keys reales y actualizar .env.test
+supabase status
+# Copiar "API URL" -> SUPABASE_URL
+# Copiar "Publishable key" -> SUPABASE_ANON_KEY
+# Copiar "Secret key" -> SUPABASE_SERVICE_ROLE_KEY
+
+# 4. Ejecutar tests (los scripts cargan .env.test automaticamente)
+bash scripts/run-e2e-tests.sh
+bash scripts/run-integration-tests.sh
+```
+
+Ver [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#423-e2e-and-integration-tests-configuration) para detalles.
+
 ---
 
 ## 🔑 Variables de Entorno
@@ -141,10 +165,22 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 ```
 
 ### Edge Functions (configuradas en Supabase Dashboard)
+```env
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+API_PROVEEDOR_SECRET=min-32-random-chars  # Para autenticacion de api-proveedor interna
 ```
-SUPABASE_URL
-SUPABASE_SERVICE_ROLE_KEY
+
+**Generar API_PROVEEDOR_SECRET:**
+```bash
+# Metodo 1: OpenSSL (recomendado)
+openssl rand -base64 32 | tr -d '\n'
+
+# Metodo 2: Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
+
+Ver `.env.example` para template completo y [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#23-environment-variables-configuration) para detalles de configuración.
 
 ---
 
