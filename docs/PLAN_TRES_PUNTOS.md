@@ -99,6 +99,12 @@
 ## Siguiente paso inmediato
 Continuar con FASE 6 (API proveedor) y preparar el reporte final (Punto 1) y el backlog base (Punto 3).
 
+### Modo sin credenciales (`.env.test` pendiente)
+- Tests permitidos: `npm run test:unit`.
+- Validación de prerequisitos sin Supabase: `bash scripts/run-e2e-tests.sh --dry-run` y `bash scripts/run-integration-tests.sh --dry-run`.
+- Bloqueado: E2E/integración hasta contar con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `API_PROVEEDOR_SECRET` reales en `.env.test`.
+- Flags opcionales (proxy/CAPTCHA/cookie jar) permanecen desactivados por defecto; no requieren credenciales ni afectan el flujo.
+
 ---
 
 ## 4) Plan maestro de debugging modular (alineado y verificado)

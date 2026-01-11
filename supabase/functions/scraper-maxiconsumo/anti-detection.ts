@@ -380,8 +380,7 @@ export async function handleCaptchaBypass(
       provider: captchaService.provider 
     });
     
-    // TODO: Implementar integración real con provider de CAPTCHA
-    // Por ahora simula la resolución
+    // Placeholder: simular resolución sin enviar datos reales
     await delay(getRandomDelay(3000, 8000));
     
     logger.info('CAPTCHA_SERVICE_SUCCESS', { 
