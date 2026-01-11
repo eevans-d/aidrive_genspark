@@ -2,6 +2,8 @@
  * Auth helper para API proveedor (shared secret validation)
  */
 
+import { fail } from '../../_shared/response.ts';
+
 export function validateApiSecret(request: Request): { valid: boolean; error?: string } {
     const apiSecret = Deno.env.get('API_PROVEEDOR_SECRET');
     
@@ -22,12 +24,6 @@ export function validateApiSecret(request: Request): { valid: boolean; error?: s
     return { valid: true };
 }
 
-export function createAuthErrorResponse(error: string, corsHeaders: Record<string, string>): Response {
-    return new Response(
-        JSON.stringify({
-            success: false,
-            error: { code: 'AUTH_FAILED', message: error }
-        }),
-        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+export function createAuthErrorResponse(error: string, corsHeaders: Record<string, string>, requestId: string): Response {
+    return fail('AUTH_FAILED', error, 401, corsHeaders, { requestId });
 }

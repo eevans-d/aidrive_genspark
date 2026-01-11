@@ -13,6 +13,7 @@ import {
     predictAlertTrends
 } from '../utils/alertas.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:alertas');
 
@@ -89,27 +90,24 @@ export async function getAlertasActivasOptimizado(
             alertas_requieren_accion: alertasFinales.filter((a: any) => a.action_required).length
         };
 
-        const resultado = {
-            success: true,
-            data: {
-                alertas: alertasFinales,
-                estadisticas,
-                analisis_inteligente: incluirAnalisis
-                    ? {
-                          patrones_detectados: patterns?.status === 'fulfilled' ? patterns.value : null,
-                          tendencias_predichas: trends?.status === 'fulfilled' ? trends.value : null,
-                          scores_riesgo: riskScores?.status === 'fulfilled' ? riskScores.value : null
-                      }
-                    : null,
-                filtros_aplicados: {
-                    severidad,
-                    tipo,
-                    solo_no_procesadas: soloNoProcesadas,
-                    incluir_analisis: incluirAnalisis
-                },
-                insights: generateAlertInsights(alertasFinales),
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            alertas: alertasFinales,
+            estadisticas,
+            analisis_inteligente: incluirAnalisis
+                ? {
+                      patrones_detectados: patterns?.status === 'fulfilled' ? patterns.value : null,
+                      tendencias_predichas: trends?.status === 'fulfilled' ? trends.value : null,
+                      scores_riesgo: riskScores?.status === 'fulfilled' ? riskScores.value : null
+                  }
+                : null,
+            filtros_aplicados: {
+                severidad,
+                tipo,
+                solo_no_procesadas: soloNoProcesadas,
+                incluir_analisis: incluirAnalisis
+            },
+            insights: generateAlertInsights(alertasFinales),
+            timestamp: new Date().toISOString()
         };
 
         logger.info('ALERTAS_SUCCESS', {
@@ -118,9 +116,7 @@ export async function getAlertasActivasOptimizado(
             analisis: incluirAnalisis
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('ALERTAS_ERROR', {
             ...requestLog,

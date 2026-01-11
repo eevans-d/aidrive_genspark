@@ -339,13 +339,21 @@ No errors found.
 
 ---
 
+## Ajustes posteriores a la verificacion (11-ene)
+
+- Handlers de `api-proveedor` responden via `ok()` con `requestId` en body y headers CORS.
+- Errores de autenticacion usan `fail(AUTH_FAILED, ...)` incluyendo `requestId`.
+- `requestLog` ahora lleva `timestamp` para metricas; estadisticas de productos manejan listas vacias sin `NaN/Infinity`.
+
+---
+
 ## Pendientes Identificados
 
 | Item | Prioridad | Notas |
 |------|-----------|-------|
-| Proxies reales | Baja | Requiere servicio externo (Bright Data) |
-| Resolucion CAPTCHA | Baja | handleCaptchaBypass() es placeholder |
-| Tests E2E api-proveedor | Media | Requieren entorno con secrets |
+| Proxies reales | Baja | Documentado en `.env.example`/`.env.test.example` como opcional; requiere servicio externo |
+| Resolucion CAPTCHA | Baja | Documentado en `.env.example`/`.env.test.example`; `handleCaptchaBypass()` sigue como placeholder |
+| Tests E2E api-proveedor | Media | Requieren entorno con secrets (`.env.test` local) |
 | Cookie rotation persistente | Baja | Session IDs rotan pero no hay jar |
 
 ---

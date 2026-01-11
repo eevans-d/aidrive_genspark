@@ -1,6 +1,7 @@
 import { validateProductosParams } from '../validators.ts';
 import { calculateCompetitivenessScore, calculateRelevanceScore, formatPrecio, generateSearchTags, generateSlug } from '../utils/format.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:productos');
 
@@ -59,38 +60,40 @@ export async function getProductosDisponiblesOptimizado(
             .filter(result => result.status === 'fulfilled')
             .map(result => (result as PromiseFulfilledResult<any>).value);
 
+        const preciosValores = productosFinales.map((p: any) => p.precio_actual).filter((v: any) => typeof v === 'number');
+        const rangoPrecios = preciosValores.length > 0
+            ? {
+                min: Math.min(...preciosValores),
+                max: Math.max(...preciosValores),
+                promedio: preciosValores.reduce((sum: number, precio: number) => sum + precio, 0) / preciosValores.length
+            }
+            : { min: 0, max: 0, promedio: 0 };
+
         const estadisticas = {
             total_productos: productosFinales.length,
             productos_con_stock: productosFinales.filter((p: any) => p.stock_disponible > 0).length,
             marcas_unicas: [...new Set(productosFinales.map((p: any) => p.marca).filter(Boolean))].length,
             categorias_disponibles: statsResponse.status === 'fulfilled' ? statsResponse.value : [],
             facetas_busqueda: facetasResponse.status === 'fulfilled' ? facetasResponse.value : {},
-            rango_precios: {
-                min: Math.min(...productosFinales.map((p: any) => p.precio_actual)),
-                max: Math.max(...productosFinales.map((p: any) => p.precio_actual)),
-                promedio: productosFinales.reduce((sum: number, p: any) => sum + p.precio_actual, 0) / productosFinales.length
-            }
+            rango_precios: rangoPrecios
         };
 
-        const resultado = {
-            success: true,
-            data: {
-                productos: productosFinales,
-                estadisticas: estadisticas,
-                filtros_aplicados: {
-                    busqueda: busqueda,
-                    categoria: categoria,
-                    marca: marca,
-                    solo_con_stock: soloConStock,
-                    ordenar_por: ordenarPor
-                },
-                metadatos_busqueda: {
-                    relevancia_score: calculateRelevanceScore(productosFinales, busqueda),
-                    tiempo_respuesta: Date.now() - new Date(requestLog.timestamp).getTime(),
-                    cache_score: 'high'
-                },
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            productos: productosFinales,
+            estadisticas: estadisticas,
+            filtros_aplicados: {
+                busqueda: busqueda,
+                categoria: categoria,
+                marca: marca,
+                solo_con_stock: soloConStock,
+                ordenar_por: ordenarPor
+            },
+            metadatos_busqueda: {
+                relevancia_score: calculateRelevanceScore(productosFinales, busqueda),
+                tiempo_respuesta: Date.now() - new Date(requestLog.timestamp).getTime(),
+                cache_score: 'high'
+            },
+            timestamp: new Date().toISOString()
         };
 
         logger.info('PRODUCTOS_SUCCESS', {
@@ -99,9 +102,7 @@ export async function getProductosDisponiblesOptimizado(
             cache_score: 'high'
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
 
     } catch (error) {
         logger.error('PRODUCTOS_ERROR', {

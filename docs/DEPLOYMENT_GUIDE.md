@@ -217,6 +217,9 @@ echo "3. Run 'supabase start' to start local database"
 | **VITE_SUPABASE_ANON_KEY** | Public anon key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
 | **SUPABASE_SERVICE_ROLE_KEY** | Service role key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
 | **API_PROVEEDOR_SECRET** | Shared secret para API proveedor interna | `min-32-random-chars-here` | ✅ |
+| **PROXY_URL** | (Opcional) Proxy HTTP para scraper | `http://user:pass@proxy.example.com:8080` | ⚙️ |
+| **CAPTCHA_PROVIDER** | (Opcional) Proveedor de CAPTCHA | `2captcha` | ⚙️ |
+| **CAPTCHA_API_KEY** | (Opcional) API key de CAPTCHA | `your-captcha-api-key` | ⚙️ |
 | **SCRAPING_INTERVAL** | Scraping frequency | `86400000` (24h) | ✅ |
 | **MAX_CONCURRENT_REQUESTS** | Rate limiting | `5` | ✅ |
 | **CACHE_TTL** | Cache expiration | `3600000` (1h) | ✅ |
@@ -237,6 +240,11 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 # API Proveedor Security (internal API authentication)
 # Generate with: openssl rand -base64 32
 API_PROVEEDOR_SECRET=your-random-32-chars-minimum-secret-here
+
+# (Optional) Scraper anti-detection extras
+PROXY_URL=http://user:pass@proxy.example.com:8080
+CAPTCHA_PROVIDER=2captcha
+CAPTCHA_API_KEY=your-captcha-api-key
 
 # Application Settings
 NODE_ENV=development

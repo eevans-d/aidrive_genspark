@@ -7,6 +7,7 @@ import {
     calculateSystemUptime
 } from '../utils/metrics.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:status');
 
@@ -73,61 +74,58 @@ export async function getEstadoSistemaOptimizado(
             opportunities: totalOportunidades
         });
 
-        const resultado = {
-            success: true,
-            data: {
-                sistema: {
-                    estado: systemHealth.overall === 'healthy' ? 'operativo' : 'degradado',
-                    version: '2.0.0',
-                    proveedor: 'Maxiconsumo Necochea',
-                    uptime_seconds: uptime,
-                    health_score: systemHealth.score,
-                    environment: Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development'
+        const data = {
+            sistema: {
+                estado: systemHealth.overall === 'healthy' ? 'operativo' : 'degradado',
+                version: '2.0.0',
+                proveedor: 'Maxiconsumo Necochea',
+                uptime_seconds: uptime,
+                health_score: systemHealth.score,
+                environment: Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development'
+            },
+            estadisticas: {
+                ultima_ejecucion: ultimaEstadistica?.created_at || 'Nunca',
+                productos_totales: totalProductos,
+                oportunidades_activas: totalOportunidades,
+                ultima_sincronizacion: configuracion?.ultima_sincronizacion || 'Nunca',
+                proximo_scrape_programado: calcularProximoScrape(configuracion),
+                productos_nuevos_24h: ultimaEstadistica?.productos_nuevos || 0,
+                tasa_exito_24h: ultimaEstadistica?.tasa_exito || 0
+            },
+            configuracion: {
+                ...configuracion,
+                cache_stats: {
+                    entries: API_CACHE.size,
+                    hit_rate: ((REQUEST_METRICS.cacheHits / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2)
+                }
+            },
+            health_checks: {
+                database: totalProductos > 0 ? 'healthy' : 'unhealthy',
+                scraper: scraperHealth.status || 'unknown',
+                cache: API_CACHE.size >= 0 ? 'healthy' : 'unhealthy',
+                rate_limiter: 'healthy'
+            },
+            performance: {
+                api_metrics: {
+                    total_requests: REQUEST_METRICS.total,
+                    success_rate: ((REQUEST_METRICS.success / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2),
+                    avg_response_time: Math.round(REQUEST_METRICS.averageResponseTime),
+                    cache_hit_rate: ((REQUEST_METRICS.cacheHits / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2)
                 },
-                estadisticas: {
-                    ultima_ejecucion: ultimaEstadistica?.created_at || 'Nunca',
-                    productos_totales: totalProductos,
-                    oportunidades_activas: totalOportunidades,
-                    ultima_sincronizacion: configuracion?.ultima_sincronizacion || 'Nunca',
-                    proximo_scrape_programado: calcularProximoScrape(configuracion),
-                    productos_nuevos_24h: ultimaEstadistica?.productos_nuevos || 0,
-                    tasa_exito_24h: ultimaEstadistica?.tasa_exito || 0
-                },
-                configuracion: {
-                    ...configuracion,
-                    cache_stats: {
-                        entries: API_CACHE.size,
-                        hit_rate: ((REQUEST_METRICS.cacheHits / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2)
-                    }
-                },
-                health_checks: {
-                    database: totalProductos > 0 ? 'healthy' : 'unhealthy',
-                    scraper: scraperHealth.status || 'unknown',
-                    cache: API_CACHE.size >= 0 ? 'healthy' : 'unhealthy',
-                    rate_limiter: 'healthy'
-                },
-                performance: {
-                    api_metrics: {
-                        total_requests: REQUEST_METRICS.total,
-                        success_rate: ((REQUEST_METRICS.success / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2),
-                        avg_response_time: Math.round(REQUEST_METRICS.averageResponseTime),
-                        cache_hit_rate: ((REQUEST_METRICS.cacheHits / Math.max(REQUEST_METRICS.total, 1)) * 100).toFixed(2)
-                    },
-                    score: performanceScore
-                },
-                endpoints_disponibles: [
-                    'GET /proveedor/precios',
-                    'GET /proveedor/productos',
-                    'GET /proveedor/comparacion',
-                    'POST /proveedor/sincronizar',
-                    'GET /proveedor/status',
-                    'GET /proveedor/alertas',
-                    'GET /proveedor/estadisticas',
-                    'GET /proveedor/configuracion',
-                    'GET /proveedor/health'
-                ],
-                timestamp: new Date().toISOString()
-            }
+                score: performanceScore
+            },
+            endpoints_disponibles: [
+                'GET /proveedor/precios',
+                'GET /proveedor/productos',
+                'GET /proveedor/comparacion',
+                'POST /proveedor/sincronizar',
+                'GET /proveedor/status',
+                'GET /proveedor/alertas',
+                'GET /proveedor/estadisticas',
+                'GET /proveedor/configuracion',
+                'GET /proveedor/health'
+            ],
+            timestamp: new Date().toISOString()
         };
 
         logger.info('STATUS_SUCCESS', {
@@ -136,9 +134,7 @@ export async function getEstadoSistemaOptimizado(
             productos: totalProductos
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('STATUS_ERROR', {
             ...requestLog,

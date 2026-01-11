@@ -13,6 +13,7 @@ import {
 } from '../utils/estadisticas.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateEstadisticasParams } from '../validators.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:estadisticas');
 
@@ -72,35 +73,32 @@ export async function getEstadisticasScrapingOptimizado(
 
         const metricasTemporales = aggregateTemporalMetrics(estadisticas, granularidad);
 
-        const resultado = {
-            success: true,
-            data: {
-                estadisticas_periodo: estadisticas,
-                metricas_agregadas: {
-                    ...(baseMetrics.status === 'fulfilled' ? baseMetrics.value : calcularMetricasScraping(estadisticas)),
-                    performance: performance.status === 'fulfilled' ? performance.value : null,
-                    trends: trends.status === 'fulfilled' ? trends.value : null,
-                    anomalies: anomalies.status === 'fulfilled' ? anomalies.value : null
-                },
-                metricas_temporales: metricasTemporales,
-                predicciones: incluirPredicciones
-                    ? {
-                          performance_trends: perfPred?.status === 'fulfilled' ? perfPred.value : null,
-                          success_forecast: successPred?.status === 'fulfilled' ? successPred.value : null,
-                          optimal_timing: timingPred?.status === 'fulfilled' ? timingPred.value : null
-                      }
-                    : null,
-                parametros: {
-                    dias_analizados: dias,
-                    categoria,
-                    granularidad,
-                    fecha_inicio: fechaInicio.toISOString(),
-                    fecha_fin: new Date().toISOString(),
-                    incluir_predicciones: incluirPredicciones
-                },
-                kpis: calculateKPIs(estadisticas),
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            estadisticas_periodo: estadisticas,
+            metricas_agregadas: {
+                ...(baseMetrics.status === 'fulfilled' ? baseMetrics.value : calcularMetricasScraping(estadisticas)),
+                performance: performance.status === 'fulfilled' ? performance.value : null,
+                trends: trends.status === 'fulfilled' ? trends.value : null,
+                anomalies: anomalies.status === 'fulfilled' ? anomalies.value : null
+            },
+            metricas_temporales: metricasTemporales,
+            predicciones: incluirPredicciones
+                ? {
+                      performance_trends: perfPred?.status === 'fulfilled' ? perfPred.value : null,
+                      success_forecast: successPred?.status === 'fulfilled' ? successPred.value : null,
+                      optimal_timing: timingPred?.status === 'fulfilled' ? timingPred.value : null
+                  }
+                : null,
+            parametros: {
+                dias_analizados: dias,
+                categoria,
+                granularidad,
+                fecha_inicio: fechaInicio.toISOString(),
+                fecha_fin: new Date().toISOString(),
+                incluir_predicciones: incluirPredicciones
+            },
+            kpis: calculateKPIs(estadisticas),
+            timestamp: new Date().toISOString()
         };
 
         logger.info('ESTADISTICAS_SUCCESS', {
@@ -109,9 +107,7 @@ export async function getEstadisticasScrapingOptimizado(
             predicciones: incluirPredicciones
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('ESTADISTICAS_ERROR', {
             ...requestLog,

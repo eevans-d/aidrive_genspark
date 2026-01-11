@@ -1,6 +1,7 @@
 import { validatePreciosParams } from '../validators.ts';
 import { formatTiempoTranscurrido, getMemoryUsage } from '../utils/format.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:precios');
 
@@ -51,34 +52,31 @@ export async function getPreciosActualesOptimizado(
             .filter(result => result.status === 'fulfilled')
             .map(result => (result as PromiseFulfilledResult<any>).value);
 
-        const resultado = {
-            success: true,
-            data: {
-                productos: productosFinales,
-                paginacion: {
-                    total: total,
-                    limite: limite,
-                    offset: offset,
-                    productos_mostrados: productosFinales.length,
-                    tiene_mas: (offset + limite) < total,
-                    paginas_totales: Math.ceil(total / limite)
-                },
-                estadisticas_rapidas: estadisticas,
-                filtros_aplicados: {
-                    categoria: categoria,
-                    activo: activo
-                },
-                cache_info: {
-                    ttl: 60000,
-                    can_cache: true
-                },
-                timestamp: new Date().toISOString()
+        const data = {
+            productos: productosFinales,
+            paginacion: {
+                total: total,
+                limite: limite,
+                offset: offset,
+                productos_mostrados: productosFinales.length,
+                tiene_mas: (offset + limite) < total,
+                paginas_totales: Math.ceil(total / limite)
             },
-            metrics: {
-                productos_procesados: productosFinales.length,
-                tiempo_procesamiento: Date.now() - new Date(requestLog.timestamp).getTime(),
-                memory_usage: getMemoryUsage()
-            }
+            estadisticas_rapidas: estadisticas,
+            filtros_aplicados: {
+                categoria: categoria,
+                activo: activo
+            },
+            cache_info: {
+                ttl: 60000,
+                can_cache: true
+            },
+            timestamp: new Date().toISOString()
+        };
+        const metrics = {
+            productos_procesados: productosFinales.length,
+            tiempo_procesamiento: Date.now() - new Date(requestLog.timestamp).getTime(),
+            memory_usage: getMemoryUsage()
         };
 
         logger.info('PRECIOS_SUCCESS', {
@@ -87,9 +85,7 @@ export async function getPreciosActualesOptimizado(
             total: total
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId, extra: { metrics } });
 
     } catch (error) {
         logger.error('PRECIOS_ERROR', {

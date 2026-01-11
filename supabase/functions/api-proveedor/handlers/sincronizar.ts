@@ -7,6 +7,7 @@ import { getPreciosActualesOptimizado } from './precios.ts';
 import { getProductosDisponiblesOptimizado } from './productos.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:sincronizar');
 
@@ -22,7 +23,7 @@ export async function triggerSincronizacionOptimizado(
     const authResult = validateApiSecret(request);
     if (!authResult.valid) {
         logger.warn('SINCRONIZACION_AUTH_FAILED', { ...requestLog, error: authResult.error });
-        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders);
+        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders, requestLog.requestId);
     }
 
     const { categoria, forceFull, priority } = validateSincronizacionParams(url);
@@ -123,23 +124,20 @@ export async function triggerSincronizacionOptimizado(
             priority_level: priority
         };
 
-        const resultado = {
-            success: true,
-            data: {
-                sincronizacion: {
-                    ...resultadoScraping,
-                    metrics: syncMetrics
-                },
-                comparacion_generada: resultadoComparacion,
-                parametros: {
-                    categoria,
-                    force_full: forceFull,
-                    priority,
-                    request_id: requestLog.requestId
-                },
-                estado_circuit_breaker: { state: circuitBreaker.getState() },
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            sincronizacion: {
+                ...resultadoScraping,
+                metrics: syncMetrics
+            },
+            comparacion_generada: resultadoComparacion,
+            parametros: {
+                categoria,
+                force_full: forceFull,
+                priority,
+                request_id: requestLog.requestId
+            },
+            estado_circuit_breaker: { state: circuitBreaker.getState() },
+            timestamp: new Date().toISOString()
         };
 
         logger.info('SINCRONIZACION_SUCCESS', {
@@ -148,9 +146,7 @@ export async function triggerSincronizacionOptimizado(
             duracion: syncMetrics.duracion_total
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('SINCRONIZACION_ERROR', {
             ...requestLog,

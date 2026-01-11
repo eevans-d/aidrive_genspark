@@ -243,7 +243,8 @@ Deno.serve(async (request: Request): Promise<Response> => {
         endpoint: endpointRaw,
         method: request.method,
         path: url.pathname,
-        requestId
+        requestId,
+        timestamp: new Date().toISOString()
     };
 
     const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders, requestId);

@@ -781,6 +781,7 @@ test-reports/
 **/.env*
 !**/.env.example
 !**/.env.template
+!.env.test.example
 **/*.pem
 **/*.key
 **/*.p12

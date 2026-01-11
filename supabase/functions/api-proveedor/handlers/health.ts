@@ -16,6 +16,7 @@ import {
     generateHealthRecommendations
 } from '../utils/health.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok, fail } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:health');
 
@@ -51,23 +52,20 @@ export async function getHealthCheckOptimizado(
         const overallHealthScore = calculateOverallHealthScore(healthComponents);
         const systemStatus = determineSystemStatus(overallHealthScore, healthComponents);
 
-        const resultado = {
-            success: true,
-            data: {
-                status: systemStatus.status,
-                timestamp: new Date().toISOString(),
-                uptime: {
-                    seconds: calculateSystemUptime(),
-                    human_readable: formatUptime(calculateSystemUptime())
-                },
-                health_score: overallHealthScore,
-                components: healthComponents,
-                metrics: buildRealtimeMetrics(),
-                alerts: generateHealthAlerts(healthComponents, overallHealthScore),
-                recommendations: generateHealthRecommendations(healthComponents, overallHealthScore),
-                version: '2.0.0',
-                environment: Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development'
-            }
+        const data = {
+            status: systemStatus.status,
+            timestamp: new Date().toISOString(),
+            uptime: {
+                seconds: calculateSystemUptime(),
+                human_readable: formatUptime(calculateSystemUptime())
+            },
+            health_score: overallHealthScore,
+            components: healthComponents,
+            metrics: buildRealtimeMetrics(),
+            alerts: generateHealthAlerts(healthComponents, overallHealthScore),
+            recommendations: generateHealthRecommendations(healthComponents, overallHealthScore),
+            version: '2.0.0',
+            environment: Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development'
         };
 
         logger.info('HEALTH_SUCCESS', {
@@ -76,31 +74,24 @@ export async function getHealthCheckOptimizado(
             status: systemStatus.status
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('HEALTH_ERROR', {
             ...requestLog,
             error: (error as Error).message
         });
 
-        return new Response(
-            JSON.stringify({
-                success: false,
-                data: {
-                    status: 'error',
-                    timestamp: new Date().toISOString(),
-                    error: (error as Error).message,
-                    health_score: 0,
-                    components: {
-                        api: { status: 'error', score: 0 }
-                    }
-                }
-            }),
+        return fail(
+            'HEALTH_CHECK_FAILED',
+            'No se pudo obtener el estado del proveedor',
+            503,
+            corsHeaders,
             {
-                status: 503,
-                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+                requestId: requestLog.requestId,
+                details: {
+                    error: (error as Error).message,
+                    timestamp: new Date().toISOString()
+                }
             }
         );
     }

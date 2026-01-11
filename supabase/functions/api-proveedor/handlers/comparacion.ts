@@ -11,6 +11,7 @@ import {
     identifyProductPatterns
 } from '../utils/comparacion.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:comparacion');
 
@@ -77,27 +78,24 @@ export async function getComparacionConSistemaOptimizado(
             .filter((result) => result.status === 'fulfilled')
             .map((result) => (result as PromiseFulfilledResult<any>).value);
 
-        const resultado = {
-            success: true,
-            data: {
-                oportunidades: oportunidadesFinales,
-                estadisticas,
-                analisis_avanzado: incluirAnalisis
-                    ? {
-                          tendencias_mercado: marketTrends?.status === 'fulfilled' ? marketTrends.value : null,
-                          patrones_productos: productPatterns?.status === 'fulfilled' ? productPatterns.value : null,
-                          recomendaciones: recommendations?.status === 'fulfilled' ? recommendations.value : null
-                      }
-                    : null,
-                filtros_aplicados: {
-                    solo_oportunidades: soloOportunidades,
-                    min_diferencia: minDiferencia,
-                    orden,
-                    incluir_analisis: incluirAnalisis
-                },
-                insights: generateBusinessInsights(oportunidadesFinales),
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            oportunidades: oportunidadesFinales,
+            estadisticas,
+            analisis_avanzado: incluirAnalisis
+                ? {
+                      tendencias_mercado: marketTrends?.status === 'fulfilled' ? marketTrends.value : null,
+                      patrones_productos: productPatterns?.status === 'fulfilled' ? productPatterns.value : null,
+                      recomendaciones: recommendations?.status === 'fulfilled' ? recommendations.value : null
+                  }
+                : null,
+            filtros_aplicados: {
+                solo_oportunidades: soloOportunidades,
+                min_diferencia: minDiferencia,
+                orden,
+                incluir_analisis: incluirAnalisis
+            },
+            insights: generateBusinessInsights(oportunidadesFinales),
+            timestamp: new Date().toISOString()
         };
 
         logger.info('COMPARACION_SUCCESS', {
@@ -106,9 +104,7 @@ export async function getComparacionConSistemaOptimizado(
             analisis_incluido: incluirAnalisis
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('COMPARACION_ERROR', {
             ...requestLog,

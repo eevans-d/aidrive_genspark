@@ -169,6 +169,9 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 API_PROVEEDOR_SECRET=min-32-random-chars  # Para autenticacion de api-proveedor interna
+PROXY_URL=http://user:pass@proxy.example.com:8080  # opcional para scraping
+CAPTCHA_PROVIDER=2captcha  # opcional
+CAPTCHA_API_KEY=your-captcha-api-key  # opcional
 ```
 
 **Generar API_PROVEEDOR_SECRET:**
@@ -180,7 +183,7 @@ openssl rand -base64 32 | tr -d '\n'
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
 ```
 
-Ver `.env.example` para template completo y [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#23-environment-variables-configuration) para detalles de configuración.
+Ver `.env.example` para template completo y [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#23-environment-variables-configuration) para detalles de configuración. Para tests locales E2E/Integracion, copia `.env.test.example` a `.env.test`, reemplaza valores reales de `supabase status` y expórtalos antes de correr los scripts de tests.
 
 ---
 

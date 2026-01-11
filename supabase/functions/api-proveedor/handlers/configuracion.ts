@@ -6,6 +6,7 @@ import {
 } from '../utils/config.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
+import { ok } from '../../_shared/response.ts';
 
 const logger = createLogger('api-proveedor:configuracion');
 
@@ -21,7 +22,7 @@ export async function getConfiguracionProveedorOptimizado(
     const authResult = validateApiSecret(request);
     if (!authResult.valid) {
         logger.warn('CONFIG_AUTH_FAILED', { ...requestLog, error: authResult.error });
-        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders);
+        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders, requestLog.requestId);
     }
 
     logger.info('CONFIG_REQUEST', { ...requestLog });
@@ -48,35 +49,32 @@ export async function getConfiguracionProveedorOptimizado(
         const healthStatus = assessConfigHealth(configuracion);
         const optimizationSuggestions = generateOptimizationSuggestions(configuracion);
 
-        const resultado = {
-            success: true,
-            data: {
-                configuracion: {
-                    ...configuracion,
-                    ultima_validacion: new Date().toISOString(),
-                    hash_config: configuracion ? generateConfigHash(configuracion) : null
-                },
-                analisis: {
-                    health_status: healthStatus,
-                    configuration_score: configAnalysis.score,
-                    issues_found: configAnalysis.issues,
-                    optimization_potential: configAnalysis.optimizationPotential
-                },
-                sugerencias_optimizacion: optimizationSuggestions,
-                parametros_disponibles: {
-                    frecuencia_scraping: ['cada_hora', 'diaria', 'semanal'],
-                    severidad_alertas: ['baja', 'media', 'alta', 'critica'],
-                    tipos_cambio: ['aumento', 'disminucion', 'nuevo_producto'],
-                    estrategias_cache: ['aggressive', 'balanced', 'conservative'],
-                    modos_error_recovery: ['automatic', 'manual', 'hybrid']
-                },
-                configuracion_actual_analizada: {
-                    es_optima: healthStatus === 'healthy',
-                    necesita_actualizacion: configAnalysis.needsUpdate,
-                    recomendaciones_activas: optimizationSuggestions.length
-                },
-                timestamp: new Date().toISOString()
-            }
+        const data = {
+            configuracion: {
+                ...configuracion,
+                ultima_validacion: new Date().toISOString(),
+                hash_config: configuracion ? generateConfigHash(configuracion) : null
+            },
+            analisis: {
+                health_status: healthStatus,
+                configuration_score: configAnalysis.score,
+                issues_found: configAnalysis.issues,
+                optimization_potential: configAnalysis.optimizationPotential
+            },
+            sugerencias_optimizacion: optimizationSuggestions,
+            parametros_disponibles: {
+                frecuencia_scraping: ['cada_hora', 'diaria', 'semanal'],
+                severidad_alertas: ['baja', 'media', 'alta', 'critica'],
+                tipos_cambio: ['aumento', 'disminucion', 'nuevo_producto'],
+                estrategias_cache: ['aggressive', 'balanced', 'conservative'],
+                modos_error_recovery: ['automatic', 'manual', 'hybrid']
+            },
+            configuracion_actual_analizada: {
+                es_optima: healthStatus === 'healthy',
+                necesita_actualizacion: configAnalysis.needsUpdate,
+                recomendaciones_activas: optimizationSuggestions.length
+            },
+            timestamp: new Date().toISOString()
         };
 
         logger.info('CONFIG_SUCCESS', {
@@ -85,9 +83,7 @@ export async function getConfiguracionProveedorOptimizado(
             score: configAnalysis.score
         });
 
-        return new Response(JSON.stringify(resultado), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return ok(data, 200, corsHeaders, { requestId: requestLog.requestId });
     } catch (error) {
         logger.error('CONFIG_ERROR', {
             ...requestLog,
