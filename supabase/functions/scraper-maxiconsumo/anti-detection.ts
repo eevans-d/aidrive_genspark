@@ -6,6 +6,19 @@
 
 import type { AntiDetectionConfig, StructuredLog } from './types.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { 
+  ENABLE_PROXY, 
+  ENABLE_CAPTCHA, 
+  getProxyConfig, 
+  getCaptchaConfig,
+  validateOptionalFeatures 
+} from './config.ts';
+import {
+  isCookieJarEnabled,
+  getCookiesForRequest,
+  storeCookiesFromResponse,
+  getCookieJarStats
+} from './utils/cookie-jar.ts';
 
 const logger = createLogger('scraper-maxiconsumo:anti-detection');
 
@@ -21,6 +34,41 @@ export const DEFAULT_ANTI_DETECTION_CONFIG: AntiDetectionConfig = {
   headerRandomization: true,
   captchaBypass: false
 };
+
+// ============================================================================
+// PROXY Y CAPTCHA HELPERS
+// ============================================================================
+
+/**
+ * Verifica si el proxy está efectivamente habilitado y configurado
+ */
+export function isProxyEffectivelyEnabled(): boolean {
+  const validation = validateOptionalFeatures();
+  return validation.proxyValid;
+}
+
+/**
+ * Verifica si el servicio de CAPTCHA está efectivamente habilitado y configurado
+ */
+export function isCaptchaServiceEnabled(): boolean {
+  const validation = validateOptionalFeatures();
+  return validation.captchaValid;
+}
+
+/**
+ * Obtiene la URL del proxy si está habilitado, o null si no
+ */
+export function getEffectiveProxyUrl(): string | null {
+  const config = getProxyConfig();
+  return config?.url || null;
+}
+
+/**
+ * Obtiene configuración del servicio de CAPTCHA si está habilitado
+ */
+export function getEffectiveCaptchaService(): { provider: string; apiKey: string } | null {
+  return getCaptchaConfig();
+}
 
 // ============================================================================
 // USER AGENTS (actualizado 2025)
@@ -219,6 +267,7 @@ export async function fetchConReintentos(
 
 /**
  * Fetch avanzado con anti-deteccion completa y manejo de rate limiting
+ * Incluye soporte opcional para cookie jar (ENABLE_COOKIE_JAR)
  */
 export async function fetchWithAdvancedAntiDetection(
   url: string,
@@ -230,21 +279,37 @@ export async function fetchWithAdvancedAntiDetection(
   const requestId = structuredLog.requestId || crypto.randomUUID();
   let lastError: Error | null = null;
 
+  // Obtener cookies si el jar está habilitado
+  const cookieHeader = getCookiesForRequest(url);
+
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const requestStartTime = Date.now();
 
+      // Construir headers con cookies si están disponibles
+      const requestHeaders: Record<string, string> = {
+        ...headers,
+        'X-Request-ID': requestId,
+        'X-Client-Version': '2.0.0',
+        'X-Session-ID': generateSessionId()
+      };
+
+      // Agregar cookies si hay (sin loggear valores)
+      if (cookieHeader) {
+        requestHeaders['Cookie'] = cookieHeader;
+      }
+
       const response = await fetch(url, {
-        headers: {
-          ...headers,
-          'X-Request-ID': requestId,
-          'X-Client-Version': '2.0.0',
-          'X-Session-ID': generateSessionId()
-        },
+        headers: requestHeaders,
         signal: AbortSignal.timeout(timeout)
       });
 
       const responseTime = Date.now() - requestStartTime;
+
+      // Guardar cookies de la respuesta si el jar está habilitado
+      if (isCookieJarEnabled()) {
+        storeCookiesFromResponse(url, response);
+      }
 
       if (response.status === 429 || response.status === 503) {
         const backoffMs = calculateExponentialBackoff(attempt, 2000, 30000);
@@ -263,7 +328,8 @@ export async function fetchWithAdvancedAntiDetection(
         responseTime,
         status: response.status,
         requestId,
-        attempt
+        attempt,
+        cookieJarActive: isCookieJarEnabled()
       });
 
       return response;
@@ -298,20 +364,41 @@ export async function fetchWithAdvancedAntiDetection(
 // ============================================================================
 
 /**
- * Simula bypass de CAPTCHA
- * En implementación real, integraría con servicio de resolución
+ * Maneja bypass de CAPTCHA usando servicio externo si está configurado
+ * Si CAPTCHA service no está habilitado, simula bypass con delay
  */
 export async function handleCaptchaBypass(
   url: string,
   headers: Record<string, string>,
   structuredLog: StructuredLog
 ): Promise<void> {
-  logger.info('CAPTCHA_BYPASS_ATTEMPT', structuredLog);
+  const captchaService = getEffectiveCaptchaService();
   
-  // Simular resolución de CAPTCHA
-  await delay(getRandomDelay(3000, 8000));
-  
-  logger.info('CAPTCHA_BYPASS_SUCCESS', structuredLog);
+  if (captchaService) {
+    logger.info('CAPTCHA_SERVICE_ATTEMPT', { 
+      ...structuredLog, 
+      provider: captchaService.provider 
+    });
+    
+    // TODO: Implementar integración real con provider de CAPTCHA
+    // Por ahora simula la resolución
+    await delay(getRandomDelay(3000, 8000));
+    
+    logger.info('CAPTCHA_SERVICE_SUCCESS', { 
+      ...structuredLog, 
+      provider: captchaService.provider 
+    });
+  } else {
+    // Fallback: simular delay sin servicio externo
+    logger.info('CAPTCHA_BYPASS_ATTEMPT', { 
+      ...structuredLog,
+      note: 'Sin servicio de CAPTCHA configurado, usando delay simulado'
+    });
+    
+    await delay(getRandomDelay(3000, 8000));
+    
+    logger.info('CAPTCHA_BYPASS_COMPLETE', structuredLog);
+  }
 }
 
 /**

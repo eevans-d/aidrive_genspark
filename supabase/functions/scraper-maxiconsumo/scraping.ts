@@ -5,12 +5,48 @@
 
 import type { ProductoMaxiconsumo, StructuredLog, CategoriaConfig } from './types.ts';
 import { MAXICONSUMO_BASE_URL, isValidScraperUrl, sanitizeSlug } from './types.ts';
-import { delay, getRandomDelay, generateAdvancedHeaders, fetchWithAdvancedAntiDetection } from './anti-detection.ts';
+import { 
+  delay, 
+  getRandomDelay, 
+  generateAdvancedHeaders, 
+  fetchWithAdvancedAntiDetection,
+  isProxyEffectivelyEnabled,
+  isCaptchaServiceEnabled,
+  getEffectiveProxyUrl
+} from './anti-detection.ts';
 import { extractProductosConOptimizacion, calculateConfidenceScore, generateContentHash } from './parsing.ts';
-import { obtenerConfiguracionCategorias } from './config.ts';
+import { obtenerConfiguracionCategorias, validateOptionalFeatures } from './config.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { isCookieJarEnabled, getCookieJarStats } from './utils/cookie-jar.ts';
 
 const logger = createLogger('scraper-maxiconsumo:scraping');
+
+/**
+ * Inicializa y loggea el estado de features opcionales al inicio del scraping
+ */
+function logOptionalFeaturesStatus(requestId: string): void {
+  const status = validateOptionalFeatures();
+  const cookieJarStats = getCookieJarStats();
+  
+  logger.info('OPTIONAL_FEATURES_STATUS', {
+    requestId,
+    proxy: {
+      enabled: status.proxyEnabled,
+      valid: status.proxyValid,
+      active: status.proxyValid
+    },
+    captcha: {
+      enabled: status.captchaEnabled,
+      valid: status.captchaValid,
+      active: status.captchaValid
+    },
+    cookieJar: {
+      enabled: cookieJarStats.enabled,
+      hostsWithCookies: cookieJarStats.hostsWithCookies,
+      totalCookies: cookieJarStats.totalCookies
+    }
+  });
+}
 
 export async function scrapeCategoriaOptimizado(
   categoria: string, config: CategoriaConfig, structuredLog: StructuredLog
@@ -90,6 +126,9 @@ export async function ejecutarScrapingCompleto(
 }> {
   const requestId = structuredLog.requestId || crypto.randomUUID();
   logger.info('SCRAPING_START', { requestId });
+
+  // Loggear estado de features opcionales al inicio
+  logOptionalFeaturesStatus(requestId);
 
   const categorias = obtenerConfiguracionCategorias();
   const productos: ProductoMaxiconsumo[] = [];

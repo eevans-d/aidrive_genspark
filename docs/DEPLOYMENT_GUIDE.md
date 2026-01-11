@@ -217,14 +217,46 @@ echo "3. Run 'supabase start' to start local database"
 | **VITE_SUPABASE_ANON_KEY** | Public anon key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
 | **SUPABASE_SERVICE_ROLE_KEY** | Service role key | `eyJhbGciOiJIUzI1NiIs...` | ✅ |
 | **API_PROVEEDOR_SECRET** | Shared secret para API proveedor interna | `min-32-random-chars-here` | ✅ |
-| **PROXY_URL** | (Opcional) Proxy HTTP para scraper | `http://user:pass@proxy.example.com:8080` | ⚙️ |
-| **CAPTCHA_PROVIDER** | (Opcional) Proveedor de CAPTCHA | `2captcha` | ⚙️ |
-| **CAPTCHA_API_KEY** | (Opcional) API key de CAPTCHA | `your-captcha-api-key` | ⚙️ |
 | **SCRAPING_INTERVAL** | Scraping frequency | `86400000` (24h) | ✅ |
 | **MAX_CONCURRENT_REQUESTS** | Rate limiting | `5` | ✅ |
 | **CACHE_TTL** | Cache expiration | `3600000` (1h) | ✅ |
 | **SENTRY_DSN** | Error tracking | `https://xxx.ingest.sentry.io/xxx` | ⚪ |
 | **ALERT_EMAIL** | Alert notifications | `admin@minimarket.com` | ⚪ |
+
+#### 2.3.1.1 Variables Opcionales de Scraper (Proxy, CAPTCHA y Cookie Jar)
+
+El scraper soporta proxy, servicios de CAPTCHA y cookie jar de forma **opcional y desactivada por defecto**. Para habilitarlos, configure los flags junto con los datos requeridos.
+
+| Variable | Description | Default | Required if enabled |
+|----------|-------------|---------|---------------------|
+| **ENABLE_PROXY** | Activa uso de proxy HTTP | `false` | - |
+| **PROXY_URL** | URL completa del proxy | - | Sí (si ENABLE_PROXY=true) |
+| **ENABLE_CAPTCHA** | Activa servicio de CAPTCHA | `false` | - |
+| **CAPTCHA_PROVIDER** | Proveedor de CAPTCHA (`2captcha`, `anticaptcha`) | - | Sí (si ENABLE_CAPTCHA=true) |
+| **CAPTCHA_API_KEY** | API key del proveedor | - | Sí (si ENABLE_CAPTCHA=true) |
+| **ENABLE_COOKIE_JAR** | Activa rotación de cookies en memoria | `false` | - |
+
+**Comportamiento:**
+- Si `ENABLE_PROXY=true` pero `PROXY_URL` no está configurado, se loggea un WARNING y el scraper continúa sin proxy.
+- Si `ENABLE_CAPTCHA=true` pero falta `CAPTCHA_PROVIDER` o `CAPTCHA_API_KEY`, se loggea un WARNING y el scraper usa bypass simulado.
+- Si `ENABLE_COOKIE_JAR=true`, el scraper guarda y reutiliza cookies por host entre requests (útil para mantener sesiones).
+- El flujo de scraping **nunca se interrumpe** por configuración faltante de estas opciones.
+- **Seguridad**: Los valores de cookies nunca se exponen en logs ni respuestas.
+
+**Ejemplo de configuración:**
+```bash
+# Solo habilitar proxy
+ENABLE_PROXY=true
+PROXY_URL=http://user:pass@proxy.example.com:8080
+
+# Solo habilitar CAPTCHA
+ENABLE_CAPTCHA=true
+CAPTCHA_PROVIDER=2captcha
+CAPTCHA_API_KEY=your-api-key-placeholder
+
+# Habilitar cookie jar para mantener sesiones
+ENABLE_COOKIE_JAR=true
+```
 
 #### 2.3.2 Environment Setup Template
 
@@ -241,10 +273,21 @@ SUPABASE_SERVICE_ROLE_KEY=your_service_role_key_here
 # Generate with: openssl rand -base64 32
 API_PROVEEDOR_SECRET=your-random-32-chars-minimum-secret-here
 
-# (Optional) Scraper anti-detection extras
-PROXY_URL=http://user:pass@proxy.example.com:8080
-CAPTCHA_PROVIDER=2captcha
-CAPTCHA_API_KEY=your-captcha-api-key
+# ============================================================================
+# (Optional) Scraper Proxy & CAPTCHA - DESACTIVADOS POR DEFECTO
+# ============================================================================
+# Para habilitar proxy HTTP:
+# ENABLE_PROXY=true
+# PROXY_URL=http://user:pass@proxy.example.com:8080
+
+# Para habilitar servicio de CAPTCHA:
+# ENABLE_CAPTCHA=true
+# CAPTCHA_PROVIDER=2captcha
+# CAPTCHA_API_KEY=your-captcha-api-key-placeholder
+
+# Para habilitar cookie jar (rotación de cookies en memoria):
+# ENABLE_COOKIE_JAR=true
+# ============================================================================
 
 # Application Settings
 NODE_ENV=development

@@ -152,6 +152,8 @@ bash scripts/run-e2e-tests.sh
 bash scripts/run-integration-tests.sh
 ```
 
+> ⚠️ **Nota importante:** Sin un archivo `.env.test` con credenciales reales de Supabase, los scripts de E2E/integración fallarán con un mensaje claro indicando qué falta. En ese caso, **solo se pueden ejecutar tests unitarios** con `npm run test:unit`.
+
 Ver [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#423-e2e-and-integration-tests-configuration) para detalles.
 
 ---
@@ -169,10 +171,23 @@ VITE_SUPABASE_ANON_KEY=eyJ...
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
 API_PROVEEDOR_SECRET=min-32-random-chars  # Para autenticacion de api-proveedor interna
-PROXY_URL=http://user:pass@proxy.example.com:8080  # opcional para scraping
-CAPTCHA_PROVIDER=2captcha  # opcional
-CAPTCHA_API_KEY=your-captcha-api-key  # opcional
+
+# ========== Proxy, CAPTCHA y Cookie Jar (OPCIONALES - desactivados por defecto) ==========
+# Para habilitar proxy HTTP en el scraper:
+# ENABLE_PROXY=true
+# PROXY_URL=http://user:pass@proxy.example.com:8080
+
+# Para habilitar servicio de CAPTCHA:
+# ENABLE_CAPTCHA=true
+# CAPTCHA_PROVIDER=2captcha
+# CAPTCHA_API_KEY=your-captcha-api-key-placeholder
+
+# Para habilitar cookie jar (rotación de cookies en memoria):
+# ENABLE_COOKIE_JAR=true
+# ==============================================================================
 ```
+
+> **Nota:** El scraper funciona sin proxy, CAPTCHA ni cookie jar. Estas opciones solo deben activarse si se requieren para casos específicos de anti-bloqueo o mantenimiento de sesiones.
 
 **Generar API_PROVEEDOR_SECRET:**
 ```bash

@@ -6,6 +6,10 @@
 
 ---
 
+> ⚠️ **Nota sobre ejecución de tests:** Los tests de integración y E2E requieren un archivo `.env.test` con credenciales reales de Supabase local. Sin este archivo, los scripts fallarán con un mensaje claro. **Sin `.env.test`, solo se pueden ejecutar tests unitarios** con `npm run test:unit`.
+
+---
+
 ## Resumen Ejecutivo
 
 | Fase | Descripcion | Estado | Tests | Errores |
