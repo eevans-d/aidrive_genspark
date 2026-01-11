@@ -1,7 +1,7 @@
 # BACKLOG PRIORIZADO (v1)
 
-**Fecha:** 2026-01-09  
-**Estado:** inicial  
+**Fecha:** 2026-01-11  
+**Estado:** en curso (modo sin credenciales)  
 **Metodo:** Puntaje = (Impacto x Urgencia) / Esfuerzo
 
 ---
@@ -12,6 +12,11 @@
 3) **P0-03** Gateway sin service role para queries y CORS restringido por origen.  
 4) **P1-01** Eliminar N+1 en Productos/Proveedores con joins o RPC.  
 5) **P1-02** Paginacion + select de columnas minimas en catalogos.
+
+### Sprint inmediato sin credenciales
+- **DOC-01** Cerrar `REPORTE_ANALISIS_PROYECTO.md` (hallazgos/riesgos) sin ejecutar E2E.
+- **DOC-02** Actualizar `API_README.md` con ejemplos `--dry-run` y sin claves.
+- **TEST-01** Ampliar unitarios de parsers/routers/cache en scraper y gateway.
 
 ---
 
@@ -44,6 +49,9 @@
 | P2-09 | Notificaciones de tareas | 3 | 3 | 2 | 2.0 | Cron/edge | Backend | Pendiente |
 | P2-10 | Observabilidad UI (errores/reporting) | 2 | 2 | 2 | 2.0 | Sentry | Frontend/Ops | Pendiente |
 | P3-01 | Limpieza de docs divergentes | 2 | 3 | 1 | 0.7 | Docs | Docs | Pendiente |
+| DOC-01 | Reporte de análisis final (solo lectura) | 4 | 2 | 4 | 8.0 | Ninguna | Docs | Pendiente |
+| DOC-02 | API_README con flujo dry-run y sin claves | 3 | 1 | 4 | 12.0 | Ninguna | Docs | Pendiente |
+| TEST-01 | Unit tests extra parsers/routers/cache | 4 | 2 | 3 | 6.0 | Ninguna | Backend/QA | Pendiente |
 
 ---
 
