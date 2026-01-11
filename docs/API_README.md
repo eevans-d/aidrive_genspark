@@ -107,6 +107,13 @@ curl -i -X OPTIONS "$BASE_URL/categorias" \
 - [ ] 404 con `NOT_FOUND` para rutas inexistentes
 - [ ] OPTIONS devuelve 204 (sin body)
 
+### Modo sin credenciales (`.env.test` pendiente)
+- Tests permitidos: `npm run test:unit`.
+- Validar prerequisitos sin arrancar Supabase:  
+  `bash scripts/run-e2e-tests.sh --dry-run`  
+  `bash scripts/run-integration-tests.sh --dry-run`
+- E2E/integración bloqueados hasta contar con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `API_PROVEEDOR_SECRET` en `.env.test`.
+
 ---
 
 ## 🔑 Autenticación
@@ -316,4 +323,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2025-01-10*
+*Última actualización: 2026-01-11*
