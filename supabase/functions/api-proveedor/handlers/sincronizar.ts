@@ -6,6 +6,7 @@ import { validateSincronizacionParams } from '../validators.ts';
 import { getPreciosActualesOptimizado } from './precios.ts';
 import { getProductosDisponiblesOptimizado } from './productos.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
 
 const logger = createLogger('api-proveedor:sincronizar');
 
@@ -15,17 +16,13 @@ export async function triggerSincronizacionOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: any,
+    request: Request
 ): Promise<Response> {
-    if (!isAuthenticated) {
-        logger.warn('SINCRONIZACION_AUTH_REQUIRED', { ...requestLog });
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: { code: 'AUTH_REQUIRED', message: 'Se requiere autenticacion para este endpoint' }
-            }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    const authResult = validateApiSecret(request);
+    if (!authResult.valid) {
+        logger.warn('SINCRONIZACION_AUTH_FAILED', { ...requestLog, error: authResult.error });
+        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders);
     }
 
     const { categoria, forceFull, priority } = validateSincronizacionParams(url);

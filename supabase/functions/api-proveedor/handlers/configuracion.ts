@@ -5,6 +5,7 @@ import {
     generateOptimizationSuggestions
 } from '../utils/config.ts';
 import { createLogger } from '../../_shared/logger.ts';
+import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
 
 const logger = createLogger('api-proveedor:configuracion');
 
@@ -14,17 +15,13 @@ export async function getConfiguracionProveedorOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: any,
+    request: Request
 ): Promise<Response> {
-    if (!isAuthenticated) {
-        logger.warn('CONFIG_AUTH_REQUIRED', { ...requestLog });
-        return new Response(
-            JSON.stringify({
-                success: false,
-                error: { code: 'AUTH_REQUIRED', message: 'Se requiere autenticacion para este endpoint' }
-            }),
-            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-        );
+    const authResult = validateApiSecret(request);
+    if (!authResult.valid) {
+        logger.warn('CONFIG_AUTH_FAILED', { ...requestLog, error: authResult.error });
+        return createAuthErrorResponse(authResult.error || 'Auth failed', corsHeaders);
     }
 
     logger.info('CONFIG_REQUEST', { ...requestLog });

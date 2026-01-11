@@ -8,6 +8,7 @@ export type EndpointContext = {
     isAuthenticated: boolean;
     requestLog: Record<string, unknown>;
     method: string;
+    request: Request;
 };
 
 export type EndpointHandler = (context: EndpointContext) => Promise<Response>;

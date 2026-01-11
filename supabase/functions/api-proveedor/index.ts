@@ -7,6 +7,7 @@ import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { toAppError, isAppError } from '../_shared/errors.ts';
 import { fail } from '../_shared/response.ts';
+import { parseAllowedOrigins, validateOrigin, handleCors, createCorsErrorResponse } from '../_shared/cors.ts';
 import { EndpointContext, EndpointHandlerMap, routeRequest } from './router.ts';
 import { EndpointName, isEndpointName } from './schemas.ts';
 import { getAlertasActivasOptimizado } from './handlers/alertas.ts';
@@ -23,12 +24,6 @@ import { isRetryableAPIError } from './utils/http.ts';
 import { updateRequestMetrics } from './utils/metrics.ts';
 
 const logger = createLogger('api-proveedor');
-
-const corsHeaders = {
-    'Access-Control-Allow-Origin': '*',
-    'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-    'Access-Control-Allow-Methods': 'GET,POST,OPTIONS'
-};
 
 const circuitBreaker = getCircuitBreaker('api-proveedor', CIRCUIT_BREAKER_OPTIONS);
 const RATE_LIMITERS = new Map<string, FixedWindowRateLimiter>();
@@ -83,7 +78,8 @@ function buildHandlerMap(): EndpointHandlerMap {
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
-                ctx.requestLog
+                ctx.requestLog,
+                ctx.request
             ),
         status: (ctx) =>
             getEstadoSistemaOptimizado(
@@ -118,7 +114,8 @@ function buildHandlerMap(): EndpointHandlerMap {
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
-                ctx.requestLog
+                ctx.requestLog,
+                ctx.request
             ),
         health: (ctx) =>
             getHealthCheckOptimizado(
@@ -132,7 +129,11 @@ function buildHandlerMap(): EndpointHandlerMap {
     return map;
 }
 
-function buildContext(request: Request, requestLog: Record<string, unknown>): EndpointContext {
+function buildContext(
+    request: Request,
+    requestLog: Record<string, unknown>,
+    corsHeaders: Record<string, string>
+): EndpointContext {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !serviceRoleKey) {
@@ -146,11 +147,16 @@ function buildContext(request: Request, requestLog: Record<string, unknown>): En
         corsHeaders,
         isAuthenticated: Boolean(request.headers.get('authorization')),
         requestLog,
-        method: request.method
+        method: request.method,
+        request
     };
 }
 
-function rateLimitRequest(endpoint: EndpointName, request: Request): Response | null {
+function rateLimitRequest(
+    endpoint: EndpointName,
+    request: Request,
+    corsHeaders: Record<string, string>
+): Response | null {
     const clientId =
         request.headers.get('x-client-id') ||
         request.headers.get('x-user-id') ||
@@ -178,8 +184,21 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const start = performance.now();
     const url = new URL(request.url);
 
-    if (request.method === 'OPTIONS') {
-        return new Response('ok', { headers: corsHeaders });
+    const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
+    const corsOverrides = {
+        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-secret'
+    };
+    const corsResult = validateOrigin(request, allowedOrigins, corsOverrides);
+    const corsHeaders = corsResult.headers;
+
+    if (!corsResult.allowed) {
+        logger.warn('CORS_BLOCKED', { path: url.pathname, origin: corsResult.origin });
+        return createCorsErrorResponse(undefined, corsHeaders);
+    }
+
+    const preflight = handleCors(request, corsHeaders);
+    if (preflight) {
+        return preflight;
     }
 
     const endpointRaw = getEndpointFromPath(url.pathname);
@@ -197,7 +216,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
         requestId: crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`
     };
 
-    const rateLimited = rateLimitRequest(endpointRaw, request);
+    const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders);
     if (rateLimited) {
         return rateLimited;
     }
@@ -208,7 +227,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
     }
 
     try {
-        const context = buildContext(request, requestLog);
+        const context = buildContext(request, requestLog, corsHeaders);
         const response = await routeRequest(endpointRaw, context, HANDLERS);
         circuitBreaker.recordSuccess();
         updateRequestMetrics(true, performance.now() - start);
