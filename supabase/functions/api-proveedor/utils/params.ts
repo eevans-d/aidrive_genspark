@@ -1,3 +1,8 @@
 export function sanitizeSearchInput(input: string): string {
-    return input.replace(/[<>"'&]/g, '').substring(0, 100);
+    if (!input || typeof input !== 'string') return '';
+    return input
+        .replace(/[<>"'&;`]/g, '')
+        .replace(/[\x00-\x1F\x7F]/g, '')
+        .trim()
+        .substring(0, 100);
 }

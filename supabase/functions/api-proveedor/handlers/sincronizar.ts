@@ -17,6 +17,17 @@ export async function triggerSincronizacionOptimizado(
     isAuthenticated: boolean,
     requestLog: any
 ): Promise<Response> {
+    if (!isAuthenticated) {
+        logger.warn('SINCRONIZACION_AUTH_REQUIRED', { ...requestLog });
+        return new Response(
+            JSON.stringify({
+                success: false,
+                error: { code: 'AUTH_REQUIRED', message: 'Se requiere autenticacion para este endpoint' }
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+
     const { categoria, forceFull, priority } = validateSincronizacionParams(url);
 
     logger.info('SINCRONIZACION_REQUEST', {

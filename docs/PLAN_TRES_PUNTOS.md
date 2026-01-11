@@ -355,12 +355,17 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
 **6. CRITERIO DE EXITO:**
    - Todas las rutas tienen validacion consistente y schemas correctos.
 
+**7. NOTA DE AUTENTICACION (FASE 6 → 7):**
+   - La API proveedor es interna: auth por shared secret + CORS allowlist.
+   - El check actual valida solo presencia de `Authorization` (temporal). En FASE 7 debe reemplazarse por verificacion real del token/secret.
+
 ---
 
 ### FASE 7: API Proveedor - handlers y logica de negocio
 
 **1. OBJETIVO DE ESTA FASE:**
    - Validar logica de negocio, cache y comparaciones.
+   - Endurecer autenticacion real (shared secret/JWT) en handlers que usan `requiresAuth`.
 
 **2. ARCHIVOS INVOLUCRADOS:**
    - Primero `supabase/functions/api-proveedor/handlers/productos.ts`.
@@ -403,6 +408,7 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
 
 **6. CRITERIO DE EXITO:**
    - Logica consistente, cache coherente y errores controlados.
+   - Auth endurecida (shared secret/JWT real) en endpoints `requiresAuth`.
 
 ---
 
@@ -441,6 +447,7 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
 
 **6. CRITERIO DE EXITO:**
    - Respuestas y auth coherentes entre APIs.
+   - Gateway y proveedor usan el mismo modelo de auth (shared secret/JWT) y CORS allowlist.
 
 ---
 

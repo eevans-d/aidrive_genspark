@@ -16,6 +16,17 @@ export async function getConfiguracionProveedorOptimizado(
     isAuthenticated: boolean,
     requestLog: any
 ): Promise<Response> {
+    if (!isAuthenticated) {
+        logger.warn('CONFIG_AUTH_REQUIRED', { ...requestLog });
+        return new Response(
+            JSON.stringify({
+                success: false,
+                error: { code: 'AUTH_REQUIRED', message: 'Se requiere autenticacion para este endpoint' }
+            }),
+            { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
+        );
+    }
+
     logger.info('CONFIG_REQUEST', { ...requestLog });
 
     try {
