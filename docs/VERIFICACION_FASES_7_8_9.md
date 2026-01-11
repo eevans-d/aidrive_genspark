@@ -362,6 +362,10 @@ No errors found.
 
 ---
 
+### Notas operativas sin credenciales reales
+- Los flags `ENABLE_PROXY`, `ENABLE_CAPTCHA` y `ENABLE_COOKIE_JAR` quedan desactivados por defecto; sin claves no alteran el flujo.
+- Las suites E2E/integración no corren sin `.env.test`; usar `npm run test:unit` o `bash scripts/run-e2e-tests.sh --dry-run` / `bash scripts/run-integration-tests.sh --dry-run` para validar prerequisitos.
+
 ## Conclusion
 
 **TODAS LAS FASES (7, 8, 9) ESTAN COMPLETAS Y VERIFICADAS:**

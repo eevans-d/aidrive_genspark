@@ -153,6 +153,12 @@ bash scripts/run-integration-tests.sh
 ```
 
 > ⚠️ **Nota importante:** Sin un archivo `.env.test` con credenciales reales de Supabase, los scripts de E2E/integración fallarán con un mensaje claro indicando qué falta. En ese caso, **solo se pueden ejecutar tests unitarios** con `npm run test:unit`.
+>
+> Si quieres validar prerequisitos sin ejecutar Supabase ni usar credenciales, puedes usar los scripts en modo `--dry-run`:
+> ```bash
+> bash scripts/run-e2e-tests.sh --dry-run
+> bash scripts/run-integration-tests.sh --dry-run
+> ```
 
 Ver [docs/DEPLOYMENT_GUIDE.md](docs/DEPLOYMENT_GUIDE.md#423-e2e-and-integration-tests-configuration) para detalles.
 

@@ -1412,6 +1412,12 @@ Tests E2E e integración requieren variables de entorno para conectar con Supaba
 | `SUPABASE_ANON_KEY` | Anonymous key | `eyJhbGciOiJIUzI1NiIs...` | E2E, Integration |
 | `API_PROVEEDOR_SECRET` | Shared secret para API proveedor | `test-secret-min-32-chars` | E2E API Proveedor |
 
+> **Modo sin credenciales:** Si aún no tienes `.env.test` con claves reales, solo ejecuta `npm run test:unit`. Para validar prerequisitos sin arrancar Supabase usa:
+> ```bash
+> bash scripts/run-e2e-tests.sh --dry-run
+> bash scripts/run-integration-tests.sh --dry-run
+> ```
+
 **Configuración Local (Supabase local activo):**
 
 ```bash

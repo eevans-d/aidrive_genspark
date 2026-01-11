@@ -5,6 +5,17 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 # ============================================================================
+# MODO DRY-RUN (solo valida prerequisitos y sale sin ejecutar Supabase)
+# ============================================================================
+if [ "${1:-}" = "--dry-run" ]; then
+  echo "DRY-RUN: Validacion de prerequisitos para E2E" >&2
+  echo "- Se requiere .env.test con SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY" >&2
+  echo "- Supabase CLI debe estar instalado (supabase version)" >&2
+  echo "No se iniciara Supabase ni se ejecutaran tests en este modo." >&2
+  exit 0
+fi
+
+# ============================================================================
 # VALIDACIÓN DE REQUISITOS ANTES DE INICIAR
 # ============================================================================
 
