@@ -105,6 +105,13 @@ Continuar con FASE 6 (API proveedor) y preparar el reporte final (Punto 1) y el 
 - Bloqueado: E2E/integración hasta contar con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `API_PROVEEDOR_SECRET` reales en `.env.test`.
 - Flags opcionales (proxy/CAPTCHA/cookie jar) permanecen desactivados por defecto; no requieren credenciales ni afectan el flujo.
 
+### Roadmap breve sin credenciales (tareas que sí pueden avanzar)
+- Backend: refinar validadores (tipos, rangos) y rutas estáticas; endurecer manejo de HTML vacío y timeouts configurables (ya iniciado en scraper).
+- Tests: ampliar unitarios de parsers/routers/cache; cubrir casos borde de fail() y CORS; mantener `npm run test:unit` como guardia.
+- Docs: cerrar `REPORTE_ANALISIS_PROYECTO.md` y `BACKLOG_PRIORIZADO.md`; actualizar API_README con ejemplos sin claves y flow de `--dry-run`.
+- Frontend: revisión estática de pages (Dashboard/Deposito/Productos) para conteos y validaciones; no requiere Supabase en vivo.
+- Operación: checklist de release sin credenciales (scripts `--dry-run`, variables requeridas) y notas en DECISION_LOG.
+
 ---
 
 ## 4) Plan maestro de debugging modular (alineado y verificado)
