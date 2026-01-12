@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-09  
+**Fecha:** 2026-01-12  
 **Estado:** ⚠️ Plan NO completado (verificado)
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
@@ -10,9 +10,11 @@
 
 El plan de ejecución de 6 semanas está avanzado, pero NO está cerrado. Se logró:
 - Modularización base de las 3 funciones críticas (con pendientes técnicos)
+- **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
+- **141 tests unitarios pasando** (subió de 82) ✅
 - Migraciones versionadas en local
 - Tests reales con Vitest y runner alineado (unit + integration + e2e)
-- CI activo en `main` con edge-check estricto
+- **CI con jobs gated** para integration/E2E ✅
 
 Pendientes críticos detectados:
 - Validación runtime de alertas/comparaciones pendiente (WS4.1)
@@ -103,22 +105,39 @@ Pendientes críticos detectados:
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
-  - Job: test (Vitest)
+  - Job: test (Vitest) - **141 tests pasando** ✅
   - Job: build (Vite)
   - Job: typecheck (tsc)
   - Job: edge-functions-check (Deno, estricto)
+  - Job: integration (**gated** - requiere `vars.RUN_INTEGRATION_TESTS` o `workflow_dispatch`) ✅
+  - Job: e2e (**manual** - solo via `workflow_dispatch` con `run_e2e=true`) ✅
+- [x] Carpetas Jest legacy (`performance/`, `security/`, `api-contracts/`) marcadas con README y excluidas de CI ✅
+
+### F7: Gateway Security (api-minimarket) - 2026-01-12
+- [x] Auth: JWT de usuario para RLS (no service role en lecturas) ✅
+- [x] CORS: restrictivo con `ALLOWED_ORIGINS` env var (bloquea requests browser sin Origin) ✅
+- [x] Rate limit: 60 req/min por IP (FixedWindowRateLimiter) ✅
+- [x] Circuit breaker: `api-minimarket-db` con failureThreshold=5, openTimeoutMs=30_000 ✅
+- [x] Helpers modularizados en `api-minimarket/helpers/`:
+  - `auth.ts` (163 líneas) - extractBearerToken, verifyJwt, requireRole
+  - `validation.ts` (130 líneas) - isUuid, isValidDate, validateRequiredFields
+  - `pagination.ts` (96 líneas) - parsePagination, buildRangeHeader
+  - `supabase.ts` (205 líneas) - createClient, queryTable, callFunction
+- [x] Tests: 46 nuevos tests para helpers gateway ✅
 
 ---
 
 ## 📊 Métricas Finales
 
-| Métrica | Antes | Después |
+| Métrica | Antes | Después (2026-01-12) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests ejecutables | ~10 | Unit + integration + e2e (Vitest) |
+| Tests unitarios pasando | ~10 | **141** (Vitest) ✅ |
+| Tests archivos | 5 | **10** (+ gateway helpers) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
-| CI/CD | Ninguno | Pipeline activo en `main` |
+| CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 6 módulos `_shared/` (adopción parcial) |
+| Gateway security | Básico | **Hardened** (JWT, CORS, rate limit, circuit breaker) ✅ |
 | Logging estructurado | Parcial | Parcial (cron auxiliares pendientes) |
 
 ---
@@ -134,6 +153,14 @@ supabase/functions/
 │   ├── logger.ts
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
+├── api-minimarket/       # Gateway principal (HARDENED)
+│   ├── index.ts          # 1357 líneas (refactorizado)
+│   └── helpers/          # NUEVO - Helpers modularizados
+│       ├── auth.ts       # JWT auth, roles
+│       ├── validation.ts # UUID, dates, required fields
+│       ├── pagination.ts # Parsing, range headers
+│       ├── supabase.ts   # Client creation, queries
+│       └── index.ts      # Barrel export
 ├── api-proveedor/        # Modular (router + handlers + utils)
 ├── scraper-maxiconsumo/  # Modular (9 módulos especializados)
 ├── cron-jobs-maxiconsumo/# Modular (4 jobs + orchestrator)
@@ -144,18 +171,35 @@ tests/unit/
 ├── scraper-parsing.test.ts        # 10 tests
 ├── scraper-matching.test.ts       # 9 tests
 ├── scraper-alertas.test.ts        # 3 tests
-└── cron-jobs.test.ts              # 8 tests (imports reales)
+├── scraper-cache.test.ts          # tests de cache
+├── scraper-config.test.ts         # tests de config
+├── scraper-cookie-jar.test.ts     # tests de cookies
+├── cron-jobs.test.ts              # 8 tests
+├── response-fail-signature.test.ts # tests de respuesta
+└── api-minimarket-gateway.test.ts # 46 tests (auth, validation, pagination, supabase, CORS, rate limit)
 
-tests/integration/
+tests/integration/        # (gated - requiere env vars)
 ├── api-scraper.integration.test.ts
 └── database.integration.test.ts
 
-tests/e2e/
+tests/e2e/                # (manual via workflow_dispatch)
 ├── api-proveedor.smoke.test.ts
 └── cron.smoke.test.ts
 
+tests/performance/        # (legacy Jest - desactivado)
+├── README.md             # NUEVO - nota de estado
+└── load-testing.test.js
+
+tests/security/           # (legacy Jest - desactivado)
+├── README.md             # NUEVO - nota de estado
+└── security-tests.test.js
+
+tests/api-contracts/      # (legacy Jest - desactivado)
+├── README.md             # NUEVO - nota de estado
+└── openapi-compliance.test.js
+
 .github/workflows/
-└── ci.yml                # Pipeline completo
+└── ci.yml                # Pipeline con jobs gated
 ```
 
 ---
@@ -163,9 +207,10 @@ tests/e2e/
 ## 🔮 Siguientes Pasos Recomendados
 
 ### Corto plazo (próximas 2 semanas)
-1. **Aumentar coverage**: Objetivo 80% en módulos críticos
-2. **CI**: integrar `test:integration` y `test:e2e` en pipeline (WS6.1)
+1. **Aumentar coverage**: Objetivo 80% en módulos críticos (actual ~70%)
+2. ~~**CI**: integrar `test:integration` y `test:e2e` en pipeline (WS6.1)~~ ✅ COMPLETADO
 3. **Observabilidad**: cerrar validación runtime de alertas/comparaciones (WS4.1)
+4. **Migrar suites Jest legacy** a Vitest (performance, security, api-contracts)
 
 ### Mediano plazo (1-2 meses)
 1. **Refactor cron auxiliares**: Consolidar si hay duplicación

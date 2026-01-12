@@ -32,7 +32,7 @@ import { toAppError, isAppError } from '../_shared/errors.ts';
 import { fail } from '../_shared/response.ts';
 import { parseAllowedOrigins, validateOrigin, handleCors, createCorsErrorResponse } from '../_shared/cors.ts';
 import { EndpointContext, EndpointHandlerMap, routeRequest } from './router.ts';
-import { EndpointName, isEndpointName } from './schemas.ts';
+import { EndpointName, endpointSchemas, isEndpointName } from './schemas.ts';
 import { getAlertasActivasOptimizado } from './handlers/alertas.ts';
 import { getComparacionConSistemaOptimizado } from './handlers/comparacion.ts';
 import { getConfiguracionProveedorOptimizado } from './handlers/configuracion.ts';
@@ -45,6 +45,7 @@ import { getEstadoSistemaOptimizado } from './handlers/status.ts';
 import { CIRCUIT_BREAKER_OPTIONS } from './utils/constants.ts';
 import { isRetryableAPIError } from './utils/http.ts';
 import { updateRequestMetrics } from './utils/metrics.ts';
+import { validateApiSecret, createAuthErrorResponse } from './utils/auth.ts';
 
 const logger = createLogger('api-proveedor');
 
@@ -158,13 +159,15 @@ function buildContext(
     corsHeaders: Record<string, string>
 ): EndpointContext {
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
+    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
-    if (!supabaseUrl || !serviceRoleKey) {
-        throw new Error('Variables de entorno faltantes: SUPABASE_URL y SUPABASE_SERVICE_ROLE_KEY');
+    if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
+        throw new Error('Variables de entorno faltantes: SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY');
     }
 
     return {
         supabaseUrl,
+        supabaseAnonKey,
         serviceRoleKey,
         url: new URL(request.url),
         corsHeaders,
@@ -218,6 +221,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const corsResult = validateOrigin(request, allowedOrigins, corsOverrides);
     const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
 
+    // Requiere encabezado Origin para evitar fallback permisivo
+    if (!corsResult.origin) {
+        logger.warn('CORS_MISSING_ORIGIN', { path: url.pathname, requestId });
+        return createCorsErrorResponse(requestId, corsHeaders);
+    }
+
     if (!corsResult.allowed) {
         logger.warn('CORS_BLOCKED', { path: url.pathname, origin: corsResult.origin, requestId });
         return createCorsErrorResponse(requestId, corsHeaders);
@@ -247,6 +256,16 @@ Deno.serve(async (request: Request): Promise<Response> => {
         timestamp: new Date().toISOString()
     };
 
+    const schema = endpointSchemas[endpointRaw];
+    const requiresAuth = schema?.requiresAuth ?? true;
+    const authResult = validateApiSecret(request);
+    const isAuthenticated = authResult.valid;
+
+    if (requiresAuth && !isAuthenticated) {
+        logger.warn('AUTH_FAILED', { ...requestLog, requestId, endpoint: endpointRaw });
+        return createAuthErrorResponse(authResult.error || 'Unauthorized', corsHeaders, requestId);
+    }
+
     const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders, requestId);
     if (rateLimited) {
         return rateLimited;
@@ -259,6 +278,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
     try {
         const context = buildContext(request, requestLog, corsHeaders);
+        context.isAuthenticated = isAuthenticated;
         const response = await routeRequest(endpointRaw, context, HANDLERS);
         circuitBreaker.recordSuccess();
         updateRequestMetrics(true, performance.now() - start);

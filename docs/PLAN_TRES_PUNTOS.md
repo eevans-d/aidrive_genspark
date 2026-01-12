@@ -1,8 +1,26 @@
 # PLAN DE EJECUCION: TRES PUNTOS SOLICITADOS
 
-**Estado:** en progreso (FASE 5 completada)  
-**Fecha:** 2026-01-10  
+**Estado:** en progreso (FASES 1-6 completadas, F7 gateway security ✅)  
+**Fecha:** 2026-01-12  
 **Alcance:** documentar el trabajo para (1) reporte final, (2) fixes prioritarios, (3) backlog priorizado.
+
+---
+
+## Progreso reciente (2026-01-12)
+
+| Item | Estado | Notas |
+|------|--------|-------|
+| P0-03 Gateway sin service role + CORS | ✅ **COMPLETADO** | JWT auth, CORS restrictivo, rate limit 60/min, circuit breaker |
+| P1-08 Refactor gateway monolítico | ✅ **COMPLETADO** | Helpers modularizados en `api-minimarket/helpers/` |
+| P1-10 Rate limiting en gateway | ✅ **COMPLETADO** | FixedWindowRateLimiter 60 req/min por IP |
+| WS6.1 CI jobs gated | ✅ **COMPLETADO** | integration/E2E con workflow_dispatch |
+| Tests unitarios | ✅ **141 pasando** | +46 nuevos para helpers gateway |
+
+### Checklist de verificación post-cambio
+- [x] Auth/CORS: requiere `ALLOWED_ORIGINS` configurado
+- [x] Tests: 141 unit tests pasan (`npx vitest run`)
+- [x] CI: workflow `ci.yml` pasa en main
+- [x] Docs: INVENTARIO_ACTUAL, DECISION_LOG, BACKLOG actualizados
 
 ---
 
@@ -47,18 +65,20 @@
 **Alcance tecnico:**
 - **Dashboard:** conteo de productos usando `count` del response.
 - **Deposito:** movimiento de stock atomico (validacion de stock y transaccion).
-- **Gateway:** evitar service role para todas las consultas + CORS restringido.
+- **Gateway:** ✅ **COMPLETADO** - JWT auth para RLS, CORS restrictivo (`ALLOWED_ORIGINS`), rate limit 60/min, circuit breaker.
+- **Proveedor/Scraper:** ahora requieren `x-api-secret` y bloquean requests sin `Origin` permitido (CORS activo).
 
 **Archivos a intervenir (referencia):**
 - `minimarket-system/src/pages/Dashboard.tsx`
 - `minimarket-system/src/pages/Deposito.tsx`
-- `supabase/functions/api-minimarket/index.ts`
+- `supabase/functions/api-minimarket/index.ts` ✅ **HARDENED**
+- `supabase/functions/api-minimarket/helpers/` ✅ **NUEVO** (auth, validation, pagination, supabase)
 - `supabase/functions/_shared/cors.ts`
 
 **Tareas tecnicas sugeridas:**
 - Dashboard: reemplazar `productos.length` por `count` real de Supabase.
 - Deposito: mover logica de movimiento a RPC (`sp_movimiento_inventario`) o Edge Function con validacion de stock; evitar operaciones separadas.
-- Gateway: usar JWT del usuario/anon key para queries normales; reservar service role para tareas admin; configurar `ALLOWED_ORIGINS` en CORS.
+- ~~Gateway: usar JWT del usuario/anon key para queries normales; reservar service role para tareas admin; configurar `ALLOWED_ORIGINS` en CORS.~~ ✅ **COMPLETADO**
 
 **Criterios de aceptacion:**
 - Conteo de productos consistente con registros reales.
@@ -97,7 +117,18 @@
 ---
 
 ## Siguiente paso inmediato
-Continuar con FASE 6 (API proveedor) y preparar el reporte final (Punto 1) y el backlog base (Punto 3).
+~~Continuar con FASE 6 (API proveedor) y~~ preparar el reporte final (Punto 1) y el backlog base (Punto 3).
+
+**Nota:** FASE 6 y F7 (gateway security) completadas. Próximo foco: Punto 1 (reporte) y observabilidad (WS4.1).
+
+### Variables de entorno requeridas (producción)
+```bash
+ALLOWED_ORIGINS=https://tu-dominio.com,https://otro.com  # CORS allowlist (REQUERIDO)
+API_PROVEEDOR_SECRET=your-secret-here                    # Auth API proveedor (REQUERIDO)
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
 
 ### Modo sin credenciales (`.env.test` pendiente)
 - Tests permitidos: `npm run test:unit`.

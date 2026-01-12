@@ -34,7 +34,7 @@ describe('schemas', () => {
     it('endpointSchemas has requiresAuth flag', () => {
         expect(endpointSchemas.sincronizar.requiresAuth).toBe(true);
         expect(endpointSchemas.configuracion.requiresAuth).toBe(true);
-        expect(endpointSchemas.precios.requiresAuth).toBe(false);
+        expect(endpointSchemas.precios.requiresAuth).toBe(true);
     });
 });
 

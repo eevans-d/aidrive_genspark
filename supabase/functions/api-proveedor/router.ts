@@ -2,6 +2,7 @@ import { EndpointName } from './schemas.ts';
 
 export type EndpointContext = {
     supabaseUrl: string;
+    supabaseAnonKey: string;
     serviceRoleKey: string;
     url: URL;
     corsHeaders: Record<string, string>;

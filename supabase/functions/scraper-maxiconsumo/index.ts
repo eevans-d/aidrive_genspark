@@ -15,6 +15,7 @@ import { MAXICONSUMO_BREAKER_OPTIONS } from './config.ts';
 import { buildAlertasDesdeComparaciones } from './alertas.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { parseAllowedOrigins, validateOrigin, handleCors, createCorsErrorResponse } from '../_shared/cors.ts';
+import { validateApiSecret } from '../api-proveedor/utils/auth.ts';
 
 const logger = createLogger('scraper-maxiconsumo:index');
 
@@ -191,12 +192,23 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const corsResult = validateOrigin(request, allowedOrigins, DEFAULT_CORS_HEADERS);
   const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
 
+  if (!corsResult.origin) {
+    logger.warn('CORS_MISSING_ORIGIN', { endpoint, requestId });
+    return createCorsErrorResponse(requestId, corsHeaders);
+  }
+
   if (!corsResult.allowed) {
     return createCorsErrorResponse(requestId, corsHeaders);
   }
 
   const preflight = handleCors(request, corsHeaders);
   if (preflight) return preflight;
+
+  const authResult = validateApiSecret(request);
+  if (!authResult.valid) {
+    logger.warn('AUTH_FAILED', { endpoint, requestId });
+    return jsonResponse({ error: authResult.error || 'Unauthorized' }, 401, corsHeaders, requestId);
+  }
 
   const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
   const log: StructuredLog = { requestId, endpoint, method: request.method, timestamp: new Date().toISOString() };

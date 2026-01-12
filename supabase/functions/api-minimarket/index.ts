@@ -1,8 +1,9 @@
 // ============================================================================
 // MINI MARKET API GATEWAY - Sistema Completo RESTful
 // ============================================================================
-// 19 Endpoints con autenticación JWT y control de roles
-// Integración completa con funciones PL/pgSQL del Sprint 3-4
+// Endpoints con autenticación JWT y control de roles server-side.
+// CORS restrictivo con ALLOWED_ORIGINS.
+// Rate limiting y circuit breaker integrados.
 // ============================================================================
 
 import { createLogger } from '../_shared/logger.ts';
@@ -18,10 +19,60 @@ import {
   getErrorStatus,
   isAppError,
 } from '../_shared/errors.ts';
+import { FixedWindowRateLimiter, withRateLimitHeaders } from '../_shared/rate-limit.ts';
+import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
+
+// Import modular helpers
+import {
+  extractBearerToken,
+  fetchUserInfo,
+  requireRole,
+  createRequestHeaders,
+  BASE_ROLES,
+  type UserInfo,
+} from './helpers/auth.ts';
+import {
+  isUuid,
+  parsePositiveNumber,
+  parseNonNegativeNumber,
+  parsePositiveInt,
+  parseNonNegativeInt,
+  sanitizeTextParam,
+  isValidMovimientoTipo,
+  VALID_MOVIMIENTO_TIPOS,
+  isValidCodigo,
+} from './helpers/validation.ts';
+import { parsePagination } from './helpers/pagination.ts';
+import {
+  queryTable,
+  queryTableWithCount,
+  insertTable,
+  updateTable,
+  callFunction,
+  fetchWithParams,
+} from './helpers/supabase.ts';
 
 const logger = createLogger('api-minimarket');
 
+// ============================================================================
+// CONSTANTS & CONFIGURATION
+// ============================================================================
+
 const FUNCTION_BASE_PATH = '/api-minimarket';
+
+// Rate limiter: 60 requests per minute per IP
+const rateLimiter = new FixedWindowRateLimiter(60, 60_000);
+
+// Circuit breaker for external service calls
+const circuitBreaker = getCircuitBreaker('api-minimarket-db', {
+  failureThreshold: 5,
+  successThreshold: 2,
+  openTimeoutMs: 30_000,
+});
+
+// ============================================================================
+// HELPER FUNCTIONS
+// ============================================================================
 
 function normalizePathname(pathname: string): string {
   if (pathname === FUNCTION_BASE_PATH) return '/';
@@ -40,16 +91,54 @@ function generateRequestId(req: Request): string {
   );
 }
 
+function getClientIp(req: Request): string {
+  return (
+    req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() ||
+    req.headers.get('x-real-ip') ||
+    'unknown'
+  );
+}
+
+// ============================================================================
+// MAIN HANDLER
+// ============================================================================
+
 Deno.serve(async (req) => {
   const requestId = generateRequestId(req);
+  const clientIp = getClientIp(req);
   const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
   const corsResult = validateOrigin(req, allowedOrigins);
   const corsHeaders = corsResult.headers;
-  const responseHeaders = { ...corsHeaders, 'x-request-id': requestId };
+  let responseHeaders: Record<string, string> = { ...corsHeaders, 'x-request-id': requestId };
 
-  // CORS: Block disallowed origins with standard error response
+  // ========================================================================
+  // CORS: Block requests without Origin header (except same-origin/non-browser)
+  // ========================================================================
+  const origin = req.headers.get('origin');
+  const requireOrigin = Deno.env.get('REQUIRE_ORIGIN') !== 'false';
+  
+  // For browser requests, Origin header is required
+  // Allow requests without Origin for server-to-server calls
+  if (requireOrigin && origin === null) {
+    // Check if it looks like a browser request (has typical browser headers)
+    const userAgent = req.headers.get('user-agent') || '';
+    const isBrowserLike = /mozilla|chrome|safari|firefox|edge|opera/i.test(userAgent);
+    
+    if (isBrowserLike) {
+      logger.warn('CORS_NO_ORIGIN', { requestId, userAgent, clientIp });
+      return fail(
+        'CORS_ORIGIN_REQUIRED',
+        'Origin header is required for browser requests',
+        403,
+        responseHeaders,
+        { requestId },
+      );
+    }
+  }
+
+  // CORS: Block disallowed origins
   if (!corsResult.allowed) {
-    logger.warn('CORS_BLOCKED', { requestId, origin: corsResult.origin });
+    logger.warn('CORS_BLOCKED', { requestId, origin: corsResult.origin, clientIp });
     return fail(
       'CORS_ORIGIN_NOT_ALLOWED',
       'Origin not allowed by CORS policy',
@@ -65,6 +154,38 @@ Deno.serve(async (req) => {
     return preflightResponse;
   }
 
+  // ========================================================================
+  // RATE LIMITING
+  // ========================================================================
+  const rateLimitKey = clientIp;
+  const { result: rateLimitResult, headers: rateLimitHeaders } = rateLimiter.checkWithHeaders(rateLimitKey);
+  responseHeaders = withRateLimitHeaders(responseHeaders, rateLimitResult, rateLimiter.getLimit());
+
+  if (!rateLimitResult.allowed) {
+    logger.warn('RATE_LIMIT_EXCEEDED', { requestId, clientIp });
+    return fail(
+      'RATE_LIMIT_EXCEEDED',
+      'Too many requests. Please try again later.',
+      429,
+      responseHeaders,
+      { requestId },
+    );
+  }
+
+  // ========================================================================
+  // CIRCUIT BREAKER CHECK
+  // ========================================================================
+  if (!circuitBreaker.allowRequest()) {
+    logger.warn('CIRCUIT_BREAKER_OPEN', { requestId, state: circuitBreaker.getState() });
+    return fail(
+      'SERVICE_UNAVAILABLE',
+      'Service temporarily unavailable. Please try again later.',
+      503,
+      responseHeaders,
+      { requestId },
+    );
+  }
+
   const url = new URL(req.url);
   const path = normalizePathname(url.pathname);
   const method = req.method;
@@ -72,11 +193,14 @@ Deno.serve(async (req) => {
     requestId,
     method,
     path,
+    clientIp,
     timestamp: new Date().toISOString(),
   };
 
   try {
-    // Configuración Supabase
+    // ======================================================================
+    // CONFIGURATION CHECK
+    // ======================================================================
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
@@ -88,189 +212,44 @@ Deno.serve(async (req) => {
       );
     }
 
-    // Autenticación
+    // ======================================================================
+    // AUTHENTICATION - Using user JWT, NOT service role
+    // ======================================================================
     const authHeader = req.headers.get('authorization');
-    const token = authHeader ? authHeader.replace('Bearer ', '') : null;
-    let user = null;
-    let userRole: string | null = null;
+    const token = extractBearerToken(authHeader);
+    let user: UserInfo | null = null;
 
     if (token) {
-      const userResponse = await fetch(`${supabaseUrl}/auth/v1/user`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          apikey: supabaseAnonKey,
-        },
-      });
-
-      if (userResponse.ok) {
-        user = await userResponse.json();
-        const rawRole = user.app_metadata?.role ?? user.user_metadata?.role ?? null;
-        userRole = typeof rawRole === 'string' ? rawRole.toLowerCase() : null;
+      const authResult = await fetchUserInfo(supabaseUrl, supabaseAnonKey, token);
+      if (authResult.error) {
+        logger.warn('AUTH_FAILED', { requestId, code: authResult.error.code });
+        // Don't throw - some endpoints might be public
+      } else {
+        user = authResult.user;
       }
     }
 
-    // Helper: Verificar permisos por rol
-    const BASE_ROLES = ['admin', 'deposito', 'ventas'];
-    const checkRole = (allowedRoles: string[]) => {
-      if (!user) {
-        throw toAppError(
-          new Error('No autorizado - requiere autenticación'),
-          'UNAUTHORIZED',
-          401,
-        );
-      }
-      const normalizedRoles = allowedRoles.map((role) => role.toLowerCase());
-      if (!userRole || !normalizedRoles.includes(userRole)) {
-        throw toAppError(
-          new Error(`Acceso denegado - requiere rol: ${allowedRoles.join(' o ')}`),
-          'FORBIDDEN',
-          403,
-        );
-      }
+    // Helper: Check role (throws if unauthorized)
+    const checkRole = (allowedRoles: readonly string[]) => {
+      requireRole(user, allowedRoles);
     };
 
-    const requestHeaders = (extraHeaders: Record<string, string> = {}) => ({
-      Authorization: `Bearer ${token || supabaseAnonKey}`,
-      apikey: supabaseAnonKey,
-      'Content-Type': 'application/json',
-      'x-request-id': requestId,
-      ...extraHeaders,
-    });
+    // ======================================================================
+    // REQUEST HELPERS
+    // ======================================================================
 
-    const buildQueryUrl = (
-      table: string,
-      filters: Record<string, unknown> = {},
-      select = '*',
-      options: { order?: string; limit?: number; offset?: number } = {},
-    ) => {
-      const params = new URLSearchParams();
-      params.set('select', select);
-
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, `eq.${String(value)}`);
-        }
-      });
-
-      if (options.order) params.set('order', options.order);
-      if (options.limit !== undefined) params.set('limit', String(options.limit));
-      if (options.offset !== undefined) params.set('offset', String(options.offset));
-
-      return `${supabaseUrl}/rest/v1/${table}?${params.toString()}`;
-    };
-
-    const parseContentRange = (value: string | null): number | null => {
-      if (!value) return null;
-      const parts = value.split('/');
-      if (parts.length < 2) return null;
-      const total = parts[1];
-      if (total === '*') return null;
-      const count = Number(total);
-      return Number.isFinite(count) ? count : null;
-    };
-
-    // Helper: Query directo a PostgREST
-    const queryTable = async (
-      table: string,
-      filters: Record<string, unknown> = {},
-      select = '*',
-      options: { order?: string; limit?: number; offset?: number } = {},
-    ) => {
-      const queryUrl = buildQueryUrl(table, filters, select, options);
-
-      const response = await fetch(queryUrl, {
-        method: 'GET',
-        headers: requestHeaders(),
-      });
-
-      if (!response.ok) {
-        throw await fromFetchResponse(response, `Error query ${table}`);
-      }
-
-      return await response.json();
-    };
-
-    const queryTableWithCount = async (
-      table: string,
-      filters: Record<string, unknown> = {},
-      select = '*',
-      options: { order?: string; limit?: number; offset?: number } = {},
-    ) => {
-      const queryUrl = buildQueryUrl(table, filters, select, options);
-
-      const response = await fetch(queryUrl, {
-        method: 'GET',
-        headers: requestHeaders({ Prefer: 'count=exact' }),
-      });
-
-      if (!response.ok) {
-        throw await fromFetchResponse(response, `Error query ${table}`);
-      }
-
-      const data = await response.json();
-      const count = parseContentRange(response.headers.get('content-range'));
-      return { data, count: count ?? data.length };
-    };
-
-    // Helper: INSERT a tabla
-    const insertTable = async (table: string, data: unknown) => {
-      const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
-        method: 'POST',
-        headers: requestHeaders({ Prefer: 'return=representation' }),
-        body: JSON.stringify(data),
-      });
-
-      if (!response.ok) {
-        throw await fromFetchResponse(response, `Error insertando en ${table}`);
-      }
-
-      return await response.json();
-    };
-
-    // Helper: UPDATE tabla
-    const updateTable = async (table: string, id: string, data: unknown) => {
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/${table}?id=eq.${id}`,
-        {
-          method: 'PATCH',
-          headers: requestHeaders({ Prefer: 'return=representation' }),
-          body: JSON.stringify(data),
-        },
-      );
-
-      if (!response.ok) {
-        throw await fromFetchResponse(response, `Error actualizando ${table}`);
-      }
-
-      return await response.json();
-    };
-
-    // Helper: Ejecutar función PL/pgSQL
-    const callFunction = async (
-      functionName: string,
-      params: Record<string, unknown> = {},
-    ) => {
-      const response = await fetch(
-        `${supabaseUrl}/rest/v1/rpc/${functionName}`,
-        {
-          method: 'POST',
-          headers: requestHeaders(),
-          body: JSON.stringify(params),
-        },
-      );
-
-      if (!response.ok) {
-        throw await fromFetchResponse(response, `Error llamando ${functionName}`);
-      }
-
-      return await response.json();
-    };
+    // Create headers for PostgREST calls - uses user's JWT for RLS
+    const requestHeaders = (extraHeaders: Record<string, string> = {}) =>
+      createRequestHeaders(token, supabaseAnonKey, requestId, extraHeaders);
 
     const respondOk = <T>(
       data: T,
       status = 200,
       options: { message?: string; extra?: Record<string, unknown> } = {},
-    ) => ok(data, status, responseHeaders, { requestId, ...options });
+    ) => {
+      circuitBreaker.recordSuccess();
+      return ok(data, status, responseHeaders, { requestId, ...options });
+    };
 
     const respondFail = (
       code: string,
@@ -287,59 +266,21 @@ Deno.serve(async (req) => {
       }
     };
 
-    const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
-
-    const isUuid = (value: string | null): value is string =>
-      typeof value === 'string' && UUID_REGEX.test(value);
-
-    const parsePositiveNumber = (value: unknown): number | null => {
-      if (typeof value !== 'string' && typeof value !== 'number') return null;
-      const num = Number(value);
-      return Number.isFinite(num) && num > 0 ? num : null;
-    };
-
-    const parseNonNegativeNumber = (value: unknown): number | null => {
-      if (typeof value !== 'string' && typeof value !== 'number') return null;
-      const num = Number(value);
-      return Number.isFinite(num) && num >= 0 ? num : null;
-    };
-
-    const parsePositiveInt = (value: unknown): number | null => {
-      if (typeof value !== 'string' && typeof value !== 'number') return null;
-      const num = Number(value);
-      return Number.isInteger(num) && num > 0 ? num : null;
-    };
-
-    const parseNonNegativeInt = (value: unknown): number | null => {
-      if (typeof value !== 'string' && typeof value !== 'number') return null;
-      const num = Number(value);
-      return Number.isInteger(num) && num >= 0 ? num : null;
-    };
-
-    const getPagination = (
-      limitParam: string | null,
-      offsetParam: string | null,
+    const getPaginationOrFail = (
       defaultLimit: number,
       maxLimit: number,
     ): { limit: number; offset: number } | Response => {
-      const limitValue = limitParam === null ? defaultLimit : parsePositiveInt(limitParam);
-      if (limitValue === null) {
-        return respondFail('VALIDATION_ERROR', 'limit debe ser un entero > 0', 400);
+      const result = parsePagination(
+        url.searchParams.get('limit'),
+        url.searchParams.get('offset'),
+        defaultLimit,
+        maxLimit,
+      );
+      if (!result.ok) {
+        return respondFail('VALIDATION_ERROR', result.error.message, 400);
       }
-      const offsetValue = offsetParam === null ? 0 : parseNonNegativeInt(offsetParam);
-      if (offsetValue === null) {
-        return respondFail('VALIDATION_ERROR', 'offset debe ser un entero >= 0', 400);
-      }
-      return {
-        limit: Math.min(limitValue, maxLimit),
-        offset: offsetValue,
-      };
+      return result.params;
     };
-
-    const sanitizeTextParam = (value: string): string =>
-      value.trim().replace(/[^a-zA-Z0-9 _.-]/g, '');
-
-    const VALID_MOVIMIENTO_TIPOS = new Set(['entrada', 'salida', 'ajuste', 'transferencia']);
 
     // ====================================================================
     // ENDPOINTS: CATEGORÍAS (2 endpoints)
@@ -350,7 +291,9 @@ Deno.serve(async (req) => {
       checkRole(BASE_ROLES);
 
       const categorias = await queryTable(
+        supabaseUrl,
         'categorias',
+        requestHeaders(),
         { activo: true },
         'id,codigo,nombre,descripcion,margen_minimo,margen_maximo',
         { order: 'nombre' },
@@ -369,7 +312,7 @@ Deno.serve(async (req) => {
       }
 
       checkRole(BASE_ROLES);
-      const categorias = await queryTable('categorias', { id });
+      const categorias = await queryTable(supabaseUrl, 'categorias', requestHeaders(), { id });
 
       if (categorias.length === 0) {
         return respondFail('NOT_FOUND', 'Categoria no encontrada', 404);
@@ -391,12 +334,7 @@ Deno.serve(async (req) => {
       const activo = url.searchParams.get('activo');
       const search = url.searchParams.get('search');
 
-      const pagination = getPagination(
-        url.searchParams.get('limit'),
-        url.searchParams.get('offset'),
-        100,
-        200,
-      );
+      const pagination = getPaginationOrFail(100, 200);
       if (pagination instanceof Response) return pagination;
       const { limit, offset } = pagination;
 
@@ -407,21 +345,22 @@ Deno.serve(async (req) => {
       let categoriaId: string | null = null;
       if (categoria) {
         const categoriaCodigo = categoria.trim();
-        if (!/^[a-zA-Z0-9_-]+$/.test(categoriaCodigo)) {
+        if (!isValidCodigo(categoriaCodigo)) {
           return respondFail('VALIDATION_ERROR', 'categoria invalida', 400);
         }
-        const categorias = await queryTable('categorias', { codigo: categoriaCodigo }, 'id', {
-          limit: 1,
-        });
+        const categorias = await queryTable(
+          supabaseUrl,
+          'categorias',
+          requestHeaders(),
+          { codigo: categoriaCodigo },
+          'id',
+          { limit: 1 },
+        );
         if (categorias.length === 0) {
           return respondOk([], 200, { extra: { count: 0 } });
         }
-        categoriaId = categorias[0].id;
+        categoriaId = (categorias[0] as { id: string }).id;
       }
-
-      const filters: Record<string, unknown> = {};
-      if (activo !== null) filters.activo = activo === 'true';
-      if (categoriaId) filters.categoria_id = categoriaId;
 
       const params = new URLSearchParams();
       params.set(
@@ -429,11 +368,8 @@ Deno.serve(async (req) => {
         'id,sku,nombre,marca,contenido_neto,activo,precio_actual,precio_costo,margen_ganancia,categoria_id',
       );
 
-      Object.entries(filters).forEach(([key, value]) => {
-        if (value !== undefined && value !== null) {
-          params.append(key, `eq.${String(value)}`);
-        }
-      });
+      if (activo !== null) params.append('activo', `eq.${activo === 'true'}`);
+      if (categoriaId) params.append('categoria_id', `eq.${categoriaId}`);
 
       if (marca) {
         const sanitized = sanitizeTextParam(marca);
@@ -455,20 +391,12 @@ Deno.serve(async (req) => {
       params.set('limit', String(limit));
       params.set('offset', String(offset));
 
-      const productosResponse = await fetch(
-        `${supabaseUrl}/rest/v1/productos?${params.toString()}`,
-        {
-          method: 'GET',
-          headers: requestHeaders({ Prefer: 'count=exact' }),
-        },
+      const { data: productos, count } = await fetchWithParams(
+        supabaseUrl,
+        'productos',
+        params,
+        requestHeaders(),
       );
-
-      if (!productosResponse.ok) {
-        throw await fromFetchResponse(productosResponse, 'Error query productos');
-      }
-
-      const productos = await productosResponse.json();
-      const count = parseContentRange(productosResponse.headers.get('content-range'));
 
       return respondOk(productos, 200, {
         extra: { count: count ?? productos.length },
@@ -484,7 +412,7 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
       }
 
-      const productos = await queryTable('productos', { id });
+      const productos = await queryTable(supabaseUrl, 'productos', requestHeaders(), { id });
 
       if (productos.length === 0) {
         return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
@@ -516,7 +444,7 @@ Deno.serve(async (req) => {
       const payload: Record<string, unknown> = {
         nombre: nombre.trim(),
         activo: true,
-        created_by: user.id,
+        created_by: user!.id,
       };
 
       if (typeof sku === 'string' && sku.trim()) {
@@ -535,9 +463,9 @@ Deno.serve(async (req) => {
         payload.contenido_neto = String(contenido_neto);
       }
 
-      const producto = await insertTable('productos', payload);
+      const producto = await insertTable(supabaseUrl, 'productos', requestHeaders(), payload);
 
-      return respondOk(producto[0], 201, { message: 'Producto creado exitosamente' });
+      return respondOk((producto as unknown[])[0], 201, { message: 'Producto creado exitosamente' });
     }
 
     // 6. PUT /productos/:id - Actualizar producto (admin/deposito)
@@ -636,17 +564,17 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'Sin campos validos para actualizar', 400);
       }
 
-      const producto = await updateTable('productos', id, {
+      const producto = await updateTable(supabaseUrl, 'productos', id, requestHeaders(), {
         ...updates,
         updated_at: new Date().toISOString(),
-        updated_by: user.id,
+        updated_by: user!.id,
       });
 
-      if (producto.length === 0) {
+      if ((producto as unknown[]).length === 0) {
         return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
       }
 
-      return respondOk(producto[0], 200, { message: 'Producto actualizado exitosamente' });
+      return respondOk((producto as unknown[])[0], 200, { message: 'Producto actualizado exitosamente' });
     }
 
     // 7. DELETE /productos/:id - Eliminar producto (soft delete - admin)
@@ -658,17 +586,17 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
       }
 
-      const producto = await updateTable('productos', id, {
+      const producto = await updateTable(supabaseUrl, 'productos', id, requestHeaders(), {
         activo: false,
         updated_at: new Date().toISOString(),
-        updated_by: user.id,
+        updated_by: user!.id,
       });
 
-      if (producto.length === 0) {
+      if ((producto as unknown[]).length === 0) {
         return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
       }
 
-      return respondOk(producto[0], 200, { message: 'Producto desactivado exitosamente' });
+      return respondOk((producto as unknown[])[0], 200, { message: 'Producto desactivado exitosamente' });
     }
 
     // ====================================================================
@@ -680,7 +608,9 @@ Deno.serve(async (req) => {
       checkRole(['admin', 'deposito']);
 
       const proveedores = await queryTable(
+        supabaseUrl,
         'proveedores',
+        requestHeaders(),
         { activo: true },
         'id,nombre,contacto,email,telefono,productos_ofrecidos',
         { order: 'nombre' },
@@ -698,7 +628,7 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de proveedor invalido', 400);
       }
 
-      const proveedores = await queryTable('proveedores', { id });
+      const proveedores = await queryTable(supabaseUrl, 'proveedores', requestHeaders(), { id });
 
       if (proveedores.length === 0) {
         return respondFail('NOT_FOUND', 'Proveedor no encontrado', 404);
@@ -742,7 +672,9 @@ Deno.serve(async (req) => {
       }
 
       const productos = await queryTable(
+        supabaseUrl,
         'productos',
+        requestHeaders(),
         { id: producto_id },
         'id,categoria_id,precio_actual,margen_ganancia',
       );
@@ -751,11 +683,17 @@ Deno.serve(async (req) => {
         return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
       }
 
-      const producto = productos[0];
+      const producto = productos[0] as Record<string, unknown>;
       const categorias = producto.categoria_id
-        ? await queryTable('categorias', { id: producto.categoria_id }, 'id,margen_minimo')
+        ? await queryTable(
+            supabaseUrl,
+            'categorias',
+            requestHeaders(),
+            { id: producto.categoria_id },
+            'id,margen_minimo',
+          )
         : [];
-      const categoria = categorias[0];
+      const categoria = categorias[0] as Record<string, unknown> | undefined;
       const margenMinimo = categoria?.margen_minimo;
 
       const margenProductoNumero = parseNonNegativeNumber(producto.margen_ganancia);
@@ -793,7 +731,7 @@ Deno.serve(async (req) => {
       }
 
       // Llamar a sp_aplicar_precio (incluye redondeo automático)
-      const result = await callFunction('sp_aplicar_precio', {
+      const result = await callFunction(supabaseUrl, 'sp_aplicar_precio', requestHeaders(), {
         p_producto_id: producto_id,
         p_precio_compra: precioCompraNumero,
         p_margen_ganancia: margenGananciaNumero,
@@ -811,17 +749,14 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
       }
 
-      const pagination = getPagination(
-        url.searchParams.get('limit'),
-        url.searchParams.get('offset'),
-        50,
-        200,
-      );
+      const pagination = getPaginationOrFail(50, 200);
       if (pagination instanceof Response) return pagination;
       const { limit, offset } = pagination;
 
       const { data: historial, count } = await queryTableWithCount(
+        supabaseUrl,
         'precios_historicos',
+        requestHeaders(),
         { producto_id: productoId },
         'id,producto_id,precio_anterior,precio_nuevo,fecha_cambio,motivo_cambio',
         { order: 'fecha_cambio.desc', limit, offset },
@@ -844,7 +779,7 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'precio debe ser mayor que 0', 400);
       }
 
-      const result = await callFunction('fnc_redondear_precio', {
+      const result = await callFunction(supabaseUrl, 'fnc_redondear_precio', requestHeaders(), {
         precio: precioNumero,
       });
 
@@ -867,7 +802,7 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
       }
 
-      const result = await callFunction('fnc_margen_sugerido', {
+      const result = await callFunction(supabaseUrl, 'fnc_margen_sugerido', requestHeaders(), {
         p_producto_id: productoId,
       });
 
@@ -886,17 +821,21 @@ Deno.serve(async (req) => {
       checkRole(BASE_ROLES);
 
       const stock = await queryTable(
+        supabaseUrl,
         'stock_deposito',
+        requestHeaders(),
         {},
         'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento',
         { order: 'producto_id' },
       );
 
       // Obtener nombres de productos
-      const productos = await queryTable('productos', {}, 'id,sku,nombre,marca');
-      const productosMap = Object.fromEntries(productos.map((p) => [p.id, p]));
+      const productos = await queryTable(supabaseUrl, 'productos', requestHeaders(), {}, 'id,sku,nombre,marca');
+      const productosMap = Object.fromEntries(
+        (productos as Array<{ id: string }>).map((p) => [p.id, p]),
+      );
 
-      const stockConNombres = stock.map((s) => ({
+      const stockConNombres = (stock as Array<{ producto_id: string }>).map((s) => ({
         ...s,
         producto: productosMap[s.producto_id],
       }));
@@ -908,7 +847,7 @@ Deno.serve(async (req) => {
     if (path === '/stock/minimo' && method === 'GET') {
       checkRole(['admin', 'deposito']);
 
-      const result = await callFunction('fnc_productos_bajo_minimo');
+      const result = await callFunction(supabaseUrl, 'fnc_productos_bajo_minimo', requestHeaders());
 
       return respondOk(result, 200, {
         message: 'Productos bajo stock minimo consultados',
@@ -928,12 +867,17 @@ Deno.serve(async (req) => {
       const depositoParam = url.searchParams.get('deposito');
       const deposito = depositoParam && depositoParam.trim() ? depositoParam.trim() : 'Principal';
 
-      const stockDisponible = await callFunction('fnc_stock_disponible', {
+      const stockDisponible = await callFunction(supabaseUrl, 'fnc_stock_disponible', requestHeaders(), {
         p_producto_id: productoId,
         p_deposito: deposito,
       });
 
-      const stockDetalle = await queryTable('stock_deposito', { producto_id: productoId });
+      const stockDetalle = await queryTable(
+        supabaseUrl,
+        'stock_deposito',
+        requestHeaders(),
+        { producto_id: productoId },
+      );
 
       return respondOk({
         producto_id: productoId,
@@ -985,22 +929,17 @@ Deno.serve(async (req) => {
         queryParams.append('fecha_completado', `lte.${fechaHasta}`);
       }
 
-      const reportResponse = await fetch(
-        `${supabaseUrl}/rest/v1/tareas_metricas?${queryParams.toString()}`,
-        {
-          headers: requestHeaders(),
-        },
+      const { data: rows } = await fetchWithParams(
+        supabaseUrl,
+        'tareas_metricas',
+        queryParams,
+        requestHeaders(),
       );
 
-      if (!reportResponse.ok) {
-        throw await fromFetchResponse(reportResponse, 'Error consultando tareas_metricas');
-      }
-
-      const rows = await reportResponse.json();
       const agregados: Record<string, Record<string, unknown>> = {};
 
-      for (const row of rows) {
-        const usuarioKey = row.asignado_a_id || 'sin_asignar';
+      for (const row of rows as Array<Record<string, unknown>>) {
+        const usuarioKey = (row.asignado_a_id as string) || 'sin_asignar';
         if (!agregados[usuarioKey]) {
           agregados[usuarioKey] = {
             usuario_id: row.asignado_a_id,
@@ -1021,7 +960,7 @@ Deno.serve(async (req) => {
         const entry = agregados[usuarioKey];
         entry.tareas_total = Number(entry.tareas_total) + 1;
 
-        if (row.estado && row.estado.toLowerCase() === 'completada') {
+        if (row.estado && (row.estado as string).toLowerCase() === 'completada') {
           entry.tareas_completadas = Number(entry.tareas_completadas) + 1;
         }
 
@@ -1098,8 +1037,9 @@ Deno.serve(async (req) => {
       if (typeof tipo_movimiento !== 'string' || !tipo_movimiento.trim()) {
         return respondFail('VALIDATION_ERROR', 'tipo_movimiento es requerido', 400);
       }
+
       const tipoMovimiento = tipo_movimiento.trim().toLowerCase();
-      if (!VALID_MOVIMIENTO_TIPOS.has(tipoMovimiento)) {
+      if (!isValidMovimientoTipo(tipoMovimiento)) {
         return respondFail(
           'VALIDATION_ERROR',
           'tipo_movimiento invalido. Valores permitidos: entrada, salida, ajuste, transferencia',
@@ -1121,13 +1061,13 @@ Deno.serve(async (req) => {
       const destinoValue = typeof destino === 'string' && destino.trim() ? destino.trim() : null;
 
       // Llamar a sp_movimiento_inventario
-      const result = await callFunction('sp_movimiento_inventario', {
+      const result = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
         p_producto_id: producto_id,
         p_tipo: tipoMovimiento,
         p_cantidad: cantidadNumero,
         p_origen: origenValue,
         p_destino: destinoValue,
-        p_usuario: user.id,
+        p_usuario: user!.id,
       });
 
       return respondOk(result, 201, { message: 'Movimiento registrado exitosamente' });
@@ -1146,7 +1086,7 @@ Deno.serve(async (req) => {
       let tipoMovimientoFiltro: string | null = null;
       if (tipoMovimiento) {
         const normalized = tipoMovimiento.trim().toLowerCase();
-        if (!VALID_MOVIMIENTO_TIPOS.has(normalized)) {
+        if (!isValidMovimientoTipo(normalized)) {
           return respondFail(
             'VALIDATION_ERROR',
             'tipo_movimiento invalido. Valores permitidos: entrada, salida, ajuste, transferencia',
@@ -1156,12 +1096,7 @@ Deno.serve(async (req) => {
         tipoMovimientoFiltro = normalized;
       }
 
-      const pagination = getPagination(
-        url.searchParams.get('limit'),
-        url.searchParams.get('offset'),
-        50,
-        200,
-      );
+      const pagination = getPaginationOrFail(50, 200);
       if (pagination instanceof Response) return pagination;
       const { limit, offset } = pagination;
 
@@ -1170,7 +1105,9 @@ Deno.serve(async (req) => {
       if (tipoMovimientoFiltro) filters.tipo_movimiento = tipoMovimientoFiltro;
 
       const { data: movimientos, count } = await queryTableWithCount(
+        supabaseUrl,
         'movimientos_deposito',
+        requestHeaders(),
         filters,
         'id,producto_id,tipo_movimiento,cantidad,motivo,fecha_movimiento,usuario_id',
         { order: 'fecha_movimiento.desc', limit, offset },
@@ -1220,19 +1157,19 @@ Deno.serve(async (req) => {
       const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
 
       // Registrar movimiento de ingreso
-      const movimiento = await callFunction('sp_movimiento_inventario', {
+      const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
         p_producto_id: producto_id,
         p_tipo: 'entrada',
         p_cantidad: cantidadNumero,
         p_origen: `Proveedor:${proveedorId || 'N/A'}`,
         p_destino: depositoValue,
-        p_usuario: user.id,
+        p_usuario: user!.id,
         p_proveedor_id: proveedorId,
       });
 
       // Si hay precio de compra, registrar en precios_proveedor
       if (precioCompraNumero !== null && proveedorId) {
-        await insertTable('precios_proveedor', {
+        await insertTable(supabaseUrl, 'precios_proveedor', requestHeaders(), {
           proveedor_id: proveedorId,
           producto_id,
           precio: precioCompraNumero,
@@ -1243,7 +1180,7 @@ Deno.serve(async (req) => {
       return respondOk(movimiento, 201, { message: 'Ingreso de mercaderia registrado exitosamente' });
     }
 
-    // 20. POST /reservas - Crear reserva de stock
+    // 21. POST /reservas - Crear reserva de stock
     if (path === '/reservas' && method === 'POST') {
       checkRole(['admin', 'ventas', 'deposito']);
 
@@ -1265,12 +1202,12 @@ Deno.serve(async (req) => {
       const referenciaValue =
         typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
 
-      const stockInfo = await callFunction('fnc_stock_disponible', {
+      const stockInfo = await callFunction(supabaseUrl, 'fnc_stock_disponible', requestHeaders(), {
         p_producto_id: producto_id,
         p_deposito: depositoValue,
       });
       const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
-      const disponible = Number(stockRow?.stock_disponible ?? 0);
+      const disponible = Number((stockRow as Record<string, unknown>)?.stock_disponible ?? 0);
       const disponibleNumero = Number.isFinite(disponible) ? disponible : 0;
 
       if (disponibleNumero < cantidadNumero) {
@@ -1282,19 +1219,19 @@ Deno.serve(async (req) => {
         );
       }
 
-      const reserva = await insertTable('stock_reservado', {
+      const reserva = await insertTable(supabaseUrl, 'stock_reservado', requestHeaders(), {
         producto_id,
         cantidad: cantidadNumero,
         estado: 'activa',
         referencia: referenciaValue,
-        usuario: user.id,
+        usuario: user!.id,
         fecha_reserva: new Date().toISOString(),
       });
 
-      return respondOk(reserva[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
+      return respondOk((reserva as unknown[])[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
     }
 
-    // 21. POST /reservas/:id/cancelar - Cancelar reserva
+    // 22. POST /reservas/:id/cancelar - Cancelar reserva
     if (path.match(/^\/reservas\/[a-f0-9-]+\/cancelar$/) && method === 'POST') {
       checkRole(['admin', 'ventas', 'deposito']);
 
@@ -1303,19 +1240,19 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de reserva invalido', 400);
       }
 
-      const reserva = await updateTable('stock_reservado', reservaId, {
+      const reserva = await updateTable(supabaseUrl, 'stock_reservado', reservaId, requestHeaders(), {
         estado: 'cancelada',
         fecha_cancelacion: new Date().toISOString(),
       });
 
-      if (reserva.length === 0) {
+      if ((reserva as unknown[]).length === 0) {
         return respondFail('NOT_FOUND', 'Reserva no encontrada', 404);
       }
 
-      return respondOk(reserva[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
+      return respondOk((reserva as unknown[])[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
     }
 
-    // 22. POST /compras/recepcion - Registrar recepción de compra
+    // 23. POST /compras/recepcion - Registrar recepción de compra
     if (path === '/compras/recepcion' && method === 'POST') {
       checkRole(['admin', 'deposito']);
 
@@ -1335,8 +1272,8 @@ Deno.serve(async (req) => {
 
       const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
 
-      const ordenes = await queryTable('ordenes_compra', { id: orden_compra_id });
-      const orden = ordenes[0];
+      const ordenes = await queryTable(supabaseUrl, 'ordenes_compra', requestHeaders(), { id: orden_compra_id });
+      const orden = ordenes[0] as Record<string, unknown> | undefined;
 
       if (!orden) {
         return respondFail('NOT_FOUND', 'Orden de compra no encontrada', 404);
@@ -1362,17 +1299,28 @@ Deno.serve(async (req) => {
         );
       }
 
-      const movimiento = await callFunction('sp_movimiento_inventario', {
+      const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
         p_producto_id: orden.producto_id,
         p_tipo: 'entrada',
         p_cantidad: cantidadNumero,
         p_origen: `OC:${orden_compra_id}`,
         p_destino: depositoValue,
-        p_usuario: user.id,
+        p_usuario: user!.id,
         p_orden_compra_id: orden_compra_id,
       });
 
       return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
+    }
+
+    // ====================================================================
+    // HEALTH CHECK - Public endpoint
+    // ====================================================================
+    if (path === '/health' && method === 'GET') {
+      return respondOk({
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        circuitBreaker: circuitBreaker.getState(),
+      });
     }
 
     // ====================================================================
@@ -1381,6 +1329,9 @@ Deno.serve(async (req) => {
 
     return respondFail('NOT_FOUND', `Ruta no encontrada: ${method} ${path}`, 404);
   } catch (error) {
+    // Record failure for circuit breaker
+    circuitBreaker.recordFailure();
+
     const appError = isAppError(error)
       ? error
       : toAppError(error, 'API_ERROR', getErrorStatus(error));

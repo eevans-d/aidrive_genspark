@@ -31,13 +31,13 @@ export type EndpointSchema = {
 };
 
 export const endpointSchemas: Record<EndpointName, EndpointSchema> = {
-    precios: { description: 'Consulta de precios actuales', requiresAuth: false },
-    productos: { description: 'Listado de productos disponibles', requiresAuth: false },
-    comparacion: { description: 'Comparación con inventario interno', requiresAuth: false },
+    precios: { description: 'Consulta de precios actuales', requiresAuth: true },
+    productos: { description: 'Listado de productos disponibles', requiresAuth: true },
+    comparacion: { description: 'Comparación con inventario interno', requiresAuth: true },
     sincronizar: { description: 'Trigger de sincronización manual', requiresAuth: true },
-    status: { description: 'Estado del sistema proveedor', requiresAuth: false },
-    alertas: { description: 'Alertas activas', requiresAuth: false },
-    estadisticas: { description: 'Métricas de scraping y proveedor', requiresAuth: false },
+    status: { description: 'Estado del sistema proveedor', requiresAuth: true },
+    alertas: { description: 'Alertas activas', requiresAuth: true },
+    estadisticas: { description: 'Métricas de scraping y proveedor', requiresAuth: true },
     configuracion: { description: 'Configuración segura del proveedor', requiresAuth: true },
     health: { description: 'Health check completo', requiresAuth: false }
 };

@@ -1,11 +1,47 @@
 # DOCUMENTACIÓN TÉCNICA ACTUALIZADA - SISTEMA MINI MARKET
 ## Arquitectura, APIs y Configuración Final
 
-**Versión:** 2.0.0 FINAL - SISTEMA COMPLETADO  
+**Versión:** 2.0.0 (documento histórico)  
 **Fecha de Actualización:** 1 de noviembre de 2025  
-**Estado:** ✅ SISTEMA 100% DESPLEGADO Y OPERATIVO EN PRODUCCIÓN  
-**URL Producción:** https://lefkn5kbqv2o.space.minimax.io  
+**Estado:** ⚠️ Desfasado; usar `docs/ROADMAP.md` y `docs/INVENTARIO_ACTUAL.md` como fuente vigente.  
+**URL Producción:** N/D (no confirmado en este documento)  
 **Target:** Desarrolladores, Arquitectos, DevOps, Operadores de Producción  
+
+---
+
+## 🟢 ESTADO VIGENTE (2026-01-12)
+
+> **Este documento es histórico.** Para estado actual, consultar:
+> - [ROADMAP.md](ROADMAP.md) - Plan rolling 90 días
+> - [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) - Archivos y conteos actualizados
+> - [PLAN_TRES_PUNTOS.md](PLAN_TRES_PUNTOS.md) - Fases y progreso
+> - [DECISION_LOG.md](DECISION_LOG.md) - Decisiones vigentes (D-001 a D-016)
+> - [BACKLOG_PRIORIZADO.md](BACKLOG_PRIORIZADO.md) - Priorización y estado de items
+
+### Cambios recientes relevantes (Enero 2026)
+
+| Fecha | Cambio | Referencia |
+|-------|--------|------------|
+| 2026-01-12 | Gateway `api-minimarket` hardened: JWT auth, CORS restrictivo, rate limit 60/min, circuit breaker | D-013, D-014 |
+| 2026-01-12 | CI gated jobs: integration/E2E requieren `workflow_dispatch` o vars | D-015 |
+| 2026-01-12 | Helpers modularizados: `api-minimarket/helpers/` (auth, validation, pagination, supabase) | INVENTARIO v5 |
+| 2026-01-12 | 141 tests unitarios pasando (subió de 82) | INVENTARIO v5 |
+| 2026-01-12 | Carpetas Jest legacy marcadas con README | D-016 |
+
+### Variables de entorno requeridas (producción)
+```bash
+ALLOWED_ORIGINS=https://tu-dominio.com,https://otro.com  # CORS allowlist
+API_PROVEEDOR_SECRET=your-secret-here                    # Auth API proveedor
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=eyJ...
+SUPABASE_SERVICE_ROLE_KEY=eyJ...
+```
+
+### Checklist de verificación post-cambio
+- [ ] Auth/CORS: ¿Requiere `ALLOWED_ORIGINS` configurado?
+- [ ] Tests: ¿Pasan los 141 unit tests? (`npx vitest run`)
+- [ ] CI: ¿El workflow `ci.yml` pasa en main?
+- [ ] Docs: ¿Se actualizó INVENTARIO_ACTUAL y DECISION_LOG?
 
 ---
 

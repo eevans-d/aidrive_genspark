@@ -1,23 +1,24 @@
 # OPERATIONS RUNBOOK - SISTEMA MINI MARKET SPRINT 6
 ## Guía Operacional Completa para Equipo Técnico
 
-**Versión:** 2.0.0  
-**Fecha:** 1 de noviembre de 2025  
-**Estado:** PRODUCCIÓN READY  
-**Nivel:** Enterprise Operations  
+**Versión:** 2.1.0  
+**Fecha:** 2026-01-12  
+**Estado:** ⚠️ No productivo (plan en ejecución). Fuente vigente: `docs/ROADMAP.md`, `docs/INVENTARIO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`.  
+**Nivel:** Operaciones en preparación  
 
 ---
 
 ## 📋 TABLA DE CONTENIDOS
 
 1. [Overview del Sistema](#1-overview-del-sistema)
-2. [Procedimientos de Monitoreo](#2-procedimientos-de-monitoreo)
-3. [Gestión de Incidentes](#3-gestión-de-incidentes)
-4. [Mantenimiento Rutinario](#4-mantenimiento-rutinario)
-5. [Procedimientos de Emergencia](#5-procedimientos-de-emergencia)
-6. [Backup y Recuperación](#6-backup-y-recuperación)
-7. [Escalamiento y Contactos](#7-escalamiento-y-contactos)
-8. [Checklists Operacionales](#8-checklists-operacionales)
+2. [Testing y QA](#2-testing-y-qa)
+3. [Procedimientos de Monitoreo](#3-procedimientos-de-monitoreo)
+4. [Gestión de Incidentes](#4-gestión-de-incidentes)
+5. [Mantenimiento Rutinario](#5-mantenimiento-rutinario)
+6. [Procedimientos de Emergencia](#6-procedimientos-de-emergencia)
+7. [Backup y Recuperación](#7-backup-y-recuperación)
+8. [Escalamiento y Contactos](#8-escalamiento-y-contactos)
+9. [Checklists Operacionales](#9-checklists-operacionales)
 
 ---
 
@@ -27,30 +28,27 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    SISTEMA MINI MARKET                      │
+│                    SISTEMA MINI MARKET (staging)            │
 ├─────────────────────────────────────────────────────────────┤
 │  🌐 Frontend (React/Vite)                                   │
-│  ├── URL: https://lefkn5kbqv2o.space.minimax.io             │
+│  ├── URL: N/D (staging/manual)                              │
 │  └── Stack: React + TypeScript + TailwindCSS                │
 ├─────────────────────────────────────────────────────────────┤
 │  ⚡ Supabase Edge Functions                                 │
-│  ├── scraper-maxiconsumo (997 líneas TS)                   │
-│  ├── api-proveedor (910 líneas TS)                         │
-│  ├── api-minimarket (Sistema core)                         │
-│  ├── alertas-stock (Automatización)                        │
-│  └── notificaciones-tareas (Alertas)                       │
+│  ├── scraper-maxiconsumo (modular)                          │
+│  ├── api-proveedor (shared secret + CORS)                   │
+│  ├── api-minimarket (JWT, rate limit 60/min, CORS restr.)   │
+│  ├── alertas-stock                                          │
+│  └── notificaciones-tareas                                  │
 ├─────────────────────────────────────────────────────────────┤
 │  🗄️ PostgreSQL Database                                    │
-│  ├── 11 tablas principales                                 │
-│  ├── 6 tablas Sprint 6 (proveedores)                       │
-│  ├── Funciones PL/pgSQL                                    │
-│  └── Índices optimizados                                   │
+│  ├── Migraciones versionadas (ver `supabase/migrations/`)    │
+│  ├── RLS mínima; auditoría pendiente en staging/prod         │
+│  └── Funciones PL/pgSQL críticas (precio, inventario)        │
 ├─────────────────────────────────────────────────────────────┤
-│  🔄 Automatizaciones (Planificadas)                        │
-│  ├── Cron jobs: Scraping cada 6 horas                      │
-│  ├── Alertas: Stock bajo cada hora                         │
-│  ├── Reportes: Diarios 8 AM                                │
-│  └── Notificaciones: Cada 2 horas                          │
+│  🔄 Automatizaciones (planificadas)                        │
+│  ├── Cron jobs: Scraping/alertas/reportes (config JSON)     │
+│  └── Observabilidad parcial (logs estructurados)            │
 └─────────────────────────────────────────────────────────────┘
 ```
 
@@ -77,18 +75,116 @@ notificaciones-tareas   | Active  | 5-15s         | 128MB
 
 | Métrica | Valor Objetivo | Valor Actual | Estado |
 |---------|----------------|--------------|--------|
-| **Uptime** | >99.9% | 99.95% | ✅ |
-| **Response Time (avg)** | <200ms | 150ms | ✅ |
-| **Response Time (p95)** | <500ms | 300ms | ✅ |
-| **Error Rate** | <0.5% | 0.25% | ✅ |
-| **Throughput** | >100 req/s | 250 req/s | ✅ |
-| **Memory Usage** | <60MB | 40MB | ✅ |
+| **Uptime** | >99.9% | N/D (staging/manual) | ⚠️ |
+| **Response Time (avg)** | <200ms | N/D | ⚠️ |
+| **Response Time (p95)** | <500ms | N/D | ⚠️ |
+| **Error Rate** | <0.5% | N/D | ⚠️ |
+| **Throughput** | >100 req/s | N/D | ⚠️ |
+| **Memory Usage** | <60MB | N/D | ⚠️ |
 
 ---
 
-## 2. PROCEDIMIENTOS DE MONITOREO
+## 2. TESTING Y QA
 
-### 2.1 Monitoreo de Salud del Sistema
+### 2.1 Suites de Testing
+
+| Suite | Framework | CI | Comando | Estado |
+|-------|-----------|-----|---------|--------|
+| **Unit** | Vitest | ✅ Obligatorio | `npm run test:unit` | ✅ 141 tests |
+| **Integration** | Vitest | 🔒 Gated | `npm run test:integration` | Requiere secrets |
+| **E2E** | Vitest | 🔒 Manual | `npm run test:e2e` | Requiere secrets |
+| **Performance** | Jest (Legacy) | ❌ | `cd tests && npm run test:performance` | Pendiente migración |
+| **Security** | Jest (Legacy) | ❌ | `cd tests && npm run test:security` | Pendiente migración |
+| **API Contracts** | Jest (Legacy) | ❌ | `cd tests && npm run test:api-contracts` | Pendiente migración |
+
+### 2.2 Comandos Recomendados (desde raíz del proyecto)
+
+```bash
+# ============================================================
+# TESTS UNITARIOS - Sin configuración extra (141 tests)
+# ============================================================
+npm run test:unit              # Ejecutar tests unitarios
+npm run test:unit -- --watch   # Modo watch
+npm run test:unit -- --coverage # Con cobertura
+
+# ============================================================
+# TESTS DE INTEGRACIÓN - Requiere .env.test
+# ============================================================
+# Prerequisitos:
+#   - Crear .env.test con: SUPABASE_URL, SUPABASE_ANON_KEY,
+#     SUPABASE_SERVICE_ROLE_KEY
+#   - Tener instancia Supabase activa (local o staging)
+
+npm run test:integration       # Ejecutar tests de integración
+
+# ============================================================
+# TESTS E2E - Requiere .env.test + API_PROVEEDOR_SECRET
+# ============================================================
+npm run test:e2e               # Ejecutar tests E2E
+
+# ============================================================
+# TESTS CON REPORTE (CI/CD)
+# ============================================================
+npx vitest run tests/unit/ --reporter=junit --outputFile=test-reports/junit.xml
+npx vitest run tests/integration/ --reporter=junit --outputFile=test-reports/junit.integration.xml
+npx vitest run tests/e2e/ --reporter=junit --outputFile=test-reports/junit.e2e.xml
+```
+
+### 2.3 Configuración de Variables para Tests
+
+Crear archivo `.env.test` en la raíz del proyecto:
+
+```bash
+# .env.test (NO commitear a git)
+SUPABASE_URL=https://tu-proyecto.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIs...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIs...
+API_PROVEEDOR_SECRET=tu-secret-proveedor
+TEST_BASE_URL=http://localhost:5173
+```
+
+### 2.4 CI/CD - Jobs de Testing
+
+**Pipeline:** `.github/workflows/ci.yml`
+
+| Job | Disparador | Dependencias |
+|-----|------------|--------------|
+| `lint` | Push/PR | - |
+| `test` (unit) | Push/PR | - |
+| `build` | Push/PR | lint, test |
+| `typecheck` | Push/PR | - |
+| `edge-functions-check` | Push/PR | - |
+| `integration` | Manual o `vars.RUN_INTEGRATION_TESTS=true` | test |
+| `e2e` | Manual (`workflow_dispatch`) | integration |
+
+**Ejecutar jobs opcionales manualmente:**
+1. Ir a Actions → CI Pipeline → Run workflow
+2. Seleccionar opciones: `run_integration`, `run_e2e`
+
+### 2.5 Legacy Tests (Jest)
+
+> ⚠️ Las siguientes carpetas usan Jest y están **pendientes de migración a Vitest**:
+
+| Carpeta | Descripción | Readme |
+|---------|-------------|--------|
+| `tests/performance/` | Tests de carga con Artillery | [README](../tests/performance/README.md) |
+| `tests/security/` | Tests OWASP con mocks | [README](../tests/security/README.md) |
+| `tests/api-contracts/` | Validación OpenAPI | [README](../tests/api-contracts/README.md) |
+
+Para ejecutar (no recomendado):
+```bash
+cd tests
+npm install
+npm run test:performance   # Jest
+npm run test:security      # Jest
+npm run test:api-contracts # Jest
+```
+
+---
+
+## 3. PROCEDIMIENTOS DE MONITOREO
+
+### 3.1 Monitoreo de Salud del Sistema
 
 #### 2.1.1 Health Check Automático
 ```bash
@@ -225,7 +321,7 @@ fi
 
 ---
 
-## 3. GESTIÓN DE INCIDENTES
+## 4. GESTIÓN DE INCIDENTES
 
 ### 3.1 Clasificación de Incidentes
 
@@ -363,7 +459,7 @@ supabase secrets set SCRAPER_MAX_DELAY=8000
 
 ---
 
-## 4. MANTENIMIENTO RUTINARIO
+## 5. MANTENIMIENTO RUTINARIO
 
 ### 4.1 Tareas Diarias
 
@@ -642,7 +738,7 @@ echo "=== Security Audit Complete ==="
 
 ---
 
-## 5. PROCEDIMIENTOS DE EMERGENCIA
+## 6. PROCEDIMIENTOS DE EMERGENCIA
 
 ### 5.1 Emergency Response Team
 
@@ -836,7 +932,7 @@ Next Steps:
 
 ---
 
-## 6. BACKUP Y RECUPERACIÓN
+## 7. BACKUP Y RECUPERACIÓN
 
 ### 6.1 Backup Strategy
 
@@ -1018,7 +1114,7 @@ echo "✅ Disaster recovery completed"
 
 ---
 
-## 7. ESCALAMIENTO Y CONTACTOS
+## 8. ESCALAMIENTO Y CONTACTOS
 
 ### 7.1 Escalation Procedures
 
@@ -1158,7 +1254,7 @@ Monitoring Service:
 
 ---
 
-## 8. CHECKLISTS OPERACIONALES
+## 9. CHECKLISTS OPERACIONALES
 
 ### 8.1 Shift Handover Checklist
 

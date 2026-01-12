@@ -1,4 +1,4 @@
-# INVENTARIO ACTUAL (v4 - 2026-01-09)
+# INVENTARIO ACTUAL (v5 - 2026-01-12)
 
 **Estado:** Plan histórico no completado ⚠️  
 **Plan vigente:** ver `docs/ROADMAP.md`
@@ -11,14 +11,14 @@
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
 - `supabase/migrations/` migraciones SQL (7)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
-- `tests/unit/` Tests unitarios Vitest (5 archivos, 47 tests)
-- `tests/integration/` Tests integración Vitest (2 archivos, 31 tests)
-- `tests/e2e/` Smoke tests E2E Vitest (2 archivos, 4 tests)
-- `tests/performance/` Performance tests (legacy/Jest)
-- `tests/security/` Security tests (legacy/Jest)
-- `tests/api-contracts/` API contracts (legacy/Jest)
+- `tests/unit/` Tests unitarios Vitest (**10 archivos, 141 tests** ✅)
+- `tests/integration/` Tests integración Vitest (2 archivos, 31 tests - gated)
+- `tests/e2e/` Smoke tests E2E Vitest (2 archivos, 4 tests - gated)
+- `tests/performance/` Performance tests (**legacy/Jest - desactivado**)
+- `tests/security/` Security tests (**legacy/Jest - desactivado**)
+- `tests/api-contracts/` API contracts (**legacy/Jest - desactivado**)
 - `docs/` documentación técnica (21 archivos)
-- `.github/workflows/` CI/CD (1 workflow)
+- `.github/workflows/` CI/CD (1 workflow - **con jobs gated**)
 
 ---
 
@@ -28,9 +28,16 @@
 - `api-proveedor/` → router.ts, schemas.ts, validators.ts, handlers/, utils/
 - `scraper-maxiconsumo/` → 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
 - `cron-jobs-maxiconsumo/` → jobs/ (4 jobs), orchestrator.ts, config.ts, types.ts
+- **Auth/CORS:** `api-proveedor` y `scraper-maxiconsumo` requieren `x-api-secret` y bloquean requests sin `Origin` permitido (`ALLOWED_ORIGINS`).
 
 ### Funciones auxiliares
-- `api-minimarket/index.ts` - API Gateway principal
+- `api-minimarket/index.ts` - API Gateway principal (**hardened: JWT auth, CORS, rate limit 60/min, circuit breaker**)
+- `api-minimarket/helpers/` - **NUEVO** Helpers modularizados:
+  - `auth.ts` (163 líneas) - extractBearerToken, verifyJwt, requireRole
+  - `validation.ts` (130 líneas) - isUuid, isValidDate, validateRequiredFields
+  - `pagination.ts` (96 líneas) - parsePagination, buildRangeHeader
+  - `supabase.ts` (205 líneas) - createClient, queryTable, callFunction
+  - `index.ts` - barrel export
 - `cron-testing-suite/index.ts` - Testing e2e cron
 - `cron-notifications/index.ts` - Notificaciones
 - `cron-dashboard/index.ts` - Dashboard API
@@ -65,22 +72,34 @@
 - `tests/unit/scraper-parsing.test.ts` (10 tests)
 - `tests/unit/scraper-matching.test.ts` (9 tests)
 - `tests/unit/scraper-alertas.test.ts` (3 tests)
+- `tests/unit/scraper-cache.test.ts` (tests de cache)
+- `tests/unit/scraper-config.test.ts` (tests de config)
+- `tests/unit/scraper-cookie-jar.test.ts` (tests de cookies)
 - `tests/unit/cron-jobs.test.ts` (8 tests)
-- `tests/integration/api-scraper.integration.test.ts` (integration)
-- `tests/integration/database.integration.test.ts` (integration)
-- `tests/e2e/api-proveedor.smoke.test.ts` (smoke)
-- `tests/e2e/cron.smoke.test.ts` (smoke)
-- **Total: 82 tests pasando (unit + integration + e2e)**
+- `tests/unit/response-fail-signature.test.ts` (tests de respuesta)
+- `tests/unit/api-minimarket-gateway.test.ts` (**46 tests** - auth, validation, pagination, supabase, CORS, rate limit)
+- `tests/integration/api-scraper.integration.test.ts` (integration - gated)
+- `tests/integration/database.integration.test.ts` (integration - gated)
+- `tests/e2e/api-proveedor.smoke.test.ts` (smoke - gated)
+- `tests/e2e/cron.smoke.test.ts` (smoke - gated)
+- **Total: 141 tests unitarios pasando** ✅ (10 archivos)
 
-Suites legacy (pendientes de migración a Vitest):
-- `tests/performance/load-testing.test.js`
-- `tests/security/security-tests.test.js`
-- `tests/api-contracts/openapi-compliance.test.js`
+Suites legacy (desactivadas de CI - ver README en cada carpeta):
+- `tests/performance/load-testing.test.js` → pendiente migración
+- `tests/security/security-tests.test.js` → pendiente migración
+- `tests/api-contracts/openapi-compliance.test.js` → pendiente migración
 
 ---
 
 ## CI/CD
-- `.github/workflows/ci.yml` → lint, test, build, typecheck, edge-functions-check
+- `.github/workflows/ci.yml`:
+  - Jobs obligatorios: lint, test (unit), build, typecheck, edge-functions-check
+  - Jobs gated: integration (requiere `vars.RUN_INTEGRATION_TESTS` o `workflow_dispatch`)
+  - Jobs manuales: e2e (solo via `workflow_dispatch` con `run_e2e=true`)
+- Variables de entorno requeridas para producción:
+  - `ALLOWED_ORIGINS` - lista de orígenes permitidos para CORS
+  - `API_PROVEEDOR_SECRET` - secret para API proveedor
+  - `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`
 
 ---
 
