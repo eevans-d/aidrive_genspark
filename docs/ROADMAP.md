@@ -1,8 +1,8 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-09  
+**Última actualización:** 2026-01-12  
 **Estado:** vigente  
-**Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`
+**Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`
 
 ---
 
@@ -74,6 +74,8 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 
 ### WS5 — Frontend (P1)
 **Objetivo:** calidad de build y rendimiento básico.
+
+- **WS5.0 Fix warnings de lint (useEffect deps)** ✅ **COMPLETADO 2026-01-12** (ESLint 0 warnings)
 
 - **WS5.1 Reducir warning de chunk >500 kB**  
   **Aceptación:** chunk principal <500 kB o justificado en docs.  
