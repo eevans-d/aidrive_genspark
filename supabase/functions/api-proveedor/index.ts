@@ -45,7 +45,12 @@ import { getEstadoSistemaOptimizado } from './handlers/status.ts';
 import { CIRCUIT_BREAKER_OPTIONS } from './utils/constants.ts';
 import { isRetryableAPIError } from './utils/http.ts';
 import { updateRequestMetrics } from './utils/metrics.ts';
-import { validateApiSecret, createAuthErrorResponse } from './utils/auth.ts';
+import {
+    validateApiSecret,
+    createAuthErrorResponse,
+    buildSupabaseReadHeaders,
+    parseReadAuthMode
+} from './utils/auth.ts';
 
 const logger = createLogger('api-proveedor');
 
@@ -71,7 +76,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         precios: (ctx) =>
             getPreciosActualesOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -80,7 +85,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         productos: (ctx) =>
             getProductosDisponiblesOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -89,7 +94,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         comparacion: (ctx) =>
             getComparacionConSistemaOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -99,6 +104,8 @@ function buildHandlerMap(): EndpointHandlerMap {
             triggerSincronizacionOptimizado(
                 ctx.supabaseUrl,
                 ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
+                ctx.apiSecret,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -108,7 +115,8 @@ function buildHandlerMap(): EndpointHandlerMap {
         status: (ctx) =>
             getEstadoSistemaOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
+                ctx.apiSecret,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.requestLog
@@ -116,7 +124,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         alertas: (ctx) =>
             getAlertasActivasOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -125,7 +133,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         estadisticas: (ctx) =>
             getEstadisticasScrapingOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -134,7 +142,7 @@ function buildHandlerMap(): EndpointHandlerMap {
         configuracion: (ctx) =>
             getConfiguracionProveedorOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
                 ctx.url,
                 ctx.corsHeaders,
                 ctx.isAuthenticated,
@@ -144,7 +152,8 @@ function buildHandlerMap(): EndpointHandlerMap {
         health: (ctx) =>
             getHealthCheckOptimizado(
                 ctx.supabaseUrl,
-                ctx.serviceRoleKey,
+                ctx.supabaseReadHeaders,
+                ctx.apiSecret,
                 ctx.corsHeaders,
                 ctx.requestLog
             )
@@ -165,10 +174,22 @@ function buildContext(
         throw new Error('Variables de entorno faltantes: SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY');
     }
 
+    const authHeader = request.headers.get('authorization');
+    const readAuthMode = parseReadAuthMode(Deno.env.get('API_PROVEEDOR_READ_MODE'));
+    const readAuth = buildSupabaseReadHeaders({
+        anonKey: supabaseAnonKey,
+        serviceRoleKey,
+        authHeader,
+        readMode: readAuthMode
+    });
+    const apiSecret = Deno.env.get('API_PROVEEDOR_SECRET');
+
     return {
         supabaseUrl,
         supabaseAnonKey,
         serviceRoleKey,
+        supabaseReadHeaders: readAuth.headers,
+        apiSecret: apiSecret ?? null,
         url: new URL(request.url),
         corsHeaders,
         isAuthenticated: Boolean(request.headers.get('authorization')),

@@ -245,6 +245,11 @@ http://127.0.0.1:54321/functions/v1/api-proveedor
 x-api-secret: <valor de API_PROVEEDOR_SECRET>
 ```
 
+### Lecturas (RLS opcional)
+- Si se envía `Authorization: Bearer <jwt>`, las lecturas usan ese JWT y aplican RLS.
+- Si no hay JWT, se usa `SUPABASE_ANON_KEY` por defecto.
+- Para mantener el comportamiento legacy con service role en lecturas, configurar `API_PROVEEDOR_READ_MODE=service`.
+
 ### Endpoints Disponibles
 | Endpoint | Método | Descripción |
 |----------|--------|-------------|

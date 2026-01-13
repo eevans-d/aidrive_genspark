@@ -14,6 +14,8 @@ const logger = createLogger('api-proveedor:sincronizar');
 export async function triggerSincronizacionOptimizado(
     supabaseUrl: string,
     serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
+    apiSecret: string | null,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -36,6 +38,10 @@ export async function triggerSincronizacionOptimizado(
     });
 
     try {
+        const secret = apiSecret || Deno.env.get('API_PROVEEDOR_SECRET');
+        if (!secret) {
+            throw new Error('API_PROVEEDOR_SECRET no configurado en servidor');
+        }
         const circuitKey = 'scraper-maxiconsumo';
         const circuitBreaker = getCircuitBreaker(circuitKey, CIRCUIT_BREAKER_OPTIONS);
 
@@ -59,7 +65,7 @@ export async function triggerSincronizacionOptimizado(
             {
                 method: 'POST',
                 headers: {
-                    Authorization: `Bearer ${serviceRoleKey}`,
+                    'x-api-secret': secret,
                     'Content-Type': 'application/json',
                     'X-Request-ID': requestLog.requestId
                 },
@@ -79,7 +85,7 @@ export async function triggerSincronizacionOptimizado(
         const resultadoScraping = await scrapingResponse.json();
 
         if (resultadoScraping.success) {
-            await persistProveedorSnapshots(supabaseUrl, serviceRoleKey, url, corsHeaders, requestLog);
+            await persistProveedorSnapshots(supabaseUrl, serviceRoleKey, supabaseReadHeaders, url, corsHeaders, requestLog);
         }
 
         let resultadoComparacion = null;
@@ -91,7 +97,7 @@ export async function triggerSincronizacionOptimizado(
                     {
                         method: 'POST',
                         headers: {
-                            Authorization: `Bearer ${serviceRoleKey}`,
+                            'x-api-secret': secret,
                             'Content-Type': 'application/json',
                             'X-Request-ID': requestLog.requestId
                         },
@@ -160,6 +166,7 @@ export async function triggerSincronizacionOptimizado(
 async function persistProveedorSnapshots(
     supabaseUrl: string,
     serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     baseUrl: URL,
     corsHeaders: Record<string, string>,
     requestLog: any
@@ -177,7 +184,7 @@ async function persistProveedorSnapshots(
 
             const response = await target.handler(
                 supabaseUrl,
-                serviceRoleKey,
+                supabaseReadHeaders,
                 snapshotUrl,
                 corsHeaders,
                 true,

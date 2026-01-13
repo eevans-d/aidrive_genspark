@@ -120,12 +120,16 @@ describe('validators', () => {
 describe('router', () => {
     const dummyContext: EndpointContext = {
         supabaseUrl: 'http://mock',
+        supabaseAnonKey: 'anon-key',
         serviceRoleKey: 'key',
+        supabaseReadHeaders: { apikey: 'anon-key', Authorization: 'Bearer anon-key' },
+        apiSecret: 'secret',
         url: new URL('http://x.com/precios'),
         corsHeaders: {},
         isAuthenticated: false,
         requestLog: {},
-        method: 'GET'
+        method: 'GET',
+        request: new Request('http://x.com/precios')
     };
 
     it('routes to correct handler', async () => {

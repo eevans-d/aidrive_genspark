@@ -7,7 +7,7 @@ const logger = createLogger('api-proveedor:productos');
 
 export async function getProductosDisponiblesOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -28,13 +28,10 @@ export async function getProductosDisponiblesOptimizado(
 
         const [productosResponse, statsResponse, facetasResponse] = await Promise.allSettled([
             fetch(query, {
-                headers: {
-                    'apikey': serviceRoleKey,
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                }
+                headers: supabaseReadHeaders
             }),
-            obtenerEstadisticasCategoriasOptimizado(supabaseUrl, serviceRoleKey),
-            obtenerFacetasProductos(supabaseUrl, serviceRoleKey)
+            obtenerEstadisticasCategoriasOptimizado(supabaseUrl, supabaseReadHeaders),
+            obtenerFacetasProductos(supabaseUrl, supabaseReadHeaders)
         ]);
 
         if (productosResponse.status === 'rejected') {
@@ -147,13 +144,13 @@ function buildProductoOrder(ordenarPor: string): string {
     }
 }
 
-async function obtenerEstadisticasCategoriasOptimizado(supabaseUrl: string, serviceRoleKey: string) {
+async function obtenerEstadisticasCategoriasOptimizado(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>
+) {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=categoria,precio_actual,stock_disponible&fuente=eq.Maxiconsumo Necochea&activo=eq.true`;
     const response = await fetch(query, {
-        headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-        }
+        headers: supabaseReadHeaders
     });
 
     if (!response.ok) {
@@ -176,13 +173,13 @@ async function obtenerEstadisticasCategoriasOptimizado(supabaseUrl: string, serv
     return stats;
 }
 
-async function obtenerFacetasProductos(supabaseUrl: string, serviceRoleKey: string) {
+async function obtenerFacetasProductos(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>
+) {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=marca,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true`;
     const response = await fetch(query, {
-        headers: {
-            'apikey': serviceRoleKey,
-            'Authorization': `Bearer ${serviceRoleKey}`,
-        }
+        headers: supabaseReadHeaders
     });
 
     if (!response.ok) {

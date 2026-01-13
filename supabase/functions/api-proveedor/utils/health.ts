@@ -8,11 +8,14 @@ import {
     calculateThroughput
 } from './metrics.ts';
 
-export async function checkDatabaseHealth(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+export async function checkDatabaseHealth(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>
+): Promise<any> {
     try {
         const start = Date.now();
         const response = await fetch(`${supabaseUrl}/rest/v1/precios_proveedor?select=count&limit=1`, {
-            headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` }
+            headers: supabaseReadHeaders
         });
         const duration = Date.now() - start;
 
@@ -27,10 +30,17 @@ export async function checkDatabaseHealth(supabaseUrl: string, serviceRoleKey: s
     }
 }
 
-export async function checkScraperHealth(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+export async function checkScraperHealth(
+    supabaseUrl: string,
+    apiSecret: string | null,
+    requestId?: string
+): Promise<any> {
     try {
+        const headers: Record<string, string> = {};
+        if (apiSecret) headers['x-api-secret'] = apiSecret;
+        if (requestId) headers['x-request-id'] = String(requestId);
         const response = await fetch(`${supabaseUrl}/functions/v1/scraper-maxiconsumo/health`, {
-            headers: { Authorization: `Bearer ${serviceRoleKey}` }
+            headers
         });
 
         return {

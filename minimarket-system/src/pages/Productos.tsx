@@ -1,10 +1,27 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Producto, PrecioHistorico, Proveedor } from '../types/database'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 
-interface ProductoConHistorial extends Producto {
-  historial?: PrecioHistorico[]
+type ProductoResumen = Pick<
+  Producto,
+  | 'id'
+  | 'nombre'
+  | 'categoria'
+  | 'codigo_barras'
+  | 'precio_actual'
+  | 'precio_costo'
+  | 'proveedor_principal_id'
+  | 'margen_ganancia'
+>
+
+type PrecioHistoricoResumen = Pick<
+  PrecioHistorico,
+  'id' | 'producto_id' | 'precio' | 'fuente' | 'fecha' | 'cambio_porcentaje'
+>
+
+interface ProductoConHistorial extends ProductoResumen {
+  historial?: PrecioHistoricoResumen[]
   proveedor?: Proveedor
 }
 
@@ -17,11 +34,7 @@ export default function Productos() {
   const [totalProductos, setTotalProductos] = useState(0)
   const pageSize = 20
 
-  useEffect(() => {
-    loadProductos()
-  }, [page])
-
-  async function loadProductos() {
+  const loadProductos = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -109,7 +122,11 @@ export default function Productos() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize])
+
+  useEffect(() => {
+    loadProductos()
+  }, [loadProductos])
 
   if (loading) {
     return <div className="text-center py-8">Cargando...</div>

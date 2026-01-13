@@ -16,14 +16,14 @@
 
 | Módulo / Subsistema | Estado (%) | Evidencia / Nota breve |
 |---|---:|---|
-| Frontend (`minimarket-system`) | 75 | Build y lint OK; warning de chunk >500k; optimización pendiente. |
+| Frontend (`minimarket-system`) | 75 | Build y lint OK; code splitting aplicado; mocks + E2E frontend smoke OK (6 tests). |
 | API Proveedor (`api-proveedor`) | 75 | Modularizado; logging base unificado; validación runtime pendiente. |
 | Scraper (`scraper-maxiconsumo`) | 75 | Modular + tests reales; logging consistente; validación runtime pendiente. |
 | Cron Jobs (`cron-jobs-maxiconsumo`) | 70 | Orquestador + jobs; persistencia validada runtime; validaciones de alertas pendientes. |
 | API Gateway (`api-minimarket`) | 70 | Funcional; logging estructurado incorporado. |
 | Shared libs (`_shared/`) | 80 | Bases listas; adopción inconsistente en auxiliares. |
 | DB/Migraciones | 72 | Migración `precios_proveedor` versionada; falta verificación staging/prod. |
-| Testing/QA | 55 | Unit + integration OK; smoke e2e listo; perf/seguridad pendientes. |
+| Testing/QA | 55 | Unit OK; dry-run integration/E2E; E2E frontend smoke OK con mocks (6 tests); perf/seguridad pendientes. |
 | Observabilidad | 50 | Logger adoptado en críticos; métricas/persistencia en cron listos; falta cobertura total. |
 | CI/CD | 85 | Pipeline completo; faltan pruebas de integración. |
 | Seguridad | 45 | RLS mínima; auditoría y hardening pendiente. |

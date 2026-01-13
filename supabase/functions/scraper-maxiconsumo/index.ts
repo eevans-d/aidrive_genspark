@@ -21,7 +21,7 @@ const logger = createLogger('scraper-maxiconsumo:index');
 
 const DEFAULT_CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-secret, x-request-id',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
 };
 
@@ -187,6 +187,7 @@ async function handleHealth(
 Deno.serve(async (request: Request): Promise<Response> => {
   const url = new URL(request.url);
   const requestId = crypto.randomUUID();
+  const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
 
   const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
   const corsResult = validateOrigin(request, allowedOrigins, DEFAULT_CORS_HEADERS);
@@ -210,7 +211,6 @@ Deno.serve(async (request: Request): Promise<Response> => {
     return jsonResponse({ error: authResult.error || 'Unauthorized' }, 401, corsHeaders, requestId);
   }
 
-  const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
   const log: StructuredLog = { requestId, endpoint, method: request.method, timestamp: new Date().toISOString() };
 
 
@@ -232,6 +232,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   try {
     const supabaseUrl = getEnvOrThrow('SUPABASE_URL');
     const serviceRoleKey = getEnvOrThrow('SUPABASE_SERVICE_ROLE_KEY');
+    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
 
     let response: Response;
     switch (endpoint) {
@@ -239,7 +240,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
       case 'comparacion': case 'compare': response = await handleComparacion(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
       case 'alertas': case 'alerts': response = await handleAlertas(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
       case 'status': response = await handleStatus(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
-      case 'health': response = await handleHealth(supabaseUrl, serviceRoleKey, corsHeaders, requestId); break;
+      case 'health': response = await handleHealth(supabaseUrl, anonKey || serviceRoleKey, corsHeaders, requestId); break;
       default: response = jsonResponse({ error: 'Unknown endpoint', available: ['scraping', 'comparacion', 'alertas', 'status', 'health'] }, 404, corsHeaders, requestId);
     }
 

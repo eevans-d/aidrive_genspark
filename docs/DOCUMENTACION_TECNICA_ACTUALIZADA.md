@@ -25,7 +25,7 @@
 | 2026-01-12 | Gateway `api-minimarket` hardened: JWT auth, CORS restrictivo, rate limit 60/min, circuit breaker | D-013, D-014 |
 | 2026-01-12 | CI gated jobs: integration/E2E requieren `workflow_dispatch` o vars | D-015 |
 | 2026-01-12 | Helpers modularizados: `api-minimarket/helpers/` (auth, validation, pagination, supabase) | INVENTARIO v5 |
-| 2026-01-12 | 141 tests unitarios pasando (subió de 82) | INVENTARIO v5 |
+| 2026-01-12 | 147 tests unitarios pasando (subió de 82) | INVENTARIO v5 |
 | 2026-01-12 | Carpetas Jest legacy marcadas con README | D-016 |
 
 ### Variables de entorno requeridas (producción)
@@ -39,7 +39,7 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 
 ### Checklist de verificación post-cambio
 - [ ] Auth/CORS: ¿Requiere `ALLOWED_ORIGINS` configurado?
-- [ ] Tests: ¿Pasan los 141 unit tests? (`npx vitest run`)
+- [ ] Tests: ¿Pasan los 147 unit tests? (`npx vitest run`)
 - [ ] CI: ¿El workflow `ci.yml` pasa en main?
 - [ ] Docs: ¿Se actualizó INVENTARIO_ACTUAL y DECISION_LOG?
 

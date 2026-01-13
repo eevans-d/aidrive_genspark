@@ -13,7 +13,8 @@ const logger = createLogger('api-proveedor:status');
 
 export async function getEstadoSistemaOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
+    apiSecret: string | null,
     url: URL,
     corsHeaders: Record<string, string>,
     requestLog: any
@@ -21,30 +22,33 @@ export async function getEstadoSistemaOptimizado(
     logger.info('STATUS_REQUEST', { ...requestLog });
 
     try {
+        const scraperHeaders = apiSecret
+            ? { 'x-api-secret': apiSecret, 'x-request-id': String(requestLog.requestId || '') }
+            : { 'x-request-id': String(requestLog.requestId || '') };
         const statusPromises = await Promise.allSettled([
             fetchWithTimeout(
                 `${supabaseUrl}/rest/v1/estadisticas_scraping?select=*&order=created_at.desc&limit=1`,
-                { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+                { headers: supabaseReadHeaders },
                 5000
             ),
             fetchWithTimeout(
                 `${supabaseUrl}/rest/v1/precios_proveedor?select=count&fuente=eq.Maxiconsumo Necochea&activo=eq.true`,
-                { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+                { headers: supabaseReadHeaders },
                 3000
             ),
             fetchWithTimeout(
                 `${supabaseUrl}/rest/v1/vista_oportunidades_ahorro?select=count`,
-                { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+                { headers: supabaseReadHeaders },
                 3000
             ),
             fetchWithTimeout(
                 `${supabaseUrl}/rest/v1/configuracion_proveedor?select=*&nombre=eq.Maxiconsumo Necochea`,
-                { headers: { apikey: serviceRoleKey, Authorization: `Bearer ${serviceRoleKey}` } },
+                { headers: supabaseReadHeaders },
                 3000
             ),
             fetchWithTimeout(
                 `${supabaseUrl}/functions/v1/scraper-maxiconsumo/health`,
-                { headers: { Authorization: `Bearer ${serviceRoleKey}` } },
+                { headers: scraperHeaders },
                 5000
             )
         ]);

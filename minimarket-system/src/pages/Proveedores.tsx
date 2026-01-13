@@ -1,10 +1,15 @@
-import { useEffect, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { Proveedor, Producto } from '../types/database'
 import { Phone, Mail, Package } from 'lucide-react'
 
+type ProductoProveedor = Pick<
+  Producto,
+  'id' | 'nombre' | 'categoria' | 'precio_actual' | 'margen_ganancia' | 'proveedor_principal_id'
+>
+
 interface ProveedorConProductos extends Proveedor {
-  productos?: Producto[]
+  productos?: ProductoProveedor[]
 }
 
 export default function Proveedores() {
@@ -16,11 +21,7 @@ export default function Proveedores() {
   const [totalProveedores, setTotalProveedores] = useState(0)
   const pageSize = 20
 
-  useEffect(() => {
-    loadProveedores()
-  }, [page])
-
-  async function loadProveedores() {
+  const loadProveedores = useCallback(async () => {
     try {
       setLoading(true)
       setError(null)
@@ -43,7 +44,7 @@ export default function Proveedores() {
 
       if (proveedoresData) {
         const proveedorIds = proveedoresData.map((prov) => prov.id)
-        let productosPorProveedor: Record<string, Producto[]> = {}
+        let productosPorProveedor: Record<string, ProductoProveedor[]> = {}
 
         if (proveedorIds.length > 0) {
           const { data: productosData, error: productosError } = await supabase
@@ -54,7 +55,7 @@ export default function Proveedores() {
 
           if (productosError) throw productosError
 
-          productosPorProveedor = (productosData || []).reduce<Record<string, Producto[]>>(
+          productosPorProveedor = (productosData || []).reduce<Record<string, ProductoProveedor[]>>(
             (acc, producto) => {
               const key = producto.proveedor_principal_id || 'sin_proveedor'
               if (!acc[key]) acc[key] = []
@@ -87,7 +88,11 @@ export default function Proveedores() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [page, pageSize])
+
+  useEffect(() => {
+    loadProveedores()
+  }, [loadProveedores])
 
   if (loading) {
     return <div className="text-center py-8">Cargando...</div>

@@ -176,7 +176,7 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 - **WS4.2** Consistencia `_shared` en cron auxiliares.
 
 ## WS5 - Frontend (P1)
-- **WS5.1** Reducir warning chunk >500k o documentar excepcion.  
+- **WS5.1** Reducir warning chunk >500k o documentar excepcion. ✅ COMPLETADO 2026-01-12 (code splitting + `pnpm build` sin warning).  
 - **WS5.2** Error boundaries en rutas criticas.
 
 ### WS5.3 Fix conteo de productos (P0)

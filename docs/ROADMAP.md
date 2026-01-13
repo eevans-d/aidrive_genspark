@@ -77,9 +77,9 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 
 - **WS5.0 Fix warnings de lint (useEffect deps)** ✅ **COMPLETADO 2026-01-12** (ESLint 0 warnings)
 
-- **WS5.1 Reducir warning de chunk >500 kB**  
-  **Aceptación:** chunk principal <500 kB o justificado en docs.  
-  **Dependencias:** análisis de rutas y módulos.
+- **WS5.1 Reducir warning de chunk >500 kB** ✅ **COMPLETADO 2026-01-12**  
+  **Evidencia:** `pnpm build` sin warning de chunk; code splitting aplicado.  
+  **Dependencias:** ninguna.
 
 - **WS5.2 Error boundaries y fallback UI**  
   **Aceptación:** cobertura en rutas críticas; fallback visible.

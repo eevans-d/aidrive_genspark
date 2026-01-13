@@ -12,7 +12,7 @@ const logger = createLogger('api-proveedor:configuracion');
 
 export async function getConfiguracionProveedorOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -31,10 +31,7 @@ export async function getConfiguracionProveedorOptimizado(
         const response = await fetch(
             `${supabaseUrl}/rest/v1/configuracion_proveedor?select=*&nombre=eq.Maxiconsumo Necochea`,
             {
-                headers: {
-                    apikey: serviceRoleKey,
-                    Authorization: `Bearer ${serviceRoleKey}`
-                }
+                headers: supabaseReadHeaders
             }
         );
 

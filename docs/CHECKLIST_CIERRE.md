@@ -11,7 +11,7 @@
 El plan de ejecución de 6 semanas está avanzado, pero NO está cerrado. Se logró:
 - Modularización base de las 3 funciones críticas (con pendientes técnicos)
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **141 tests unitarios pasando** (subió de 82) ✅
+- **147 tests unitarios pasando** (subió de 82) ✅
 - Migraciones versionadas en local
 - Tests reales con Vitest y runner alineado (unit + integration + e2e)
 - **CI con jobs gated** para integration/E2E ✅
@@ -105,7 +105,7 @@ Pendientes críticos detectados:
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
-  - Job: test (Vitest) - **141 tests pasando** ✅
+  - Job: test (Vitest) - **147 tests pasando** ✅
   - Job: build (Vite)
   - Job: typecheck (tsc)
   - Job: edge-functions-check (Deno, estricto)
@@ -132,8 +132,8 @@ Pendientes críticos detectados:
 | Métrica | Antes | Después (2026-01-12) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios pasando | ~10 | **141** (Vitest) ✅ |
-| Tests archivos | 5 | **10** (+ gateway helpers) ✅ |
+| Tests unitarios pasando | ~10 | **147** (Vitest) ✅ |
+| Tests archivos | 5 | **11** (+ gateway helpers + api-proveedor-auth) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 6 módulos `_shared/` (adopción parcial) |

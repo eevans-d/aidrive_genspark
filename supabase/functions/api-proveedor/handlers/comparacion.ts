@@ -17,7 +17,7 @@ const logger = createLogger('api-proveedor:comparacion');
 
 export async function getComparacionConSistemaOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -36,10 +36,7 @@ export async function getComparacionConSistemaOptimizado(
         const query = buildComparacionQuery(soloOportunidades, minDiferencia, orden, limite);
 
         const response = await fetch(query, {
-            headers: {
-                apikey: serviceRoleKey,
-                Authorization: `Bearer ${serviceRoleKey}`
-            }
+            headers: supabaseReadHeaders
         });
 
         if (!response.ok) {

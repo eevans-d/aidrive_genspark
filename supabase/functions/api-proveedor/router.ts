@@ -4,6 +4,8 @@ export type EndpointContext = {
     supabaseUrl: string;
     supabaseAnonKey: string;
     serviceRoleKey: string;
+    supabaseReadHeaders: Record<string, string>;
+    apiSecret: string | null;
     url: URL;
     corsHeaders: Record<string, string>;
     isAuthenticated: boolean;

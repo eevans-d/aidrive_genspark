@@ -7,7 +7,7 @@ const logger = createLogger('api-proveedor:precios');
 
 export async function getPreciosActualesOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -19,9 +19,9 @@ export async function getPreciosActualesOptimizado(
 
     try {
         const queries = await Promise.allSettled([
-            buildPreciosQuery(supabaseUrl, categoria, activo, limite, offset),
-            buildPreciosCountQuery(supabaseUrl, categoria, activo),
-            buildPreciosStatsQuery(supabaseUrl, categoria, activo)
+            buildPreciosQuery(supabaseUrl, supabaseReadHeaders, categoria, activo, limite, offset),
+            buildPreciosCountQuery(supabaseUrl, supabaseReadHeaders, categoria, activo),
+            buildPreciosStatsQuery(supabaseUrl, supabaseReadHeaders, categoria, activo)
         ]);
 
         const [preciosResult, countResult, statsResult] = queries;
@@ -97,7 +97,14 @@ export async function getPreciosActualesOptimizado(
     }
 }
 
-function buildPreciosQuery(supabaseUrl: string, categoria: string, activo: string, limite: number, offset: number): Promise<Response> {
+function buildPreciosQuery(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>,
+    categoria: string,
+    activo: string,
+    limite: number,
+    offset: number
+): Promise<Response> {
     let query = `${supabaseUrl}/rest/v1/precios_proveedor?select=*&fuente=eq.Maxiconsumo Necochea&activo=eq.${activo}`;
 
     if (categoria !== 'todos') {
@@ -107,14 +114,16 @@ function buildPreciosQuery(supabaseUrl: string, categoria: string, activo: strin
     query += `&order=ultima_actualizacion.desc&limit=${limite}&offset=${offset}`;
 
     return fetch(query, {
-        headers: {
-            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
-        }
+        headers: supabaseReadHeaders
     });
 }
 
-function buildPreciosCountQuery(supabaseUrl: string, categoria: string, activo: string): Promise<number> {
+function buildPreciosCountQuery(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>,
+    categoria: string,
+    activo: string
+): Promise<number> {
     let query = `${supabaseUrl}/rest/v1/precios_proveedor?select=count&fuente=eq.Maxiconsumo Necochea&activo=eq.${activo}`;
 
     if (categoria !== 'todos') {
@@ -122,21 +131,20 @@ function buildPreciosCountQuery(supabaseUrl: string, categoria: string, activo: 
     }
 
     return fetch(query, {
-        headers: {
-            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
-        }
+        headers: supabaseReadHeaders
     }).then(res => res.json()).then(data => data[0]?.count || 0);
 }
 
-function buildPreciosStatsQuery(supabaseUrl: string, categoria: string, activo: string): Promise<any> {
+function buildPreciosStatsQuery(
+    supabaseUrl: string,
+    supabaseReadHeaders: Record<string, string>,
+    categoria: string,
+    activo: string
+): Promise<any> {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=precio_actual,stock_disponible,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true${categoria !== 'todos' ? `&categoria=eq.${encodeURIComponent(categoria)}` : ''}`;
 
     return fetch(query, {
-        headers: {
-            'apikey': Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '',
-            'Authorization': `Bearer ${Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || ''}`,
-        }
+        headers: supabaseReadHeaders
     }).then(res => res.json()).then(data => {
         const precios = data.map((item: any) => item.precio_actual);
         const totalStock = data.reduce((sum: number, item: any) => sum + (item.stock_disponible || 0), 0);

@@ -1,5 +1,7 @@
 # PLAN DE EJECUCION: TRES PUNTOS SOLICITADOS
 
+**Nota:** documento historico. Plan vigente en `docs/PLAN_EJECUCION_FASES.md`.
+
 **Estado:** en progreso (FASES 1-6 completadas, F7 gateway security ✅)  
 **Fecha:** 2026-01-12  
 **Alcance:** documentar el trabajo para (1) reporte final, (2) fixes prioritarios, (3) backlog priorizado.
@@ -14,11 +16,11 @@
 | P1-08 Refactor gateway monolítico | ✅ **COMPLETADO** | Helpers modularizados en `api-minimarket/helpers/` |
 | P1-10 Rate limiting en gateway | ✅ **COMPLETADO** | FixedWindowRateLimiter 60 req/min por IP |
 | WS6.1 CI jobs gated | ✅ **COMPLETADO** | integration/E2E con workflow_dispatch |
-| Tests unitarios | ✅ **141 pasando** | +46 nuevos para helpers gateway |
+| Tests unitarios | ✅ **147 pasando** | +46 nuevos para helpers gateway |
 
 ### Checklist de verificación post-cambio
 - [x] Auth/CORS: requiere `ALLOWED_ORIGINS` configurado
-- [x] Tests: 141 unit tests pasan (`npx vitest run`)
+- [x] Tests: 147 unit tests pasan (`npx vitest run`)
 - [x] CI: workflow `ci.yml` pasa en main
 - [x] Docs: INVENTARIO_ACTUAL, DECISION_LOG, BACKLOG actualizados
 

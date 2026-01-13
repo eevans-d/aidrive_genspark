@@ -90,7 +90,7 @@ notificaciones-tareas   | Active  | 5-15s         | 128MB
 
 | Suite | Framework | CI | Comando | Estado |
 |-------|-----------|-----|---------|--------|
-| **Unit** | Vitest | ✅ Obligatorio | `npm run test:unit` | ✅ 141 tests |
+| **Unit** | Vitest | ✅ Obligatorio | `npm run test:unit` | ✅ 147 tests |
 | **Integration** | Vitest | 🔒 Gated | `npm run test:integration` | Requiere secrets |
 | **E2E** | Vitest | 🔒 Manual | `npm run test:e2e` | Requiere secrets |
 | **Performance** | Jest (Legacy) | ❌ | `cd tests && npm run test:performance` | Pendiente migración |
@@ -101,7 +101,7 @@ notificaciones-tareas   | Active  | 5-15s         | 128MB
 
 ```bash
 # ============================================================
-# TESTS UNITARIOS - Sin configuración extra (141 tests)
+# TESTS UNITARIOS - Sin configuración extra (147 tests)
 # ============================================================
 npm run test:unit              # Ejecutar tests unitarios
 npm run test:unit -- --watch   # Modo watch

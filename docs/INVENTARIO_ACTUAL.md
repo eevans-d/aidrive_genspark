@@ -9,9 +9,9 @@
 - `minimarket-system/` frontend React + Vite + TypeScript
 - `supabase/functions/` Edge Functions (Deno) - **MODULARIZADAS**
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
-- `supabase/migrations/` migraciones SQL (7)
+- `supabase/migrations/` migraciones SQL (9)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
-- `tests/unit/` Tests unitarios Vitest (**10 archivos, 141 tests** ✅)
+- `tests/unit/` Tests unitarios Vitest (**11 archivos, 147 tests** ✅)
 - `tests/integration/` Tests integración Vitest (2 archivos, 31 tests - gated)
 - `tests/e2e/` Smoke tests E2E Vitest (2 archivos, 4 tests - gated)
 - `tests/performance/` Performance tests (**legacy/Jest - desactivado**)
@@ -28,7 +28,7 @@
 - `api-proveedor/` → router.ts, schemas.ts, validators.ts, handlers/, utils/
 - `scraper-maxiconsumo/` → 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
 - `cron-jobs-maxiconsumo/` → jobs/ (4 jobs), orchestrator.ts, config.ts, types.ts
-- **Auth/CORS:** `api-proveedor` y `scraper-maxiconsumo` requieren `x-api-secret` y bloquean requests sin `Origin` permitido (`ALLOWED_ORIGINS`).
+- **Auth/CORS:** `api-proveedor` y `scraper-maxiconsumo` requieren `x-api-secret` y bloquean requests sin `Origin` permitido (`ALLOWED_ORIGINS`). Lecturas de `api-proveedor` usan anon/JWT por defecto (configurable con `API_PROVEEDOR_READ_MODE=service`).
 
 ### Funciones auxiliares
 - `api-minimarket/index.ts` - API Gateway principal (**hardened: JWT auth, CORS, rate limit 60/min, circuit breaker**)
@@ -62,6 +62,8 @@
 - `20260104020000_create_missing_objects.sql`
 - `20260104083000_add_rls_policies.sql`
 - `20260109060000_create_precios_proveedor.sql`
+- `20260109070000_create_core_tables.sql`
+- `20260109090000_update_sp_movimiento_inventario.sql`
 - `20260110000000_fix_constraints_and_indexes.sql`
 - `20260110100000_fix_rls_security_definer.sql`
 
@@ -69,6 +71,7 @@
 
 ## Tests (Vitest 4.0.16)
 - `tests/unit/api-proveedor-routing.test.ts` (17 tests)
+- `tests/unit/api-proveedor-auth.test.ts` (6 tests)
 - `tests/unit/scraper-parsing.test.ts` (10 tests)
 - `tests/unit/scraper-matching.test.ts` (9 tests)
 - `tests/unit/scraper-alertas.test.ts` (3 tests)
@@ -82,7 +85,7 @@
 - `tests/integration/database.integration.test.ts` (integration - gated)
 - `tests/e2e/api-proveedor.smoke.test.ts` (smoke - gated)
 - `tests/e2e/cron.smoke.test.ts` (smoke - gated)
-- **Total: 141 tests unitarios pasando** ✅ (10 archivos)
+- **Total: 147 tests unitarios pasando** ✅ (11 archivos)
 
 Suites legacy (desactivadas de CI - ver README en cada carpeta):
 - `tests/performance/load-testing.test.js` → pendiente migración

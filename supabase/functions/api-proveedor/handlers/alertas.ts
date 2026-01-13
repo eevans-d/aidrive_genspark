@@ -19,7 +19,7 @@ const logger = createLogger('api-proveedor:alertas');
 
 export async function getAlertasActivasOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -38,10 +38,7 @@ export async function getAlertasActivasOptimizado(
         const query = buildAlertasQuery(severidad, tipo, limite);
 
         const response = await fetch(query, {
-            headers: {
-                apikey: serviceRoleKey,
-                Authorization: `Bearer ${serviceRoleKey}`
-            }
+            headers: supabaseReadHeaders
         });
 
         if (!response.ok) {

@@ -19,7 +19,7 @@ const logger = createLogger('api-proveedor:estadisticas');
 
 export async function getEstadisticasScrapingOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
@@ -41,10 +41,7 @@ export async function getEstadisticasScrapingOptimizado(
         const query = buildEstadisticasQuery(fechaInicio, categoria, granularidad);
 
         const response = await fetch(query, {
-            headers: {
-                apikey: serviceRoleKey,
-                Authorization: `Bearer ${serviceRoleKey}`
-            }
+            headers: supabaseReadHeaders
         });
 
         if (!response.ok) {

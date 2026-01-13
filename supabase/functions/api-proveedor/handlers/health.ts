@@ -22,7 +22,8 @@ const logger = createLogger('api-proveedor:health');
 
 export async function getHealthCheckOptimizado(
     supabaseUrl: string,
-    serviceRoleKey: string,
+    supabaseReadHeaders: Record<string, string>,
+    apiSecret: string | null,
     corsHeaders: Record<string, string>,
     requestLog: any
 ): Promise<Response> {
@@ -30,8 +31,8 @@ export async function getHealthCheckOptimizado(
 
     try {
         const healthChecks = await Promise.allSettled([
-            checkDatabaseHealth(supabaseUrl, serviceRoleKey),
-            checkScraperHealth(supabaseUrl, serviceRoleKey),
+            checkDatabaseHealth(supabaseUrl, supabaseReadHeaders),
+            checkScraperHealth(supabaseUrl, apiSecret, requestLog.requestId),
             Promise.resolve(checkCacheHealth()),
             Promise.resolve(checkMemoryHealth()),
             Promise.resolve(checkAPIPerformance()),

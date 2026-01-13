@@ -906,6 +906,10 @@ test-reports/
 browser/screenshots/
 browser/user_data/
 
+# Allow frontend E2E scaffolding
+!minimarket-system/e2e/
+!minimarket-system/e2e/**
+
 # Agent memory/state (sensitive)
 .memory/
 memory/
@@ -917,6 +921,7 @@ test_report_*.json
 report_record.txt
 deploy_url.txt
 workspace.json
+**/test-results/
 
 # Archive folder (deprecated)
 archive/
