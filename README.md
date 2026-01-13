@@ -107,7 +107,7 @@ pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 ## 🧪 Testing
 
 ```bash
-# Ejecutar todos los tests
+# Ejecutar todos los tests unitarios
 npx vitest run
 
 # Tests con watch mode
@@ -123,14 +123,43 @@ npm run test:integration
 npm run test:e2e
 ```
 
-**Tests disponibles (47 total):**
-- `api-proveedor-routing.test.ts` - Routing y validación (17 tests)
-- `scraper-parsing.test.ts` - Parsing de productos (10 tests)
-- `scraper-matching.test.ts` - Matching de productos (9 tests)
-- `scraper-alertas.test.ts` - Alertas de precios (3 tests)
-- `cron-jobs.test.ts` - Jobs y orquestación (8 tests)
+### Tests Unitarios (251 total)
+| Suite | Descripción | Tests |
+|-------|-------------|-------|
+| `api-proveedor-routing.test.ts` | Routing y validación | 17 |
+| `api-proveedor-read-mode.test.ts` | API_PROVEEDOR_READ_MODE | 34 |
+| `api-proveedor-auth.test.ts` | Autenticación | 6 |
+| `api-minimarket-gateway.test.ts` | API Gateway | 46 |
+| `scraper-parsing.test.ts` | Parsing de productos | 32 |
+| `scraper-matching.test.ts` | Matching de productos | 27 |
+| `scraper-storage-auth.test.ts` | Storage y claves | 30 |
+| `scraper-alertas.test.ts` | Alertas de precios | 3 |
+| `scraper-config.test.ts` | Configuración | 22 |
+| `scraper-cache.test.ts` | Cache | 4 |
+| `scraper-cookie-jar.test.ts` | Cookie handling | 20 |
+| `cron-jobs.test.ts` | Jobs y orquestación | 8 |
+| `response-fail-signature.test.ts` | Response utils | 2 |
 
-**Configuración para tests E2E/Integración:**
+### Suites Auxiliares (19 tests)
+
+Tests para performance, seguridad y contratos API. Por defecto usan mocks y no requieren credenciales.
+
+```bash
+# Ejecutar todas las suites auxiliares
+npm run test:auxiliary
+
+# Suite específica
+npm run test:performance   # Performance/load testing (4 tests)
+npm run test:security      # SQL injection, XSS, auth (6 tests)
+npm run test:contracts     # OpenAPI compliance (9 tests)
+
+# Habilitar tests reales (requiere credenciales en .env.test)
+RUN_REAL_TESTS=true npm run test:auxiliary
+```
+
+> ⚠️ Los tests marcados "Real Tests" requieren `RUN_REAL_TESTS=true` y credenciales válidas en `.env.test`
+
+### Configuración para tests E2E/Integración
 
 Para ejecutar tests E2E e integración, configurar variables de entorno:
 

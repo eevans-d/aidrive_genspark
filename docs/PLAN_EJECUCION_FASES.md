@@ -205,7 +205,7 @@
 - Sin credenciales: definir contratos y mocks.
 - Con credenciales: pruebas E2E reales.
 - Verificacion: nueva suite E2E frontend (pendiente).
-**Ejecucion sin credenciales:** contratos definidos en `docs/CONTRATOS_FRONTEND_BACKEND.md`, mock Supabase en `minimarket-system/src/lib/supabase.ts` + `minimarket-system/src/mocks/*` (flag `VITE_USE_MOCKS`), scaffolding E2E frontend en `minimarket-system/playwright.config.ts` + `minimarket-system/e2e/*` y `npx playwright test` / `pnpm test:e2e:frontend` OK (6 tests).
+**Ejecucion sin credenciales:** contratos definidos en `docs/CONTRATOS_FRONTEND_BACKEND.md`, mock Supabase en `minimarket-system/src/lib/supabase.ts` + `minimarket-system/src/mocks/*` (flag `VITE_USE_MOCKS`), scaffolding E2E frontend en `minimarket-system/playwright.config.ts` + `minimarket-system/e2e/*` y `npx playwright test` / `pnpm test:e2e:frontend` OK (8 tests, incluye Tareas y Proveedores).
 
 ### FASE 21: Tests unitarios
 **Estado real:** COMPLETA EN REPO  
@@ -219,7 +219,7 @@
 **Plan ajustado:**
 - Sin credenciales: `--dry-run`.
 - Con credenciales: ejecutar integration/E2E y registrar reportes.
-**Ejecucion sin credenciales:** dry-run integration/E2E ejecutado; E2E frontend con mocks ejecutado (Playwright, 6 tests OK).
+**Ejecucion sin credenciales:** dry-run integration/E2E ejecutado; E2E frontend con mocks ejecutado (Playwright, 8 tests OK).
 
 ### FASE 23: Performance, seguridad y contratos API
 **Estado real:** PENDIENTE  

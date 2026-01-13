@@ -11,7 +11,7 @@
 - `supabase/functions/_shared/` Utilidades compartidas (6 módulos)
 - `supabase/migrations/` migraciones SQL (9)
 - `supabase/cron_jobs/` scripts y JSON de scheduling
-- `tests/unit/` Tests unitarios Vitest (**11 archivos, 147 tests** ✅)
+- `tests/unit/` Tests unitarios Vitest (**13 archivos, 193 tests** ✅)
 - `tests/integration/` Tests integración Vitest (2 archivos, 31 tests - gated)
 - `tests/e2e/` Smoke tests E2E Vitest (2 archivos, 4 tests - gated)
 - `tests/performance/` Performance tests (**legacy/Jest - desactivado**)
@@ -72,20 +72,27 @@
 ## Tests (Vitest 4.0.16)
 - `tests/unit/api-proveedor-routing.test.ts` (17 tests)
 - `tests/unit/api-proveedor-auth.test.ts` (6 tests)
+- `tests/unit/api-proveedor-read-mode.test.ts` (**34 tests** - READ_MODE, auth headers, endpoint contracts) **NUEVO**
 - `tests/unit/scraper-parsing.test.ts` (10 tests)
 - `tests/unit/scraper-matching.test.ts` (9 tests)
 - `tests/unit/scraper-alertas.test.ts` (3 tests)
-- `tests/unit/scraper-cache.test.ts` (tests de cache)
-- `tests/unit/scraper-config.test.ts` (tests de config)
-- `tests/unit/scraper-cookie-jar.test.ts` (tests de cookies)
+- `tests/unit/scraper-cache.test.ts` (4 tests)
+- `tests/unit/scraper-config.test.ts` (22 tests)
+- `tests/unit/scraper-cookie-jar.test.ts` (20 tests)
+- `tests/unit/scraper-storage-auth.test.ts` (**12 tests** - alertas builder, service role contracts) **NUEVO**
 - `tests/unit/cron-jobs.test.ts` (8 tests)
-- `tests/unit/response-fail-signature.test.ts` (tests de respuesta)
+- `tests/unit/response-fail-signature.test.ts` (2 tests)
 - `tests/unit/api-minimarket-gateway.test.ts` (**46 tests** - auth, validation, pagination, supabase, CORS, rate limit)
 - `tests/integration/api-scraper.integration.test.ts` (integration - gated)
 - `tests/integration/database.integration.test.ts` (integration - gated)
 - `tests/e2e/api-proveedor.smoke.test.ts` (smoke - gated)
 - `tests/e2e/cron.smoke.test.ts` (smoke - gated)
-- **Total: 147 tests unitarios pasando** ✅ (11 archivos)
+- **Total: 193 tests unitarios pasando** ✅ (13 archivos)
+
+### Tests E2E Frontend (Playwright)
+- `minimarket-system/e2e/app.smoke.spec.ts` (**6 tests** - dashboard, productos, stock, deposito)
+- `minimarket-system/e2e/tareas.proveedores.spec.ts` (**2 tests** - tareas, proveedores) **NUEVO**
+- **Total: 8 E2E frontend pasando** ✅ (`pnpm test:e2e:frontend`)
 
 Suites legacy (desactivadas de CI - ver README en cada carpeta):
 - `tests/performance/load-testing.test.js` → pendiente migración
@@ -106,13 +113,14 @@ Suites legacy (desactivadas de CI - ver README en cada carpeta):
 
 ---
 
-## Docs (21 archivos)
+## Docs (22 archivos)
 - `PLAN_EJECUCION.md` - Plan técnico (histórico)
 - `ROADMAP.md` - Plan vigente (rolling)
 - `DECISION_LOG.md` - Decisiones vigentes
 - `CHECKLIST_CIERRE.md` - Estado del proyecto
 - `INVENTARIO_ACTUAL.md` - Este archivo
 - `ESTADO_ACTUAL.md` - Estado aproximado hacia producción
+- `AUDITORIA_RLS_CHECKLIST.md` - Checklist auditoría RLS (pendiente credenciales) **NUEVO**
 - `OBJETIVOS_Y_KPIS.md`
 - `PLAN_WS_DETALLADO.md` - Plan operativo por workstreams
 - `BASELINE_TECNICO.md`
@@ -134,6 +142,7 @@ Suites legacy (desactivadas de CI - ver README en cada carpeta):
 - `deploy.sh`, `migrate.sh`, `setup.sh` - Operaciones
 - `scripts/run-integration-tests.sh` - Supabase local + integration
 - `scripts/run-e2e-tests.sh` - Supabase local + E2E smoke
+- `scripts/rls_audit.sql` - Auditoría RLS (136 líneas, pendiente credenciales) **NUEVO**
 - `test.sh` - Runner legacy (usar `npx vitest run`)
 - `vitest.config.ts` - Configuración Vitest (unit)
 - `vitest.integration.config.ts` - Configuración Vitest (integration)

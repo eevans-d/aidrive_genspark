@@ -1,8 +1,8 @@
 # OPERATIONS RUNBOOK - SISTEMA MINI MARKET SPRINT 6
 ## Guía Operacional Completa para Equipo Técnico
 
-**Versión:** 2.1.0  
-**Fecha:** 2026-01-12  
+**Versión:** 2.2.0  
+**Fecha:** 2026-01-13  
 **Estado:** ⚠️ No productivo (plan en ejecución). Fuente vigente: `docs/ROADMAP.md`, `docs/INVENTARIO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`.  
 **Nivel:** Operaciones en preparación  
 
@@ -19,6 +19,7 @@
 7. [Backup y Recuperación](#7-backup-y-recuperación)
 8. [Escalamiento y Contactos](#8-escalamiento-y-contactos)
 9. [Checklists Operacionales](#9-checklists-operacionales)
+10. [Siguientes Pasos y Pendientes](#10-siguientes-pasos-y-pendientes)
 
 ---
 
@@ -90,7 +91,7 @@ notificaciones-tareas   | Active  | 5-15s         | 128MB
 
 | Suite | Framework | CI | Comando | Estado |
 |-------|-----------|-----|---------|--------|
-| **Unit** | Vitest | ✅ Obligatorio | `npm run test:unit` | ✅ 147 tests |
+| **Unit** | Vitest | ✅ Obligatorio | `npm run test:unit` | ✅ 193 tests |
 | **Integration** | Vitest | 🔒 Gated | `npm run test:integration` | Requiere secrets |
 | **E2E** | Vitest | 🔒 Manual | `npm run test:e2e` | Requiere secrets |
 | **Performance** | Jest (Legacy) | ❌ | `cd tests && npm run test:performance` | Pendiente migración |
@@ -101,7 +102,7 @@ notificaciones-tareas   | Active  | 5-15s         | 128MB
 
 ```bash
 # ============================================================
-# TESTS UNITARIOS - Sin configuración extra (147 tests)
+# TESTS UNITARIOS - Sin configuración extra (193 tests)
 # ============================================================
 npm run test:unit              # Ejecutar tests unitarios
 npm run test:unit -- --watch   # Modo watch
@@ -160,6 +161,15 @@ TEST_BASE_URL=http://localhost:5173
 **Ejecutar jobs opcionales manualmente:**
 1. Ir a Actions → CI Pipeline → Run workflow
 2. Seleccionar opciones: `run_integration`, `run_e2e`
+
+### 2.6 E2E Frontend con mocks (sin secrets)
+
+- **Uso:** valida UI con Playwright usando `VITE_USE_MOCKS=true`; no requiere Supabase ni `API_PROVEEDOR_SECRET`.
+- **Local:** `cd minimarket-system && npx playwright install && pnpm test:e2e:frontend`.
+- **CI opcional:**
+    - `workflow_dispatch` con input `run_e2e_frontend=true`, o
+    - `vars.RUN_E2E_FRONTEND=true` al despachar manualmente.
+- **Implementación:** `minimarket-system/playwright.config.ts` levanta `pnpm dev -- --host` con `VITE_USE_MOCKS=true`; la suite vive en `minimarket-system/e2e/`.
 
 ### 2.5 Legacy Tests (Jest)
 
@@ -1601,11 +1611,57 @@ echo "=== CRITICAL SYSTEM FAILURE PROCEDURE COMPLETE ==="
 
 ---
 
+## 10. SIGUIENTES PASOS Y PENDIENTES
+
+### 10.1 Pendientes SIN credenciales (priorizados)
+
+| Prioridad | Tarea | Comando/Ruta | Estado |
+|-----------|-------|--------------|--------|
+| P0 | Refactor SCRAPER_READ_MODE | `supabase/functions/scraper-maxiconsumo/storage.ts` | Pendiente |
+| P1 | Ampliar tests unitarios scraper | `tests/unit/scraper-*.test.ts` | Pendiente |
+| P1 | Migrar suites legacy a Vitest | `tests/performance/`, `tests/security/` | Pendiente |
+
+### 10.2 Pendientes CON credenciales
+
+| Prioridad | Tarea | Checklist/Script | Bloqueador |
+|-----------|-------|------------------|------------|
+| P0 | Ejecutar auditoría RLS | `docs/AUDITORIA_RLS_CHECKLIST.md`, `scripts/rls_audit.sql` | Credenciales |
+| P0 | Verificar migraciones staging/prod | `migrate.sh` | Acceso entorno |
+| P1 | Tests de integración reales | `npm run test:integration` | `.env.test` |
+| P1 | E2E smoke con Supabase local | `npm run test:e2e` | Supabase CLI |
+
+### 10.3 Riesgos y mitigaciones
+
+| Riesgo | Impacto | Mitigación |
+|--------|---------|------------|
+| RLS no validada en tablas P0 | Alto | Ejecutar `scripts/rls_audit.sql` |
+| Service role expuesto en scraper | Medio | Implementar SCRAPER_READ_MODE |
+| Tests integration/E2E no corren | Medio | Activar `vars.RUN_INTEGRATION_TESTS` |
+| Migraciones no verificadas | Alto | WS3.1 checklist obligatorio |
+
+### 10.4 Comandos de verificación rápida
+
+```bash
+# Tests unitarios (sin credenciales)
+npm test                              # 193 tests OK
+
+# E2E Frontend (sin credenciales, usa mocks)
+cd minimarket-system && pnpm test:e2e:frontend   # 8 tests OK
+
+# Dry-run de integración (sin ejecutar Supabase)
+bash scripts/run-integration-tests.sh --dry-run
+
+# Lint frontend
+cd minimarket-system && pnpm lint     # 0 warnings
+```
+
+---
+
 **🎯 OPERATIONS READY**
 
 Este Operations Runbook proporciona procedimientos completos para el manejo operativo del Sistema Mini Market Sprint 6. Mantener actualizado con cada cambio significativo del sistema.
 
-**Última actualización:** 1 de noviembre de 2025  
+**Última actualización:** 13 de enero de 2026  
 **Próxima revisión:** 1 de febrero de 2026  
 **Responsable:** Operations Team  
 

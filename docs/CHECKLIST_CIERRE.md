@@ -11,7 +11,7 @@
 El plan de ejecución de 6 semanas está avanzado, pero NO está cerrado. Se logró:
 - Modularización base de las 3 funciones críticas (con pendientes técnicos)
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **147 tests unitarios pasando** (subió de 82) ✅
+- **193 tests unitarios pasando** (subió de 147) ✅
 - Migraciones versionadas en local
 - Tests reales con Vitest y runner alineado (unit + integration + e2e)
 - **CI con jobs gated** para integration/E2E ✅
@@ -35,6 +35,28 @@ Pendientes críticos detectados:
 - [x] Migraciones versionadas aplicadas
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
+- [ ] **Auditoría RLS completa** → ⚠️ PENDIENTE POR CREDENCIALES
+  - Checklist preparado: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
+  - Script de validación: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
+  - Tablas P0 sin verificar: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`
+
+#### Checklist RLS (pendiente por credenciales)
+> No ejecutar hasta contar con `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY` y acceso a la instancia.
+
+- **Alcance**: tablas P0 (`productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`).
+- **Prepaso**: conectar con `psql` o `supabase` CLI apuntando a la DB remota (solo lectura de políticas).
+- **SQL de inspección** (ver `scripts/rls_audit.sql`):
+  - Listar políticas: `SELECT table_name, policyname, roles, cmd, qual, with_check FROM pg_policies WHERE schemaname='public' AND table_name IN (...);`
+  - Validar RLS activo: `SELECT relname, relrowsecurity, relforcerowsecurity FROM pg_class WHERE relname IN (...);`
+  - Revisar grants: `SELECT grantee, privilege_type FROM information_schema.role_table_grants WHERE table_name IN (...);`
+- **Comandos sugeridos (no ejecutar aún)**:
+  - `supabase db remote commit` / `supabase db diff` solo para leer estado, nunca para aplicar.
+  - `psql "$SUPABASE_DB_URL" -f scripts/rls_audit.sql` (capturar salida en txt).
+- **Evidencia a capturar**:
+  - Dump de `pg_policies` para tablas P0.
+  - Captura de `relrowsecurity=true` y `relforcerowsecurity=true` en tablas sensibles.
+  - Grants efectivos por rol (`anon`, `authenticated`, roles app).
+  - Resultado de consultas de ejemplo: SELECT sobre tabla P0 con/ sin RLS (esperar 0 filas para `anon`).
 
 ### F2: Shared Libs
 - [x] `_shared/cors.ts` - Headers CORS unificados
@@ -105,7 +127,7 @@ Pendientes críticos detectados:
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
-  - Job: test (Vitest) - **147 tests pasando** ✅
+  - Job: test (Vitest) - **193 tests pasando** ✅
   - Job: build (Vite)
   - Job: typecheck (tsc)
   - Job: edge-functions-check (Deno, estricto)
@@ -239,6 +261,7 @@ tests/api-contracts/      # (legacy Jest - desactivado)
 | [API_README.md](API_README.md) | ✅ Vigente | Endpoints documentados |
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ⚠️ Revisar | Actualizar con nueva modularización |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
+| [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ⚠️ Pendiente | Checklist y scripts preparados; requiere credenciales |
 
 ---
 

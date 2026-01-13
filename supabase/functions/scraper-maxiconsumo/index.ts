@@ -2,6 +2,10 @@
  * scraper-maxiconsumo - Entry Point Modularizado
  * Orquesta scraping, comparación, alertas y status
  * @module scraper-maxiconsumo
+ * 
+ * Separación de claves (SCRAPER_READ_MODE):
+ * - readKey: SUPABASE_ANON_KEY si SCRAPER_READ_MODE=anon (default), fallback a service con warning
+ * - writeKey: SUPABASE_SERVICE_ROLE_KEY (siempre para escrituras)
  */
 
 import { AdaptiveRateLimiter } from '../_shared/rate-limit.ts';
@@ -18,6 +22,56 @@ import { parseAllowedOrigins, validateOrigin, handleCors, createCorsErrorRespons
 import { validateApiSecret } from '../api-proveedor/utils/auth.ts';
 
 const logger = createLogger('scraper-maxiconsumo:index');
+
+// ============================================================================
+// KEY MANAGEMENT (SCRAPER_READ_MODE)
+// ============================================================================
+
+type ScraperReadMode = 'anon' | 'service';
+
+interface ScraperKeys {
+  readKey: string;
+  writeKey: string;
+  readMode: ScraperReadMode;
+}
+
+/**
+ * Obtiene las claves separadas para lectura y escritura.
+ * - readKey: usa anonKey si SCRAPER_READ_MODE=anon y está disponible
+ * - writeKey: siempre usa serviceRoleKey
+ */
+function getScraperKeys(): ScraperKeys {
+  const supabaseUrl = getEnvOrThrow('SUPABASE_URL');
+  const serviceRoleKey = getEnvOrThrow('SUPABASE_SERVICE_ROLE_KEY');
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+  const readModeEnv = (Deno.env.get('SCRAPER_READ_MODE') || 'anon').toLowerCase();
+  
+  const readMode: ScraperReadMode = readModeEnv === 'service' ? 'service' : 'anon';
+  
+  let readKey: string;
+  if (readMode === 'anon') {
+    if (anonKey) {
+      readKey = anonKey;
+      logger.debug('SCRAPER_READ_MODE', { mode: 'anon', keySource: 'SUPABASE_ANON_KEY' });
+    } else {
+      readKey = serviceRoleKey;
+      logger.warn('SCRAPER_READ_MODE_FALLBACK', { 
+        mode: 'anon', 
+        reason: 'SUPABASE_ANON_KEY not set, falling back to service role',
+        recommendation: 'Set SUPABASE_ANON_KEY for better security'
+      });
+    }
+  } else {
+    readKey = serviceRoleKey;
+    logger.debug('SCRAPER_READ_MODE', { mode: 'service', keySource: 'SUPABASE_SERVICE_ROLE_KEY' });
+  }
+  
+  return {
+    readKey,
+    writeKey: serviceRoleKey,
+    readMode
+  };
+}
 
 const DEFAULT_CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
@@ -57,58 +111,74 @@ function jsonResponse(
 // HANDLERS
 // ============================================================================
 
+/**
+ * Scraping: usa readKey para bulkCheck, writeKey para insert/update
+ */
 async function handleScraping(
   log: StructuredLog,
   url: string,
-  key: string,
+  keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   const cached = getFromCache<any>('scraping:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
-  const { productos, categorias_procesadas, errores } = await ejecutarScrapingCompleto(log, url, key);
-  const guardados = await guardarProductosExtraidosOptimizado(productos, url, key, log);
+  // Scraping externo no usa DB key, pero guardar usa writeKey
+  const { productos, categorias_procesadas, errores } = await ejecutarScrapingCompleto(log, url, keys.writeKey);
+  const guardados = await guardarProductosExtraidosOptimizado(productos, url, keys.readKey, keys.writeKey, log);
   
   const result = { success: true, data: { productos_extraidos: productos.length, guardados, categorias_procesadas, errores, timestamp: new Date().toISOString() } };
   addToCache('scraping:latest', result, 300000);
   return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
+/**
+ * Comparación: usa readKey para fetch, writeKey para save
+ */
 async function handleComparacion(
   log: StructuredLog,
   url: string,
-  key: string,
+  keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   const cached = getFromCache<any>('comparison:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
-  const [pProv, pSist] = await Promise.all([fetchProductosProveedor(url, key), fetchProductosSistema(url, key)]);
+  // Lecturas con readKey
+  const [pProv, pSist] = await Promise.all([
+    fetchProductosProveedor(url, keys.readKey), 
+    fetchProductosSistema(url, keys.readKey)
+  ]);
   const matches = await performAdvancedMatching(pProv, pSist, log);
   const comparaciones = matches.map(m => { const c = calculateMatchConfidence(m); return generateComparacion(m, c); }).filter(c => c.confidence_score! > 30);
   
-  await batchSaveComparisons(comparaciones, url, key, log);
+  // Escritura con writeKey
+  await batchSaveComparisons(comparaciones, url, keys.writeKey, log);
   const result = { success: true, data: { comparaciones: comparaciones.length, oportunidades: comparaciones.filter(c => c.es_oportunidad_ahorro).length, top: comparaciones.slice(0, 50), timestamp: new Date().toISOString() } };
   addToCache('comparison:latest', result, 600000);
   return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
+/**
+ * Alertas: usa readKey para fetch comparaciones/alertas existentes, writeKey para save
+ */
 async function handleAlertas(
   log: StructuredLog,
   url: string,
-  key: string,
+  keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   const cached = getFromCache<any>('alerts:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+  // Lecturas con readKey
   const [comparacionesRes, existentesRes] = await Promise.all([
     fetch(`${url}/rest/v1/comparacion_precios?select=*&fecha_comparacion=gte.${since}`, {
-      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` }
     }),
     fetch(`${url}/rest/v1/alertas_cambios_precios?select=producto_id&fecha_alerta=gte.${since}`, {
-      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` }
     })
   ]);
 
@@ -118,7 +188,8 @@ async function handleAlertas(
 
   const alertas = buildAlertasDesdeComparaciones(comparaciones, existingIds);
 
-  const guardadas = await batchSaveAlerts(alertas, url, key, log);
+  // Escritura con writeKey
+  const guardadas = await batchSaveAlerts(alertas, url, keys.writeKey, log);
   const result = {
     success: true,
     data: {
@@ -131,10 +202,11 @@ async function handleAlertas(
   return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
+/**
+ * Status: no requiere key (no toca DB, solo métricas en memoria)
+ */
 async function handleStatus(
   log: StructuredLog,
-  url: string,
-  key: string,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
   const cached = getFromCache<any>('status:latest');
@@ -145,7 +217,7 @@ async function handleStatus(
   
   const result = {
     success: true, data: {
-      estado: 'operativo', version: '2.0.0-modular',
+      estado: 'operativo', version: '2.1.0-read-mode',
       cache: cacheStats, circuit_breakers: breakers,
       metrics: PERFORMANCE_METRICS, timestamp: new Date().toISOString()
     }
@@ -154,15 +226,18 @@ async function handleStatus(
   return jsonResponse(result, 200, corsHeaders, log.requestId);
 }
 
+/**
+ * Health: usa readKey para verificar conectividad DB
+ */
 async function handleHealth(
   url: string,
-  key: string,
+  readKey: string,
   corsHeaders: Record<string, string>,
   requestId: string
 ): Promise<Response> {
   try {
     const res = await fetch(`${url}/rest/v1/precios_proveedor?select=count&limit=1`, {
-      headers: { 'apikey': key, 'Authorization': `Bearer ${key}` }
+      headers: { 'apikey': readKey, 'Authorization': `Bearer ${readKey}` }
     });
     return jsonResponse(
       { status: res.ok ? 'healthy' : 'degraded', db: res.ok, timestamp: new Date().toISOString() },
@@ -231,17 +306,27 @@ Deno.serve(async (request: Request): Promise<Response> => {
 
   try {
     const supabaseUrl = getEnvOrThrow('SUPABASE_URL');
-    const serviceRoleKey = getEnvOrThrow('SUPABASE_SERVICE_ROLE_KEY');
-    const anonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    const keys = getScraperKeys();
 
     let response: Response;
     switch (endpoint) {
-      case 'scraping': case 'scrape': response = await handleScraping(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
-      case 'comparacion': case 'compare': response = await handleComparacion(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
-      case 'alertas': case 'alerts': response = await handleAlertas(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
-      case 'status': response = await handleStatus(log, supabaseUrl, serviceRoleKey, corsHeaders); break;
-      case 'health': response = await handleHealth(supabaseUrl, anonKey || serviceRoleKey, corsHeaders, requestId); break;
-      default: response = jsonResponse({ error: 'Unknown endpoint', available: ['scraping', 'comparacion', 'alertas', 'status', 'health'] }, 404, corsHeaders, requestId);
+      case 'scraping': case 'scrape': 
+        response = await handleScraping(log, supabaseUrl, keys, corsHeaders); 
+        break;
+      case 'comparacion': case 'compare': 
+        response = await handleComparacion(log, supabaseUrl, keys, corsHeaders); 
+        break;
+      case 'alertas': case 'alerts': 
+        response = await handleAlertas(log, supabaseUrl, keys, corsHeaders); 
+        break;
+      case 'status': 
+        response = await handleStatus(log, corsHeaders); 
+        break;
+      case 'health': 
+        response = await handleHealth(supabaseUrl, keys.readKey, corsHeaders, requestId); 
+        break;
+      default: 
+        response = jsonResponse({ error: 'Unknown endpoint', available: ['scraping', 'comparacion', 'alertas', 'status', 'health'] }, 404, corsHeaders, requestId);
     }
 
     breaker.recordSuccess();

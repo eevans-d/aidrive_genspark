@@ -1,6 +1,10 @@
 /**
  * Módulo de storage/DB para scraper-maxiconsumo
  * @module scraper-maxiconsumo/storage
+ * 
+ * Separación de claves:
+ * - readKey: para lecturas (SUPABASE_ANON_KEY si SCRAPER_READ_MODE=anon)
+ * - writeKey: para escrituras (SUPABASE_SERVICE_ROLE_KEY siempre)
  */
 
 import type { ProductoMaxiconsumo, ComparacionPrecio, AlertaCambio, StructuredLog } from './types.ts';
@@ -79,21 +83,32 @@ export async function batchUpdateProducts(productos: ProductoMaxiconsumo[], supa
   return updated;
 }
 
+/**
+ * Guarda productos extraídos con separación de claves:
+ * - readKey: para bulkCheckExistingProducts (lectura)
+ * - writeKey: para batchInsert/batchUpdate (escritura)
+ */
 export async function guardarProductosExtraidosOptimizado(
-  productos: ProductoMaxiconsumo[], supabaseUrl: string, key: string, log: StructuredLog
+  productos: ProductoMaxiconsumo[], 
+  supabaseUrl: string, 
+  readKey: string, 
+  writeKey: string, 
+  log: StructuredLog
 ): Promise<number> {
   if (!productos.length) return 0;
   
   const skus = productos.map(p => p.sku).filter(Boolean);
-  const existing = await bulkCheckExistingProducts(skus, supabaseUrl, key);
+  // Lectura con readKey
+  const existing = await bulkCheckExistingProducts(skus, supabaseUrl, readKey);
   const existingSkus = new Set(existing.map(p => p.sku));
   
   const nuevos = productos.filter(p => !existingSkus.has(p.sku));
   const existentes = productos.filter(p => existingSkus.has(p.sku));
   
+  // Escrituras con writeKey
   let total = 0;
-  for (const batch of splitIntoBatches(nuevos, 50)) total += await batchInsertProducts(batch, supabaseUrl, key, log);
-  for (const batch of splitIntoBatches(existentes, 50)) total += await batchUpdateProducts(batch, supabaseUrl, key, log);
+  for (const batch of splitIntoBatches(nuevos, 50)) total += await batchInsertProducts(batch, supabaseUrl, writeKey, log);
+  for (const batch of splitIntoBatches(existentes, 50)) total += await batchUpdateProducts(batch, supabaseUrl, writeKey, log);
   
   return total;
 }

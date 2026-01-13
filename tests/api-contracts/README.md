@@ -1,6 +1,6 @@
-# ⚠️ LEGACY - API Contract Tests (Jest)
+# 📋 API Contract Tests (Vitest, mocks)
 
-> **Estado**: LEGACY - Pendiente migración a Vitest
+> **Estado**: Migrado a Vitest con mocks locales. Validación real contra endpoints requiere credenciales.
 
 ## Descripción
 
@@ -11,7 +11,8 @@ Esta carpeta contiene tests de contratos OpenAPI usando Jest y swagger-parser.
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
-| `openapi-compliance.test.js` | Validación de specs OpenAPI | Legacy |
+| `openapi-compliance.vitest.test.ts` | Validación de contratos (mock, sin red) | Activo |
+| `openapi-compliance.test.js` | Validación Legacy Jest | Legacy |
 
 ## Dependencias (tests/package.json)
 
@@ -27,19 +28,26 @@ Esta carpeta contiene tests de contratos OpenAPI usando Jest y swagger-parser.
 - `docs/api-openapi-3.1.yaml` - API principal (api-minimarket)
 - `docs/api-proveedor-openapi-3.1.yaml` - API proveedor
 
-## Ejecución Local (NO recomendado)
+## Ejecución (mock, sin red)
 
 ```bash
-cd tests
-npm install
-npm run test:api-contracts  # Jest - valida specs YAML
+# Desde la raíz del repo
+npm run test:contracts           # Vitest + vitest.auxiliary.config.ts
+# O toda la suite auxiliar
+npm run test:auxiliary
+```
+
+## Habilitar pruebas reales (requiere credenciales, no ejecutar en CI)
+
+```bash
+RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... API_PROVEEDOR_SECRET=... npm run test:contracts
 ```
 
 ## Plan de Migración
 
-1. Migrar a Vitest con `@apidevtools/swagger-parser`
-2. Agregar validación de responses reales vs spec
-3. **Timeline**: Ver `docs/ROADMAP.md`
+1. Vitest con mocks locales (completado en `openapi-compliance.vitest.test.ts`).
+2. Mantener archivo Jest como referencia legacy.
+3. Agregar validación real vs endpoints cuando haya credenciales.
 
 ## Alternativas Recomendadas
 
@@ -54,4 +62,4 @@ npx @stoplight/spectral-cli lint docs/api-openapi-3.1.yaml
 
 ---
 
-*Última actualización: Enero 2025*
+*Última actualización: Enero 2026*

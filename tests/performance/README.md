@@ -1,6 +1,6 @@
-# ⚠️ LEGACY - Performance Tests (Jest)
+# ⚙️ Performance Tests (Vitest, mocks)
 
-> **Estado**: LEGACY - Pendiente migración a Vitest/k6
+> **Estado**: Migrado a Vitest con mocks locales. Las pruebas de carga reales siguen pendientes (k6/Artillery) y requieren credenciales.
 
 ## Descripción
 
@@ -11,7 +11,8 @@ Esta carpeta contiene tests de performance usando Jest y Artillery.
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
-| `load-testing.test.js` | Tests de carga con mocks | Legacy |
+| `load-testing.vitest.test.ts` | Suite migrada a Vitest (mock, sin red) | Activo |
+| `load-testing.test.js` | Legacy Jest (no se ejecuta) | Legacy |
 
 ## Dependencias (tests/package.json)
 
@@ -23,26 +24,33 @@ Esta carpeta contiene tests de performance usando Jest y Artillery.
 }
 ```
 
-## Ejecución Local (NO recomendado)
+## Ejecución (mock, sin red)
 
 ```bash
-cd tests
-npm install
-npm run test:performance  # Jest - requiere .env con credenciales
+# Desde la raíz del repo
+npm run test:performance           # Vitest + vitest.auxiliary.config.ts
+# O toda la suite auxiliar
+npm run test:auxiliary
+```
+
+## Habilitar pruebas reales (requiere credenciales, no ejecutar en CI)
+
+```bash
+RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:performance
 ```
 
 ## Plan de Migración
 
-1. **Opción A**: Migrar a Vitest + benchmark utilities
-2. **Opción B**: Migrar a k6 para tests de carga reales
-3. **Timeline**: Ver `docs/ROADMAP.md`
+1. Vitest con mocks locales (completado en `load-testing.vitest.test.ts`).
+2. Mantener `load-testing.test.js` como referencia legacy (no se ejecuta por config).
+3. Para carga real: mover a k6/Artillery con entorno controlado y credenciales.
 
 ## Notas
 
-- Los tests actuales usan mocks, no servicios reales
-- Para tests de carga reales, usar Artillery CLI o k6 directamente
-- El CI ejecuta solo `tests/unit/` (Vitest) como suite obligatoria
+- Los tests activos usan mocks, sin red ni credenciales.
+- Para carga real, usar Artillery/k6 fuera de CI.
+- El CI ejecuta solo `tests/unit/` y suites auxiliares si se habilitan manualmente.
 
 ---
 
-*Última actualización: Enero 2025*
+*Última actualización: Enero 2026*

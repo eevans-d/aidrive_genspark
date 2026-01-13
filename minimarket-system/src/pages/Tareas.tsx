@@ -130,10 +130,11 @@ export default function Tareas() {
           <h2 className="text-xl font-semibold mb-4">Crear Nueva Tarea</h2>
           <form onSubmit={handleCreateTarea} className="space-y-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="titulo" className="block text-sm font-medium text-gray-700 mb-2">
                 Título
               </label>
               <input
+                id="titulo"
                 type="text"
                 value={formData.titulo}
                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
@@ -143,10 +144,11 @@ export default function Tareas() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="descripcion" className="block text-sm font-medium text-gray-700 mb-2">
                 Descripción
               </label>
               <textarea
+                id="descripcion"
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                 rows={3}
@@ -156,10 +158,11 @@ export default function Tareas() {
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="asignada-a" className="block text-sm font-medium text-gray-700 mb-2">
                   Asignada a
                 </label>
                 <input
+                  id="asignada-a"
                   type="text"
                   value={formData.asignada_a_nombre}
                   onChange={(e) => setFormData({ ...formData, asignada_a_nombre: e.target.value })}
@@ -168,10 +171,11 @@ export default function Tareas() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label htmlFor="prioridad" className="block text-sm font-medium text-gray-700 mb-2">
                   Prioridad
                 </label>
                 <select
+                  id="prioridad"
                   value={formData.prioridad}
                   onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as any })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
@@ -184,10 +188,11 @@ export default function Tareas() {
             </div>
 
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
+              <label htmlFor="fecha-vencimiento" className="block text-sm font-medium text-gray-700 mb-2">
                 Fecha de Vencimiento
               </label>
               <input
+                id="fecha-vencimiento"
                 type="datetime-local"
                 value={formData.fecha_vencimiento}
                 onChange={(e) => setFormData({ ...formData, fecha_vencimiento: e.target.value })}

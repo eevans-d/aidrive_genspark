@@ -12,7 +12,12 @@
     "test:unit": "vitest run tests/unit",
     "test:integration": "bash scripts/run-integration-tests.sh",
     "test:e2e": "bash scripts/run-e2e-tests.sh",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "test:auxiliary": "vitest run --config vitest.auxiliary.config.ts",
+    "test:performance": "vitest run --config vitest.auxiliary.config.ts tests/performance",
+    "test:security": "vitest run --config vitest.auxiliary.config.ts tests/security",
+    "test:contracts": "vitest run --config vitest.auxiliary.config.ts tests/api-contracts",
+    "test:all": "npm run test && npm run test:auxiliary"
   },
   "keywords": [],
   "author": "",

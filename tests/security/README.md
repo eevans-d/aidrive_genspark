@@ -1,6 +1,6 @@
-# ⚠️ LEGACY - Security Tests (Jest)
+# 🛡️ Security Tests (Vitest, mocks)
 
-> **Estado**: LEGACY - Pendiente migración a Vitest
+> **Estado**: Migrado a Vitest con mocks locales. Pruebas reales requieren entorno controlado y credenciales.
 
 ## Descripción
 
@@ -11,7 +11,8 @@ Esta carpeta contiene tests de seguridad usando Jest.
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
-| `security-tests.test.js` | Tests OWASP básicos con mocks | Legacy |
+| `security.vitest.test.ts` | Suite migrada a Vitest (mock, sin red) | Activo |
+| `security-tests.test.js` | Tests OWASP básicos (legacy Jest) | Legacy |
 
 ## Dependencias (tests/package.json)
 
@@ -22,12 +23,19 @@ Esta carpeta contiene tests de seguridad usando Jest.
 }
 ```
 
-## Ejecución Local (NO recomendado)
+## Ejecución (mock, sin red)
 
 ```bash
-cd tests
-npm install
-npm run test:security  # Jest - usa mocks, no servicios reales
+# Desde la raíz del repo
+npm run test:security            # Vitest + vitest.auxiliary.config.ts
+# O toda la suite auxiliar
+npm run test:auxiliary
+```
+
+## Habilitar pruebas reales (requiere credenciales, no ejecutar en CI)
+
+```bash
+RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... API_PROVEEDOR_SECRET=... npm run test:security
 ```
 
 ## Cobertura de Tests
@@ -42,10 +50,9 @@ Los tests verifican (con mocks):
 
 ## Plan de Migración
 
-1. Migrar assertions a Vitest
-2. Mantener mocks para tests unitarios
-3. Agregar tests de integración separados para seguridad real
-4. **Timeline**: Ver `docs/ROADMAP.md`
+1. Vitest con mocks locales (completado en `security.vitest.test.ts`).
+2. Mantener `security-tests.test.js` como referencia legacy.
+3. Agregar suite de integración separada para seguridad real (fuera de CI) cuando haya credenciales.
 
 ## Alternativas Recomendadas
 
@@ -56,4 +63,4 @@ Para auditorías de seguridad reales:
 
 ---
 
-*Última actualización: Enero 2025*
+*Última actualización: Enero 2026*
