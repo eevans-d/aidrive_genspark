@@ -5,7 +5,7 @@
 **Nivel MPC:** Intermedio (C0, C1, C4; C2/C3 combinados por workstreams)  
 **Fecha:** 2026-01-14  
 **Fuentes de verdad:** docs/ROADMAP.md, docs/PLAN_WS_DETALLADO.md, docs/DECISION_LOG.md, docs/ESTADO_ACTUAL.md, docs/CHECKLIST_CIERRE.md  
-**Estado:** Draft alineado al roadmap vigente (no ejecutar, uso para planificación)
+**Estado:** Plan listo para ejecución (modo sin credenciales activado; gating CI y RLS/migraciones bloqueados hasta contar con claves)
 
 ---
 
@@ -17,7 +17,8 @@
   3) Activar suites integration + E2E smoke con un comando único (Vitest + Supabase local) y habilitar gating en CI antes del hito B.
   4) Completar auditoría RLS P0 (productos, stock_deposito, movimientos_deposito, precios_historicos, proveedores, personal) con evidencia en CHECKLIST_CIERRE.md antes del hito C (12 semanas).
   5) Reducir payload y riesgo en frontend: conteo correcto en Dashboard (WS5.3), movimiento de depósito atómico (WS5.4) y paginación/select mínimo (WS5.5) antes del hito C.
-- Alcance (in-scope): observabilidad WS1, testing WS2, DB WS3, cron WS4, frontend WS5, seguridad WS7, documentación WS8, evolución mínima WS9. Fuera de alcance inmediato: features nuevas no listadas en ROADMAP.md y despliegue productivo sin credenciales.
+- Restricciones operativas: sin credenciales productivas (`.env.test` incompleto), integración/E2E y RLS bloqueados hasta tener claves (D-011/D-012/D-015), no hay entorno staging accesible hoy, arquitectura documental desactualizada.
+- Alcance (in-scope): observabilidad WS1, testing WS2, DB WS3, cron WS4, frontend WS5, seguridad WS7, documentación WS8, evolución mínima WS9. Fuera de alcance inmediato: features nuevas no listadas en ROADMAP.md y despliegue productivo mientras falten credenciales y auditoría RLS.
 
 ---
 
@@ -25,7 +26,7 @@
 
 **E1: Fundación y Gobierno (Semana 0-2)**
 - F1.1 Revisión de baseline y activos (C0 refresh) usando INVENTARIO_ACTUAL + BASELINE_TECNICO.
-- F1.2 Risk Register y stakeholders (crear docs faltantes; mapear owners por WS).
+- F1.2 Risk Register y stakeholders (refrescar docs existentes; mapear owners por WS).
 - F1.3 Normalización de tooling (Vitest único; desactivar Jest legacy en tests/package.json).
 - F1.4 Actualización de arquitectura referencial a estado real (ARCHITECTURE_DOCUMENTATION.md).
 
@@ -61,37 +62,45 @@ E1 → E2 → E3 → E4 → E5
 ## 3. Matriz RAID (resumida)
 
 **Riesgos (≥5)**
-- R1: Sin credenciales para staging/prod → bloquea RLS y migraciones; mitigar con plan "sin credenciales" y gate en CHECKLIST.
-- R2: Runner legacy Jest causa resultados inconsistentes → remover o migrar a Vitest en tests/package.json; documentar D-016 cumplimiento.
-- R3: Arquitectura desactualizada induce errores de diseño → actualizar ARCHITECTURE_DOCUMENTATION en E1.
-- R4: Observabilidad parcial en cron auxiliares → WS1.6 y WS4.2 para adopción _shared.
-- R5: Service role mal usado en gateway/scraper → respetar D-017/D-018 y validar en WS7.3.
-- R6: Paginación ausente provoca OOM/timeouts → WS5.5 obligatorio en E4.
+- R1: Falta de credenciales staging/prod bloquea migraciones (WS3.1) y auditoría RLS (WS7.1).  
+  - Owner: Ops/DB. Mitigación: modo sin credenciales (D-011/012), gates en CI (D-015), checklist en CHECKLIST_CIERRE y no ejecutar WS3.1/WS7.1 hasta tener claves.
+- R2: Auditoría RLS P0 no ejecutada (D-019) → exposición de datos.  
+  - Owner: DB/Sec. Mitigación: ventana dedicada en cuanto haya credenciales; usar scripts/rls_audit.sql y AUDITORIA_RLS_CHECKLIST.md con evidencia.
+- R3: Suites Jest legacy (performance/security/api-contracts) generan ruido y huecos.  
+  - Owner: QA. Mitigación: migrar a Vitest y retirar runner Jest (E1-F1.3); bloquear en CI.
+- R4: Arquitectura documental desactualizada induce diseños erróneos.  
+  - Owner: Arquitectura/Backend. Mitigación: actualizar ARCHITECTURE_DOCUMENTATION.md (E1-F1.4, WS8.1) y enlazar desde README/ROADMAP.
+- R5: Observabilidad parcial en cron auxiliares y métricas incompletas.  
+  - Owner: Backend. Mitigación: WS1.6/WS4.2 + WS1.5; verificación con `rg "console\\."` y registros en cron_jobs_execution_log.
+- R6: Paginación/select mínimo ausentes en frontend provocan OOM/timeouts.  
+  - Owner: Frontend. Mitigación: WS5.5 en E4; validación de payloads y UI paginada.
 
 **Assumptions (≥3)**
-- A1: Disponibilidad de Supabase local para integración/E2E.
-- A2: Equipo puede reservar ventanas para staging/prod cuando lleguen credenciales.
-- A3: No habrá cambios mayores de scope fuera de ROADMAP.md.
+- A1: Supabase local disponible para integración/E2E; se aceptan dry-runs mientras falten claves.
+- A2: Se obtendrán credenciales de staging/prod dentro de la ventana B para ejecutar WS3.1/WS7.1.
+- A3: No habrá cambios mayores de scope fuera de `docs/ROADMAP.md`.
+- A4: Equipo con disponibilidad para Owners (Backend/Frontend/QA/DB/Ops) según WS asignados.
 
 **Issues (situaciones actuales)**
-- I1: Auditoría RLS pendiente (D-019) sin evidencia.
-- I2: Validación runtime de alertas/comparaciones (WS4.1) pendiente.
-- I3: Suites performance/security/api-contracts en Jest legacy (fuera de CI).
+- I1: Integración/E2E gated por `.env.test` incompleto (D-011/D-015).
+- I2: Auditoría RLS pendiente sin evidencia (D-019).
+- I3: Validación runtime de alertas/comparaciones pendiente (WS4.1).
+- I4: Suites performance/security/api-contracts en Jest legacy (D-016).
 
 **Dependencies externas**
-- Dp1: Credenciales Supabase staging/prod.
+- Dp1: Credenciales Supabase (URL, ANON_KEY, SERVICE_ROLE) para staging/prod.
 - Dp2: Tokens Snyk (WS7.2) si se habilita escaneo.
 - Dp3: Ventana de mantenimiento para WS3.1/WS3.2.
 
 ---
 
 ## 4. Criterios de Éxito SMART
-- Observabilidad: 0 `console.*` en funciones críticas; logs con requestId/jobId/runId; métricas cron registran duración e items.
-- Calidad: `npm test` (unit) + `npm run test:integration` + `npm run test:e2e` reproducibles local; jobs gated en CI listos para activarse con secrets.
-- Seguridad: Auditoría RLS P0 completada con evidencia; gateway sin uso de service role en lecturas; CORS restringido por ALLOWED_ORIGINS.
-- Datos: Migraciones aplicadas y verificadas en staging/prod con rollback documentado.
-- UX/Producto: Dashboard cuenta productos con count real; movimiento de depósito atómico; paginación y select mínimo activos.
-- Documentación: ARCHITECTURE_DOCUMENTATION actualizado; índice MPC y handoff operativo disponibles.
+- Observabilidad: 0 `console.*` en funciones críticas y cron; logs con requestId/jobId/runId; métricas cron registran duración, items y errores. Verificación: `rg "console\\."` limpio (excepto `_shared/logger`) + queries a `cron_jobs_execution_log`.
+- Calidad: `npm test` (unit) + `npm run test:integration` + `npm run test:e2e` reproducibles local; jobs gated en CI listos para activarse con secrets. Verificación: scripts `--dry-run` pasan sin credenciales; CI con gating activo (D-015).
+- Seguridad: Auditoría RLS P0 completada con evidencia; gateway sin uso de service role en lecturas; CORS restringido por ALLOWED_ORIGINS. Verificación: salida de `scripts/rls_audit.sql`, headers CORS validados, modo anon en api-proveedor/scraper.
+- Datos: Migraciones aplicadas y verificadas en staging/prod con rollback documentado. Verificación: checklist por entorno en CHECKLIST_CIERRE + DEPLOYMENT_GUIDE actualizado.
+- UX/Producto: Dashboard cuenta productos con count real; movimiento de depósito atómico; paginación y select mínimo activos. Verificación: pruebas UI/manual y payloads reducidos (select mínimo).
+- Documentación: ARCHITECTURE_DOCUMENTATION actualizado; índice MPC y handoff operativo disponibles; DECISION_LOG y ROADMAP referenciados. Verificación: enlaces en README/OPERATIONS_RUNBOOK y MPC_INDEX.
 
 ---
 
@@ -99,16 +108,16 @@ E1 → E2 → E3 → E4 → E5
 | Etapa/Fase | Pri | Criticidad | Esfuerzo | Valor | Riesgo | Score |
 |------------|-----|------------|----------|-------|--------|-------|
 | E2-F2.1 Logging críticos (WS1.1-1.3) | P0 | 5 | 3 | 4 | 3 | 20 |
-| E3-F3.1 Migraciones staging/prod | P0 | 5 | 3 | 4 | 2 | 19 |
-| E3-F3.2 Auditoría RLS P0 | P0 | 5 | 3 | 4 | 2 | 19 |
-| E2-F2.3 Runner integración + E2E | P0 | 4 | 3 | 4 | 3 | 18 |
-| E4-F4.4 Alertas stock (mínimo) | P1 | 4 | 3 | 4 | 3 | 18 |
-| E4-F4.2 Movimiento atómico | P0 | 4 | 3 | 4 | 3 | 18 |
-| E4-F4.1 Conteo Dashboard | P0 | 4 | 2 | 4 | 4 | 18 |
+| E3-F3.1 Migraciones staging/prod (con credenciales) | P0 | 5 | 3 | 4 | 2 | 19 |
+| E3-F3.2 Auditoría RLS P0 (D-019) | P0 | 5 | 3 | 4 | 2 | 19 |
+| E2-F2.3 Runner integración + E2E (gated) | P0 | 4 | 3 | 4 | 3 | 18 |
+| E4-F4.2 Movimiento atómico (RPC) | P0 | 4 | 3 | 4 | 3 | 18 |
+| E4-F4.1 Conteo Dashboard (count real) | P0 | 4 | 2 | 4 | 4 | 18 |
 | E4-F4.3 Paginación/select mínimo | P1 | 4 | 3 | 3 | 3 | 17 |
-| E2-F2.4 Métricas cron | P1 | 3 | 3 | 3 | 3 | 15 |
+| E2-F2.4 Métricas cron (WS1.4/1.5) | P1 | 3 | 3 | 3 | 3 | 15 |
+| E1-F1.4 Arquitectura actualizada (WS8.1) | P1 | 3 | 3 | 3 | 3 | 15 |
 | E5-F5.2 Handoff + SLO/SLA + IR | P1 | 3 | 3 | 3 | 3 | 15 |
-| E1-F1.3 Normalizar tooling (eliminar Jest) | P1 | 3 | 2 | 3 | 3 | 14 |
+| E1-F1.3 Retiro Jest legacy (D-016) | P1 | 3 | 2 | 3 | 3 | 14 |
 
 (Score = Criticidad×2 + Valor×2 + Esfuerzo + Riesgo; Esfuerzo/Riesgo invertidos: 5 = bajo)
 
@@ -126,8 +135,8 @@ Justificación: bloqueadores de seguridad y datos (E3) dependen de logging y run
 ---
 
 ## 7. Gaps y Solapamientos
-- Gaps: falta Risk Register formal, Stakeholder map, Communication plan, Handoff, SLA/SLO, Incident Response, Lessons Learned; arquitectura desactualizada; suites legacy Jest sin migrar.
-- Solapamientos: ROADMAP vs PLAN_WS_DETALLADO ya alineados; mantener DECISION_LOG como fuente para cambios de alcance. Evitar duplicar criterios de aceptación entre ROADMAP y este C1 (referenciar en lugar de copiar).
+- Gaps: credenciales faltantes para RLS/migraciones; auditoría RLS sin ejecutar; arquitectura documental desactualizada (WS8.1); suites performance/security/api-contracts en Jest (D-016); observabilidad parcial en cron auxiliares; paginación/select mínimo pendiente en frontend.
+- Solapamientos: ROADMAP y PLAN_WS_DETALLADO ya alineados; mantener DECISION_LOG como fuente de cambios. No duplicar criterios de aceptación, referenciar WS y CHECKLIST_CIERRE.
 
 ---
 
@@ -149,8 +158,8 @@ Justificación: bloqueadores de seguridad y datos (E3) dependen de logging y run
 ---
 
 ## 10. Evidencia requerida por etapa
-- E1: C0_DISCOVERY actualizado, Risk Register, arquitectura revisada, DECISION_LOG con ADR de tooling tests.
-- E2: outputs de `rg "console\."`=0 en funciones críticas; `npm run test:integration` y `npm run test:e2e` (local) con prerequisitos; métricas cron insertadas.
+- E1: C0_DISCOVERY actualizado, Risk Register/Stakeholders/Comms refrescados, arquitectura revisada, DECISION_LOG con ADR de retiro Jest.
+- E2: outputs de `rg "console\."`=0 en funciones críticas; scripts `run-integration-tests.sh --dry-run` y `run-e2e-tests.sh --dry-run` OK; métricas cron insertadas.
 - E3: checklist migraciones por entorno; salida de scripts rls_audit; policies/grants capturados; configuración gateway verificada; escaneo deps (audit/Snyk).
 - E4: pruebas de conteo Dashboard, RPC atómico, paginación y select mínimo; decisión de caching documentada; alertas stock operativas.
 - E5: docs actualizadas (ARCHITECTURE_DOCUMENTATION, ROADMAP, PLAN_WS_DETALLADO, DECISION_LOG, CHECKLIST_CIERRE, handoff, SLO/SLA, IR plan); backlog remanente y retro preparadas.
@@ -158,6 +167,6 @@ Justificación: bloqueadores de seguridad y datos (E3) dependen de logging y run
 ---
 
 ## 11. Notas de ejecución
-- No ejecutar despliegues productivos ni auditorías RLS hasta contar con credenciales oficiales.
-- Mantener gating en CI (integration/E2E) hasta disponer de envs; activar manualmente con vars RUN_* cuando corresponda.
+- Modo sin credenciales (D-011/D-012): ejecutar solo unit tests y dry-run de integración/E2E hasta tener `.env.test` válido; no hay despliegues productivos ni auditorías RLS.
+- Gating CI (D-015): integration/E2E solo con `vars.RUN_*_TESTS=true` o `workflow_dispatch`; documentar en CHECKLIST_CIERRE cualquier bypass.
 - Cada cierre de WS debe actualizar CHECKLIST_CIERRE.md y adjuntar evidencia (logs, capturas, reportes, hashes de commit).

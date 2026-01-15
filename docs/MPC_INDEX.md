@@ -22,12 +22,13 @@
 - Decision Log: docs/DECISION_LOG.md
 
 ## Capa 2 — Sub-Planes (usar WS como sub-etapas)
-- WS1–WS9: docs/PLAN_WS_DETALLADO.md (tareas y evidencias)
+- WS1–WS9 y sub-plan por etapas E1–E5: docs/PLAN_WS_DETALLADO.md (tareas, verificación y evidencias)
 
 ## Capa 3 — Ejecución (logs/checklists)
 - Checklist de cierre: docs/CHECKLIST_CIERRE.md
 - Auditoría RLS: docs/AUDITORIA_RLS_CHECKLIST.md
 - Scripts: scripts/rls_audit.sql, scripts/run-integration-tests.sh, scripts/run-e2e-tests.sh
+- Formato de verificación por fase: docs/VERIFICACION_TEMPLATE.md
 
 ## Capa 4 — Cierre
 - Handoff operativo: docs/C4_HANDOFF_MINIMARKET_TEC.md

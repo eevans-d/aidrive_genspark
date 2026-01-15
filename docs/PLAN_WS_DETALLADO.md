@@ -253,3 +253,76 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 ### WS9.4 Panel de rentabilidad
 - **WS9.4.1 KPI de margen/rotacion** (Owner: Frontend/DB)  
   Aceptacion: tablero con margen real y rotacion por producto.
+
+---
+
+## Capa 2 - Sub-plan por etapas (E1–E5)
+> Estructura operativa por etapa/fase alineada a `docs/C1_MEGA_PLAN_MINIMARKET_TEC_v1.0.0.md`. La evidencia se registra en `docs/CHECKLIST_CIERRE.md` y, si aplica, en `docs/VERIFICACION_*.md`.
+
+### E1 Fundación y Gobierno (Semana 0-2)
+- **Objetivo:** refrescar baseline, riesgos y arquitectura real; eliminar runners legacy.
+- **Prerequisitos:** C0 vigente (`C0_DISCOVERY_MINIMARKET_TEC_2026-01-14.md`); sin credenciales productivas.
+- **Inputs:** INVENTARIO_ACTUAL.md, BASELINE_TECNICO.md, ESTADO_ACTUAL.md, DECISION_LOG.md.
+- **Outputs:** C0 refrescado, ARCHITECTURE_DOCUMENTATION.md actualizado, Jest legacy retirado, Risk/Stakeholders/Communication plan refrescados.
+- **Fases y tareas:**
+  - F1.1 C0 refresh + inventario (Owner: Backend/Ops, 4h) → Actualizar C0_DISCOVERY y CHECKLIST_CIERRE (F0/F1).
+  - F1.2 Risk/Stakeholders/Comms (Owner: PM/Docs, 3h) → Refrescar C0_RISK_REGISTER, C0_STAKEHOLDERS, C0_COMMUNICATION_PLAN.
+  - F1.3 Retiro Jest legacy (Owner: QA, 5h) → eliminar runners/tests legacy en `tests/performance`, `tests/security`, `tests/api-contracts`; DECISION_LOG ADR.
+  - F1.4 Arquitectura real (Owner: Arquitectura/Backend, 6h) → ARCHITECTURE_DOCUMENTATION.md con stack y límites actuales.
+- **Verificación:** `rg "jest" tests`=0 (except README), ARCHITECTURE_DOCUMENTATION.md actualizado, ADR en DECISION_LOG, CHECKLIST_CIERRE actualizado.
+- **Rollback:** N/A (documental y scripts); mantener lockfiles como respaldo.
+- **Evidencia:** CHECKLIST_CIERRE (F0/F1), hashes en DECISION_LOG, diffs de ARCHITECTURE_DOCUMENTATION.md.
+
+### E2 Observabilidad y QA (Semana 1-4)
+- **Objetivo:** logging estructurado sin console.*, métricas cron, runner integración/E2E listo (gated).
+- **Prerequisitos:** `_shared/logger` adoptado; supabase local; modo sin credenciales (D-011/D-012).
+- **Inputs:** WS1.*, WS2.*, DECISION_LOG (D-004, D-005, D-015).
+- **Outputs:** 0 console.* en api-proveedor/scraper/cron-jobs-maxiconsumo, métricas cron activas, scripts integración/E2E operativos con gating.
+- **Fases y tareas:**
+  - F2.1 Logging WS1.1–1.3 (Owner: Backend, 8h) → limpiar console.* en api-proveedor, scraper, cron-jobs-maxiconsumo.
+  - F2.2 Adopción _shared entrypoints/aux (Owner: Backend, 6h) → api-minimarket, notificaciones-tareas, cron auxiliares.
+  - F2.3 Runner integración + E2E (gated) (Owner: QA/Ops, 6h) → scripts `run-integration-tests.sh`, `run-e2e-tests.sh` OK en `--dry-run`; gating documentado en CHECKLIST_CIERRE (D-015).
+  - F2.4 Métricas/persistencia cron (Owner: Backend, 4h) → cron_jobs_execution_log con validación runtime.
+- **Verificación:** `rg -n "console\\." supabase/functions` limpio (solo `_shared/logger.ts`); scripts `--dry-run` OK; inserts válidos en cron_jobs_execution_log.
+- **Rollback:** revertir módulos tocados; mantener dry-run si no hay credenciales.
+- **Evidencia:** CHECKLIST_CIERRE (E2), logs `--dry-run`, consultas a cron_jobs_execution_log.
+
+### E3 Datos y Seguridad (Semana 3-6)
+- **Objetivo:** migraciones verificadas, rollback documentado, auditoría RLS P0, hardening roles/CORS/service role.
+- **Prerequisitos:** credenciales Supabase (URL/ANON/SERVICE_ROLE), ventana de mantenimiento, Supabase CLI.
+- **Inputs:** WS3.*, WS7.*, AUDITORIA_RLS_CHECKLIST.md, scripts/rls_audit.sql, DECISION_LOG (D-017/D-018/D-019).
+- **Outputs:** checklist migraciones por entorno, rollback en DEPLOYMENT_GUIDE.md, reporte auditoría RLS, gateway validado sin service role para lecturas.
+- **Fases y tareas:**
+  - F3.1 Migraciones staging/prod + checklist (Owner: DB/Ops, 8h) → evidencia por entorno en CHECKLIST_CIERRE.
+  - F3.2 Auditoría RLS P0 (Owner: DB/Sec, 6h) → ejecutar scripts/rls_audit.sql; capturar policies/grants.
+  - F3.3 Hardening roles/CORS/service role + npm audit/Snyk (Owner: Backend/QA, 6h) → validar D-017/D-018, CORS y deps.
+- **Verificación:** CHECKLIST_CIERRE por entorno; salida rls_audit.sql; CORS/roles verificados en api-minimarket/api-proveedor; npm audit/Snyk sin críticos.
+- **Rollback:** según DEPLOYMENT_GUIDE.md (WS3.2); backups previos obligatorios.
+- **Evidencia:** logs de migración, reporte RLS, capturas políticas/grants, DECISION_LOG si hay cambios.
+
+### E4 Producto y UX (Semana 5-9)
+- **Objetivo:** reducir riesgo en UI: conteo correcto, movimiento atómico, paginación/select mínimo, decisión de caching.
+- **Prerequisitos:** endpoints estables; ANON_KEY disponible; RPC `sp_movimiento_inventario` operativo.
+- **Inputs:** WS5.3–5.6, ESQUEMA_BASE_DATOS_ACTUAL.md, tipos TS en `minimarket-system/src/types/*`.
+- **Outputs:** Dashboard usa count real; depósito usa RPC atómico; listas paginadas/select mínimo; caching decision documentada.
+- **Fases y tareas:**
+  - F4.1 Conteo Dashboard (Owner: Frontend, 3h) → usar `count` real con `head: true`.
+  - F4.2 Movimiento atómico (Owner: Frontend/DB, 5h) → consumir `sp_movimiento_inventario` y evitar operaciones separadas.
+  - F4.3 Paginación/select mínimo (Owner: Frontend, 6h) → limitar payload en productos/proveedores/stock.
+  - F4.4 Caching decisión + implementación mínima (Owner: Frontend, 6h) → definir librería y aplicarla en pantallas críticas.
+- **Verificación:** pruebas manuales UI (Dashboard/Deposito); tests unitarios/frontend actualizados; payloads reducidos; decisiones de caching documentadas.
+- **Rollback:** revertir cambios frontend; desactivar caching si causa regresiones.
+- **Evidencia:** CHECKLIST_CIERRE (E4), notas en VERIFICACION_*.md, commits referenciados.
+
+### E5 Cierre y Transferencia (Semana 9-12)
+- **Objetivo:** documentación coherente, handoff operativo, SLO/SLA e IR plan listos, backlog final.
+- **Prerequisitos:** E2–E4 completados; decisiones registradas; credenciales definidas para handoff.
+- **Inputs:** WS8.*, C4 docs (handoff, SLA/SLO, IR), ROADMAP.md, DECISION_LOG.md.
+- **Outputs:** ARCHITECTURE_DOCUMENTATION.md actualizado, DECISION_LOG/ROADMAP referenciados, BACKLOG_PRIORIZADO.md final, CHECKLIST_CIERRE marcado como listo.
+- **Fases y tareas:**
+  - F5.1 Documentación coherente (Owner: Docs, 6h) → ARCHITECTURE_DOCUMENTATION, ROADMAP, DECISION_LOG, PLAN_WS_DETALLADO consistentes.
+  - F5.2 Handoff + SLO/SLA + IR (Owner: Docs/Ops, 6h) → C4_HANDOFF, C4_SLA_SLO, C4_INCIDENT_RESPONSE completos.
+  - F5.3 Validación final y retro/post-mortem (Owner: PM/Equipo, 4h) → CHECKLIST_CIERRE Final y retro/post-mortem documentados.
+- **Verificación:** CHECKLIST_CIERRE Final; C4 docs completos; retro documentada.
+- **Rollback:** N/A (documentación); conservar versiones previas en git.
+- **Evidencia:** CHECKLIST_CIERRE, enlaces en MPC_INDEX.md, actualizaciones en DECISION_LOG y ROADMAP.
