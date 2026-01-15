@@ -1,20 +1,9 @@
 /**
- * API CONTRACT TESTS
- * Tests para validar cumplimiento con especificación OpenAPI 3.1
+ * LEGACY TESTS
+ * Este archivo fue desactivado. Ver: tests/api-contracts/openapi-compliance.legacy.js
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
-const fs = require('fs');
-const path = require('path');
-
-// Mock global
-global.fetch = jest.fn();
-
-// Cargar especificación OpenAPI
-const openapiSpecPath = '/workspace/docs/api-proveedor-openapi-3.1.yaml';
-let openapiSpec;
-
-describe('📋 API CONTRACT TESTS - OpenAPI 3.1 Compliance', () => {
+module.exports = {};
   
   describe('📖 Spec Loading and Validation', () => {
     

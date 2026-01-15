@@ -1,14 +1,9 @@
 /**
- * SECURITY TESTS
- * Tests exhaustivos de seguridad para el sistema Mini Market Sprint 6
+ * LEGACY TESTS
+ * Este archivo fue desactivado. Ver: tests/security/security-tests.legacy.js
  */
 
-const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
-
-// Mock global
-global.fetch = jest.fn();
-
-describe('🔒 SECURITY TESTS - Mini Market Sprint 6', () => {
+module.exports = {};
   
   describe('💉 SQL Injection Prevention', () => {
     

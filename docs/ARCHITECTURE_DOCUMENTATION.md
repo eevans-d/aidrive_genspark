@@ -1,13 +1,22 @@
 # ARCHITECTURE DOCUMENTATION - SISTEMA MINI MARKET SPRINT 6
 ## Documentación Técnica de Arquitectura Nivel Empresa
 
-**Versión:** 2.0.0  
-**Fecha:** 1 de noviembre de 2025  
-**Estado:** REFERENCIAL (requiere actualización)  
+**Versión:** 2.0.1  
+**Fecha:** 2026-01-15  
+**Estado:** ACTUALIZADO (estado real)  
 **Target:** Arquitectos, DevOps, Senior Engineers  
 
 > **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
 > Para el estado real y plan vigente, ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
+
+### Estado real (2026-01-15)
+- **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).
+- **Edge Functions modularizadas:** `api-proveedor`, `scraper-maxiconsumo`, `cron-jobs-maxiconsumo` con adopción de `_shared/logger`.
+- **Cron auxiliares activos:** `cron-dashboard`, `cron-health-monitor`, `cron-notifications`, `cron-testing-suite`.
+- **Seguridad aplicada:** JWT roles, CORS restrictivo, rate limit 60 req/min, circuit breaker en gateway.
+- **Testing oficial:** Vitest (unit/integration/e2e); suites Jest legacy desactivadas (ver DECISION_LOG D-016/D-020).
+- **Observabilidad:** logging estructurado con `requestId/jobId/runId`; métricas básicas en `cron_jobs_execution_log`.
+- **Restricción vigente:** auditoría RLS y migraciones en staging/prod bloqueadas por credenciales.
 
 ---
 

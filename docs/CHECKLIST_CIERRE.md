@@ -6,6 +6,12 @@
 
 ---
 
+## Convenciones de Evidencia
+- **Comando:** `[comando ejecutado]`
+- **Output esperado:** `[resultado que confirma cumplimiento]`
+- **Fecha:** `YYYY-MM-DD`
+- **Commit:** `[hash corto o link]`
+
 ## Resumen Ejecutivo
 
 El plan de ejecución de 6 semanas está avanzado, pero NO está cerrado. Se logró:

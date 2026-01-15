@@ -14,19 +14,27 @@ export default function Stock() {
   const [stock, setStock] = useState<StockConProducto[]>([])
   const [loading, setLoading] = useState(true)
   const [filtro, setFiltro] = useState<'todos' | 'bajo' | 'critico'>('todos')
+  const [page, setPage] = useState(0)
+  const [totalStock, setTotalStock] = useState(0)
+  const PAGE_SIZE = 50
 
   useEffect(() => {
     loadStock()
-  }, [])
+  }, [page])
 
   async function loadStock() {
     try {
-      const { data: stockData } = await supabase
+      const from = page * PAGE_SIZE
+      const to = from + PAGE_SIZE - 1
+
+      const { data: stockData, count } = await supabase
         .from('stock_deposito')
-        .select('*')
+        .select('*', { count: 'exact' })
         .order('cantidad_actual', { ascending: true })
+        .range(from, to)
 
       if (stockData) {
+        setTotalStock(count ?? 0)
         // Obtener información de productos
         const productosIds = stockData.map(s => s.producto_id)
         const { data: productos } = await supabase
@@ -82,6 +90,8 @@ export default function Stock() {
     return true
   })
 
+  const totalPages = Math.max(Math.ceil(totalStock / PAGE_SIZE), 1)
+
   const getNivelStock = (item: StockConProducto) => {
     if (item.disponible === 0) return 'critico'
     if (item.disponible <= item.stock_minimo / 2) return 'urgente'
@@ -105,7 +115,7 @@ export default function Stock() {
               filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Todos ({stock.length})
+            Todos ({totalStock})
           </button>
           <button
             onClick={() => setFiltro('bajo')}
@@ -233,6 +243,32 @@ export default function Stock() {
             No hay productos en esta categoría
           </div>
         )}
+      </div>
+
+      <div className="flex items-center justify-between">
+        <div className="text-sm text-gray-500">
+          Mostrando página {page + 1} de {totalPages}
+        </div>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setPage(prev => Math.max(prev - 1, 0))}
+            disabled={page === 0}
+            className={`px-4 py-2 rounded-lg ${
+              page === 0 ? 'bg-gray-200 text-gray-400' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            Anterior
+          </button>
+          <button
+            onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
+            disabled={page >= totalPages - 1}
+            className={`px-4 py-2 rounded-lg ${
+              page >= totalPages - 1 ? 'bg-gray-200 text-gray-400' : 'bg-gray-200 text-gray-700'
+            }`}
+          >
+            Siguiente
+          </button>
+        </div>
       </div>
     </div>
   )

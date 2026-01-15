@@ -32,7 +32,7 @@ export default function Dashboard() {
       // Cargar stock
       const { data: stock } = await supabase
         .from('stock_deposito')
-        .select('*')
+        .select('cantidad_actual,stock_minimo')
 
       if (stock) {
         const stockBajoCount = stock.filter(
