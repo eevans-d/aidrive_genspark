@@ -1,6 +1,6 @@
 # C0_COMMUNICATION_PLAN_MINIMARKET_TEC
 
-**Fecha:** 2026-01-14  
+**Fecha:** 2026-01-15  
 **Dominio:** TEC  
 **Nivel:** Intermedio  
 **Estado:** Draft

@@ -74,6 +74,10 @@ E1 → E2 → E3 → E4 → E5
   - Owner: Backend. Mitigación: WS1.6/WS4.2 + WS1.5; verificación con `rg "console\\."` y registros en cron_jobs_execution_log.
 - R6: Paginación/select mínimo ausentes en frontend provocan OOM/timeouts.  
   - Owner: Frontend. Mitigación: WS5.5 en E4; validación de payloads y UI paginada.
+- R7: Falta SLO/SLA e Incident Response formal genera tiempos de respuesta inciertos.  
+  - Owner: Ops. Mitigación: E5-F5.2 (C4_SLA_SLO + C4_INCIDENT_RESPONSE) con owners y cadencia definida.
+- R8: Dependencia de service role para lecturas expone credenciales y riesgo de abuso.  
+  - Owner: Backend/Sec. Mitigación: aplicar D-017/D-018 (ANON para lecturas, service solo escrituras); validar en hardening E3.
 
 **Assumptions (≥3)**
 - A1: Supabase local disponible para integración/E2E; se aceptan dry-runs mientras falten claves.

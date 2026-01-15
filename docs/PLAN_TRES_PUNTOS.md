@@ -1027,7 +1027,7 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
    - Luego `vitest.e2e.config.ts`.
    - Luego `tests/integration/api-scraper.integration.test.ts`.
    - Luego `tests/integration/database.integration.test.ts`.
-   - Luego `tests/helpers/setup.js`.
+   - Luego `tests/helpers/setup.js` (legacy, no usado por Vitest).
    - Luego `tests/setup-edge.js`.
    - Luego `scripts/run-integration-tests.sh`.
    - Finalmente `scripts/run-e2e-tests.sh`.
@@ -1064,10 +1064,10 @@ Si encuentras algo que no puedes corregir automaticamente, lista exactamente que
    - Validar rendimiento, seguridad y cumplimiento OpenAPI.
 
 **2. ARCHIVOS INVOLUCRADOS:**
-   - Primero `tests/performance/load-testing.test.js`.
+   - Primero `tests/performance/load-testing.vitest.test.ts`.
    - Luego `tests/performance-benchmark.ts`.
-   - Luego `tests/security/security-tests.test.js`.
-   - Luego `tests/api-contracts/openapi-compliance.test.js`.
+   - Luego `tests/security/security.vitest.test.ts`.
+   - Luego `tests/api-contracts/openapi-compliance.vitest.test.ts`.
    - Luego `docs/api-openapi-3.1.yaml`.
    - Finalmente `docs/api-proveedor-openapi-3.1.yaml`.
 

@@ -1,6 +1,6 @@
 # C0_STAKEHOLDERS_MINIMARKET_TEC
 
-**Fecha:** 2026-01-14  
+**Fecha:** 2026-01-15  
 **Dominio:** TEC  
 **Nivel:** Intermedio  
 **Estado:** Draft
@@ -9,11 +9,13 @@
 | Rol | Responsabilidades | Decisiones clave | Disponibilidad | Canal |
 |-----|-------------------|------------------|----------------|-------|
 | Backend/DevOps | Edge Functions, CI/CD, observabilidad, hardening | ADRs técnicos, releases | Según sprints | GitHub Issues/PR, chat |
+| Ops | Ambientes, credenciales, ventanas de mantenimiento | Gating CI, despliegues y rollback | Bajo demanda | GitHub Issues/PR |
 | QA | Estrategia de testing, runners, fixtures | Aceptación de suites y cobertura | Parcial | GitHub Issues/PR |
 | Frontend | UI/UX, data layer, paginación, movimientos atómicos | Cambios de UI y caching | Según sprints | GitHub Issues/PR |
 | DBA | Migraciones, RLS, rollback, auditorías | Cambios de schema y políticas | Bajo demanda (ventanas) | GitHub Issues/PR |
 | Arquitectura | Actualización de arquitectura referencial | Alineación de límites y patrones | Parcial | GitHub Issues/PR |
 | Seguridad | Auditoría RLS, CORS, roles | Aprobación de hardening | Bajo demanda | GitHub Issues/PR |
+| PM/Docs | Roadmap, plan WS, documentación de cierre | Priorización y estado documental | Parcial | GitHub Issues/PR |
 
 ## Roles de negocio/app
 | Rol app | Alcance | Riesgo | Notas |

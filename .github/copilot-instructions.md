@@ -131,7 +131,7 @@ npx vitest --coverage       # Unit tests con coverage
 - Framework: **Vitest 4.0.16**
 - Tests: imports de módulos reales (parsing/matching/alertas/router/cron)
 - Runner/scripts: `package.json` y `test.sh` alineados con Vitest
-- Nota: suites integration/e2e/seguridad/performance requieren runner/deps separados (Jest/otros)
+- Nota: suites integration/e2e/seguridad/performance usan configs Vitest auxiliares; los legacy Jest están desactivados.
 
 ### CI/CD
 - Pipeline: `.github/workflows/ci.yml`

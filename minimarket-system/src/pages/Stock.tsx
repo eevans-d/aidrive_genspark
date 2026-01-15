@@ -22,6 +22,10 @@ export default function Stock() {
     loadStock()
   }, [page])
 
+  useEffect(() => {
+    setPage(0)
+  }, [filtro])
+
   async function loadStock() {
     try {
       const from = page * PAGE_SIZE
@@ -123,7 +127,7 @@ export default function Stock() {
               filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Stock Bajo ({stock.filter(s => s.disponible > 0 && s.disponible <= s.stock_minimo).length})
+            Stock Bajo (página: {stock.filter(s => s.disponible > 0 && s.disponible <= s.stock_minimo).length})
           </button>
           <button
             onClick={() => setFiltro('critico')}
@@ -131,7 +135,7 @@ export default function Stock() {
               filtro === 'critico' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'
             }`}
           >
-            Crítico ({stock.filter(s => s.disponible === 0).length})
+            Crítico (página: {stock.filter(s => s.disponible === 0).length})
           </button>
         </div>
       </div>

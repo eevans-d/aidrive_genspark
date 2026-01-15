@@ -1,5 +1,6 @@
 # BASELINE TECNICO (v1)
 
+**Fecha:** 2026-01-15  
 **Estado:** reporte inicial de lint/tests (histórico)
 **Nota:** no refleja el estado actual del repo; ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
 

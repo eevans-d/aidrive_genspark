@@ -4,24 +4,20 @@
 
 ## Descripción
 
-Esta carpeta contiene tests de seguridad usando Jest.  
-**No se ejecutan en CI** hasta completar la migración.
+Esta carpeta contiene tests de seguridad migrados a Vitest (mocks locales).  
+Los archivos legacy están desactivados y no se ejecutan en CI.
 
 ## Archivos
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
 | `security.vitest.test.ts` | Suite migrada a Vitest (mock, sin red) | Activo |
-| `security-tests.test.js` | Tests OWASP básicos (legacy Jest) | Legacy |
+| `security-tests.legacy.js` | Tests OWASP básicos (legacy) | Legacy |
+| `security-tests.test.js` | Stub desactivado (no-op) | Inactivo |
 
 ## Dependencias (tests/package.json)
 
-```json
-{
-  "jest": "^29.7.0",
-  "supertest": "^6.3.3"
-}
-```
+El runner Jest fue retirado; se mantienen librerías auxiliares para mocks y benchmarks.
 
 ## Ejecución (mock, sin red)
 
@@ -51,7 +47,8 @@ Los tests verifican (con mocks):
 ## Plan de Migración
 
 1. Vitest con mocks locales (completado en `security.vitest.test.ts`).
-2. Mantener `security-tests.test.js` como referencia legacy.
+2. Mantener `security-tests.legacy.js` como referencia legacy.
+3. Mantener `security-tests.test.js` como stub desactivado (sin ejecución).
 3. Agregar suite de integración separada para seguridad real (fuera de CI) cuando haya credenciales.
 
 ## Alternativas Recomendadas

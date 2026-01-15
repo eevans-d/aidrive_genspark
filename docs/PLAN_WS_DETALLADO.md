@@ -1,6 +1,6 @@
 # PLAN DETALLADO POR WORKSTREAMS (WS1-WS8)
 
-**Ultima actualizacion:** 2026-01-09  
+**Última actualización:** 2026-01-15  
 **Estado:** vigente  
 **Relacion:** `docs/ROADMAP.md`, `docs/DECISION_LOG.md`, `docs/CHECKLIST_CIERRE.md`
 
@@ -122,8 +122,8 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 - **WS2.3.1 Definir dataset/fixture** (Owner: QA)  
   Aceptacion: dataset reproducible para performance (sin datos reales).
 
-- **WS2.3.2 Migrar tests a Vitest** (Owner: QA)  
-  Scope: `tests/performance/load-testing.test.js` (actualmente Jest).  
+-- **WS2.3.2 Migrar tests a Vitest** (Owner: QA)  
+  Scope: `tests/performance/load-testing.vitest.test.ts` (migrado).  
   Aceptacion: `npx vitest run tests/performance` ejecuta sin Jest.
 
 ### WS2.4 Seguridad y contratos
@@ -176,6 +176,7 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 - **WS4.2** Consistencia `_shared` en cron auxiliares.
 
 ## WS5 - Frontend (P1)
+- **WS5.0** Fix warnings de lint (useEffect deps). ✅ COMPLETADO 2026-01-12.  
 - **WS5.1** Reducir warning chunk >500k o documentar excepcion. ✅ COMPLETADO 2026-01-12 (code splitting + `pnpm build` sin warning).  
 - **WS5.2** Error boundaries en rutas criticas.
 
@@ -204,6 +205,7 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
 ## WS6 - CI/CD (P1)
 - **WS6.1** Integrar pruebas de integracion en pipeline.  
 - **WS6.2** Validacion de envs requeridas.
+- **WS6.3** E2E frontend manual en CI (Playwright + mocks).  
 
 ## WS7 - Seguridad (P1)
 - **WS7.1** Auditoria RLS.  
@@ -269,7 +271,7 @@ Describir un plan **detallado, verificable y sin ambiguedades** para ejecutar lo
   - F1.2 Risk/Stakeholders/Comms (Owner: PM/Docs, 3h) → Refrescar C0_RISK_REGISTER, C0_STAKEHOLDERS, C0_COMMUNICATION_PLAN.
   - F1.3 Retiro Jest legacy (Owner: QA, 5h) → eliminar runners/tests legacy en `tests/performance`, `tests/security`, `tests/api-contracts`; DECISION_LOG ADR.
   - F1.4 Arquitectura real (Owner: Arquitectura/Backend, 6h) → ARCHITECTURE_DOCUMENTATION.md con stack y límites actuales.
-- **Verificación:** `rg "jest" tests`=0 (except README), ARCHITECTURE_DOCUMENTATION.md actualizado, ADR en DECISION_LOG, CHECKLIST_CIERRE actualizado.
+- **Verificación:** `tests/package.json` sin deps Jest; `rg "jest" tests` solo en archivos legacy (`*.legacy.js`/README) y `tests/helpers/setup.js` (legacy), ARCHITECTURE_DOCUMENTATION.md actualizado, ADR en DECISION_LOG, CHECKLIST_CIERRE actualizado.
 - **Rollback:** N/A (documental y scripts); mantener lockfiles como respaldo.
 - **Evidencia:** CHECKLIST_CIERRE (F0/F1), hashes en DECISION_LOG, diffs de ARCHITECTURE_DOCUMENTATION.md.
 

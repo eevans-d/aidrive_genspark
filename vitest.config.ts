@@ -42,7 +42,7 @@ export default defineConfig({
     ],
 
     // Setup files
-    // Nota: setup de Jest vive en tests/helpers/setup.js. Vitest no debe depender de archivos de test/ (eliminado).
+    // Nota: tests/helpers/setup.js es legacy (Jest) y no se usa en Vitest.
     setupFiles: [],
     
     // Global test configuration

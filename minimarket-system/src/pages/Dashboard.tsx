@@ -33,6 +33,7 @@ export default function Dashboard() {
       const { data: stock } = await supabase
         .from('stock_deposito')
         .select('cantidad_actual,stock_minimo')
+        .limit(10)
 
       if (stock) {
         const stockBajoCount = stock.filter(

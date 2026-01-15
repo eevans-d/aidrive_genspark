@@ -1,6 +1,6 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-12  
+**Última actualización:** 2026-01-15  
 **Estado:** vigente  
 **Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`
 
@@ -103,12 +103,15 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS6 — CI/CD y Release (P1)
 **Objetivo:** pipeline confiable y reproducible.
 
+- **WS6.1 Integrar pruebas de integración en pipeline (gated)**  
   **Aceptación:** job separado con gating; se ejecuta solo con env válidas.  
   **Dependencias:** WS2.1.
 
+- **WS6.2 Validación de envs requeridas**  
   **Aceptación:** checks de env requeridas antes de build/deploy.
 
-  **Aceptación:** job manual `run_e2e_frontend=true` (o `vars.RUN_E2E_FRONTEND=true`) en CI ejecuta `pnpm test:e2e:frontend` con `VITE_USE_MOCKS=true`, sin requerir Supabase real; documentado en runbook.
+- **WS6.3 E2E frontend en CI (manual)**  
+  **Aceptación:** job manual `run_e2e_frontend=true` (o `vars.RUN_E2E_FRONTEND=true`) en CI ejecuta `pnpm test:e2e:frontend` con `VITE_USE_MOCKS=true`, sin requerir Supabase real; documentado en runbook.  
   Instrucciones locales: `cd minimarket-system && npx playwright install && pnpm test:e2e:frontend` (usa Playwright + mocks).
 
 ### WS7 — Seguridad (P1)

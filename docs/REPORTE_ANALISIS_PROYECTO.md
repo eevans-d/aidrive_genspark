@@ -1,16 +1,16 @@
 # REPORTE FINAL DE ANALISIS DEL PROYECTO (v2)
 
-**Fecha:** 2026-01-11  
-**Estado:** consolidado (modo sin credenciales para E2E)  
-**Fuente:** revisión estática del repo + unit tests (`npm run test:unit` 91/91 OK) + docs internas.
+**Fecha:** 2026-01-15  
+**Estado:** actualizado (modo sin credenciales para E2E)  
+**Fuente:** revisión estática del repo + unit tests + docs internas.
 
 ---
 
 ## 1) Resumen ejecutivo (accionable)
-- Gateway y API proveedor ahora responden con formato estándar `ok`/`fail` y `requestId`; CORS y auth están alineados, pero E2E sigue bloqueado hasta contar con `.env.test` real.
+- Gateway y API proveedor responden con formato estándar `ok`/`fail` y `requestId`; CORS y auth alineados. E2E sigue bloqueado sin `.env.test` real.
 - Scraper endurecido: delays 1.5–6s, backoff 429/503, allowlist de hosts/slug, timeout configurable (5–60s) y cookie jar/proxy/CAPTCHA desactivados por defecto.
-- Riesgos abiertos: falta de conteo real en Dashboard, movimiento de depósito no atómico y uso histórico de service role en gateway (requiere validar en entorno real).
-- Documentación y scripts incluyen modo `--dry-run` para validar prerequisitos sin credenciales; backlog ajustado para trabajar sin Supabase real.
+- Hallazgos P0 previos (conteo Dashboard, depósito atómico, service role) están resueltos en el código.
+- Documentación y scripts incluyen modo `--dry-run` para validar prerequisitos sin credenciales.
 
 ---
 
@@ -21,11 +21,11 @@
 ---
 
 ## 3) Hallazgos críticos (P0)
-1. **Conteo Dashboard incorrecto** – usa `productos.length` tras `head:true`; data nula.  
+1. **Conteo Dashboard incorrecto** → **RESUELTO** (usa `count` real con `head: true`).  
    Archivo: `minimarket-system/src/pages/Dashboard.tsx`.
-2. **Movimientos de depósito no atómicos** – inserta movimiento y actualiza stock en pasos separados, sin validar stock.  
+2. **Movimientos de depósito no atómicos** → **RESUELTO** (RPC `sp_movimiento_inventario`).  
    Archivo: `minimarket-system/src/pages/Deposito.tsx`.
-3. **Gateway con service role y CORS laxo (histórico)** – riesgo si no se valida en entorno real; falta confirmar que consultas normales usen JWT/anon.  
+3. **Gateway con service role y CORS laxo (histórico)** → **RESUELTO** (JWT/anon + CORS restrictivo).  
    Archivo: `supabase/functions/api-minimarket/index.ts`.
 
 ---
@@ -73,9 +73,8 @@
 
 ## 9) Recomendaciones priorizadas
 **P0 (inmediato, requiere código):**
-1. Dashboard: usar `Prefer: count=exact` + `count` real; manejar nulos.  
-2. Depósito: mover a RPC/Edge con validación de stock y transacción.  
-3. Gateway: asegurar queries con JWT/anon; reservar service role solo para tareas admin; CORS restringido.
+1. Consolidar evidencia en CHECKLIST_CIERRE para los P0 resueltos (Dashboard/Depósito/Gateway).  
+2. Validar en entorno real cuando haya credenciales (RLS y migraciones).
 
 **P1 (corto plazo, puede avanzar sin credenciales):**
 1. Paginación y `select` mínimo en listas.  

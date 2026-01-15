@@ -26,8 +26,8 @@ VERBOSE=${3:-false}
 PARALLEL=${4:-true}
 
 # Archivos de configuración de testing
-JEST_CONFIG="jest.config.js"
 VITEST_CONFIG="vitest.config.ts"
+VITEST_AUX_CONFIG="vitest.auxiliary.config.ts"
 CYPRESS_CONFIG="cypress.config.js"
 
 # Función para logging
@@ -73,15 +73,6 @@ show_banner() {
 # Verificar dependencias de testing
 check_testing_dependencies() {
     log "Verificando dependencias de testing..."
-    
-    # Verificar si Jest está disponible
-    if npm list jest --depth=0 &>/dev/null; then
-        JEST_AVAILABLE=true
-        log_success "Jest encontrado"
-    else
-        JEST_AVAILABLE=false
-        log_warning "Jest no encontrado"
-    fi
     
     # Verificar si Vitest está disponible
     if npm list vitest --depth=0 &>/dev/null; then
@@ -162,21 +153,8 @@ run_unit_tests() {
             log_error "Tests unitarios fallaron"
             return 1
         }
-    elif [ "$JEST_AVAILABLE" = true ]; then
-        test_command="npx jest"
-        if [ "$VERBOSE" = "true" ]; then
-            test_command="$test_command --verbose"
-        fi
-        if [ "$COVERAGE" = "true" ]; then
-            test_command="$test_command --coverage"
-        fi
-        
-        $test_command || {
-            log_error "Tests unitarios fallaron"
-            return 1
-        }
     else
-        log_warning "No se encontró framework de testing unitario"
+        log_warning "No se encontró Vitest para tests unitarios"
         return 1
     fi
     
@@ -194,14 +172,14 @@ run_integration_tests() {
 
         log "Ejecutando tests desde: $integration_path"
 
-        if [ "$JEST_AVAILABLE" = true ]; then
-            npx jest "$integration_path" || {
-                log_error "Tests de integración fallaron"
-                return 1
-            }
-        else
-            log_warning "Tests de integración requieren Jest; se omiten por ahora"
-            return 0
+            if [ "$VITEST_AVAILABLE" = true ]; then
+                npx vitest run --config "$VITEST_CONFIG" "$integration_path" || {
+                    log_error "Tests de integración fallaron"
+                    return 1
+                }
+            else
+                log_warning "Tests de integración requieren Vitest; se omiten por ahora"
+            fi
         fi
 
         log_success "Tests de integración completados"
@@ -316,9 +294,33 @@ run_load_tests() {
     log_success "Tests de carga completados"
 }
 
+# Ejecutar tests de performance (Vitest auxiliary)
+run_performance_tests() {
+    log_test "Ejecutando tests de performance (Vitest auxiliary)..."
+
+    if [ "$VITEST_AVAILABLE" = true ]; then
+        npx vitest run --config "$VITEST_AUX_CONFIG" tests/performance || {
+            log_error "Tests de performance fallaron"
+            return 1
+        }
+        log_success "Tests de performance completados"
+    else
+        log_warning "Vitest no disponible para tests de performance"
+    fi
+}
+
 # Ejecutar tests de seguridad
 run_security_tests() {
     log_test "Ejecutando tests de seguridad..."
+
+    # Suite de seguridad (Vitest auxiliary)
+    if [ "$VITEST_AVAILABLE" = true ]; then
+        npx vitest run --config "$VITEST_AUX_CONFIG" tests/security || {
+            log_warning "Tests de seguridad (Vitest) fallaron"
+        }
+    else
+        log_warning "Vitest no disponible para tests de seguridad"
+    fi
     
     # Tests con eslint security
     if npm list eslint-plugin-security --depth=0 &>/dev/null; then
@@ -343,6 +345,21 @@ run_security_tests() {
     fi
     
     log_success "Tests de seguridad completados"
+}
+
+# Ejecutar tests de contratos (Vitest auxiliary)
+run_contract_tests() {
+    log_test "Ejecutando tests de contratos OpenAPI (Vitest auxiliary)..."
+
+    if [ "$VITEST_AVAILABLE" = true ]; then
+        npx vitest run --config "$VITEST_AUX_CONFIG" tests/api-contracts || {
+            log_error "Tests de contratos fallaron"
+            return 1
+        }
+        log_success "Tests de contratos completados"
+    else
+        log_warning "Vitest no disponible para tests de contratos"
+    fi
 }
 
 # Generar reporte de cobertura
@@ -420,8 +437,10 @@ show_help() {
     echo "  unit        - Solo tests unitarios"
     echo "  integration - Tests de integración"
     echo "  e2e         - Tests End-to-End"
-    echo "  load        - Tests de carga"
+    echo "  load        - Tests de carga (Artillery/k6)"
+    echo "  performance - Tests de performance (Vitest auxiliary)"
     echo "  security    - Tests de seguridad"
+    echo "  contracts   - Tests de contratos OpenAPI"
     echo "  all         - Todos los tests (default)"
     echo ""
     echo "Parámetros:"
@@ -459,10 +478,23 @@ main() {
             setup_test_environment
             run_load_tests
             ;;
+        "performance")
+            show_banner
+            setup_test_environment
+            check_testing_dependencies
+            run_performance_tests
+            ;;
         "security")
             show_banner
             setup_test_environment
+            check_testing_dependencies
             run_security_tests
+            ;;
+        "contracts")
+            show_banner
+            setup_test_environment
+            check_testing_dependencies
+            run_contract_tests
             ;;
         "all")
             show_banner
@@ -474,8 +506,10 @@ main() {
             run_unit_tests || log_error "Tests unitarios fallaron"
             run_integration_tests || log_error "Tests de integración fallaron"
             run_e2e_tests || log_error "Tests E2E fallaron"
+            run_performance_tests || log_warning "Tests de performance fallaron"
             run_load_tests || log_warning "Tests de carga fallaron"
             run_security_tests || log_warning "Tests de seguridad fallaron"
+            run_contract_tests || log_warning "Tests de contratos fallaron"
             
             generate_coverage_report
             ;;

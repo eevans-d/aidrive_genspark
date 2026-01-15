@@ -4,24 +4,20 @@
 
 ## Descripción
 
-Esta carpeta contiene tests de contratos OpenAPI usando Jest y swagger-parser.  
-**No se ejecutan en CI** hasta completar la migración.
+Esta carpeta contiene tests de contratos OpenAPI migrados a Vitest (mocks locales).  
+Los archivos legacy están desactivados y no se ejecutan en CI.
 
 ## Archivos
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
 | `openapi-compliance.vitest.test.ts` | Validación de contratos (mock, sin red) | Activo |
-| `openapi-compliance.test.js` | Validación Legacy Jest | Legacy |
+| `openapi-compliance.legacy.js` | Validación Legacy | Legacy |
+| `openapi-compliance.test.js` | Stub desactivado (no-op) | Inactivo |
 
 ## Dependencias (tests/package.json)
 
-```json
-{
-  "jest": "^29.7.0",
-  "@apidevtools/swagger-parser": "^10.1.0"
-}
-```
+El runner Jest fue retirado; se mantienen librerías auxiliares para validación local.
 
 ## Specs OpenAPI del Proyecto
 
@@ -46,7 +42,8 @@ RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... API_PROVEEDOR_SECRET=
 ## Plan de Migración
 
 1. Vitest con mocks locales (completado en `openapi-compliance.vitest.test.ts`).
-2. Mantener archivo Jest como referencia legacy.
+2. Mantener archivo legacy (`openapi-compliance.legacy.js`) como referencia.
+3. Mantener `openapi-compliance.test.js` como stub desactivado (sin ejecución).
 3. Agregar validación real vs endpoints cuando haya credenciales.
 
 ## Alternativas Recomendadas

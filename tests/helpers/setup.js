@@ -1,9 +1,8 @@
 /**
- * TESTING SUITE SETUP
- * Configuración global y utilities para el sistema de testing
+ * LEGACY TESTING SETUP (Jest)
+ * Archivo de referencia legacy; no es usado por Vitest.
  */
 
-// Jest setup global
 const { jest } = require('@jest/globals');
 
 // Configuración global de testing

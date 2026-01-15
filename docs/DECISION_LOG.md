@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-13  
+**Última actualización:** 2026-01-15  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |

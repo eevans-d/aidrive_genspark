@@ -5,7 +5,8 @@
 - `tests/performance/` (Vitest mock) — habilitar con `npm run test:performance`.
 - `tests/security/` (Vitest mock) — habilitar con `npm run test:security`.
 - `tests/api-contracts/` (Vitest mock) — habilitar con `npm run test:contracts`.
-- Archivos `*.test.js` en estas carpetas son legacy Jest y no se ejecutan por defecto.
+- Archivos `*.legacy.js` son referencias legacy (no se ejecutan por defecto).
+- Archivos `*.test.js` restantes están desactivados (stubs sin ejecución).
 
 ## Cómo ejecutarlas (sin red ni credenciales)
 ```bash

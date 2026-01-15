@@ -29,6 +29,11 @@ npx vitest run    # Tests unitarios (Vitest)
 pnpm deploy:prod  # Deploy producción (delega a ../deploy.sh)
 ```
 
+### Fuentes de verdad
+- Plan vigente: `docs/ROADMAP.md`
+- Decisiones: `docs/DECISION_LOG.md`
+- Estado y evidencia: `docs/CHECKLIST_CIERRE.md`
+
 ---
 
 ## 📁 Estructura del Proyecto

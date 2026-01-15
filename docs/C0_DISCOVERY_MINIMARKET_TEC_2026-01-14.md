@@ -2,6 +2,7 @@
 
 **Dominio:** TEC (Software)  
 **Nivel MPC:** Intermedio  
+**Fecha:** 2026-01-15  
 **Fuentes:** docs/INVENTARIO_ACTUAL.md, docs/BASELINE_TECNICO.md, docs/ESTADO_ACTUAL.md, docs/ROADMAP.md, docs/DECISION_LOG.md, docs/CHECKLIST_CIERRE.md  
 **Estado:** Draft (sin credenciales productivas)
 

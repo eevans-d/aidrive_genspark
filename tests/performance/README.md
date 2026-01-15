@@ -4,25 +4,18 @@
 
 ## Descripción
 
-Esta carpeta contiene tests de performance usando Jest y Artillery.  
-**No se ejecutan en CI** hasta completar la migración.
+Esta carpeta contiene tests de performance migrados a Vitest (mocks locales).  
+Los archivos legacy Jest fueron retirados y no se ejecutan en CI.
 
 ## Archivos
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
 | `load-testing.vitest.test.ts` | Suite migrada a Vitest (mock, sin red) | Activo |
-| `load-testing.test.js` | Legacy Jest (no se ejecuta) | Legacy |
 
 ## Dependencias (tests/package.json)
 
-```json
-{
-  "jest": "^29.7.0",
-  "artillery": "^2.0.0",
-  "artillery-plugin-expect": "^2.2.0"
-}
-```
+El runner Jest fue retirado; se mantienen librerías auxiliares para benchmarks.
 
 ## Ejecución (mock, sin red)
 
@@ -42,8 +35,7 @@ RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:performa
 ## Plan de Migración
 
 1. Vitest con mocks locales (completado en `load-testing.vitest.test.ts`).
-2. Mantener `load-testing.test.js` como referencia legacy (no se ejecuta por config).
-3. Para carga real: mover a k6/Artillery con entorno controlado y credenciales.
+2. Para carga real: mover a k6/Artillery con entorno controlado y credenciales.
 
 ## Notas
 

@@ -1,4 +1,4 @@
-# INVENTARIO ACTUAL (v5 - 2026-01-12)
+# INVENTARIO ACTUAL (v5 - 2026-01-15)
 
 **Estado:** Plan histórico no completado ⚠️  
 **Plan vigente:** ver `docs/ROADMAP.md`
@@ -95,9 +95,10 @@
 - **Total: 8 E2E frontend pasando** ✅ (`pnpm test:e2e:frontend`)
 
 Suites legacy (desactivadas de CI - ver README en cada carpeta):
-- `tests/performance/load-testing.test.js` → pendiente migración
-- `tests/security/security-tests.test.js` → pendiente migración
-- `tests/api-contracts/openapi-compliance.test.js` → pendiente migración
+- `tests/performance/load-testing.vitest.test.ts` → migrado (mock)
+- `tests/security/security.vitest.test.ts` → migrado (mock)
+- `tests/api-contracts/openapi-compliance.vitest.test.ts` → migrado (mock)
+- Legacy de referencia: `tests/security/security-tests.legacy.js`, `tests/api-contracts/openapi-compliance.legacy.js`, `tests/api-contracts/openapi-compliance.test.js`, `tests/security/security-tests.test.js`
 
 ---
 

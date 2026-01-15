@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-12  
+**Fecha:** 2026-01-15  
 **Estado:** ⚠️ Plan NO completado (verificado)
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
@@ -31,17 +31,21 @@ Pendientes críticos detectados:
 ---
 
 ## Estado por fase (verificado)
+**Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).
 
 ### F0: Gobierno y Baseline
 - [x] Objetivos y KPIs definidos (`docs/OBJETIVOS_Y_KPIS.md`)
 - [x] Inventario actualizado (`docs/INVENTARIO_ACTUAL.md`)
 - [x] Baseline técnico documentado (`docs/BASELINE_TECNICO.md`)
+- [x] Risk/Stakeholders/Comms refrescados (2026-01-15) → `docs/C0_RISK_REGISTER_MINIMARKET_TEC.md`, `docs/C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `docs/C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`
+- [x] Retiro Jest legacy verificado (rg "jest" solo en legacy/helpers): `tests/security/*.legacy.js`, `tests/api-contracts/*.legacy.js`, `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts` (referencias históricas)
+- [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
 - [x] Migraciones versionadas aplicadas
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
-- [ ] **Auditoría RLS completa** → ⚠️ PENDIENTE POR CREDENCIALES
+- [ ] **Auditoría RLS completa** → ⚠️ BLOQUEADO POR CREDENCIALES
   - Checklist preparado: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
   - Script de validación: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
   - Tablas P0 sin verificar: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`
@@ -63,6 +67,16 @@ Pendientes críticos detectados:
   - Captura de `relrowsecurity=true` y `relforcerowsecurity=true` en tablas sensibles.
   - Grants efectivos por rol (`anon`, `authenticated`, roles app).
   - Resultado de consultas de ejemplo: SELECT sobre tabla P0 con/ sin RLS (esperar 0 filas para `anon`).
+
+### E3: Datos y Seguridad (bloqueado por credenciales)
+- [ ] WS3.1 Verificar migraciones en staging/prod → ⚠️ BLOQUEADO POR CREDENCIALES
+  - Evidencia preparada: migraciones en `supabase/migrations/` (9 archivos) y checklist en `docs/CHECKLIST_CIERRE.md`.
+- [ ] WS3.2 Rollback documentado → referencia en `docs/DEPLOYMENT_GUIDE.md` (revisar/actualizar al habilitar credenciales).
+- [ ] WS7.1 Auditoría RLS P0 → `docs/AUDITORIA_RLS_CHECKLIST.md` + `scripts/rls_audit.sql` listos.
+- [ ] WS7.2 Escaneo dependencias → pendiente (requiere tokens/entorno).
+- [x] WS7.3/WS7.4 Hardening por env (read modes + CORS) verificados en código:
+  - `API_PROVEEDOR_READ_MODE` y `SCRAPER_READ_MODE` presentes.
+  - `ALLOWED_ORIGINS` en gateway y funciones.
 
 ### F2: Shared Libs
 - [x] `_shared/cors.ts` - Headers CORS unificados
@@ -109,6 +123,16 @@ Pendientes críticos detectados:
 - [ ] Logging estructurado con requestId/jobId/runId (parcial; cron auxiliares pendientes)
 - [ ] Métricas básicas: duración, errores, items procesados (cron jobs listos; falta cobertura total)
 - [x] Logs guardan en `cron_jobs_execution_log` (payload validado runtime)
+  - Evidencia: `rg -n "console\." supabase/functions` solo muestra `cron-testing-suite` y `_shared/logger.ts`.
+  - Evidencia: `rg -n "console\." supabase/functions/{api-proveedor,scraper-maxiconsumo,cron-jobs-maxiconsumo}` no devuelve coincidencias.
+
+### E4: Producto y UX (WS5)
+- [x] WS5.3 Conteo Dashboard con `count` real (`head: true`) → `minimarket-system/src/pages/Dashboard.tsx`.
+- [x] WS5.4 Movimiento de depósito atómico vía RPC → `minimarket-system/src/pages/Deposito.tsx` (`sp_movimiento_inventario`).
+- [x] WS5.5 Paginación + select mínimo → `Productos.tsx`, `Stock.tsx`, `Proveedores.tsx` con `range()` y `count: 'exact'`.
+- [x] WS5.6 Decisión de caching documentada → DECISION_LOG D-021 (caching diferido).
+- [x] WS5.2 Error boundaries y fallback UI → `minimarket-system/src/main.tsx` + `src/components/ErrorBoundary.tsx`.
+- [x] WS9.1 Alertas proactivas de stock → `supabase/functions/alertas-stock/index.ts`.
 
 ### WS1: Inventario y migración de logs
 - [x] WS1.0.1 Inventario `console.log|console.error` en `supabase/functions` (2026-01-09).
@@ -123,12 +147,14 @@ Pendientes críticos detectados:
 - [x] WS2.1.1 Script: `scripts/run-integration-tests.sh` ejecuta `supabase start` + `supabase db reset`.
 - [x] WS2.1.2 Config: `vitest.integration.config.ts` + tests/integration en Vitest; comando `npm run test:integration`.
 - [x] WS2.1 Evidencia: `npm run test:integration` OK (31/31).
+  - Evidencia: `scripts/run-integration-tests.sh --dry-run` valida prerequisitos sin ejecutar.
 
 ### WS2: Smoke tests E2E mínimos
 - [x] WS2.2.1 Tests de endpoints críticos (`status`, `precios`, `alertas`) en `tests/e2e/api-proveedor.smoke.test.ts`.
 - [x] WS2.2.2 Cron smoke (`maintenance_cleanup` + insert en `cron_jobs_execution_log`) en `tests/e2e/cron.smoke.test.ts`.
 - [x] Runner E2E: `scripts/run-e2e-tests.sh` + comando `npm run test:e2e`.
 - [x] WS2.2 Evidencia: `npm run test:e2e` OK (4/4).
+  - Evidencia: `scripts/run-e2e-tests.sh --dry-run` valida prerequisitos sin ejecutar.
 
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
@@ -152,6 +178,14 @@ Pendientes críticos detectados:
   - `pagination.ts` (96 líneas) - parsePagination, buildRangeHeader
   - `supabase.ts` (205 líneas) - createClient, queryTable, callFunction
 - [x] Tests: 46 nuevos tests para helpers gateway ✅
+
+### E5: Cierre y Transferencia (WS8/C4)
+- [x] WS8.1 Arquitectura actualizada → `docs/ARCHITECTURE_DOCUMENTATION.md` (2026-01-15).
+- [x] WS8.2 Fuentes de verdad referenciadas → `README.md` y `.github/copilot-instructions.md`.
+- [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-15).
+- [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
+- [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
+- [ ] Cierre final bloqueado por credenciales (RLS/migraciones) → mantener estado NO completado.
 
 ---
 
@@ -214,17 +248,21 @@ tests/e2e/                # (manual via workflow_dispatch)
 ├── api-proveedor.smoke.test.ts
 └── cron.smoke.test.ts
 
-tests/performance/        # (legacy Jest - desactivado)
-├── README.md             # NUEVO - nota de estado
-└── load-testing.test.js
+tests/performance/        # (Vitest mock)
+├── README.md             # Nota de estado
+└── load-testing.vitest.test.ts
 
-tests/security/           # (legacy Jest - desactivado)
-├── README.md             # NUEVO - nota de estado
-└── security-tests.test.js
+tests/security/           # (Vitest mock + legacy)
+├── README.md             # Nota de estado
+├── security.vitest.test.ts
+└── security-tests.legacy.js
+└── security-tests.test.js # Stub desactivado (no-op)
 
-tests/api-contracts/      # (legacy Jest - desactivado)
-├── README.md             # NUEVO - nota de estado
-└── openapi-compliance.test.js
+tests/api-contracts/      # (Vitest mock + legacy)
+├── README.md             # Nota de estado
+├── openapi-compliance.vitest.test.ts
+└── openapi-compliance.legacy.js
+└── openapi-compliance.test.js # Stub desactivado (no-op)
 
 .github/workflows/
 └── ci.yml                # Pipeline con jobs gated
@@ -238,7 +276,7 @@ tests/api-contracts/      # (legacy Jest - desactivado)
 1. **Aumentar coverage**: Objetivo 80% en módulos críticos (actual ~70%)
 2. ~~**CI**: integrar `test:integration` y `test:e2e` en pipeline (WS6.1)~~ ✅ COMPLETADO
 3. **Observabilidad**: cerrar validación runtime de alertas/comparaciones (WS4.1)
-4. **Migrar suites Jest legacy** a Vitest (performance, security, api-contracts)
+4. **Retiro de stubs legacy** si se desea limpieza total (opcional)
 
 ### Mediano plazo (1-2 meses)
 1. **Refactor cron auxiliares**: Consolidar si hay duplicación
