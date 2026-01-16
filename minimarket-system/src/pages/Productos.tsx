@@ -56,7 +56,8 @@ export default function Productos() {
 
       setTotalProductos(count ?? 0)
 
-      if (productosData) {
+      if (productosData && productosData.length > 0) {
+        const productoIds = productosData.map((prod) => prod.id)
         const proveedorIds = Array.from(
           new Set(
             productosData
@@ -65,6 +66,7 @@ export default function Productos() {
           )
         )
 
+        // Batch query: Cargar todos los proveedores en 1 consulta
         let proveedoresMap: Record<string, Proveedor> = {}
         if (proveedorIds.length > 0) {
           const { data: proveedoresData, error: proveedoresError } = await supabase
@@ -79,31 +81,40 @@ export default function Productos() {
           )
         }
 
-        // Cargar historial de precios
-        const productosConDatos = await Promise.all(
-          productosData.map(async (prod) => {
-            const { data: historial, error: historialError } = await supabase
-              .from('precios_historicos')
-              .select('id,producto_id,precio,fuente,fecha,cambio_porcentaje')
-              .eq('producto_id', prod.id)
-              .order('fecha', { ascending: false })
-              .limit(5)
+        // Batch query: Cargar historial de precios para TODOS los productos en 1 consulta
+        // Esto elimina el problema N+1 (antes: N consultas, ahora: 1 consulta)
+        let historialPorProducto: Record<string, PrecioHistoricoResumen[]> = {}
+        const { data: historialData, error: historialError } = await supabase
+          .from('precios_historicos')
+          .select('id,producto_id,precio,fuente,fecha,cambio_porcentaje')
+          .in('producto_id', productoIds)
+          .order('fecha', { ascending: false })
 
-            if (historialError) {
-              console.error('Error cargando historial:', historialError)
-            }
+        if (historialError) {
+          console.error('Error cargando historial:', historialError)
+        } else if (historialData) {
+          // Agrupar historial por producto_id y limitar a 5 por producto
+          historialPorProducto = historialData.reduce<Record<string, PrecioHistoricoResumen[]>>(
+            (acc, item) => {
+              const key = item.producto_id
+              if (!acc[key]) acc[key] = []
+              if (acc[key].length < 5) { // Limitar a 5 registros por producto
+                acc[key].push(item)
+              }
+              return acc
+            },
+            {}
+          )
+        }
 
-            const proveedor = prod.proveedor_principal_id
-              ? proveedoresMap[prod.proveedor_principal_id]
-              : undefined
-
-            return {
-              ...prod,
-              historial: historial || [],
-              proveedor
-            }
-          })
-        )
+        // Combinar datos sin consultas adicionales
+        const productosConDatos = productosData.map((prod) => ({
+          ...prod,
+          historial: historialPorProducto[prod.id] || [],
+          proveedor: prod.proveedor_principal_id
+            ? proveedoresMap[prod.proveedor_principal_id]
+            : undefined
+        }))
 
         setProductos(productosConDatos)
         setSelectedProducto((prev) => {
@@ -193,9 +204,8 @@ export default function Productos() {
                   <div
                     key={producto.id}
                     onClick={() => setSelectedProducto(producto)}
-                    className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                      selectedProducto?.id === producto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                    }`}
+                    className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${selectedProducto?.id === producto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                      }`}
                   >
                     <div className="flex justify-between items-start">
                       <div className="flex-1">
@@ -212,9 +222,8 @@ export default function Productos() {
                           ${producto.precio_actual?.toFixed(2)}
                         </div>
                         {tendencia && (
-                          <div className={`flex items-center text-sm ${
-                            tendencia === 'subida' ? 'text-red-600' : 'text-green-600'
-                          }`}>
+                          <div className={`flex items-center text-sm ${tendencia === 'subida' ? 'text-red-600' : 'text-green-600'
+                            }`}>
                             {tendencia === 'subida' ? (
                               <TrendingUp className="w-4 h-4 mr-1" />
                             ) : (
@@ -310,9 +319,8 @@ export default function Productos() {
                             )}
                           </div>
                           {precio.cambio_porcentaje !== null && precio.cambio_porcentaje !== 0 && (
-                            <div className={`flex items-center ${
-                              precio.cambio_porcentaje > 0 ? 'text-red-600' : 'text-green-600'
-                            }`}>
+                            <div className={`flex items-center ${precio.cambio_porcentaje > 0 ? 'text-red-600' : 'text-green-600'
+                              }`}>
                               {precio.cambio_porcentaje > 0 ? (
                                 <TrendingUp className="w-4 h-4 mr-1" />
                               ) : (
