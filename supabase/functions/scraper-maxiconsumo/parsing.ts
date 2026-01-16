@@ -9,11 +9,12 @@ import type { ProductoMaxiconsumo, StructuredLog } from './types.ts';
 const logger = createLogger('scraper-maxiconsumo:parsing');
 
 // Marcas conocidas
+// Marcas conocidas ordenadas por longitud descendente para evitar partial matching incorrecto
 const MARCAS_CONOCIDAS = [
-  'Coca Cola', 'Pepsi', 'Fernet', 'Fernandez', 'Corona', 'Quilmes',
-  'Ledesma', 'Nestlé', 'Arcor', 'Bagley', 'Jorgito', 'Ser',
-  'Eden', 'Alcazar', 'La Serenísima', 'Tregar', 'Danone',
-  'Ala', 'Ariel', 'Drive', 'Harina', 'Aceite', 'Arroz'
+  'La Serenísima', 'Coca Cola', 'Fernandez', 'Ledesma', 'Jorgito',
+  'Quilmes', 'Nestlé', 'Fernet', 'Corona', 'Bagley', 'Alcazar',
+  'Tregar', 'Danone', 'Aceite', 'Harina', 'Pepsi', 'Arcor',
+  'Ariel', 'Drive', 'Eden', 'Ser', 'Ala', 'Arroz'
 ];
 
 export function extraerMarcaDelNombre(nombre: string): string {
@@ -77,7 +78,7 @@ export async function extractProductosConOptimizacion(
         const nombre = match[1].trim().replace(/&[a-zA-Z0-9#]+;/g, ' ');
         const precio = parseFloat(match[2].replace(/[^\d.,]/g, '').replace(',', '.'));
         const sku = match[3]?.trim() || generarSKU(nombre, categoria);
-        
+
         if (nombre && precio > 0 && precio < 100000) {
           productos.push({
             sku,
@@ -103,7 +104,7 @@ export async function extractProductosConOptimizacion(
 export function extraerProductosConRegex(html: string, categoria: string, urlBase: string): ProductoMaxiconsumo[] {
   const productos: ProductoMaxiconsumo[] = [];
   const pattern = /<div[^>]*class="[^"]*producto[^"]*"[^>]*>.*?<h3[^>]*>(.*?)<\/h3>.*?<span[^>]*class="precio[^"]*">.*?(\d+[\.,]\d+).*?<\/span>.*?sku["']?\s*:?\s*["']?([^"'\s]+)["']?.*?<\/div>/gs;
-  
+
   let match;
   while ((match = pattern.exec(html)) !== null) {
     try {

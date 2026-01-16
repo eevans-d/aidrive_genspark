@@ -39,7 +39,7 @@ export interface CookieJarConfig {
 /**
  * Flag para habilitar cookie jar (default: false)
  */
-export const ENABLE_COOKIE_JAR = Deno.env.get('ENABLE_COOKIE_JAR') === 'true';
+export const ENABLE_COOKIE_JAR = typeof Deno !== 'undefined' && Deno?.env?.get('ENABLE_COOKIE_JAR') === 'true';
 
 /**
  * Configuración por defecto del cookie jar
@@ -93,9 +93,9 @@ export function parseSetCookieHeader(setCookieHeader: string): Cookie | null {
   try {
     const parts = setCookieHeader.split(';').map(p => p.trim());
     const [nameValue, ...attributes] = parts;
-    
+
     if (!nameValue || !nameValue.includes('=')) return null;
-    
+
     const eqIndex = nameValue.indexOf('=');
     const name = nameValue.substring(0, eqIndex).trim();
     const value = nameValue.substring(eqIndex + 1).trim();
@@ -146,7 +146,7 @@ export function storeCookiesFromResponse(url: string, response: Response): void 
   if (!host) return;
 
   const setCookieHeaders = response.headers.getSetCookie?.() || [];
-  
+
   if (setCookieHeaders.length === 0) return;
 
   if (!cookieStore.has(host)) {
@@ -165,7 +165,7 @@ export function storeCookiesFromResponse(url: string, response: Response): void 
         const firstKey = hostCookies.keys().next().value;
         if (firstKey) hostCookies.delete(firstKey);
       }
-      
+
       hostCookies.set(cookie.name, cookie);
       storedCount++;
     }
@@ -216,7 +216,7 @@ export function getCookiesForRequest(url: string): string {
 export function clearCookiesForHost(host: string): void {
   cookieStore.delete(host);
   lastUpdated.delete(host);
-  
+
   logger.info('COOKIES_CLEARED', { host });
 }
 
@@ -227,7 +227,7 @@ export function clearAllCookies(): void {
   const hostCount = cookieStore.size;
   cookieStore.clear();
   lastUpdated.clear();
-  
+
   logger.info('ALL_COOKIES_CLEARED', { hostsCleared: hostCount });
 }
 

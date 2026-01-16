@@ -1,0 +1,56 @@
+
+[1m[46m RUN [49m[22m [36mv4.0.16 [39m[90m/home/eevan/ProyectosIA/aidrive_genspark[39m
+
+ [31m❯[39m tests/unit/scraper-parsing-edge-cases.test.ts [2m([22m[2m26 tests[22m[2m | [22m[31m1 failed[39m[2m)[22m[32m 42[2mms[22m[39m
+       [32m✓[39m genera hash consistente para mismo contenido[32m 6[2mms[22m[39m
+       [32m✓[39m genera hashes diferentes para contenido diferente[32m 2[2mms[22m[39m
+       [32m✓[39m maneja string vacío[32m 1[2mms[22m[39m
+       [32m✓[39m maneja caracteres unicode[32m 1[2mms[22m[39m
+       [32m✓[39m genera hash de longitud fija (SHA-256 = 64 chars hex)[32m 1[2mms[22m[39m
+       [32m✓[39m retorna array vacío para HTML vacío[32m 1[2mms[22m[39m
+       [32m✓[39m retorna array vacío para HTML solo con espacios[32m 1[2mms[22m[39m
+       [32m✓[39m retorna array vacío para HTML sin productos[32m 0[2mms[22m[39m
+       [32m✓[39m maneja HTML con tags incompletos[32m 0[2mms[22m[39m
+       [32m✓[39m maneja HTML con entidades mal formadas[32m 1[2mms[22m[39m
+       [32m✓[39m extrae productos de HTML con formato mínimo[32m 0[2mms[22m[39m
+       [32m✓[39m maneja precios con formato argentino (coma decimal)[32m 0[2mms[22m[39m
+       [32m✓[39m ignora precios fuera de rango (> 100000)[32m 0[2mms[22m[39m
+       [32m✓[39m limita a 1000 productos máximo[32m 14[2mms[22m[39m
+       [32m✓[39m retorna array vacío para HTML vacío[32m 1[2mms[22m[39m
+       [32m✓[39m retorna array vacío para HTML sin patrón reconocible[32m 0[2mms[22m[39m
+       [32m✓[39m maneja patrón alternativo como fallback[32m 0[2mms[22m[39m
+       [32m✓[39m maneja caracteres de control[32m 0[2mms[22m[39m
+       [32m✓[39m maneja strings muy largos eficientemente[32m 0[2mms[22m[39m
+[31m       [31m×[31m detecta La Serenísima con tilde[39m[32m 7[2mms[22m[39m
+       [32m✓[39m detecta Coca Cola[32m 0[2mms[22m[39m
+       [32m✓[39m detecta Arcor case-insensitive[32m 0[2mms[22m[39m
+       [32m✓[39m retorna primera palabra si marca no conocida[32m 0[2mms[22m[39m
+       [32m✓[39m trunca primera palabra a 20 chars[32m 0[2mms[22m[39m
+       [32m✓[39m máximo score posible es 100[32m 0[2mms[22m[39m
+       [32m✓[39m mínimo score posible es 0[32m 0[2mms[22m[39m
+
+[31m⎯⎯⎯⎯⎯⎯⎯[39m[1m[41m Failed Tests 1 [49m[22m[31m⎯⎯⎯⎯⎯⎯⎯[39m
+
+[41m[1m FAIL [22m[49m tests/unit/scraper-parsing-edge-cases.test.ts[2m > [22mscraper-maxiconsumo/parsing - casos borde adicionales[2m > [22mextraerMarcaDelNombre - marcas conocidas[2m > [22mdetecta La Serenísima con tilde
+[31m[1mAssertionError[22m: expected 'Ser' to be 'La Serenísima' // Object.is equality[39m
+
+Expected: [32m"La Serenísima"[39m
+Received: [31m"Ser"[39m
+
+[36m [2m❯[22m tests/unit/scraper-parsing-edge-cases.test.ts:[2m149:40[22m[39m
+    [90m147| [39m                [34mit[39m([32m'detecta La Serenísima con tilde'[39m[33m,[39m () [33m=>[39m {
+    [90m148| [39m                        const result = extraerMarcaDelNombre('La Seren…
+    [90m149| [39m                        [34mexpect[39m(result)[33m.[39m[34mtoBe[39m([32m'La Serenísima'[39m)[33m;[39m
+    [90m   | [39m                                       [31m^[39m
+    [90m150| [39m                })[33m;[39m
+    [90m151| [39m
+
+[31m[2m⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯[22m[39m
+
+
+[2m Test Files [22m [1m[31m1 failed[39m[22m[90m (1)[39m
+[2m      Tests [22m [1m[31m1 failed[39m[22m[2m | [22m[1m[32m25 passed[39m[22m[90m (26)[39m
+[2m   Start at [22m 05:22:29
+[2m   Duration [22m 332ms[2m (transform 94ms, setup 0ms, import 116ms, tests 42ms, environment 0ms)[22m
+
+JUNIT report written to /home/eevan/ProyectosIA/aidrive_genspark/test-reports/junit.xml
