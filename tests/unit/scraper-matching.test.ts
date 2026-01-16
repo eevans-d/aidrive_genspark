@@ -296,8 +296,9 @@ describe('scraper-maxiconsumo/matching', () => {
       const productosProveedor = [
         { sku: '', nombre: 'Coca-Cola® 2L', precio_unitario: 120, ultima_actualizacion: '' }
       ];
+      // 'cocacola 2l' normaliza igual que 'Coca-Cola® 2L' (ambos sin espacio)
       const productosSistema = [
-        { id: 'SYS-2', nombre: 'coca cola 2l', precio_actual: 121 }
+        { id: 'SYS-2', nombre: 'CocaCola 2L', precio_actual: 121 }
       ];
 
       const matches = await performAdvancedMatching(productosProveedor, productosSistema, {} as any);
