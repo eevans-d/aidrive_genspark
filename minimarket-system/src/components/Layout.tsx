@@ -1,7 +1,17 @@
-import { ReactNode } from 'react'
+import { ReactNode, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
+import { useUserRole } from '../hooks/useUserRole'
+import { UserRole } from '../lib/roles'
+
+interface NavItem {
+  path: string
+  icon: LucideIcon
+  label: string
+  /** Roles que pueden ver este item. Si está vacío, todos pueden ver */
+  allowedRoles: UserRole[]
+}
 
 interface LayoutProps {
   children: ReactNode
@@ -10,15 +20,27 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, signOut } = useAuth()
+  const { role, canAccess } = useUserRole()
 
-  const navItems = [
-    { path: '/', icon: Home, label: 'Dashboard' },
-    { path: '/deposito', icon: Warehouse, label: 'Depósito' },
-    { path: '/stock', icon: Package, label: 'Stock' },
-    { path: '/tareas', icon: CheckSquare, label: 'Tareas' },
-    { path: '/productos', icon: ShoppingCart, label: 'Productos' },
-    { path: '/proveedores', icon: Users, label: 'Proveedores' },
+  // Configuración de navegación con roles
+  const allNavItems: NavItem[] = [
+    { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
+    { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
+    { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] }, // Todos
+    { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
+    { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
+    { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
   ]
+
+  // Filtrar items según el rol del usuario
+  const navItems = useMemo(() => {
+    return allNavItems.filter(item => {
+      // Si no hay roles especificados, todos pueden ver
+      if (item.allowedRoles.length === 0) return true
+      // Verificar si el usuario tiene acceso
+      return canAccess(item.path)
+    })
+  }, [role])
 
   async function handleSignOut() {
     try {
@@ -64,16 +86,15 @@ export default function Layout({ children }: LayoutProps) {
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
-              
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${
-                    isActive
+                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
                       ? 'bg-blue-50 text-blue-700 font-medium'
                       : 'text-gray-700 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5" />
                   <span>{item.label}</span>
@@ -89,16 +110,15 @@ export default function Layout({ children }: LayoutProps) {
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
-              
+
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-colors ${
-                    isActive
+                  className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-colors ${isActive
                       ? 'bg-blue-50 text-blue-700'
                       : 'text-gray-600 hover:bg-gray-100'
-                  }`}
+                    }`}
                 >
                   <Icon className="w-5 h-5 mb-1" />
                   <span className="text-xs">{item.label}</span>
