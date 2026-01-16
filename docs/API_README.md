@@ -107,12 +107,104 @@ curl -i -X OPTIONS "$BASE_URL/categorias" \
 - [ ] 404 con `NOT_FOUND` para rutas inexistentes
 - [ ] OPTIONS devuelve 204 (sin body)
 
-### Modo sin credenciales (`.env.test` pendiente)
-- Tests permitidos: `npm run test:unit`.
-- Validar prerequisitos sin arrancar Supabase:  
-  `bash scripts/run-e2e-tests.sh --dry-run`  
-  `bash scripts/run-integration-tests.sh --dry-run`
-- E2E/integración bloqueados hasta contar con `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `API_PROVEEDOR_SECRET` en `.env.test`.
+---
+
+## 🧪 Modo Sin Credenciales (Desarrollo Local)
+
+Esta sección documenta cómo trabajar con el proyecto sin acceso a credenciales de Supabase.
+
+### ¿Qué puedo hacer sin credenciales?
+
+| Acción | Comando | Disponible |
+|--------|---------|------------|
+| Tests unitarios | `npm run test:unit` | ✅ Sí |
+| Tests Vitest completos | `npx vitest run tests/unit/` | ✅ Sí |
+| Tests auxiliares (mock) | `npm run test:auxiliary` | ✅ Sí |
+| Build frontend | `cd minimarket-system && pnpm build` | ✅ Sí |
+| Lint | `cd minimarket-system && pnpm lint` | ✅ Sí |
+| Verificar prereqs E2E | `bash scripts/run-e2e-tests.sh --dry-run` | ✅ Sí |
+| Verificar prereqs integration | `bash scripts/run-integration-tests.sh --dry-run` | ✅ Sí |
+| E2E frontend (Playwright + mocks) | `cd minimarket-system && pnpm test:e2e:frontend` | ✅ Sí |
+| Tests de integración reales | `npm run test:integration` | ❌ Requiere `.env.test` |
+| E2E smoke real | `npm run test:e2e` | ❌ Requiere `.env.test` |
+| Scraping real | Llamar a api-proveedor | ❌ Requiere credenciales |
+
+### Flujos Dry-Run
+
+Los scripts de tests soportan `--dry-run` para validar configuración sin ejecutar tests reales:
+
+```bash
+# Verificar que Supabase CLI está instalado y configurado
+bash scripts/run-integration-tests.sh --dry-run
+
+# Verificar prerequisitos de E2E
+bash scripts/run-e2e-tests.sh --dry-run
+```
+
+**Output esperado (dry-run exitoso):**
+```
+✅ Prerequisitos verificados:
+  - Node.js: OK
+  - npm: OK
+  - Supabase CLI: OK (o warning si falta)
+  - .env.test: MISSING (esperado sin credenciales)
+⏭️ Dry-run completado. Para ejecutar tests reales, configure .env.test
+```
+
+### Configuración de `.env.test` (cuando obtienes credenciales)
+
+```bash
+# 1. Copiar template
+cp .env.test.example .env.test
+
+# 2. Iniciar Supabase local
+supabase start
+
+# 3. Obtener credenciales locales
+supabase status
+# Copiar valores:
+# - API URL → SUPABASE_URL
+# - Publishable key → SUPABASE_ANON_KEY  
+# - Secret key → SUPABASE_SERVICE_ROLE_KEY
+
+# 4. Editar .env.test con los valores
+nano .env.test
+
+# 5. Ejecutar tests reales
+npm run test:integration
+npm run test:e2e
+```
+
+### Variables de Entorno Requeridas
+
+| Variable | Descripción | Requerido para |
+|----------|-------------|----------------|
+| `SUPABASE_URL` | URL de Supabase | Integration, E2E |
+| `SUPABASE_ANON_KEY` | Public anon key | Integration, E2E |
+| `SUPABASE_SERVICE_ROLE_KEY` | Service role key | E2E |
+| `API_PROVEEDOR_SECRET` | Secret compartido | api-proveedor |
+
+### Comandos de Desarrollo Sin Credenciales
+
+```bash
+# 1. Tests unitarios (siempre funcionan)
+npm run test:unit
+
+# 2. Tests con coverage
+npx vitest run tests/unit/ --coverage
+
+# 3. Tests auxiliares (performance/security/contracts con mocks)
+npm run test:auxiliary
+
+# 4. E2E frontend con mocks (Playwright)
+cd minimarket-system && pnpm test:e2e:frontend
+
+# 5. Build frontend (usa variables VITE_ o placeholders)
+cd minimarket-system && pnpm build
+
+# 6. Dev server (funciona con mocks habilitados)
+cd minimarket-system && VITE_USE_MOCKS=true pnpm dev
+```
 
 ---
 
