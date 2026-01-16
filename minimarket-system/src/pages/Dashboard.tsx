@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { TareaPendiente, StockDeposito, Producto } from '../types/database'
 import { AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react'
+import { ErrorMessage, parseErrorMessage, detectErrorType, ErrorType } from '../components/ErrorMessage'
 
 export default function Dashboard() {
   const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
@@ -9,12 +10,17 @@ export default function Dashboard() {
   const [totalProductos, setTotalProductos] = useState<number>(0)
   const [tareasUrgentes, setTareasUrgentes] = useState<number>(0)
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [errorType, setErrorType] = useState<ErrorType>('generic')
 
   useEffect(() => {
     loadDashboardData()
   }, [])
 
   async function loadDashboardData() {
+    setLoading(true)
+    setError(null)
+
     try {
       // Cargar tareas pendientes
       const { data: tareas } = await supabase
@@ -49,8 +55,10 @@ export default function Dashboard() {
 
       setTotalProductos(count ?? 0)
 
-    } catch (error) {
-      console.error('Error cargando dashboard:', error)
+    } catch (err) {
+      console.error('Error cargando dashboard:', err)
+      setError(parseErrorMessage(err))
+      setErrorType(detectErrorType(err))
     } finally {
       setLoading(false)
     }
@@ -60,6 +68,20 @@ export default function Dashboard() {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Cargando...</div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <ErrorMessage
+          message={error}
+          type={errorType}
+          onRetry={loadDashboardData}
+          isRetrying={loading}
+        />
       </div>
     )
   }
@@ -124,13 +146,12 @@ export default function Dashboard() {
               {tareasPendientes.map((tarea) => (
                 <div
                   key={tarea.id}
-                  className={`p-4 rounded-lg border-l-4 ${
-                    tarea.prioridad === 'urgente'
+                  className={`p-4 rounded-lg border-l-4 ${tarea.prioridad === 'urgente'
                       ? 'border-red-500 bg-red-50'
                       : tarea.prioridad === 'normal'
-                      ? 'border-yellow-500 bg-yellow-50'
-                      : 'border-blue-500 bg-blue-50'
-                  }`}
+                        ? 'border-yellow-500 bg-yellow-50'
+                        : 'border-blue-500 bg-blue-50'
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
@@ -144,13 +165,12 @@ export default function Dashboard() {
                       </div>
                     </div>
                     <span
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${
-                        tarea.prioridad === 'urgente'
+                      className={`px-3 py-1 rounded-full text-xs font-medium ${tarea.prioridad === 'urgente'
                           ? 'bg-red-100 text-red-800'
                           : tarea.prioridad === 'normal'
-                          ? 'bg-yellow-100 text-yellow-800'
-                          : 'bg-blue-100 text-blue-800'
-                      }`}
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-blue-100 text-blue-800'
+                        }`}
                     >
                       {tarea.prioridad.toUpperCase()}
                     </span>

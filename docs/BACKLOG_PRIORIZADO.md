@@ -33,7 +33,7 @@
 | P1-03 | Agregaciones de stock en DB | 4 | 3 | 3 | 4.0 | RPC/vistas | DB | Pendiente |
 | P1-04 | Error UI + reintentos simples | 3 | 2 | 4 | 6.0 | None | Frontend | Pendiente |
 | P1-05 | Capa de datos con caching (React Query/SWR) | 4 | 3 | 3 | 4.0 | N/A | Frontend | Pendiente |
-| P1-06 | ErrorBoundary seguro (sin stack en prod) | 3 | 1 | 3 | 9.0 | None | Frontend | Pendiente |
+| P1-06 | ErrorBoundary seguro (sin stack en prod) | 3 | 1 | 3 | 9.0 | None | Frontend | ✅ Completado (2026-01-16) |
 | P1-07 | Menu y rutas por rol | 3 | 2 | 3 | 4.5 | Roles | Frontend | Pendiente |
 | P1-08 | Refactor gateway monolitico | 4 | 4 | 2 | 2.0 | Router | Backend | ✅ Completado (helpers modularizados) |
 | P1-09 | Adoptar _shared/response en gateway | 2 | 1 | 3 | 6.0 | None | Backend | Pendiente |
@@ -49,9 +49,9 @@
 | P2-09 | Notificaciones de tareas | 3 | 3 | 2 | 2.0 | Cron/edge | Backend | Pendiente |
 | P2-10 | Observabilidad UI (errores/reporting) | 2 | 2 | 2 | 2.0 | Sentry | Frontend/Ops | Pendiente |
 | P3-01 | Limpieza de docs divergentes | 2 | 3 | 1 | 0.7 | Docs | Docs | Pendiente |
-| DOC-01 | Reporte de análisis final (solo lectura) | 4 | 2 | 4 | 8.0 | Ninguna | Docs | Completado (2026-01-15) |
-| DOC-02 | API_README con flujo dry-run y sin claves | 3 | 1 | 4 | 12.0 | Ninguna | Docs | Pendiente |
-| TEST-01 | Unit tests extra parsers/routers/cache | 4 | 2 | 3 | 6.0 | Ninguna | Backend/QA | Pendiente |
+| DOC-01 | Reporte de análisis final (solo lectura) | 4 | 2 | 4 | 8.0 | Ninguna | Docs | ✅ Completado (2026-01-15) |
+| DOC-02 | API_README con flujo dry-run y sin claves | 3 | 1 | 4 | 12.0 | Ninguna | Docs | ✅ Completado (2026-01-16) |
+| TEST-01 | Unit tests extra parsers/routers/cache | 4 | 2 | 3 | 6.0 | Ninguna | Backend/QA | ✅ Completado (2026-01-16) |
 
 ---
 
