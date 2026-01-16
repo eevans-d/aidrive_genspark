@@ -227,6 +227,20 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 📋 Endpoints Principales
 
+### Reposición y Alertas
+```bash
+GET /reposicion-sugerida           # Sugerencias de reposición
+  # Query params:
+  #   - dias_analisis: Días para calcular rotación (default: 30)
+  #   - umbral_reposicion: % de stock mínimo (default: 100)
+  #   - incluir_proximo: Incluir próximos al umbral (default: true)
+  
+GET /alertas-vencimientos          # Alertas de vencimientos
+  # Query params:
+  #   - warning_days: Días de advertencia (default: 30)
+  #   - urgent_days: Días urgentes (default: 7)
+```
+
 ### Categorías
 ```bash
 GET /categorias                    # Listar todas

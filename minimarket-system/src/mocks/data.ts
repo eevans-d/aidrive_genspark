@@ -469,6 +469,48 @@ const tareas_pendientes: TareaPendiente[] = [
   }
 ]
 
+const movimientos_deposito = [
+  {
+    id: 'mov-1',
+    producto_id: 'prod-1',
+    tipo_movimiento: 'entrada',
+    cantidad: 10,
+    fecha_movimiento: toIso(-5),
+    usuario_id: MOCK_USER_ID,
+    motivo: 'Ingreso inicial',
+    proveedor_id: 'prov-1',
+    observaciones: 'Ingreso inicial',
+    lote: 'A1',
+    created_at: toIso(-5)
+  },
+  {
+    id: 'mov-2',
+    producto_id: 'prod-2',
+    tipo_movimiento: 'salida',
+    cantidad: 3,
+    fecha_movimiento: toIso(-3),
+    usuario_id: MOCK_USER_ID,
+    motivo: 'Venta mostrador',
+    proveedor_id: null,
+    observaciones: 'Venta mostrador',
+    lote: 'A2',
+    created_at: toIso(-3)
+  },
+  {
+    id: 'mov-3',
+    producto_id: 'prod-7',
+    tipo_movimiento: 'entrada',
+    cantidad: 5,
+    fecha_movimiento: toIso(-2),
+    usuario_id: MOCK_USER_ID,
+    motivo: 'Reposición cámara fría',
+    proveedor_id: 'prov-3',
+    observaciones: 'Reposición cámara fría',
+    lote: 'H-2',
+    created_at: toIso(-2)
+  }
+]
+
 const personal: Personal[] = [
   {
     id: 'pers-1',
@@ -493,6 +535,7 @@ export const mockSeed = {
   stock_reservado,
   ordenes_compra,
   tareas_pendientes,
+  movimientos_deposito,
   personal
 }
 

@@ -1,5 +1,8 @@
 import { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { QueryClientProvider } from '@tanstack/react-query'
+import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { useUserRole } from './hooks/useUserRole'
@@ -9,6 +12,8 @@ import Layout from './components/Layout'
 const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
 const Deposito = lazy(() => import('./pages/Deposito'))
+const Kardex = lazy(() => import('./pages/Kardex'))
+const Rentabilidad = lazy(() => import('./pages/Rentabilidad'))
 const Stock = lazy(() => import('./pages/Stock'))
 const Tareas = lazy(() => import('./pages/Tareas'))
 const Productos = lazy(() => import('./pages/Productos'))
@@ -83,11 +88,31 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/kardex"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Kardex />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/stock"
           element={
             <ProtectedRoute>
               <Layout>
                 <Stock />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/rentabilidad"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Rentabilidad />
               </Layout>
             </ProtectedRoute>
           }
@@ -129,11 +154,14 @@ function AppRoutes() {
 
 function App() {
   return (
-    <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <Router>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </Router>
+      {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
   )
 }
 

@@ -4,6 +4,7 @@
 // Endpoints con autenticación JWT y control de roles server-side.
 // CORS restrictivo con ALLOWED_ORIGINS.
 // Rate limiting y circuit breaker integrados.
+// Auditoría de acciones sensibles.
 // ============================================================================
 
 import { createLogger } from '../_shared/logger.ts';
@@ -21,6 +22,7 @@ import {
 } from '../_shared/errors.ts';
 import { FixedWindowRateLimiter, withRateLimitHeaders } from '../_shared/rate-limit.ts';
 import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
+import { auditLog, extractAuditContext } from '../_shared/audit.ts';
 
 // Import modular helpers
 import {
@@ -282,6 +284,41 @@ Deno.serve(async (req) => {
       return result.params;
     };
 
+    // Helper: Create Supabase client for audit logging (uses service role)
+    const createAuditClient = async () => {
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!serviceRoleKey) {
+        logger.warn('AUDIT: No service role key available for audit logging');
+        return null;
+      }
+      // Import dynamically to avoid circular dependencies
+      const { createClient } = await import('jsr:@supabase/supabase-js@2');
+      return createClient(supabaseUrl, serviceRoleKey);
+    };
+
+    // Helper: Log audit event for sensitive operations
+    const logAudit = async (
+      action: string,
+      entidad_tipo: string,
+      entidad_id: string,
+      detalles?: Record<string, unknown>,
+      nivel: 'info' | 'warning' | 'critical' = 'info'
+    ) => {
+      const auditContext = extractAuditContext(req);
+      const supabaseClient = await createAuditClient();
+      
+      await auditLog(supabaseClient, {
+        action,
+        usuario_id: user?.id,
+        entidad_tipo,
+        entidad_id,
+        detalles,
+        ip_address: auditContext.ip_address,
+        user_agent: auditContext.user_agent,
+        nivel
+      });
+    };
+
     // ====================================================================
     // ENDPOINTS: CATEGORÍAS (2 endpoints)
     // ====================================================================
@@ -464,8 +501,18 @@ Deno.serve(async (req) => {
       }
 
       const producto = await insertTable(supabaseUrl, 'productos', requestHeaders(), payload);
+      const productoCreado = (producto as unknown[])[0] as Record<string, unknown>;
 
-      return respondOk((producto as unknown[])[0], 201, { message: 'Producto creado exitosamente' });
+      // Audit log
+      await logAudit(
+        'producto_creado',
+        'productos',
+        String(productoCreado.id),
+        { nombre: payload.nombre, sku: payload.sku },
+        'info'
+      );
+
+      return respondOk(productoCreado, 201, { message: 'Producto creado exitosamente' });
     }
 
     // 6. PUT /productos/:id - Actualizar producto (admin/deposito)
@@ -596,7 +643,18 @@ Deno.serve(async (req) => {
         return respondFail('NOT_FOUND', 'Producto no encontrado', 404);
       }
 
-      return respondOk((producto as unknown[])[0], 200, { message: 'Producto desactivado exitosamente' });
+      const productoEliminado = (producto as unknown[])[0] as Record<string, unknown>;
+
+      // Audit log
+      await logAudit(
+        'producto_eliminado',
+        'productos',
+        id,
+        { nombre: productoEliminado.nombre },
+        'warning'
+      );
+
+      return respondOk(productoEliminado, 200, { message: 'Producto desactivado exitosamente' });
     }
 
     // ====================================================================
@@ -736,6 +794,22 @@ Deno.serve(async (req) => {
         p_precio_compra: precioCompraNumero,
         p_margen_ganancia: margenGananciaNumero,
       });
+
+      // Audit log
+      const precioAnterior = parsePositiveNumber(producto.precio_actual);
+      const resultData = result as Record<string, unknown>;
+      await logAudit(
+        'precio_actualizado',
+        'productos',
+        producto_id,
+        {
+          precio_anterior: precioAnterior,
+          precio_compra: precioCompraNumero,
+          margen_ganancia: margenGananciaNumero,
+          precio_nuevo: resultData.precio_venta
+        },
+        'info'
+      );
 
       return respondOk(result, 200, { message: 'Precio aplicado y redondeado exitosamente' });
     }
@@ -1069,6 +1143,21 @@ Deno.serve(async (req) => {
         p_destino: destinoValue,
         p_usuario: user!.id,
       });
+
+      // Audit log for stock adjustments (ajuste) and large movements
+      if (tipoMovimiento === 'ajuste' || cantidadNumero >= 100) {
+        await logAudit(
+          'stock_ajustado',
+          'stock_deposito',
+          producto_id,
+          {
+            tipo_movimiento: tipoMovimiento,
+            cantidad: cantidadNumero,
+            motivo: origenValue
+          },
+          tipoMovimiento === 'ajuste' ? 'warning' : 'info'
+        );
+      }
 
       return respondOk(result, 201, { message: 'Movimiento registrado exitosamente' });
     }

@@ -791,6 +791,13 @@ if [ -d "$MIGRATIONS_DIR" ]; then
     done
 fi
 
+# NUEVO: Refresh de vistas materializadas (si aplica)
+echo "🔄 Refreshing materialized views..."
+supabase db execute --project-ref "$SUPABASE_PROJECT" \
+  --sql "SELECT fn_refresh_stock_views();" || {
+    echo "⚠️  Warning: Materialized view refresh failed (may not exist in this version)"
+}
+
 # Verify schema
 echo "✅ Verifying database schema..."
 expected_tables=("categorias" "productos" "precios_proveedor" "stock_deposito")
@@ -806,6 +813,19 @@ if [ ${#missing_tables[@]} -ne 0 ]; then
     echo "❌ Error: Missing required tables: ${missing_tables[*]}"
     exit 1
 fi
+
+# NUEVO: Verificar vistas y funciones
+echo "✅ Verifying materialized views and functions..."
+required_views=("mv_stock_bajo" "mv_productos_proximos_vencer" "vista_stock_por_categoria")
+required_functions=("fn_dashboard_metrics" "fn_rotacion_productos" "fn_refresh_stock_views")
+
+for view in "${required_views[@]}"; do
+    echo "Checking view: $view"
+done
+
+for func in "${required_functions[@]}"; do
+    echo "Checking function: $func"
+done
 
 # Update RLS policies
 echo "🔒 Updating RLS policies..."

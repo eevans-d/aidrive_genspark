@@ -1,5 +1,6 @@
 import React from 'react';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { reportError } from '../lib/observability';
 
 /**
  * Determina si estamos en modo desarrollo
@@ -65,7 +66,15 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
       console.error('[ErrorBoundary] Error capturado:', error);
       console.error('[ErrorBoundary] Component stack:', errorInfo.componentStack);
     }
-    // TODO: Integrar con servicio de observabilidad cuando esté disponible
+    reportError({
+      error,
+      errorId: this.state.errorId,
+      source: 'ErrorBoundary',
+      context: {
+        componentStack: errorInfo.componentStack,
+        route: window.location.pathname,
+      },
+    });
   }
 
   handleRetry = () => {

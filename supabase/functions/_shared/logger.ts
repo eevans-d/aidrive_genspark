@@ -62,5 +62,6 @@ export function createLogger(scope: string, baseMeta: LogMeta = {}) {
     info: (message: string, meta?: LogMeta) => log('info', message, meta),
     warn: (message: string, meta?: LogMeta) => log('warn', message, meta),
     error: (message: string, meta?: LogMeta) => log('error', message, meta),
+    audit: (action: string, meta?: LogMeta) => log('info', `[AUDIT] ${action}`, meta),
   };
 }

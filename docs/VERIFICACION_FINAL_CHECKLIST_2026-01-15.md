@@ -41,6 +41,15 @@
 - [x] Actualizar CHECKLIST_CIERRE con estado real
 - [x] Re-ejecutar checks críticos
 
+## V7 — Verificación Extendida (2026-01-16)
+- [x] Revisar diffs recientes (frontend + edge functions + migrations)
+- [x] Validar CORS/response en funciones nuevas y refactorizadas
+- [x] Corregir inconsistencias detectadas (imports/async helpers)
+- [x] Build frontend (pnpm build) sin errores
+- [x] Tests unitarios (vitest) completos
+- [x] Documentación actualizada (BACKLOG, API_README, ESQUEMA, DEPLOYMENT)
+- [x] Checklist actualizado con verificación extendida
+
 ---
 
 # Planificación Definitiva Final (Código Real)

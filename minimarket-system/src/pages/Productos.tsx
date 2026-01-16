@@ -32,6 +32,8 @@ export default function Productos() {
   const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
   const [totalProductos, setTotalProductos] = useState(0)
+  const [barcodeInput, setBarcodeInput] = useState('')
+  const [barcodeSearch, setBarcodeSearch] = useState('')
   const pageSize = 20
 
   const loadProductos = useCallback(async () => {
@@ -39,10 +41,13 @@ export default function Productos() {
       setLoading(true)
       setError(null)
 
+      const trimmedBarcode = barcodeSearch.trim()
+      const isBarcodeSearch = trimmedBarcode.length > 0
+
       const from = (page - 1) * pageSize
       const to = from + pageSize - 1
 
-      const { data: productosData, count, error: productosError } = await supabase
+      let query = supabase
         .from('productos')
         .select(
           'id,nombre,categoria,codigo_barras,precio_actual,precio_costo,proveedor_principal_id,margen_ganancia',
@@ -50,7 +55,14 @@ export default function Productos() {
         )
         .eq('activo', true)
         .order('nombre')
-        .range(from, to)
+
+      if (isBarcodeSearch) {
+        query = query.eq('codigo_barras', trimmedBarcode).limit(pageSize)
+      } else {
+        query = query.range(from, to)
+      }
+
+      const { data: productosData, count, error: productosError } = await query
 
       if (productosError) throw productosError
 
@@ -118,6 +130,9 @@ export default function Productos() {
 
         setProductos(productosConDatos)
         setSelectedProducto((prev) => {
+          if (isBarcodeSearch) {
+            return productosConDatos[0] || null
+          }
           if (!prev) return null
           return productosConDatos.find((prod) => prod.id === prev.id) || null
         })
@@ -133,17 +148,78 @@ export default function Productos() {
     } finally {
       setLoading(false)
     }
-  }, [page, pageSize])
+  }, [page, pageSize, barcodeSearch])
 
   useEffect(() => {
     loadProductos()
   }, [loadProductos])
 
+  const handleBarcodeSearch = () => {
+    setPage(1)
+    setBarcodeSearch(barcodeInput.trim())
+  }
+
+  const handleBarcodeClear = () => {
+    setPage(1)
+    setBarcodeInput('')
+    setBarcodeSearch('')
+  }
+
+  const handleExportCsv = () => {
+    if (productos.length === 0) return
+
+    const headers = [
+      'id',
+      'nombre',
+      'categoria',
+      'codigo_barras',
+      'precio_actual',
+      'precio_costo',
+      'margen_ganancia',
+      'proveedor',
+    ]
+
+    const rows = productos.map((producto) => [
+      producto.id,
+      producto.nombre,
+      producto.categoria ?? '',
+      producto.codigo_barras ?? '',
+      producto.precio_actual ?? '',
+      producto.precio_costo ?? '',
+      producto.margen_ganancia ?? '',
+      producto.proveedor?.nombre ?? '',
+    ])
+
+    const escapeCell = (value: string | number) => {
+      const raw = String(value)
+      if (raw.includes('"') || raw.includes(',') || raw.includes('\n')) {
+        return `"${raw.replace(/"/g, '""')}"`
+      }
+      return raw
+    }
+
+    const csvContent = [headers, ...rows]
+      .map((row) => row.map(escapeCell).join(','))
+      .join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+
+    link.href = url
+    link.download = `productos_${new Date().toISOString().slice(0, 10)}.csv`
+    document.body.appendChild(link)
+    link.click()
+    document.body.removeChild(link)
+    URL.revokeObjectURL(url)
+  }
+
   if (loading) {
     return <div className="text-center py-8">Cargando...</div>
   }
 
-  const totalPages = Math.max(1, Math.ceil(totalProductos / pageSize))
+  const isBarcodeSearch = barcodeSearch.trim().length > 0
+  const totalPages = isBarcodeSearch ? 1 : Math.max(1, Math.ceil(totalProductos / pageSize))
 
   return (
     <div className="space-y-6">
@@ -161,28 +237,75 @@ export default function Productos() {
         </div>
       )}
 
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <div className="text-sm text-gray-600">
-          Mostrando {productos.length} de {totalProductos} productos
+      <div className="flex flex-col gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="text-sm text-gray-600">
+            Mostrando {productos.length} de {totalProductos} productos
+            {isBarcodeSearch && (
+              <span className="ml-2 text-xs text-blue-600">
+                Filtro por código: {barcodeSearch.trim()}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={handleExportCsv}
+              disabled={loading || productos.length === 0}
+              className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+            >
+              Exportar CSV
+            </button>
+            <button
+              onClick={() => setPage((prev) => Math.max(1, prev - 1))}
+              disabled={page === 1 || loading || isBarcodeSearch}
+              className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+            >
+              Anterior
+            </button>
+            <span className="text-sm text-gray-600">
+              Página {page} de {totalPages}
+            </span>
+            <button
+              onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
+              disabled={page === totalPages || loading || isBarcodeSearch}
+              className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+            >
+              Siguiente
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={page === 1 || loading}
-            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
-          >
-            Anterior
-          </button>
-          <span className="text-sm text-gray-600">
-            Página {page} de {totalPages}
-          </span>
-          <button
-            onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages || loading}
-            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
-          >
-            Siguiente
-          </button>
+
+        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+          <label className="text-sm text-gray-600">Buscar por código de barras</label>
+          <div className="flex flex-1 items-center gap-2">
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Escanear o escribir código"
+              value={barcodeInput}
+              onChange={(e) => setBarcodeInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  handleBarcodeSearch()
+                }
+              }}
+              className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded text-sm"
+            />
+            <button
+              onClick={handleBarcodeSearch}
+              disabled={loading || barcodeInput.trim().length === 0}
+              className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
+            >
+              Buscar
+            </button>
+            <button
+              onClick={handleBarcodeClear}
+              disabled={loading || (!barcodeInput && !barcodeSearch)}
+              className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm disabled:opacity-50"
+            >
+              Limpiar
+            </button>
+          </div>
         </div>
       </div>
 

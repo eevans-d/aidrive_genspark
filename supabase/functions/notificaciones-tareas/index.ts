@@ -1,30 +1,39 @@
 import { createLogger } from '../_shared/logger.ts';
+import {
+    parseAllowedOrigins,
+    validateOrigin,
+    handleCors,
+    createCorsErrorResponse,
+} from '../_shared/cors.ts';
+import { ok, fail } from '../_shared/response.ts';
 
 const logger = createLogger('notificaciones-tareas');
 
 Deno.serve(async (req) => {
-    const corsHeaders = {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
-        'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-        'Access-Control-Max-Age': '86400',
-    };
-
-    if (req.method === 'OPTIONS') {
-        return new Response(null, { status: 200, headers: corsHeaders });
-    }
-
     const url = new URL(req.url);
     const requestId =
         req.headers.get('x-request-id') || crypto.randomUUID?.() || `${Date.now()}-${Math.random()}`;
     const jobId = 'notificaciones-tareas';
     const runId = `run_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+
+    const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
+    const corsResult = validateOrigin(req, allowedOrigins, { 'x-request-id': requestId });
+    let responseHeaders = corsResult.headers;
+
+    if (!corsResult.allowed) {
+        logger.warn('CORS_BLOCKED', { requestId, origin: corsResult.origin });
+        return createCorsErrorResponse(requestId, responseHeaders);
+    }
+
+    const preflightResponse = handleCors(req, responseHeaders);
+    if (preflightResponse) return preflightResponse;
+
     const requestLog = {
         requestId,
         jobId,
         runId,
         method: req.method,
-        path: url.pathname
+        path: url.pathname,
     };
 
     try {
@@ -32,12 +41,24 @@ Deno.serve(async (req) => {
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
         if (!supabaseUrl || !serviceRoleKey) {
-            throw new Error('Configuración de Supabase faltante');
+            return fail(
+                'CONFIG_ERROR',
+                'Configuración de Supabase faltante',
+                500,
+                responseHeaders,
+                { requestId }
+            );
         }
 
-        const refreshStatus = {
+        const commonHeaders = {
+            apikey: serviceRoleKey,
+            Authorization: `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+        };
+
+        const refreshStatus: { refreshed: boolean; error: string | null } = {
             refreshed: false,
-            error: null
+            error: null,
         };
 
         try {
@@ -45,12 +66,8 @@ Deno.serve(async (req) => {
                 `${supabaseUrl}/rest/v1/rpc/refresh_tareas_metricas`,
                 {
                     method: 'POST',
-                    headers: {
-                        'apikey': serviceRoleKey,
-                        'Authorization': `Bearer ${serviceRoleKey}`,
-                        'Content-Type': 'application/json',
-                    }
-                }
+                    headers: commonHeaders,
+                },
             );
 
             if (!refreshResponse.ok) {
@@ -60,114 +77,99 @@ Deno.serve(async (req) => {
 
             refreshStatus.refreshed = true;
         } catch (error) {
-            refreshStatus.error = error.message;
+            refreshStatus.error = error instanceof Error ? error.message : String(error);
         }
 
-        // Obtener tareas pendientes que necesitan notificación
         const tareasResponse = await fetch(
             `${supabaseUrl}/rest/v1/tareas_pendientes?estado=eq.pendiente&select=*`,
             {
-                headers: {
-                    'apikey': serviceRoleKey,
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                }
-            }
+                headers: commonHeaders,
+            },
         );
 
         if (!tareasResponse.ok) {
-            throw new Error('Error al obtener tareas pendientes');
+            const errorBody = await tareasResponse.text();
+            throw new Error(`Error al obtener tareas pendientes: ${errorBody}`);
         }
 
         const tareas = await tareasResponse.json();
-        const notificacionesEnviadas = [];
-        const errores = [];
+        const notificacionesEnviadas: Array<{ tarea: string; asignado_a: string | null; prioridad: string }> = [];
+        const errores: string[] = [];
 
         for (const tarea of tareas) {
             try {
-                // Verificar si ya se envió notificación en las últimas 2 horas
                 const dosHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
-                
+
                 const ultimaNotifResponse = await fetch(
                     `${supabaseUrl}/rest/v1/notificaciones_tareas?tarea_id=eq.${tarea.id}&fecha_envio=gte.${dosHorasAtras}&order=fecha_envio.desc&limit=1`,
                     {
-                        headers: {
-                            'apikey': serviceRoleKey,
-                            'Authorization': `Bearer ${serviceRoleKey}`,
-                        }
-                    }
+                        headers: commonHeaders,
+                    },
                 );
 
                 if (!ultimaNotifResponse.ok) {
-                    throw new Error(`Error al verificar notificaciones de tarea ${tarea.titulo}`);
+                    const errorBody = await ultimaNotifResponse.text();
+                    throw new Error(`Error al verificar notificaciones: ${errorBody}`);
                 }
 
                 const ultimasNotif = await ultimaNotifResponse.json();
 
-                // Si no hay notificación reciente o han pasado más de 2 horas, enviar nueva
                 if (ultimasNotif.length === 0) {
                     const mensaje = `Recordatorio: Tarea "${tarea.titulo}" asignada a ${tarea.asignada_a_nombre || 'ti'}. Prioridad: ${tarea.prioridad}. Vence: ${tarea.fecha_vencimiento ? new Date(tarea.fecha_vencimiento).toLocaleString('es-AR') : 'Sin fecha'}`;
 
-                    // Crear notificación
                     const notifResponse = await fetch(
                         `${supabaseUrl}/rest/v1/notificaciones_tareas`,
                         {
                             method: 'POST',
-                            headers: {
-                                'apikey': serviceRoleKey,
-                                'Authorization': `Bearer ${serviceRoleKey}`,
-                                'Content-Type': 'application/json',
-                            },
+                            headers: commonHeaders,
                             body: JSON.stringify({
                                 tarea_id: tarea.id,
                                 tipo: 'recordatorio_automatico',
-                                mensaje: mensaje,
+                                mensaje,
                                 usuario_destino_nombre: tarea.asignada_a_nombre,
                                 usuario_destino_id: tarea.asignada_a_id,
-                                leido: false
-                            })
-                        }
+                                leido: false,
+                            }),
+                        },
                     );
 
                     if (notifResponse.ok) {
                         notificacionesEnviadas.push({
                             tarea: tarea.titulo,
-                            asignado_a: tarea.asignada_a_nombre,
-                            prioridad: tarea.prioridad
+                            asignado_a: tarea.asignada_a_nombre ?? null,
+                            prioridad: tarea.prioridad,
                         });
                     }
                 }
-
             } catch (error) {
-                errores.push(`Error procesando tarea ${tarea.titulo}: ${error.message}`);
+                const errorMessage = error instanceof Error ? error.message : String(error);
+                errores.push(`Error procesando tarea ${tarea.titulo}: ${errorMessage}`);
             }
         }
 
-        return new Response(JSON.stringify({
-            success: true,
-            data: {
+        return ok(
+            {
                 tareas_procesadas: tareas.length,
                 notificaciones_enviadas: notificacionesEnviadas.length,
                 notificaciones: notificacionesEnviadas,
                 tareas_metricas_refresh: refreshStatus,
-                errores: errores,
-                timestamp: new Date().toISOString()
-            }
-        }), {
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
-
+                errores,
+                timestamp: new Date().toISOString(),
+            },
+            200,
+            responseHeaders,
+            { requestId },
+        );
     } catch (error) {
         const errorMessage = error instanceof Error ? error.message : String(error);
         logger.error('NOTIFICACIONES_ERROR', { ...requestLog, error: errorMessage });
 
-        return new Response(JSON.stringify({
-            error: {
-                code: 'NOTIFICATION_ERROR',
-                message: errorMessage
-            }
-        }), {
-            status: 500,
-            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        });
+        return fail(
+            'NOTIFICATION_ERROR',
+            errorMessage,
+            500,
+            responseHeaders,
+            { requestId },
+        );
     }
 });

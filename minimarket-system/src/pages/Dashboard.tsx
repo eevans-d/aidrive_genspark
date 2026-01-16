@@ -1,70 +1,11 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { TareaPendiente, StockDeposito, Producto } from '../types/database'
 import { AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react'
-import { ErrorMessage, parseErrorMessage, detectErrorType, ErrorType } from '../components/ErrorMessage'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { useDashboardStats } from '../hooks/queries'
 
 export default function Dashboard() {
-  const [tareasPendientes, setTareasPendientes] = useState<TareaPendiente[]>([])
-  const [stockBajo, setStockBajo] = useState<number>(0)
-  const [totalProductos, setTotalProductos] = useState<number>(0)
-  const [tareasUrgentes, setTareasUrgentes] = useState<number>(0)
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [errorType, setErrorType] = useState<ErrorType>('generic')
+  const { data, isLoading, isError, error, refetch, isFetching } = useDashboardStats();
 
-  useEffect(() => {
-    loadDashboardData()
-  }, [])
-
-  async function loadDashboardData() {
-    setLoading(true)
-    setError(null)
-
-    try {
-      // Cargar tareas pendientes
-      const { data: tareas } = await supabase
-        .from('tareas_pendientes')
-        .select('*')
-        .eq('estado', 'pendiente')
-        .order('prioridad', { ascending: false })
-        .limit(5)
-
-      if (tareas) {
-        setTareasPendientes(tareas)
-        setTareasUrgentes(tareas.filter(t => t.prioridad === 'urgente').length)
-      }
-
-      // Cargar stock
-      const { data: stock } = await supabase
-        .from('stock_deposito')
-        .select('cantidad_actual,stock_minimo')
-        .limit(10)
-
-      if (stock) {
-        const stockBajoCount = stock.filter(
-          (s: StockDeposito) => s.cantidad_actual <= s.stock_minimo
-        ).length
-        setStockBajo(stockBajoCount)
-      }
-
-      // Cargar total de productos
-      const { count } = await supabase
-        .from('productos')
-        .select('id', { count: 'exact', head: true })
-
-      setTotalProductos(count ?? 0)
-
-    } catch (err) {
-      console.error('Error cargando dashboard:', err)
-      setError(parseErrorMessage(err))
-      setErrorType(detectErrorType(err))
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  if (loading) {
+  if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="text-gray-500">Cargando...</div>
@@ -72,19 +13,27 @@ export default function Dashboard() {
     )
   }
 
-  if (error) {
+  if (isError) {
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
         <ErrorMessage
-          message={error}
-          type={errorType}
-          onRetry={loadDashboardData}
-          isRetrying={loading}
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
         />
       </div>
     )
   }
+
+  // Destructure con defaults seguros
+  const {
+    tareasPendientes = [],
+    tareasUrgentes = 0,
+    stockBajo = 0,
+    totalProductos = 0,
+  } = data ?? {};
 
   return (
     <div className="space-y-6">

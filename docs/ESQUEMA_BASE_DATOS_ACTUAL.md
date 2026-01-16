@@ -463,17 +463,151 @@
 - [ ] Índices estadísticos
 
 ### FASE 5: Funciones y Triggers
+- [x] sp_aplicar_precio() ✅ (Implementado)
+- [x] sp_movimiento_inventario() ✅ (Implementado)
+- [x] fn_dashboard_metrics() ✅ (2026-01-16 - Agregaciones optimizadas)
+- [x] fn_rotacion_productos() ✅ (2026-01-16 - Análisis de rotación)
+- [x] fn_refresh_stock_views() ✅ (2026-01-16 - Refresh de vistas materializadas)
 - [ ] fnc_precio_vigente()
-- [ ] sp_aplicar_precio()
 - [ ] fnc_stock_disponible()
 - [ ] Triggers de auditoría automática
 - [ ] Triggers de updated_at
 
 ### FASE 6: Vistas
+- [x] mv_stock_bajo ✅ (2026-01-16 - Vista materializada con refresh cada hora)
+- [x] mv_productos_proximos_vencer ✅ (2026-01-16 - Vista materializada para alertas)
+- [x] vista_stock_por_categoria ✅ (2026-01-16 - Vista agregada en tiempo real)
+- [x] vista_cron_jobs_dashboard ✅ (Existente - Monitoreo de cron jobs)
+- [x] vista_cron_jobs_metricas_semanales ✅ (Existente)
+- [x] vista_cron_jobs_alertas_activas ✅ (Existente)
 - [ ] v_inventario_actual
-- [ ] v_stock_minimos
 - [ ] v_kpis_operativos
-- [ ] Vistas materializadas
+
+---
+
+## 🔄 Vistas Materializadas (Nuevas - 2026-01-16)
+
+### mv_stock_bajo
+**Propósito:** Optimiza consultas de productos con stock por debajo del mínimo  
+**Refresh:** Cada 1 hora vía `fn_refresh_stock_views()`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| stock_id | UUID | ID del registro en stock_deposito |
+| producto_id | UUID | FK a productos |
+| producto_nombre | TEXT | Nombre del producto |
+| sku | TEXT | SKU del producto |
+| codigo_barras | TEXT | Código de barras |
+| categoria_id | UUID | FK a categorias |
+| categoria_nombre | TEXT | Nombre de la categoría |
+| cantidad_actual | INTEGER | Stock actual |
+| stock_minimo | INTEGER | Stock mínimo configurado |
+| stock_maximo | INTEGER | Stock máximo configurado |
+| nivel_stock | TEXT | 'sin_stock' \| 'critico' \| 'bajo' \| 'normal' |
+| porcentaje_stock_minimo | NUMERIC | % de stock respecto al mínimo |
+| deposito_id | UUID | FK a depositos |
+| ultima_actualizacion | TIMESTAMPTZ | Última modificación del stock |
+
+**Índices:**
+- `idx_mv_stock_bajo_stock_id` (UNIQUE)
+- `idx_mv_stock_bajo_producto_id`
+- `idx_mv_stock_bajo_nivel`
+- `idx_mv_stock_bajo_categoria`
+
+### mv_productos_proximos_vencer
+**Propósito:** Alertas de vencimiento (productos con vencimiento en próximos 60 días)  
+**Refresh:** Cada 6 horas vía `fn_refresh_stock_views()`
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| stock_id | UUID | ID del registro en stock_deposito |
+| producto_id | UUID | FK a productos |
+| producto_nombre | TEXT | Nombre del producto |
+| sku | TEXT | SKU del producto |
+| codigo_barras | TEXT | Código de barras |
+| lote | TEXT | Lote del producto |
+| fecha_vencimiento | DATE | Fecha de vencimiento |
+| cantidad_actual | INTEGER | Stock actual del lote |
+| dias_hasta_vencimiento | INTEGER | Días restantes hasta vencimiento |
+| nivel_alerta | TEXT | 'vencido' \| 'urgente' \| 'proximo' \| 'normal' |
+| deposito_id | UUID | FK a depositos |
+| ultima_actualizacion | TIMESTAMPTZ | Última modificación del stock |
+
+**Índices:**
+- `idx_mv_vencimiento_stock_id` (UNIQUE)
+- `idx_mv_vencimiento_producto_id`
+- `idx_mv_vencimiento_nivel`
+- `idx_mv_vencimiento_fecha`
+
+### vista_stock_por_categoria
+**Propósito:** Resumen agregado de stock por categoría (vista normal, siempre actualizada)  
+**Tipo:** Vista estándar (no materializada)
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| categoria_id | UUID | ID de la categoría |
+| categoria_nombre | TEXT | Nombre de la categoría |
+| total_productos | BIGINT | Total de productos en la categoría |
+| productos_con_stock | BIGINT | Productos con stock > 0 |
+| productos_stock_bajo | BIGINT | Productos con stock < mínimo |
+| cantidad_total_stock | BIGINT | Suma de todas las cantidades |
+| cantidad_stock_bajo | BIGINT | Suma de cantidades en stock bajo |
+| valor_inventario_total | NUMERIC | Valor total del inventario (precio_compra * cantidad) |
+
+---
+
+## 📊 Funciones RPC (Nuevas - 2026-01-16)
+
+### fn_dashboard_metrics(p_deposito_id uuid)
+**Propósito:** Métricas agregadas para el dashboard en una sola llamada  
+**Tipo:** STABLE, SECURITY DEFINER  
+**Rendimiento:** Reemplaza 7 queries individuales
+
+**Retorna:**
+```sql
+TABLE (
+  metric_name text,      -- 'total_productos', 'stock_bajo', etc.
+  metric_value bigint,   -- Valor numérico
+  metric_label text      -- Descripción legible
+)
+```
+
+**Métricas incluidas:**
+- `total_productos` - Productos activos
+- `stock_bajo` - Productos con stock < mínimo
+- `sin_stock` - Productos con cantidad = 0
+- `proximos_vencer` - Productos que vencen en 30 días
+- `vencidos` - Productos ya vencidos
+- `total_categorias` - Categorías activas
+- `total_proveedores` - Proveedores activos
+
+### fn_rotacion_productos(p_dias integer, p_limite integer)
+**Propósito:** Análisis de rotación de productos para reposición inteligente  
+**Tipo:** STABLE, SECURITY DEFINER  
+**Parámetros:**
+- `p_dias` (default: 30) - Período de análisis
+- `p_limite` (default: 100) - Máximo de resultados
+
+**Retorna:**
+```sql
+TABLE (
+  producto_id uuid,
+  producto_nombre text,
+  sku text,
+  total_salidas bigint,
+  total_ventas bigint,
+  promedio_diario numeric,
+  dias_analisis integer,
+  stock_actual bigint,
+  dias_cobertura numeric,     -- Días hasta stockout
+  nivel_rotacion text         -- 'alta'|'media'|'baja'|'sin_movimiento'
+)
+```
+
+### fn_refresh_stock_views()
+**Propósito:** Actualiza vistas materializadas (para cron)  
+**Tipo:** SECURITY DEFINER  
+**Uso:** `SELECT fn_refresh_stock_views();`
 
 ---
 

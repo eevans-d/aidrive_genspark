@@ -1,6 +1,6 @@
 import { ReactNode, useMemo } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
@@ -26,6 +26,8 @@ export default function Layout({ children }: LayoutProps) {
   const allNavItems: NavItem[] = [
     { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
     { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
+    { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
+    { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
     { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] }, // Todos
     { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
     { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
@@ -106,7 +108,7 @@ export default function Layout({ children }: LayoutProps) {
 
         {/* Bottom Navigation - Solo en móvil */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-          <div className="grid grid-cols-6 gap-1 p-2">
+          <div className="grid grid-cols-8 gap-1 p-2">
             {navItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path

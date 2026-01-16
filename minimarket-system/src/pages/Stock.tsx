@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../lib/supabase'
 import { StockDeposito, Producto, StockReservado, OrdenCompra } from '../types/database'
-import { Package, AlertTriangle } from 'lucide-react'
+import { Package, AlertTriangle, Download } from 'lucide-react'
 
 interface StockConProducto extends StockDeposito {
   producto?: Producto
@@ -103,16 +103,73 @@ export default function Stock() {
     return 'normal'
   }
 
+  const handleExportCsv = () => {
+    if (stockFiltrado.length === 0) return
+
+    const headers = [
+      'producto',
+      'lote',
+      'ubicacion',
+      'cantidad_actual',
+      'reservado',
+      'disponible',
+      'transito',
+      'stock_minimo',
+      'stock_maximo',
+      'estado',
+    ]
+
+    const escapeCell = (value: string | number) => {
+      const raw = String(value)
+      if (raw.includes('"') || raw.includes(',') || raw.includes('\n')) {
+        return `"${raw.replace(/"/g, '""')}"`
+      }
+      return raw
+    }
+
+    const rows = stockFiltrado.map((item) => {
+      const nivel = getNivelStock(item)
+      return [
+        item.producto?.nombre ?? 'Producto desconocido',
+        item.lote ?? '',
+        item.ubicacion ?? '',
+        item.cantidad_actual,
+        item.reservado,
+        item.disponible,
+        item.transito,
+        item.stock_minimo,
+        item.stock_maximo ?? '',
+        nivel,
+      ]
+    })
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map((row) => row.map(escapeCell).join(',')),
+    ].join('\n')
+
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+    const url = URL.createObjectURL(blob)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `stock_${filtro}_${new Date().toISOString().slice(0, 10)}.csv`
+    link.click()
+    URL.revokeObjectURL(url)
+  }
+
   if (loading) {
     return <div className="text-center py-8">Cargando...</div>
   }
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">Control de Stock</h1>
-        
-        <div className="flex gap-2">
+      <div className="flex flex-col gap-4 sm:flex-row sm:justify-between sm:items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Control de Stock</h1>
+          <p className="text-gray-500">Exporta el stock filtrado en CSV.</p>
+        </div>
+
+        <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFiltro('todos')}
             className={`px-4 py-2 rounded-lg ${
@@ -136,6 +193,13 @@ export default function Stock() {
             }`}
           >
             Crítico (página: {stock.filter(s => s.disponible === 0).length})
+          </button>
+          <button
+            onClick={handleExportCsv}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+          >
+            <Download className="w-4 h-4" />
+            Exportar CSV
           </button>
         </div>
       </div>
