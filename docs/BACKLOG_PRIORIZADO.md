@@ -27,12 +27,12 @@
 | P0-01 | Fix conteo Dashboard | 5 | 1 | 5 | 25.0 | None | Frontend | Completado (usa count=exact) |
 | P0-02 | Deposito atomico via RPC | 5 | 2 | 5 | 12.5 | DB/RPC | Frontend/DB | Completado (sp_movimiento_inventario) |
 | P0-03 | Gateway sin service role + CORS restringido + rate limit | 5 | 2 | 5 | 12.5 | Env vars | Backend | ✅ Completado |
-| P0-04 | Validacion de rol server-side (no metadata) | 5 | 3 | 4 | 6.7 | Tabla roles | Backend/DB | Pendiente |
+| P0-04 | Validacion de rol server-side (no metadata) | 5 | 3 | 4 | 6.7 | Tabla roles | Backend/DB | ✅ Completado (2026-01-17, useVerifiedRole desde tabla personal) |
 | P1-01 | Eliminar N+1 Productos/Proveedores | 4 | 3 | 4 | 5.3 | Vistas/RPC | Frontend/DB | ✅ Completado (2026-01-16) |
 | P1-02 | Paginacion y filtros server-side | 4 | 3 | 4 | 5.3 | API/query | Frontend | Completado (range + count exact) |
 | P1-03 | Agregaciones de stock en DB | 4 | 3 | 3 | 4.0 | RPC/vistas | DB | ✅ Completado (2026-01-16, vistas materializadas + RPCs) |
 | P1-04 | Error UI + reintentos simples | 3 | 2 | 4 | 6.0 | None | Frontend | ✅ Completado (2026-01-16) |
-| P1-05 | Capa de datos con caching (React Query/SWR) | 4 | 3 | 3 | 4.0 | N/A | Frontend | ✅ Completado (2026-01-16) |
+| P1-05 | Capa de datos con caching (React Query/SWR) | 4 | 3 | 3 | 4.0 | N/A | Frontend | ✅ Completado (2026-01-17, 8 hooks: Dashboard, Productos, Proveedores, Stock, Tareas, Kardex, Rentabilidad, Deposito) |
 | P1-06 | ErrorBoundary seguro (sin stack en prod) | 3 | 1 | 3 | 9.0 | None | Frontend | ✅ Completado (2026-01-16) |
 | P1-07 | Menu y rutas por rol | 3 | 2 | 3 | 4.5 | Roles | Frontend | ✅ Completado (2026-01-16) |
 | P1-08 | Refactor gateway monolitico | 4 | 4 | 2 | 2.0 | Router | Backend | ✅ Completado (helpers modularizados) |

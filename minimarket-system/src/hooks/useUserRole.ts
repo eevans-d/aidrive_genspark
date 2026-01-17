@@ -1,14 +1,16 @@
 import { useMemo } from 'react';
-import { useAuth } from './useAuth';
+import { useVerifiedRole } from './useVerifiedRole';
 import {
         UserRole,
-        extractUserRole,
         canAccessRoute,
         getRoutesForRole
 } from '../lib/roles';
 
 /**
  * Hook para obtener el rol del usuario actual y verificar permisos
+ * 
+ * SEGURIDAD: Ahora usa useVerifiedRole() que obtiene el rol desde
+ * la tabla `personal` en la base de datos, NO desde user_metadata.
  * 
  * @example
  * ```tsx
@@ -20,11 +22,8 @@ import {
  * ```
  */
 export function useUserRole() {
-        const { user, loading } = useAuth();
-
-        const role = useMemo<UserRole>(() => {
-                return extractUserRole(user);
-        }, [user]);
+        // Usar el rol verificado desde la base de datos
+        const { role, loading, error, refetch } = useVerifiedRole();
 
         const allowedRoutes = useMemo(() => {
                 return getRoutesForRole(role);
@@ -39,10 +38,12 @@ export function useUserRole() {
         const isVentas = role === 'ventas' || role === 'deposito' || role === 'admin';
 
         return {
-                /** Rol del usuario actual */
+                /** Rol del usuario actual (verificado desde DB) */
                 role,
-                /** Si está cargando el usuario */
+                /** Si está cargando el usuario/rol */
                 loading,
+                /** Error al cargar el rol */
+                error,
                 /** Verifica si puede acceder a una ruta */
                 canAccess,
                 /** Rutas permitidas para este rol */
@@ -53,6 +54,8 @@ export function useUserRole() {
                 isDeposito,
                 /** Es ventas o superior */
                 isVentas,
+                /** Refetch del rol desde la base de datos */
+                refetch,
         };
 }
 

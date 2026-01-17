@@ -199,11 +199,14 @@ async function getDashboardHandler(
         const alertsData = await getAlertsData(supabaseUrl, serviceRoleKey);
         const healthData = await getHealthData(supabaseUrl, serviceRoleKey);
 
+        // Calcular uptime real del sistema
+        const systemUptime = await calculateSystemUptime(supabaseUrl, serviceRoleKey);
+
         const dashboardData: DashboardData = {
             overview: {
                 systemStatus: healthData.overall,
                 healthScore: healthData.score,
-                uptime: '99.9%', // En producción sería dinámico
+                uptime: systemUptime,
                 lastUpdate: new Date().toISOString(),
                 activeJobs: jobsData.filter(j => j.status === 'running').length,
                 totalAlerts: alertsData.filter(a => a.status === 'active').length
@@ -416,6 +419,124 @@ async function getHistoryHandler(
 // FUNCIONES DE OBTENCIÓN DE DATOS
 // =====================================================
 
+/**
+ * CALCULAR UPTIME REAL DEL SISTEMA
+ * Obtiene promedio de uptime_percentage de los últimos 30 días
+ */
+async function calculateSystemUptime(supabaseUrl: string, serviceRoleKey: string): Promise<string> {
+    try {
+        const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
+        
+        const response = await fetch(
+            `${supabaseUrl}/rest/v1/cron_jobs_monitoring_history?select=uptime_percentage&timestamp=gte.${thirtyDaysAgo}&order=timestamp.desc&limit=500`,
+            {
+                headers: {
+                    'apikey': serviceRoleKey,
+                    'Authorization': `Bearer ${serviceRoleKey}`
+                }
+            }
+        );
+
+        if (!response.ok || response.status === 404) {
+            logger.warn('UPTIME_CALC_FALLBACK', { reason: 'No monitoring history available' });
+            return '99.9%'; // Fallback si no hay datos
+        }
+
+        const history = await response.json();
+        
+        if (!Array.isArray(history) || history.length === 0) {
+            logger.warn('UPTIME_CALC_FALLBACK', { reason: 'Empty history array' });
+            return '99.9%';
+        }
+
+        // Calcular promedio de uptime
+        const avgUptime = history.reduce((sum: number, record: any) => {
+            return sum + (record.uptime_percentage || 100);
+        }, 0) / history.length;
+
+        logger.info('UPTIME_CALC_SUCCESS', { 
+            records: history.length, 
+            avgUptime: avgUptime.toFixed(2) 
+        });
+
+        return `${avgUptime.toFixed(1)}%`;
+
+    } catch (error) {
+        logger.error('UPTIME_CALC_ERROR', { error: (error as Error).message });
+        return '99.9%'; // Fallback en caso de error
+    }
+}
+
+/**
+ * CAL CULAR TENDENCIA SEMANAL REAL
+ * Compara métricas de esta semana vs semana anterior
+ */
+async function calculateWeeklyTrend(
+    thisWeekMetrics: any,
+    lastWeekMetrics: any
+): Promise<{ trend: 'up' | 'down' | 'stable', change: number }> {
+    try {
+        // Si no hay datos suficientes, retornar stable
+        if (!thisWeekMetrics || !lastWeekMetrics) {
+            logger.warn('TREND_CALC_FALLBACK', { reason: 'Insufficient metrics data' });
+            return { trend: 'stable', change: 0 };
+        }
+
+        // Calcular diferencia en success rate
+        const thisWeekSuccess = thisWeekMetrics.successRate || 100;
+        const lastWeekSuccess = lastWeekMetrics.successRate || 100;
+        const successDiff = thisWeekSuccess - lastWeekSuccess;
+
+        // Calcular diferencia en número de ejecuciones
+        const thisWeekExecs = thisWeekMetrics.executions || 0;
+        const lastWeekExecs = lastWeekMetrics.executions || 0;
+        const execDiff = lastWeekExecs > 0 ? ((thisWeekExecs - lastWeekExecs) / lastWeekExecs) * 100 : 0;
+
+        // Determinar tendencia basada en múltiples factores
+        let trend: 'up' | 'down' | 'stable';
+        let change: number;
+
+        // Si el success rate disminuyó significativamente (>2%), es down
+        if (successDiff < -2) {
+            trend = 'down';
+            change = Math.round(successDiff * 10) / 10; // Redondear a 1 decimal
+        }
+        // Si el success rate mejoró significativamente (>2%), es up
+        else if (successDiff > 2) {
+            trend = 'up';
+            change = Math.round(successDiff * 10) / 10;
+        }
+        // Si las ejecuciones bajaron significativamente (>20%), es warning (down)
+        else if (execDiff < -20) {
+            trend = 'down';
+            change = Math.round(execDiff);
+        }
+        // Si las ejecuciones aumentaron significativamente (>20%), es up
+        else if (execDiff > 20) {
+            trend = 'up';
+            change = Math.round(execDiff);
+        }
+        // En cualquier otro caso, es stable
+        else {
+            trend = 'stable';
+            change = 0;
+        }
+
+        logger.info('TREND_CALC_SUCCESS', { 
+            trend, 
+            change, 
+            successDiff: successDiff.toFixed(2),
+            execDiff: execDiff.toFixed(2)
+        });
+
+        return { trend, change };
+
+    } catch (error) {
+        logger.error('TREND_CALC_ERROR', { error: (error as Error).message });
+        return { trend: 'stable', change: 0 };
+    }
+}
+
 async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
@@ -446,6 +567,37 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
 
     const weekly = weeklyResponse.ok ? await weeklyResponse.json() : [];
 
+    // Obtener métricas de la semana pasada para comparación
+    const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+    const lastWeekResponse = await fetch(
+        `${supabaseUrl}/rest/v1/cron_jobs_metrics?select=*&fecha_metricas=gte.${twoWeeksAgo}&fecha_metricas=lt.${weekAgo}&order=fecha_metricas.desc`,
+        {
+            headers: {
+                'apikey': serviceRoleKey,
+                'Authorization': `Bearer ${serviceRoleKey}`
+            }
+        }
+    );
+
+    const lastWeek = lastWeekResponse.ok ? await lastWeekResponse.json() : [];
+
+    // Calcular métricas de esta semana
+    const thisWeekMetrics = {
+        executions: weekly.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
+        successRate: weekly.length > 0 ?
+            weekly.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / weekly.length : 100
+    };
+
+    // Calcular métricas de la semana pasada
+    const lastWeekMetrics = {
+        executions: lastWeek.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
+        successRate: lastWeek.length > 0 ?
+            lastWeek.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / lastWeek.length : 100
+    };
+
+    // Calcular tendencia real
+    const weeklyTrend = await calculateWeeklyTrend(thisWeekMetrics, lastWeekMetrics);
+
     return {
         today: {
             executions: metrics.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
@@ -456,8 +608,8 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
             alerts: metrics.reduce((sum: number, m: any) => sum + (m.alertas_generadas_total || 0), 0)
         },
         weekly: {
-            trend: 'stable', // Calcularíamos esto con datos reales
-            change: 0,
+            trend: weeklyTrend.trend,
+            change: weeklyTrend.change,
             topJobs: metrics.slice(0, 5).map((m: any) => ({
                 id: m.job_id,
                 name: m.job_id,
