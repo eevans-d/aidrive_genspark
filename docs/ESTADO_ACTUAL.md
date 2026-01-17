@@ -1,67 +1,56 @@
-# ESTADO ACTUAL DEL PROYECTO (Aproximado)
+# ESTADO ACTUAL DEL PROYECTO
 
-**Fecha:** 2026-01-15  
+**Fecha:** 2026-01-17  
 **Objetivo:** estimar el avance real hacia un sistema **100% funcional, optimizado, testeado y listo para producción**.
 
 ---
 
-## Metodología (estimación pragmática)
-- Se usan señales reales: tests disponibles, checklist de cierre, estado de observabilidad, CI/CD y documentación.
-- Los porcentajes son **aproximados** y sirven para priorizar trabajo, no para auditoría formal.
-- Fuentes: `docs/CHECKLIST_CIERRE.md`, `docs/ROADMAP.md`, `docs/DECISION_LOG.md`.
+## Avance por módulo (aprox.)
+
+| Módulo | Estado (%) | Nota |
+|--------|--------:|------|
+| Frontend (`minimarket-system`) | 80 | Build OK; 8 React Query hooks; roles verificados desde DB |
+| API Proveedor (`api-proveedor`) | 75 | Modularizado; logging unificado |
+| Scraper (`scraper-maxiconsumo`) | 75 | Modular + tests reales |
+| Cron Jobs | 75 | Dashboard con métricas dinámicas (2026-01-17) |
+| API Gateway (`api-minimarket`) | 70 | Funcional; logging estructurado |
+| Shared libs (`_shared/`) | 80 | Adoptado en todos los críticos |
+| DB/Migraciones | 72 | Tabla `personal` con roles verificados |
+| Testing/QA | 55 | 285 unit tests passing; E2E con mocks |
+| Observabilidad | 50 | Logger estructurado; métricas en cron |
+| CI/CD | 85 | Pipeline completo |
+| Seguridad | 65 | **P0-04 completado** (roles server-side) |
+| Documentación | 80 | ARCHITECTURE v2.1.0 actualizado |
 
 ---
 
-## Avance por módulo / subsistema (aprox.)
-
-| Módulo / Subsistema | Estado (%) | Evidencia / Nota breve |
-|---|---:|---|
-| Frontend (`minimarket-system`) | 75 | Build y lint OK; code splitting aplicado; mocks + E2E frontend smoke OK (8 tests, añade Tareas y Proveedores). |
-| API Proveedor (`api-proveedor`) | 75 | Modularizado; logging base unificado; validación runtime pendiente. |
-| Scraper (`scraper-maxiconsumo`) | 75 | Modular + tests reales; logging consistente; validación runtime pendiente. |
-| Cron Jobs (`cron-jobs-maxiconsumo`) | 70 | Orquestador + jobs; persistencia validada runtime; validaciones de alertas pendientes. |
-| API Gateway (`api-minimarket`) | 70 | Funcional; logging estructurado incorporado. |
-| Shared libs (`_shared/`) | 80 | Bases listas; adopción inconsistente en auxiliares. |
-| DB/Migraciones | 72 | Migración `precios_proveedor` versionada; falta verificación staging/prod. |
-| Testing/QA | 55 | Unit OK; dry-run integration/E2E; E2E frontend smoke OK con mocks (8 tests); perf/seguridad pendientes. |
-| Observabilidad | 50 | Logger adoptado en críticos; métricas/persistencia en cron listos; falta cobertura total. |
-| CI/CD | 85 | Pipeline completo; faltan pruebas de integración. |
-| Seguridad | 45 | RLS mínima; auditoría y hardening pendiente. |
-| Ops/Runbook | 60 | Runbook existe; no validado en entorno real. |
-| Documentación | 75 | Fuentes de verdad claras; arquitectura requiere actualización. |
+## Avance global: **75%**
 
 ---
 
-## Avance global estimado (ponderado)
+## ✅ Completado (2026-01-17)
 
-**Progreso total aproximado:** **71%**
-
-**Pesos usados (para transparencia):**
-- Backend crítico (API Proveedor + Scraper + Cron): 45%
-- Frontend: 15%
-- DB/Migraciones: 10%
-- Testing/QA: 10%
-- Observabilidad: 5%
-- CI/CD: 5%
-- Seguridad: 5%
-- Docs/Gobernanza: 3%
-- Ops/Runbook: 2%
+- **P0-04:** Validación de roles server-side (`useVerifiedRole` desde tabla `personal`)
+- **P1-05:** 8 hooks React Query (100% cobertura de páginas)
+- **Dashboard:** Métricas dinámicas (uptime + trend calculados)
+- **Documentación:** v2.1.0 con auditoría de seguridad
 
 ---
 
-## Bloqueadores / pendientes críticos (para llegar a producción)
-- Validaciones runtime (alertas/comparaciones).
-- Verificación de migraciones en staging/prod con evidencia.
-- Auditoría RLS y revisión de permisos.
+## 🎯 Próxima Sesión (priorizado)
+
+1. **Opción C implementación:** Migrar writes a API Gateway
+2. **RLS audit:** Verificar políticas de Row Level Security
+3. **E2E tests reales:** Con credenciales de staging
+4. **Performance tests:** Load testing con k6
 
 ---
 
-## Próximos pasos inmediatos (orden sugerido)
-1. WS3.1 (DB): verificar migraciones en staging/prod y documentar rollback.
-2. WS4.1 (Cron): validar runtime de alertas/comparaciones.
-3. WS6.1 (CI): integrar tests de integración en pipeline.
+## Bloqueadores
+
+- Credenciales staging/prod (para migraciones y tests reales)
+- Auditoría RLS pendiente
 
 ---
 
-## Nota importante
-Si una tarea no está en `docs/ROADMAP.md`, **no está planificada**.
+*Última actualización: 2026-01-17 04:49 AM*
