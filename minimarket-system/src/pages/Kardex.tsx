@@ -1,89 +1,42 @@
-import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Producto, Personal } from '../types/database'
+import { useMemo, useState } from 'react'
 import { Download, Filter } from 'lucide-react'
-
-interface MovimientoDepositoRow {
-  id: string
-  producto_id: string
-  tipo_movimiento: 'entrada' | 'salida' | 'ajuste' | 'transferencia'
-  cantidad: number
-  motivo: string | null
-  fecha_movimiento: string
-  usuario_id: string | null
-  observaciones: string | null
-  lote?: string | null
-}
+import { useKardex, KardexMovimiento } from '../hooks/queries'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Kardex() {
-  const [movimientos, setMovimientos] = useState<MovimientoDepositoRow[]>([])
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [personal, setPersonal] = useState<Personal[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
   const [productoFiltro, setProductoFiltro] = useState('')
   const [loteFiltro, setLoteFiltro] = useState('')
-  const [usuarioFiltro, setUsuarioFiltro] = useState('')
 
-  useEffect(() => {
-    loadKardex()
-  }, [])
+  const { data, isLoading, isError, error, refetch, isFetching } = useKardex({ limit: 200 })
 
-  async function loadKardex() {
-    try {
-      setLoading(true)
-      setError(null)
+  // Query para lista de productos (filtros)
+  const { data: productosData } = useQuery({
+    queryKey: ['productos-dropdown'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('id, nombre')
+        .eq('activo', true)
+        .order('nombre')
+      if (error) throw error
+      return data ?? []
+    },
+    staleTime: 1000 * 60 * 10, // 10 min cache
+  })
 
-      const [movimientosRes, productosRes, personalRes] = await Promise.all([
-        supabase
-          .from('movimientos_deposito')
-          .select('id,producto_id,tipo_movimiento,cantidad,motivo,fecha_movimiento,usuario_id,observaciones,lote')
-          .order('fecha_movimiento', { ascending: false })
-          .limit(200),
-        supabase
-          .from('productos')
-          .select('*')
-          .eq('activo', true)
-          .order('nombre'),
-        supabase
-          .from('personal')
-          .select('*')
-          .eq('activo', true)
-          .order('nombre')
-      ])
-
-      if (movimientosRes.error) throw movimientosRes.error
-      if (productosRes.error) throw productosRes.error
-      if (personalRes.error) throw personalRes.error
-
-      setMovimientos(movimientosRes.data ?? [])
-      setProductos(productosRes.data ?? [])
-      setPersonal(personalRes.data ?? [])
-    } catch (err) {
-      console.error('Error cargando kardex:', err)
-      setError('No pudimos cargar el historial de movimientos. Intente nuevamente.')
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const productosMap = useMemo(() => {
-    return Object.fromEntries(productos.map((p) => [p.id, p]))
-  }, [productos])
-
-  const personalMap = useMemo(() => {
-    return Object.fromEntries(personal.map((p) => [p.id, p]))
-  }, [personal])
+  const productos = productosData ?? []
+  const movimientos = data?.movimientos ?? []
+  const resumen = data?.resumen ?? { entradas: 0, salidas: 0, ajustes: 0 }
 
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((mov) => {
       const productoOk = !productoFiltro || mov.producto_id === productoFiltro
       const loteOk = !loteFiltro || (mov.lote || '').toLowerCase().includes(loteFiltro.toLowerCase())
-      const usuarioOk = !usuarioFiltro || mov.usuario_id === usuarioFiltro
-      return productoOk && loteOk && usuarioOk
+      return productoOk && loteOk
     })
-  }, [movimientos, productoFiltro, loteFiltro, usuarioFiltro])
+  }, [movimientos, productoFiltro, loteFiltro])
 
   const handleExportCsv = () => {
     if (movimientosFiltrados.length === 0) return
@@ -94,28 +47,19 @@ export default function Kardex() {
       'tipo_movimiento',
       'cantidad',
       'lote',
-      'usuario',
       'motivo',
       'observaciones'
     ]
 
-    const rows = movimientosFiltrados.map((mov) => {
-      const producto = productosMap[mov.producto_id]?.nombre ?? 'Producto desconocido'
-      const usuario = mov.usuario_id
-        ? personalMap[mov.usuario_id]?.nombre ?? 'Usuario desconocido'
-        : 'Sin asignar'
-
-      return [
-        new Date(mov.fecha_movimiento).toLocaleString('es-AR'),
-        producto,
-        mov.tipo_movimiento,
-        mov.cantidad,
-        mov.lote ?? '',
-        usuario,
-        mov.motivo ?? '',
-        mov.observaciones ?? ''
-      ]
-    })
+    const rows = movimientosFiltrados.map((mov) => [
+      new Date(mov.fecha_movimiento).toLocaleString('es-AR'),
+      mov.producto_nombre ?? 'Producto desconocido',
+      mov.tipo_movimiento,
+      mov.cantidad,
+      mov.lote ?? '',
+      mov.motivo ?? '',
+      mov.observaciones ?? ''
+    ])
 
     const escapeCell = (value: string | number) => {
       const raw = String(value)
@@ -141,14 +85,33 @@ export default function Kardex() {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Kardex de Movimientos</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
+    )
   }
 
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-        <h1 className="text-3xl font-bold text-gray-900">Kardex de Movimientos</h1>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Kardex de Movimientos</h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Entradas: {resumen.entradas} | Salidas: {resumen.salidas} | Ajustes: {resumen.ajustes}
+          </p>
+        </div>
         <button
           onClick={handleExportCsv}
           disabled={movimientosFiltrados.length === 0}
@@ -159,25 +122,13 @@ export default function Kardex() {
         </button>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
-          <span>{error}</span>
-          <button
-            onClick={loadKardex}
-            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-
       <div className="bg-white rounded-lg shadow p-4 space-y-4">
         <div className="flex items-center gap-2 text-gray-700">
           <Filter className="w-4 h-4" />
           <span className="text-sm font-medium">Filtros</span>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label className="block text-sm text-gray-600 mb-1">Producto</label>
             <select
@@ -204,22 +155,6 @@ export default function Kardex() {
               className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
             />
           </div>
-
-          <div>
-            <label className="block text-sm text-gray-600 mb-1">Usuario</label>
-            <select
-              value={usuarioFiltro}
-              onChange={(e) => setUsuarioFiltro(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded text-sm"
-            >
-              <option value="">Todos</option>
-              {personal.map((persona) => (
-                <option key={persona.id} value={persona.id}>
-                  {persona.nombre}
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </div>
 
@@ -232,41 +167,31 @@ export default function Kardex() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lote</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Usuario</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motivo</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {movimientosFiltrados.map((mov) => {
-              const productoNombre = productosMap[mov.producto_id]?.nombre ?? 'Producto desconocido'
-              const usuarioNombre = mov.usuario_id
-                ? personalMap[mov.usuario_id]?.nombre ?? 'Usuario desconocido'
-                : 'Sin asignar'
-
-              return (
-                <tr key={mov.id}>
-                  <td className="px-4 py-3 text-sm text-gray-700">
-                    {new Date(mov.fecha_movimiento).toLocaleString('es-AR')}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{productoNombre}</td>
-                  <td className="px-4 py-3 text-sm">
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      mov.tipo_movimiento === 'entrada'
-                        ? 'bg-green-100 text-green-700'
-                        : mov.tipo_movimiento === 'salida'
-                          ? 'bg-red-100 text-red-700'
-                          : 'bg-gray-100 text-gray-700'
+            {movimientosFiltrados.map((mov) => (
+              <tr key={mov.id}>
+                <td className="px-4 py-3 text-sm text-gray-700">
+                  {new Date(mov.fecha_movimiento).toLocaleString('es-AR')}
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-700">{mov.producto_nombre ?? 'Producto desconocido'}</td>
+                <td className="px-4 py-3 text-sm">
+                  <span className={`px-2 py-1 rounded-full text-xs font-medium ${mov.tipo_movimiento === 'entrada'
+                      ? 'bg-green-100 text-green-700'
+                      : mov.tipo_movimiento === 'salida'
+                        ? 'bg-red-100 text-red-700'
+                        : 'bg-gray-100 text-gray-700'
                     }`}>
-                      {mov.tipo_movimiento.toUpperCase()}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{mov.cantidad}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{mov.lote ?? '-'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{usuarioNombre}</td>
-                  <td className="px-4 py-3 text-sm text-gray-700">{mov.motivo ?? '-'}</td>
-                </tr>
-              )
-            })}
+                    {mov.tipo_movimiento.toUpperCase()}
+                  </span>
+                </td>
+                <td className="px-4 py-3 text-sm text-gray-700">{mov.cantidad}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{mov.lote ?? '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">{mov.motivo ?? '-'}</td>
+              </tr>
+            ))}
           </tbody>
         </table>
 

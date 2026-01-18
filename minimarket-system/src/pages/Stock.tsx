@@ -1,105 +1,29 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { StockDeposito, Producto, StockReservado, OrdenCompra } from '../types/database'
+import { useState, useMemo } from 'react'
 import { Package, AlertTriangle, Download } from 'lucide-react'
+import { useStock, StockConProducto } from '../hooks/queries'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
-interface StockConProducto extends StockDeposito {
-  producto?: Producto
-  reservado: number
-  disponible: number
-  transito: number
-}
+type FiltroStock = 'todos' | 'bajo' | 'critico'
 
 export default function Stock() {
-  const [stock, setStock] = useState<StockConProducto[]>([])
-  const [loading, setLoading] = useState(true)
-  const [filtro, setFiltro] = useState<'todos' | 'bajo' | 'critico'>('todos')
-  const [page, setPage] = useState(0)
-  const [totalStock, setTotalStock] = useState(0)
-  const PAGE_SIZE = 50
+  const [filtro, setFiltro] = useState<FiltroStock>('todos')
 
-  useEffect(() => {
-    loadStock()
-  }, [page])
+  const { data, isLoading, isError, error, refetch, isFetching } = useStock()
 
-  useEffect(() => {
-    setPage(0)
-  }, [filtro])
+  const items = data?.items ?? []
+  const alertas = data?.alertas ?? { stockBajo: 0, sinStock: 0 }
 
-  async function loadStock() {
-    try {
-      const from = page * PAGE_SIZE
-      const to = from + PAGE_SIZE - 1
-
-      const { data: stockData, count } = await supabase
-        .from('stock_deposito')
-        .select('*', { count: 'exact' })
-        .order('cantidad_actual', { ascending: true })
-        .range(from, to)
-
-      if (stockData) {
-        setTotalStock(count ?? 0)
-        // Obtener información de productos
-        const productosIds = stockData.map(s => s.producto_id)
-        const { data: productos } = await supabase
-          .from('productos')
-          .select('*')
-          .in('id', productosIds)
-
-        const { data: reservas } = await supabase
-          .from('stock_reservado')
-          .select('id,producto_id,cantidad,estado')
-          .eq('estado', 'activa')
-
-        const { data: ordenesCompra } = await supabase
-          .from('ordenes_compra')
-          .select('id,producto_id,cantidad,cantidad_recibida,estado')
-          .in('estado', ['pendiente', 'en_transito'])
-
-        const reservasPorProducto = (reservas || []).reduce<Record<string, number>>((acc, reserva) => {
-          const cantidad = reserva.cantidad || 0
-          acc[reserva.producto_id] = (acc[reserva.producto_id] || 0) + cantidad
-          return acc
-        }, {})
-
-        const transitoPorProducto = (ordenesCompra || []).reduce<Record<string, number>>((acc, orden) => {
-          const pendiente = Math.max(
-            (orden.cantidad || 0) - (orden.cantidad_recibida || 0),
-            0
-          )
-          acc[orden.producto_id] = (acc[orden.producto_id] || 0) + pendiente
-          return acc
-        }, {})
-
-        const stockConProducto = stockData.map(s => ({
-          ...s,
-          producto: productos?.find(p => p.id === s.producto_id),
-          reservado: reservasPorProducto[s.producto_id] || 0,
-          disponible: Math.max(s.cantidad_actual - (reservasPorProducto[s.producto_id] || 0), 0),
-          transito: transitoPorProducto[s.producto_id] || 0
-        }))
-
-        setStock(stockConProducto)
-      }
-    } catch (error) {
-      console.error('Error cargando stock:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  const stockFiltrado = stock.filter(s => {
-    if (filtro === 'critico') return s.disponible === 0
-    if (filtro === 'bajo') return s.disponible > 0 && s.disponible <= s.stock_minimo
-    return true
-  })
-
-  const totalPages = Math.max(Math.ceil(totalStock / PAGE_SIZE), 1)
+  // Filtrar stock según selección
+  const stockFiltrado = useMemo(() => {
+    if (filtro === 'critico') return items.filter(s => s.cantidad_actual === 0)
+    if (filtro === 'bajo') return items.filter(s => s.cantidad_actual > 0 && s.cantidad_actual <= s.stock_minimo)
+    return items
+  }, [items, filtro])
 
   const getNivelStock = (item: StockConProducto) => {
-    if (item.disponible === 0) return 'critico'
-    if (item.disponible <= item.stock_minimo / 2) return 'urgente'
-    if (item.disponible <= item.stock_minimo) return 'bajo'
+    if (item.cantidad_actual === 0) return 'critico'
+    if (item.cantidad_actual <= item.stock_minimo / 2) return 'urgente'
+    if (item.cantidad_actual <= item.stock_minimo) return 'bajo'
     return 'normal'
   }
 
@@ -108,12 +32,9 @@ export default function Stock() {
 
     const headers = [
       'producto',
-      'lote',
+      'categoria',
       'ubicacion',
       'cantidad_actual',
-      'reservado',
-      'disponible',
-      'transito',
       'stock_minimo',
       'stock_maximo',
       'estado',
@@ -130,13 +51,10 @@ export default function Stock() {
     const rows = stockFiltrado.map((item) => {
       const nivel = getNivelStock(item)
       return [
-        item.producto?.nombre ?? 'Producto desconocido',
-        item.lote ?? '',
+        item.producto_nombre ?? 'Producto desconocido',
+        item.producto_categoria ?? '',
         item.ubicacion ?? '',
         item.cantidad_actual,
-        item.reservado,
-        item.disponible,
-        item.transito,
         item.stock_minimo,
         item.stock_maximo ?? '',
         nivel,
@@ -157,8 +75,22 @@ export default function Stock() {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
+  }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Control de Stock</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
+    )
   }
 
   return (
@@ -172,31 +104,29 @@ export default function Stock() {
         <div className="flex flex-wrap gap-2">
           <button
             onClick={() => setFiltro('todos')}
-            className={`px-4 py-2 rounded-lg ${
-              filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg ${filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
           >
-            Todos ({totalStock})
+            Todos ({items.length})
           </button>
           <button
             onClick={() => setFiltro('bajo')}
-            className={`px-4 py-2 rounded-lg ${
-              filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg ${filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
           >
-            Stock Bajo (página: {stock.filter(s => s.disponible > 0 && s.disponible <= s.stock_minimo).length})
+            Stock Bajo ({alertas.stockBajo})
           </button>
           <button
             onClick={() => setFiltro('critico')}
-            className={`px-4 py-2 rounded-lg ${
-              filtro === 'critico' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'
-            }`}
+            className={`px-4 py-2 rounded-lg ${filtro === 'critico' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'
+              }`}
           >
-            Crítico (página: {stock.filter(s => s.disponible === 0).length})
+            Crítico ({alertas.sinStock})
           </button>
           <button
             onClick={handleExportCsv}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700"
+            disabled={stockFiltrado.length === 0}
+            className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-50"
           >
             <Download className="w-4 h-4" />
             Exportar CSV
@@ -218,15 +148,6 @@ export default function Stock() {
                 Cantidad Actual
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Reservado
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Disponible
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                En tránsito
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Mínimo
               </th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -237,23 +158,23 @@ export default function Stock() {
           <tbody className="bg-white divide-y divide-gray-200">
             {stockFiltrado.map((item) => {
               const nivel = getNivelStock(item)
-              
+
               return (
                 <tr key={item.id} className={
                   nivel === 'critico' ? 'bg-red-50' :
-                  nivel === 'urgente' ? 'bg-orange-50' :
-                  nivel === 'bajo' ? 'bg-yellow-50' :
-                  ''
+                    nivel === 'urgente' ? 'bg-orange-50' :
+                      nivel === 'bajo' ? 'bg-yellow-50' :
+                        ''
                 }>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="flex items-center">
                       <Package className="w-5 h-5 text-gray-400 mr-3" />
                       <div>
                         <div className="font-medium text-gray-900">
-                          {item.producto?.nombre || 'Producto desconocido'}
+                          {item.producto_nombre || 'Producto desconocido'}
                         </div>
-                        {item.lote && (
-                          <div className="text-sm text-gray-500">Lote: {item.lote}</div>
+                        {item.producto_categoria && (
+                          <div className="text-sm text-gray-500">{item.producto_categoria}</div>
                         )}
                       </div>
                     </div>
@@ -263,15 +184,6 @@ export default function Stock() {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <div className="text-sm font-bold text-gray-900">{item.cantidad_actual}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.reservado}
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <div className="text-sm font-bold text-gray-900">{item.disponible}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                    {item.transito}
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                     {item.stock_minimo}
@@ -305,7 +217,7 @@ export default function Stock() {
             })}
           </tbody>
         </table>
-        
+
         {stockFiltrado.length === 0 && (
           <div className="text-center py-8 text-gray-500">
             No hay productos en esta categoría
@@ -313,30 +225,8 @@ export default function Stock() {
         )}
       </div>
 
-      <div className="flex items-center justify-between">
-        <div className="text-sm text-gray-500">
-          Mostrando página {page + 1} de {totalPages}
-        </div>
-        <div className="flex gap-2">
-          <button
-            onClick={() => setPage(prev => Math.max(prev - 1, 0))}
-            disabled={page === 0}
-            className={`px-4 py-2 rounded-lg ${
-              page === 0 ? 'bg-gray-200 text-gray-400' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Anterior
-          </button>
-          <button
-            onClick={() => setPage(prev => Math.min(prev + 1, totalPages - 1))}
-            disabled={page >= totalPages - 1}
-            className={`px-4 py-2 rounded-lg ${
-              page >= totalPages - 1 ? 'bg-gray-200 text-gray-400' : 'bg-gray-200 text-gray-700'
-            }`}
-          >
-            Siguiente
-          </button>
-        </div>
+      <div className="text-sm text-gray-500">
+        Mostrando {stockFiltrado.length} de {items.length} items
       </div>
     </div>
   )

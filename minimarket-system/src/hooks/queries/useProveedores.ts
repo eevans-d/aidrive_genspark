@@ -6,10 +6,15 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { queryKeys } from '../../lib/queryClient';
-import { Proveedor } from '../../types/database';
+import { Proveedor, Producto } from '../../types/database';
+
+export type ProductoProveedor = Pick<
+        Producto,
+        'id' | 'nombre' | 'categoria' | 'precio_actual' | 'margen_ganancia' | 'proveedor_principal_id'
+>;
 
 export interface ProveedorConProductos extends Proveedor {
-        productosCount?: number;
+        productos: ProductoProveedor[];
 }
 
 export interface ProveedoresResult {
@@ -17,53 +22,76 @@ export interface ProveedoresResult {
         total: number;
 }
 
+export interface UseProveedoresOptions {
+        page?: number;
+        pageSize?: number;
+}
+
 /**
- * Fetcher para proveedores
+ * Fetcher para proveedores con paginación y productos
  */
-async function fetchProveedores(): Promise<ProveedoresResult> {
-        const { data, count, error } = await supabase
+async function fetchProveedores(options: UseProveedoresOptions = {}): Promise<ProveedoresResult> {
+        const { page = 1, pageSize = 20 } = options;
+        const from = (page - 1) * pageSize;
+        const to = from + pageSize - 1;
+
+        const { data: proveedoresData, count, error: proveedoresError } = await supabase
                 .from('proveedores')
-                .select('*', { count: 'exact' })
+                .select(
+                        'id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at',
+                        { count: 'exact' }
+                )
                 .eq('activo', true)
-                .order('nombre');
+                .order('nombre')
+                .range(from, to);
 
-        if (error) throw error;
+        if (proveedoresError) throw proveedoresError;
 
-        // Obtener conteo de productos por proveedor
-        const proveedorIds = (data || []).map(p => p.id);
-        let productosCountMap: Record<string, number> = {};
+        if (!proveedoresData || proveedoresData.length === 0) {
+                return { proveedores: [], total: count ?? 0 };
+        }
+
+        // Batch query: obtener productos de todos los proveedores
+        const proveedorIds = proveedoresData.map((prov) => prov.id);
+        let productosPorProveedor: Record<string, ProductoProveedor[]> = {};
 
         if (proveedorIds.length > 0) {
-                const { data: productosData } = await supabase
+                const { data: productosData, error: productosError } = await supabase
                         .from('productos')
-                        .select('proveedor_principal_id')
+                        .select('id,nombre,categoria,precio_actual,margen_ganancia,proveedor_principal_id')
                         .in('proveedor_principal_id', proveedorIds)
                         .eq('activo', true);
 
-                if (productosData) {
-                        productosCountMap = productosData.reduce<Record<string, number>>((acc, item) => {
-                                const id = item.proveedor_principal_id;
-                                if (id) acc[id] = (acc[id] || 0) + 1;
+                if (productosError) throw productosError;
+
+                productosPorProveedor = (productosData || []).reduce<Record<string, ProductoProveedor[]>>(
+                        (acc, producto) => {
+                                const key = producto.proveedor_principal_id || 'sin_proveedor';
+                                if (!acc[key]) acc[key] = [];
+                                acc[key].push(producto);
                                 return acc;
-                        }, {});
-                }
+                        },
+                        {}
+                );
         }
 
-        const proveedores = (data || []).map(prov => ({
+        const proveedores = proveedoresData.map((prov) => ({
                 ...prov,
-                productosCount: productosCountMap[prov.id] || 0,
+                productos: productosPorProveedor[prov.id] || [],
         }));
 
         return { proveedores, total: count ?? 0 };
 }
 
 /**
- * Hook para obtener proveedores
+ * Hook para obtener proveedores con productos
  */
-export function useProveedores() {
+export function useProveedores(options: UseProveedoresOptions = {}) {
+        const { page = 1, pageSize = 20 } = options;
+
         return useQuery({
-                queryKey: queryKeys.proveedores,
-                queryFn: fetchProveedores,
+                queryKey: [...queryKeys.proveedores, { page, pageSize }],
+                queryFn: () => fetchProveedores(options),
                 staleTime: 1000 * 60 * 5, // 5 minutos
         });
 }

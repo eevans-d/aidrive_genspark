@@ -1,13 +1,13 @@
-import { useState, useEffect } from 'react'
-import { supabase } from '../lib/supabase'
+import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
 import { Producto, Proveedor } from '../types/database'
 import { Plus, Minus, Search } from 'lucide-react'
 
 export default function Deposito() {
   const { user } = useAuth()
-  const [productos, setProductos] = useState<Producto[]>([])
-  const [proveedores, setProveedores] = useState<Proveedor[]>([])
+  const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null)
   const [tipo, setTipo] = useState<'entrada' | 'salida'>('entrada')
@@ -15,33 +15,80 @@ export default function Deposito() {
   const [destino, setDestino] = useState('')
   const [proveedorId, setProveedorId] = useState('')
   const [observaciones, setObservaciones] = useState('')
-  const [loading, setLoading] = useState(false)
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
 
-  useEffect(() => {
-    loadProductos()
-    loadProveedores()
-  }, [])
+  // Query para productos
+  const { data: productos = [] } = useQuery({
+    queryKey: ['productos-deposito'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('productos')
+        .select('*')
+        .eq('activo', true)
+        .order('nombre')
+      if (error) throw error
+      return data ?? []
+    },
+    staleTime: 1000 * 60 * 5,
+  })
 
-  async function loadProductos() {
-    const { data } = await supabase
-      .from('productos')
-      .select('*')
-      .eq('activo', true)
-      .order('nombre')
-    
-    if (data) setProductos(data)
-  }
+  // Query para proveedores
+  const { data: proveedores = [] } = useQuery({
+    queryKey: ['proveedores-deposito'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('proveedores')
+        .select('*')
+        .eq('activo', true)
+        .order('nombre')
+      if (error) throw error
+      return data ?? []
+    },
+    staleTime: 1000 * 60 * 10,
+  })
 
-  async function loadProveedores() {
-    const { data } = await supabase
-      .from('proveedores')
-      .select('*')
-      .eq('activo', true)
-      .order('nombre')
-    
-    if (data) setProveedores(data)
-  }
+  // Mutación para registrar movimiento
+  const movimientoMutation = useMutation({
+    mutationFn: async (params: {
+      productoId: string
+      tipo: 'entrada' | 'salida'
+      cantidad: number
+      motivo: string
+      proveedorId: string | null
+      observaciones: string | null
+    }) => {
+      const { error } = await supabase.rpc('sp_movimiento_inventario', {
+        p_producto_id: params.productoId,
+        p_tipo: params.tipo,
+        p_cantidad: params.cantidad,
+        p_origen: params.motivo,
+        p_destino: 'Principal',
+        p_usuario: user?.id ?? null,
+        p_orden_compra_id: null,
+        p_proveedor_id: params.proveedorId,
+        p_observaciones: params.observaciones
+      })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['kardex'] })
+      setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente' })
+      // Limpiar formulario
+      setSelectedProducto(null)
+      setCantidad('')
+      setDestino('')
+      setProveedorId('')
+      setObservaciones('')
+      setSearchTerm('')
+    },
+    onError: (error: any) => {
+      const mensajeError = error?.message?.includes('Stock insuficiente')
+        ? 'Stock insuficiente para registrar la salida'
+        : 'Error al registrar el movimiento'
+      setMensaje({ tipo: 'error', texto: mensajeError })
+    }
+  })
 
   const productosFiltrados = productos.filter(p =>
     p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -50,59 +97,32 @@ export default function Deposito() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    
+
     if (!selectedProducto || !cantidad) {
       setMensaje({ tipo: 'error', texto: 'Por favor complete todos los campos requeridos' })
       return
     }
 
-    setLoading(true)
+    const cantidadNumero = parseInt(cantidad, 10)
+    if (!Number.isFinite(cantidadNumero) || cantidadNumero <= 0) {
+      setMensaje({ tipo: 'error', texto: 'La cantidad debe ser mayor a 0' })
+      return
+    }
+
     setMensaje(null)
 
-    try {
-      const cantidadNumero = parseInt(cantidad, 10)
-      if (!Number.isFinite(cantidadNumero) || cantidadNumero <= 0) {
-        setMensaje({ tipo: 'error', texto: 'La cantidad debe ser mayor a 0' })
-        return
-      }
+    const motivo = tipo === 'entrada'
+      ? (proveedorId ? `Entrada proveedor ${proveedorId}` : 'Entrada manual')
+      : (destino ? `Salida a ${destino}` : 'Salida')
 
-      const motivo = tipo === 'entrada'
-        ? (proveedorId ? `Entrada proveedor ${proveedorId}` : 'Entrada manual')
-        : (destino ? `Salida a ${destino}` : 'Salida')
-
-      const { error: movError } = await supabase.rpc('sp_movimiento_inventario', {
-        p_producto_id: selectedProducto.id,
-        p_tipo: tipo,
-        p_cantidad: cantidadNumero,
-        p_origen: motivo,
-        p_destino: 'Principal',
-        p_usuario: user?.id ?? null,
-        p_orden_compra_id: null,
-        p_proveedor_id: tipo === 'entrada' && proveedorId ? proveedorId : null,
-        p_observaciones: observaciones || null
-      })
-
-      if (movError) throw movError
-
-      setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente' })
-      
-      // Limpiar formulario
-      setSelectedProducto(null)
-      setCantidad('')
-      setDestino('')
-      setProveedorId('')
-      setObservaciones('')
-      setSearchTerm('')
-      
-    } catch (error: any) {
-      console.error('Error:', error)
-      const mensajeError = error?.message?.includes('Stock insuficiente')
-        ? 'Stock insuficiente para registrar la salida'
-        : 'Error al registrar el movimiento'
-      setMensaje({ tipo: 'error', texto: mensajeError })
-    } finally {
-      setLoading(false)
-    }
+    movimientoMutation.mutate({
+      productoId: selectedProducto.id,
+      tipo,
+      cantidad: cantidadNumero,
+      motivo,
+      proveedorId: tipo === 'entrada' && proveedorId ? proveedorId : null,
+      observaciones: observaciones || null
+    })
   }
 
   return (
@@ -122,11 +142,10 @@ export default function Deposito() {
               <button
                 type="button"
                 onClick={() => setTipo('entrada')}
-                className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${
-                  tipo === 'entrada'
+                className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${tipo === 'entrada'
                     ? 'border-green-500 bg-green-50 text-green-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                }`}
+                  }`}
               >
                 <Plus className="w-6 h-6 mx-auto mb-2" />
                 ENTRADA
@@ -134,11 +153,10 @@ export default function Deposito() {
               <button
                 type="button"
                 onClick={() => setTipo('salida')}
-                className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${
-                  tipo === 'salida'
+                className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${tipo === 'salida'
                     ? 'border-red-500 bg-red-50 text-red-700'
                     : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
-                }`}
+                  }`}
               >
                 <Minus className="w-6 h-6 mx-auto mb-2" />
                 SALIDA
@@ -268,11 +286,10 @@ export default function Deposito() {
           {/* Mensaje */}
           {mensaje && (
             <div
-              className={`p-4 rounded-lg ${
-                mensaje.tipo === 'success'
+              className={`p-4 rounded-lg ${mensaje.tipo === 'success'
                   ? 'bg-green-50 text-green-800 border border-green-200'
                   : 'bg-red-50 text-red-800 border border-red-200'
-              }`}
+                }`}
             >
               {mensaje.texto}
             </div>
@@ -281,10 +298,10 @@ export default function Deposito() {
           {/* Botón submit */}
           <button
             type="submit"
-            disabled={loading || !selectedProducto}
+            disabled={movimientoMutation.isPending || !selectedProducto}
             className="w-full py-4 px-6 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors text-lg"
           >
-            {loading ? 'Registrando...' : 'REGISTRAR MOVIMIENTO'}
+            {movimientoMutation.isPending ? 'Registrando...' : 'REGISTRAR MOVIMIENTO'}
           </button>
         </form>
       </div>

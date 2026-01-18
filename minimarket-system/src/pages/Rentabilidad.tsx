@@ -1,21 +1,13 @@
-import { useEffect, useMemo, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Producto, Proveedor } from '../types/database'
+import { useMemo, useState } from 'react'
 import { TrendingDown, TrendingUp, Percent, Search, Filter, Banknote } from 'lucide-react'
-
-interface ProductoRentabilidad extends Producto {
-  proveedor?: Proveedor
-  utilidad_unitaria: number
-  margen_bruto: number
-  margen_pct: number | null
-}
+import { useRentabilidad } from '../hooks/queries'
+import { useQuery } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 type SortKey = 'margen' | 'utilidad' | 'nombre'
 
 export default function Rentabilidad() {
-  const [productos, setProductos] = useState<ProductoRentabilidad[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
   const [search, setSearch] = useState('')
   const [categoria, setCategoria] = useState('')
   const [proveedorId, setProveedorId] = useState('')
@@ -24,86 +16,30 @@ export default function Rentabilidad() {
   const [sortKey, setSortKey] = useState<SortKey>('margen')
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('desc')
 
-  useEffect(() => {
-    loadRentabilidad()
-  }, [])
+  const { data, isLoading, isError, error, refetch, isFetching } = useRentabilidad()
 
-  async function loadRentabilidad() {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const { data: productosData, error: productosError } = await supabase
-        .from('productos')
-        .select('id,nombre,categoria,codigo_barras,precio_actual,precio_costo,proveedor_principal_id,margen_ganancia,activo,created_at,updated_at')
+  // Query para proveedores (para filtro dropdown)
+  const { data: proveedoresData } = useQuery({
+    queryKey: ['proveedores-dropdown'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('proveedores')
+        .select('id, nombre')
         .eq('activo', true)
         .order('nombre')
+      if (error) throw error
+      return data ?? []
+    },
+    staleTime: 1000 * 60 * 10,
+  })
 
-      if (productosError) throw productosError
-
-      const proveedorIds = Array.from(
-        new Set(
-          (productosData || [])
-            .map((prod) => prod.proveedor_principal_id)
-            .filter((id): id is string => Boolean(id))
-        )
-      )
-
-      let proveedoresMap: Record<string, Proveedor> = {}
-      if (proveedorIds.length > 0) {
-        const { data: proveedoresData, error: proveedoresError } = await supabase
-          .from('proveedores')
-          .select('id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at')
-          .in('id', proveedorIds)
-          .eq('activo', true)
-
-        if (proveedoresError) throw proveedoresError
-
-        proveedoresMap = Object.fromEntries(
-          (proveedoresData || []).map((prov) => [prov.id, prov])
-        )
-      }
-
-      const productosCalculados: ProductoRentabilidad[] = (productosData || []).map((producto) => {
-        const precioActual = producto.precio_actual ?? 0
-        const precioCosto = producto.precio_costo ?? 0
-        const utilidad = precioActual - precioCosto
-        const margen = precioActual > 0 ? (utilidad / precioActual) * 100 : null
-
-        return {
-          ...producto,
-          proveedor: producto.proveedor_principal_id
-            ? proveedoresMap[producto.proveedor_principal_id]
-            : undefined,
-          utilidad_unitaria: utilidad,
-          margen_bruto: utilidad,
-          margen_pct: margen !== null ? Math.round(margen * 10) / 10 : null
-        }
-      })
-
-      setProductos(productosCalculados)
-    } catch (err) {
-      console.error('Error cargando rentabilidad:', err)
-      setError('No pudimos cargar los datos de rentabilidad.')
-      setProductos([])
-    } finally {
-      setLoading(false)
-    }
-  }
+  const productos = data?.productos ?? []
+  const promedios = data?.promedios ?? { margenPromedio: 0, precioPromedioVenta: 0, precioPromedioCosto: 0 }
+  const proveedoresDropdown = proveedoresData ?? []
 
   const categorias = useMemo(() => {
     const values = new Set(productos.map((p) => p.categoria).filter(Boolean))
-    return Array.from(values).sort()
-  }, [productos])
-
-  const proveedores = useMemo(() => {
-    const values = new Map<string, string>()
-    productos.forEach((p) => {
-      if (p.proveedor?.id && p.proveedor?.nombre) {
-        values.set(p.proveedor.id, p.proveedor.nombre)
-      }
-    })
-    return Array.from(values.entries()).sort((a, b) => a[1].localeCompare(b[1]))
+    return Array.from(values).sort() as string[]
   }, [productos])
 
   const filteredProductos = useMemo(() => {
@@ -112,12 +48,11 @@ export default function Rentabilidad() {
     let items = productos.filter((p) => {
       const matchesSearch =
         searchLower.length === 0 ||
-        p.nombre.toLowerCase().includes(searchLower) ||
-        (p.codigo_barras ?? '').toLowerCase().includes(searchLower)
+        p.nombre.toLowerCase().includes(searchLower)
 
       const matchesCategoria = !categoria || p.categoria === categoria
-      const matchesProveedor = !proveedorId || p.proveedor_principal_id === proveedorId
-      const margenValue = p.margen_pct ?? 0
+      const matchesProveedor = !proveedorId // No tenemos proveedor_id directo en este hook
+      const margenValue = p.margen_porcentaje ?? 0
       const matchesMargen = showNegativos ? true : margenValue >= 0
       const matchesMin = margenValue >= minMargen
 
@@ -129,9 +64,11 @@ export default function Rentabilidad() {
       if (sortKey === 'nombre') {
         compareValue = a.nombre.localeCompare(b.nombre)
       } else if (sortKey === 'utilidad') {
-        compareValue = a.utilidad_unitaria - b.utilidad_unitaria
+        const utilA = (a.precio_actual ?? 0) - (a.precio_costo ?? 0)
+        const utilB = (b.precio_actual ?? 0) - (b.precio_costo ?? 0)
+        compareValue = utilA - utilB
       } else {
-        compareValue = (a.margen_pct ?? -999) - (b.margen_pct ?? -999)
+        compareValue = (a.margen_porcentaje ?? -999) - (b.margen_porcentaje ?? -999)
       }
 
       return sortDir === 'asc' ? compareValue : -compareValue
@@ -151,10 +88,11 @@ export default function Rentabilidad() {
       }
     }
 
-    const totalMargen = productos.reduce((acc, p) => acc + (p.margen_pct ?? 0), 0)
-    const margenNegativo = productos.filter((p) => (p.margen_pct ?? 0) < 0).length
-    const margenBajo = productos.filter((p) => (p.margen_pct ?? 0) < minMargen).length
-    const utilidadPromedio = productos.reduce((acc, p) => acc + p.utilidad_unitaria, 0) / total
+    const totalMargen = productos.reduce((acc, p) => acc + (p.margen_porcentaje ?? 0), 0)
+    const margenNegativo = productos.filter((p) => (p.margen_porcentaje ?? 0) < 0).length
+    const margenBajo = productos.filter((p) => (p.margen_porcentaje ?? 0) < minMargen).length
+    const utilidades = productos.map(p => (p.precio_actual ?? 0) - (p.precio_costo ?? 0))
+    const utilidadPromedio = utilidades.reduce((a, b) => a + b, 0) / total
 
     return {
       promedioMargen: Math.round((totalMargen / total) * 10) / 10,
@@ -164,14 +102,20 @@ export default function Rentabilidad() {
     }
   }, [productos, minMargen])
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
   }
 
-  if (error) {
+  if (isError) {
     return (
-      <div className="bg-red-50 border border-red-200 text-red-700 rounded-lg p-4">
-        {error}
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Panel de Rentabilidad</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
       </div>
     )
   }
@@ -184,11 +128,12 @@ export default function Rentabilidad() {
           <p className="text-gray-600">Controla márgenes y rentabilidad por producto.</p>
         </div>
         <button
-          onClick={loadRentabilidad}
-          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50"
         >
           <TrendingUp className="w-4 h-4" />
-          Actualizar
+          {isFetching ? 'Actualizando...' : 'Actualizar'}
         </button>
       </div>
 
@@ -240,7 +185,7 @@ export default function Rentabilidad() {
               <input
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                placeholder="Nombre o código de barras"
+                placeholder="Nombre del producto"
                 className="flex-1 outline-none text-sm"
               />
             </div>
@@ -256,21 +201,6 @@ export default function Rentabilidad() {
               {categorias.map((cat) => (
                 <option key={cat} value={cat}>
                   {cat}
-                </option>
-              ))}
-            </select>
-          </div>
-          <div>
-            <label className="text-sm text-gray-500">Proveedor</label>
-            <select
-              value={proveedorId}
-              onChange={(e) => setProveedorId(e.target.value)}
-              className="mt-1 w-full px-3 py-2 border rounded-lg text-sm"
-            >
-              <option value="">Todos</option>
-              {proveedores.map(([id, nombre]) => (
-                <option key={id} value={id}>
-                  {nombre}
                 </option>
               ))}
             </select>
@@ -326,7 +256,6 @@ export default function Rentabilidad() {
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Producto</th>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Categoría</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Proveedor</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Precio</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Costo</th>
               <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Utilidad</th>
@@ -336,13 +265,14 @@ export default function Rentabilidad() {
           <tbody className="bg-white divide-y divide-gray-200">
             {filteredProductos.length === 0 && (
               <tr>
-                <td colSpan={7} className="px-6 py-8 text-center text-gray-500">
+                <td colSpan={6} className="px-6 py-8 text-center text-gray-500">
                   No hay productos con estos filtros.
                 </td>
               </tr>
             )}
             {filteredProductos.map((producto) => {
-              const margen = producto.margen_pct ?? 0
+              const margen = producto.margen_porcentaje ?? 0
+              const utilidad = (producto.precio_actual ?? 0) - (producto.precio_costo ?? 0)
               const isNegative = margen < 0
               const isLow = margen >= 0 && margen < minMargen
 
@@ -350,17 +280,15 @@ export default function Rentabilidad() {
                 <tr key={producto.id} className={isNegative ? 'bg-red-50' : isLow ? 'bg-orange-50' : ''}>
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{producto.nombre}</div>
-                    <div className="text-xs text-gray-500">{producto.codigo_barras ?? 'Sin código'}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{producto.categoria ?? '-'}</td>
-                  <td className="px-6 py-4 text-sm text-gray-600">{producto.proveedor?.nombre ?? '-'}</td>
                   <td className="px-6 py-4 text-sm text-right text-gray-700">${producto.precio_actual ?? 0}</td>
                   <td className="px-6 py-4 text-sm text-right text-gray-700">${producto.precio_costo ?? 0}</td>
-                  <td className={`px-6 py-4 text-sm text-right ${producto.utilidad_unitaria < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    ${producto.utilidad_unitaria}
+                  <td className={`px-6 py-4 text-sm text-right ${utilidad < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    ${utilidad.toFixed(2)}
                   </td>
                   <td className={`px-6 py-4 text-sm text-right font-semibold ${isNegative ? 'text-red-600' : isLow ? 'text-orange-600' : 'text-emerald-700'}`}>
-                    {producto.margen_pct !== null ? `${producto.margen_pct}%` : 'N/A'}
+                    {margen.toFixed(1)}%
                   </td>
                 </tr>
               )

@@ -1,158 +1,20 @@
-import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Producto, PrecioHistorico, Proveedor } from '../types/database'
+import { useState } from 'react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
-
-type ProductoResumen = Pick<
-  Producto,
-  | 'id'
-  | 'nombre'
-  | 'categoria'
-  | 'codigo_barras'
-  | 'precio_actual'
-  | 'precio_costo'
-  | 'proveedor_principal_id'
-  | 'margen_ganancia'
->
-
-type PrecioHistoricoResumen = Pick<
-  PrecioHistorico,
-  'id' | 'producto_id' | 'precio' | 'fuente' | 'fecha' | 'cambio_porcentaje'
->
-
-interface ProductoConHistorial extends ProductoResumen {
-  historial?: PrecioHistoricoResumen[]
-  proveedor?: Proveedor
-}
+import { useProductos, ProductoConHistorial } from '../hooks/queries'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Productos() {
-  const [productos, setProductos] = useState<ProductoConHistorial[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedProducto, setSelectedProducto] = useState<ProductoConHistorial | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
-  const [totalProductos, setTotalProductos] = useState(0)
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeSearch, setBarcodeSearch] = useState('')
+  const [selectedProducto, setSelectedProducto] = useState<ProductoConHistorial | null>(null)
   const pageSize = 20
 
-  const loadProductos = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
-
-      const trimmedBarcode = barcodeSearch.trim()
-      const isBarcodeSearch = trimmedBarcode.length > 0
-
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
-
-      let query = supabase
-        .from('productos')
-        .select(
-          'id,nombre,categoria,codigo_barras,precio_actual,precio_costo,proveedor_principal_id,margen_ganancia',
-          { count: 'exact' }
-        )
-        .eq('activo', true)
-        .order('nombre')
-
-      if (isBarcodeSearch) {
-        query = query.eq('codigo_barras', trimmedBarcode).limit(pageSize)
-      } else {
-        query = query.range(from, to)
-      }
-
-      const { data: productosData, count, error: productosError } = await query
-
-      if (productosError) throw productosError
-
-      setTotalProductos(count ?? 0)
-
-      if (productosData && productosData.length > 0) {
-        const productoIds = productosData.map((prod) => prod.id)
-        const proveedorIds = Array.from(
-          new Set(
-            productosData
-              .map((prod) => prod.proveedor_principal_id)
-              .filter((id): id is string => Boolean(id))
-          )
-        )
-
-        // Batch query: Cargar todos los proveedores en 1 consulta
-        let proveedoresMap: Record<string, Proveedor> = {}
-        if (proveedorIds.length > 0) {
-          const { data: proveedoresData, error: proveedoresError } = await supabase
-            .from('proveedores')
-            .select('id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at')
-            .in('id', proveedorIds)
-            .eq('activo', true)
-
-          if (proveedoresError) throw proveedoresError
-          proveedoresMap = Object.fromEntries(
-            (proveedoresData || []).map((prov) => [prov.id, prov])
-          )
-        }
-
-        // Batch query: Cargar historial de precios para TODOS los productos en 1 consulta
-        // Esto elimina el problema N+1 (antes: N consultas, ahora: 1 consulta)
-        let historialPorProducto: Record<string, PrecioHistoricoResumen[]> = {}
-        const { data: historialData, error: historialError } = await supabase
-          .from('precios_historicos')
-          .select('id,producto_id,precio,fuente,fecha,cambio_porcentaje')
-          .in('producto_id', productoIds)
-          .order('fecha', { ascending: false })
-
-        if (historialError) {
-          console.error('Error cargando historial:', historialError)
-        } else if (historialData) {
-          // Agrupar historial por producto_id y limitar a 5 por producto
-          historialPorProducto = historialData.reduce<Record<string, PrecioHistoricoResumen[]>>(
-            (acc, item) => {
-              const key = item.producto_id
-              if (!acc[key]) acc[key] = []
-              if (acc[key].length < 5) { // Limitar a 5 registros por producto
-                acc[key].push(item)
-              }
-              return acc
-            },
-            {}
-          )
-        }
-
-        // Combinar datos sin consultas adicionales
-        const productosConDatos = productosData.map((prod) => ({
-          ...prod,
-          historial: historialPorProducto[prod.id] || [],
-          proveedor: prod.proveedor_principal_id
-            ? proveedoresMap[prod.proveedor_principal_id]
-            : undefined
-        }))
-
-        setProductos(productosConDatos)
-        setSelectedProducto((prev) => {
-          if (isBarcodeSearch) {
-            return productosConDatos[0] || null
-          }
-          if (!prev) return null
-          return productosConDatos.find((prod) => prod.id === prev.id) || null
-        })
-      } else {
-        setProductos([])
-        setSelectedProducto(null)
-      }
-    } catch (error) {
-      console.error('Error cargando productos:', error)
-      setError('No pudimos cargar los productos. Intente nuevamente.')
-      setProductos([])
-      setSelectedProducto(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, pageSize, barcodeSearch])
-
-  useEffect(() => {
-    loadProductos()
-  }, [loadProductos])
+  const { data, isLoading, isError, error, refetch, isFetching } = useProductos({
+    page,
+    pageSize,
+    barcodeSearch: barcodeSearch || undefined
+  })
 
   const handleBarcodeSearch = () => {
     setPage(1)
@@ -166,6 +28,7 @@ export default function Productos() {
   }
 
   const handleExportCsv = () => {
+    const productos = data?.productos ?? []
     if (productos.length === 0) return
 
     const headers = [
@@ -214,34 +77,37 @@ export default function Productos() {
     URL.revokeObjectURL(url)
   }
 
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
   }
 
-  const isBarcodeSearch = barcodeSearch.trim().length > 0
-  const totalPages = isBarcodeSearch ? 1 : Math.max(1, Math.ceil(totalProductos / pageSize))
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos y Precios</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
+    )
+  }
+
+  const { productos = [], total = 0 } = data ?? {}
+  const isBarcodeSearchActive = barcodeSearch.trim().length > 0
+  const totalPages = isBarcodeSearchActive ? 1 : Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos y Precios</h1>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
-          <span>{error}</span>
-          <button
-            onClick={loadProductos}
-            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
           <div className="text-sm text-gray-600">
-            Mostrando {productos.length} de {totalProductos} productos
-            {isBarcodeSearch && (
+            Mostrando {productos.length} de {total} productos
+            {isBarcodeSearchActive && (
               <span className="ml-2 text-xs text-blue-600">
                 Filtro por código: {barcodeSearch.trim()}
               </span>
@@ -250,14 +116,14 @@ export default function Productos() {
           <div className="flex items-center gap-2">
             <button
               onClick={handleExportCsv}
-              disabled={loading || productos.length === 0}
+              disabled={isFetching || productos.length === 0}
               className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
             >
               Exportar CSV
             </button>
             <button
               onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-              disabled={page === 1 || loading || isBarcodeSearch}
+              disabled={page === 1 || isFetching || isBarcodeSearchActive}
               className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
             >
               Anterior
@@ -267,7 +133,7 @@ export default function Productos() {
             </span>
             <button
               onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-              disabled={page === totalPages || loading || isBarcodeSearch}
+              disabled={page === totalPages || isFetching || isBarcodeSearchActive}
               className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
             >
               Siguiente
@@ -293,14 +159,14 @@ export default function Productos() {
             />
             <button
               onClick={handleBarcodeSearch}
-              disabled={loading || barcodeInput.trim().length === 0}
+              disabled={isFetching || barcodeInput.trim().length === 0}
               className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
             >
               Buscar
             </button>
             <button
               onClick={handleBarcodeClear}
-              disabled={loading || (!barcodeInput && !barcodeSearch)}
+              disabled={isFetching || (!barcodeInput && !barcodeSearch)}
               className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm disabled:opacity-50"
             >
               Limpiar

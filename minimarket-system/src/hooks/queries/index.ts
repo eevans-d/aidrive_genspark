@@ -13,7 +13,7 @@ export type { ProductoConHistorial, ProductosResult, UseProductosOptions } from 
 
 // Proveedores
 export { useProveedores } from './useProveedores';
-export type { ProveedorConProductos, ProveedoresResult } from './useProveedores';
+export type { ProveedorConProductos, ProveedoresResult, ProductoProveedor, UseProveedoresOptions } from './useProveedores';
 
 // Stock
 export { useStock } from './useStock';
@@ -22,6 +22,8 @@ export type { StockConProducto, StockResult } from './useStock';
 // Tareas
 export { useTareas } from './useTareas';
 export type { TareasResult, UseTareasOptions } from './useTareas';
+// Re-export TareaPendiente from database types for convenience
+export type { TareaPendiente } from '../../types/database';
 
 // Kardex
 export { useKardex } from './useKardex';
@@ -34,3 +36,4 @@ export type { ProductoRentabilidad, RentabilidadResult } from './useRentabilidad
 // Deposito
 export { useDeposito } from './useDeposito';
 export type { StockDepositoConProducto, DepositoResult } from './useDeposito';
+

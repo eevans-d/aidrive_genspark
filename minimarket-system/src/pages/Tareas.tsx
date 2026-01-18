@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { TareaPendiente } from '../types/database'
+import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
+import { useTareas, TareaPendiente } from '../hooks/queries'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { supabase } from '../lib/supabase'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Tareas() {
-  const [tareas, setTareas] = useState<TareaPendiente[]>([])
-  const [loading, setLoading] = useState(true)
+  const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
   const [formData, setFormData] = useState({
     titulo: '',
@@ -15,41 +16,23 @@ export default function Tareas() {
     fecha_vencimiento: ''
   })
 
-  useEffect(() => {
-    loadTareas()
-  }, [])
+  const { data, isLoading, isError, error, refetch, isFetching } = useTareas()
 
-  async function loadTareas() {
-    try {
-      const { data } = await supabase
-        .from('tareas_pendientes')
-        .select('*')
-        .order('prioridad', { ascending: false })
-        .order('fecha_creacion', { ascending: false })
-
-      if (data) setTareas(data)
-    } catch (error) {
-      console.error('Error cargando tareas:', error)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  async function handleCreateTarea(e: React.FormEvent) {
-    e.preventDefault()
-
-    try {
+  // Mutación para crear tarea
+  const createMutation = useMutation({
+    mutationFn: async (newTarea: typeof formData) => {
       const { error } = await supabase
         .from('tareas_pendientes')
         .insert({
-          ...formData,
+          ...newTarea,
           estado: 'pendiente',
           creada_por_nombre: 'Usuario Sistema',
-          fecha_vencimiento: formData.fecha_vencimiento || null
+          fecha_vencimiento: newTarea.fecha_vencimiento || null
         })
-
       if (error) throw error
-
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tareas'] })
       setShowForm(false)
       setFormData({
         titulo: '',
@@ -58,14 +41,12 @@ export default function Tareas() {
         prioridad: 'normal',
         fecha_vencimiento: ''
       })
-      loadTareas()
-    } catch (error) {
-      console.error('Error creando tarea:', error)
     }
-  }
+  })
 
-  async function handleCompletarTarea(id: string) {
-    try {
+  // Mutación para completar tarea
+  const completeMutation = useMutation({
+    mutationFn: async (id: string) => {
       const { error } = await supabase
         .from('tareas_pendientes')
         .update({
@@ -74,19 +55,16 @@ export default function Tareas() {
           completada_por_nombre: 'Usuario Sistema'
         })
         .eq('id', id)
-
       if (error) throw error
-      loadTareas()
-    } catch (error) {
-      console.error('Error completando tarea:', error)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tareas'] })
     }
-  }
+  })
 
-  async function handleCancelarTarea(id: string) {
-    const razon = prompt('Ingrese la razón de cancelación:')
-    if (!razon) return
-
-    try {
+  // Mutación para cancelar tarea
+  const cancelMutation = useMutation({
+    mutationFn: async ({ id, razon }: { id: string; razon: string }) => {
       const { error } = await supabase
         .from('tareas_pendientes')
         .update({
@@ -96,20 +74,49 @@ export default function Tareas() {
           razon_cancelacion: razon
         })
         .eq('id', id)
-
       if (error) throw error
-      loadTareas()
-    } catch (error) {
-      console.error('Error cancelando tarea:', error)
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['tareas'] })
     }
+  })
+
+  const handleCreateTarea = (e: React.FormEvent) => {
+    e.preventDefault()
+    createMutation.mutate(formData)
   }
 
-  const tareasPendientes = tareas.filter(t => t.estado === 'pendiente')
-  const tareasCompletadas = tareas.filter(t => t.estado === 'completada')
+  const handleCompletarTarea = (id: string) => {
+    completeMutation.mutate(id)
+  }
 
-  if (loading) {
+  const handleCancelarTarea = (id: string) => {
+    const razon = prompt('Ingrese la razón de cancelación:')
+    if (!razon) return
+    cancelMutation.mutate({ id, razon })
+  }
+
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
   }
+
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Gestión de Tareas</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
+    )
+  }
+
+  const { tareas = [] } = data ?? {}
+  const tareasPendientes = tareas.filter(t => t.estado === 'pendiente')
+  const tareasCompletadas = tareas.filter(t => t.estado === 'completada')
 
   return (
     <div className="space-y-6">
@@ -203,9 +210,10 @@ export default function Tareas() {
             <div className="flex gap-2">
               <button
                 type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                disabled={createMutation.isPending}
+                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
               >
-                Crear Tarea
+                {createMutation.isPending ? 'Creando...' : 'Crear Tarea'}
               </button>
               <button
                 type="button"
@@ -230,13 +238,12 @@ export default function Tareas() {
           {tareasPendientes.map((tarea) => (
             <div
               key={tarea.id}
-              className={`p-4 rounded-lg border-l-4 ${
-                tarea.prioridad === 'urgente'
+              className={`p-4 rounded-lg border-l-4 ${tarea.prioridad === 'urgente'
                   ? 'border-red-500 bg-red-50'
                   : tarea.prioridad === 'normal'
-                  ? 'border-yellow-500 bg-yellow-50'
-                  : 'border-blue-500 bg-blue-50'
-              }`}
+                    ? 'border-yellow-500 bg-yellow-50'
+                    : 'border-blue-500 bg-blue-50'
+                }`}
             >
               <div className="flex justify-between items-start">
                 <div className="flex-1">
@@ -251,13 +258,12 @@ export default function Tareas() {
                     {tarea.fecha_vencimiento && (
                       <span>Vence: {new Date(tarea.fecha_vencimiento).toLocaleString('es-AR')}</span>
                     )}
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      tarea.prioridad === 'urgente'
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${tarea.prioridad === 'urgente'
                         ? 'bg-red-100 text-red-800'
                         : tarea.prioridad === 'normal'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-blue-100 text-blue-800'
-                    }`}>
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-blue-100 text-blue-800'
+                      }`}>
                       {tarea.prioridad.toUpperCase()}
                     </span>
                   </div>
@@ -265,14 +271,16 @@ export default function Tareas() {
                 <div className="flex gap-2 ml-4">
                   <button
                     onClick={() => handleCompletarTarea(tarea.id)}
-                    className="p-2 text-green-600 hover:bg-green-100 rounded-lg"
+                    disabled={completeMutation.isPending}
+                    className="p-2 text-green-600 hover:bg-green-100 rounded-lg disabled:opacity-50"
                     title="Completar"
                   >
                     <CheckCircle className="w-5 h-5" />
                   </button>
                   <button
                     onClick={() => handleCancelarTarea(tarea.id)}
-                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg"
+                    disabled={cancelMutation.isPending}
+                    className="p-2 text-red-600 hover:bg-red-100 rounded-lg disabled:opacity-50"
                     title="Cancelar"
                   >
                     <X className="w-5 h-5" />

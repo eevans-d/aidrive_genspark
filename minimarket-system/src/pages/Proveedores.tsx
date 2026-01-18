@@ -1,129 +1,48 @@
-import { useCallback, useEffect, useState } from 'react'
-import { supabase } from '../lib/supabase'
-import { Proveedor, Producto } from '../types/database'
+import { useState } from 'react'
 import { Phone, Mail, Package } from 'lucide-react'
-
-type ProductoProveedor = Pick<
-  Producto,
-  'id' | 'nombre' | 'categoria' | 'precio_actual' | 'margen_ganancia' | 'proveedor_principal_id'
->
-
-interface ProveedorConProductos extends Proveedor {
-  productos?: ProductoProveedor[]
-}
+import { useProveedores, ProveedorConProductos } from '../hooks/queries'
+import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Proveedores() {
-  const [proveedores, setProveedores] = useState<ProveedorConProductos[]>([])
-  const [loading, setLoading] = useState(true)
-  const [selectedProveedor, setSelectedProveedor] = useState<ProveedorConProductos | null>(null)
-  const [error, setError] = useState<string | null>(null)
   const [page, setPage] = useState(1)
-  const [totalProveedores, setTotalProveedores] = useState(0)
+  const [selectedProveedor, setSelectedProveedor] = useState<ProveedorConProductos | null>(null)
   const pageSize = 20
 
-  const loadProveedores = useCallback(async () => {
-    try {
-      setLoading(true)
-      setError(null)
+  const { data, isLoading, isError, error, refetch, isFetching } = useProveedores({ page, pageSize })
 
-      const from = (page - 1) * pageSize
-      const to = from + pageSize - 1
-
-      const { data: proveedoresData, count, error: proveedoresError } = await supabase
-        .from('proveedores')
-        .select(
-          'id,nombre,contacto,email,telefono,productos_ofrecidos,activo,created_at,updated_at',
-          { count: 'exact' }
-        )
-        .eq('activo', true)
-        .order('nombre')
-        .range(from, to)
-
-      if (proveedoresError) throw proveedoresError
-      setTotalProveedores(count ?? 0)
-
-      if (proveedoresData) {
-        const proveedorIds = proveedoresData.map((prov) => prov.id)
-        let productosPorProveedor: Record<string, ProductoProveedor[]> = {}
-
-        if (proveedorIds.length > 0) {
-          const { data: productosData, error: productosError } = await supabase
-            .from('productos')
-            .select('id,nombre,categoria,precio_actual,margen_ganancia,proveedor_principal_id')
-            .in('proveedor_principal_id', proveedorIds)
-            .eq('activo', true)
-
-          if (productosError) throw productosError
-
-          productosPorProveedor = (productosData || []).reduce<Record<string, ProductoProveedor[]>>(
-            (acc, producto) => {
-              const key = producto.proveedor_principal_id || 'sin_proveedor'
-              if (!acc[key]) acc[key] = []
-              acc[key].push(producto)
-              return acc
-            },
-            {}
-          )
-        }
-
-        const proveedoresConProductos = proveedoresData.map((prov) => ({
-          ...prov,
-          productos: productosPorProveedor[prov.id] || []
-        }))
-
-        setProveedores(proveedoresConProductos)
-        setSelectedProveedor((prev) => {
-          if (!prev) return null
-          return proveedoresConProductos.find((prov) => prov.id === prev.id) || null
-        })
-      } else {
-        setProveedores([])
-        setSelectedProveedor(null)
-      }
-    } catch (error) {
-      console.error('Error cargando proveedores:', error)
-      setError('No pudimos cargar los proveedores. Intente nuevamente.')
-      setProveedores([])
-      setSelectedProveedor(null)
-    } finally {
-      setLoading(false)
-    }
-  }, [page, pageSize])
-
-  useEffect(() => {
-    loadProveedores()
-  }, [loadProveedores])
-
-  if (loading) {
+  if (isLoading) {
     return <div className="text-center py-8">Cargando...</div>
   }
 
-  const totalPages = Math.max(1, Math.ceil(totalProveedores / pageSize))
+  if (isError) {
+    return (
+      <div className="space-y-6">
+        <h1 className="text-3xl font-bold text-gray-900">Gestión de Proveedores</h1>
+        <ErrorMessage
+          message={parseErrorMessage(error)}
+          type={detectErrorType(error)}
+          onRetry={() => refetch()}
+          isRetrying={isFetching}
+        />
+      </div>
+    )
+  }
+
+  const { proveedores = [], total = 0 } = data ?? {}
+  const totalPages = Math.max(1, Math.ceil(total / pageSize))
 
   return (
     <div className="space-y-6">
       <h1 className="text-3xl font-bold text-gray-900">Gestión de Proveedores</h1>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 flex items-center justify-between">
-          <span>{error}</span>
-          <button
-            onClick={loadProveedores}
-            className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700"
-          >
-            Reintentar
-          </button>
-        </div>
-      )}
-
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div className="text-sm text-gray-600">
-          Mostrando {proveedores.length} de {totalProveedores} proveedores
+          Mostrando {proveedores.length} de {total} proveedores
         </div>
         <div className="flex items-center gap-2">
           <button
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
-            disabled={page === 1 || loading}
+            disabled={page === 1 || isFetching}
             className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
           >
             Anterior
@@ -133,7 +52,7 @@ export default function Proveedores() {
           </span>
           <button
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
-            disabled={page === totalPages || loading}
+            disabled={page === totalPages || isFetching}
             className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
           >
             Siguiente
@@ -153,9 +72,8 @@ export default function Proveedores() {
                 <div
                   key={proveedor.id}
                   onClick={() => setSelectedProveedor(proveedor)}
-                  className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
-                    selectedProveedor?.id === proveedor.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
-                  }`}
+                  className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${selectedProveedor?.id === proveedor.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                    }`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
