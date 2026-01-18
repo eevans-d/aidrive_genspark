@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
+import { depositoApi, ApiError } from '../lib/apiClient'
 import { Producto, Proveedor } from '../types/database'
 import { Plus, Minus, Search } from 'lucide-react'
 
@@ -47,7 +48,7 @@ export default function Deposito() {
     staleTime: 1000 * 60 * 10,
   })
 
-  // Mutación para registrar movimiento
+  // Mutación para registrar movimiento (via gateway)
   const movimientoMutation = useMutation({
     mutationFn: async (params: {
       productoId: string
@@ -57,22 +58,19 @@ export default function Deposito() {
       proveedorId: string | null
       observaciones: string | null
     }) => {
-      const { error } = await supabase.rpc('sp_movimiento_inventario', {
-        p_producto_id: params.productoId,
-        p_tipo: params.tipo,
-        p_cantidad: params.cantidad,
-        p_origen: params.motivo,
-        p_destino: 'Principal',
-        p_usuario: user?.id ?? null,
-        p_orden_compra_id: null,
-        p_proveedor_id: params.proveedorId,
-        p_observaciones: params.observaciones
+      return depositoApi.movimiento({
+        producto_id: params.productoId,
+        tipo: params.tipo,
+        cantidad: params.cantidad,
+        motivo: params.motivo,
+        proveedor_id: params.proveedorId,
+        observaciones: params.observaciones
       })
-      if (error) throw error
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['kardex'] })
+      queryClient.invalidateQueries({ queryKey: ['deposito'] })
       setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente' })
       // Limpiar formulario
       setSelectedProducto(null)
@@ -82,10 +80,12 @@ export default function Deposito() {
       setObservaciones('')
       setSearchTerm('')
     },
-    onError: (error: any) => {
-      const mensajeError = error?.message?.includes('Stock insuficiente')
+    onError: (error: ApiError | Error) => {
+      const mensajeError = error.message?.includes('Stock insuficiente')
         ? 'Stock insuficiente para registrar la salida'
-        : 'Error al registrar el movimiento'
+        : error instanceof ApiError
+          ? error.message
+          : 'Error al registrar el movimiento'
       setMensaje({ tipo: 'error', texto: mensajeError })
     }
   })

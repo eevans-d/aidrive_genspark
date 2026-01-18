@@ -118,14 +118,14 @@ Deno.serve(async (req) => {
   // ========================================================================
   const origin = req.headers.get('origin');
   const requireOrigin = Deno.env.get('REQUIRE_ORIGIN') !== 'false';
-  
+
   // For browser requests, Origin header is required
   // Allow requests without Origin for server-to-server calls
   if (requireOrigin && origin === null) {
     // Check if it looks like a browser request (has typical browser headers)
     const userAgent = req.headers.get('user-agent') || '';
     const isBrowserLike = /mozilla|chrome|safari|firefox|edge|opera/i.test(userAgent);
-    
+
     if (isBrowserLike) {
       logger.warn('CORS_NO_ORIGIN', { requestId, userAgent, clientIp });
       return fail(
@@ -306,7 +306,7 @@ Deno.serve(async (req) => {
     ) => {
       const auditContext = extractAuditContext(req);
       const supabaseClient = await createAuditClient();
-      
+
       await auditLog(supabaseClient, {
         action,
         usuario_id: user?.id,
@@ -744,12 +744,12 @@ Deno.serve(async (req) => {
       const producto = productos[0] as Record<string, unknown>;
       const categorias = producto.categoria_id
         ? await queryTable(
-            supabaseUrl,
-            'categorias',
-            requestHeaders(),
-            { id: producto.categoria_id },
-            'id,margen_minimo',
-          )
+          supabaseUrl,
+          'categorias',
+          requestHeaders(),
+          { id: producto.categoria_id },
+          'id,margen_minimo',
+        )
         : [];
       const categoria = categorias[0] as Record<string, unknown> | undefined;
       const margenMinimo = categoria?.margen_minimo;
@@ -1065,8 +1065,8 @@ Deno.serve(async (req) => {
           tareas_completadas: entry.tareas_completadas,
           tiempo_resolucion_promedio_horas: Number(entry._count_resolucion)
             ? Number(
-                (Number(entry._acumulado_resolucion) / Number(entry._count_resolucion)).toFixed(2),
-              )
+              (Number(entry._acumulado_resolucion) / Number(entry._count_resolucion)).toFixed(2),
+            )
             : null,
           dias_atraso_promedio: Number(entry._count_atraso)
             ? Number((Number(entry._acumulado_atraso) / Number(entry._count_atraso)).toFixed(2))
@@ -1091,6 +1091,140 @@ Deno.serve(async (req) => {
           },
         },
       });
+    }
+
+    // ====================================================================
+    // ENDPOINTS: TAREAS CRUD (3 endpoints)
+    // ====================================================================
+
+    // POST /tareas - Crear nueva tarea
+    if (path === '/tareas' && method === 'POST') {
+      checkRole(['admin', 'supervisor', 'empleado']);
+
+      const bodyResult = await parseJsonBody<{
+        titulo: string;
+        descripcion?: string;
+        asignada_a_nombre?: string;
+        prioridad?: 'baja' | 'normal' | 'urgente';
+        fecha_vencimiento?: string | null;
+      }>();
+
+      if (bodyResult instanceof Response) return bodyResult;
+      const body = bodyResult;
+
+      if (!body.titulo || typeof body.titulo !== 'string' || body.titulo.trim().length === 0) {
+        return respondFail('VALIDATION_ERROR', 'El título es requerido', 400);
+      }
+
+      const prioridad = body.prioridad || 'normal';
+      if (!['baja', 'normal', 'urgente'].includes(prioridad)) {
+        return respondFail('VALIDATION_ERROR', 'Prioridad inválida', 400);
+      }
+
+      const tareaData = {
+        titulo: body.titulo.trim(),
+        descripcion: body.descripcion?.trim() || null,
+        asignada_a_nombre: body.asignada_a_nombre?.trim() || null,
+        prioridad,
+        fecha_vencimiento: body.fecha_vencimiento || null,
+        estado: 'pendiente',
+        creada_por_nombre: user?.email || 'Sistema',
+      };
+
+      const insertResult = await insertTable(
+        supabaseUrl!,
+        'tareas_pendientes',
+        tareaData,
+        requestHeaders(),
+      );
+
+      if (!insertResult.success) {
+        return respondFail('INSERT_ERROR', insertResult.error || 'Error al crear tarea', 500);
+      }
+
+      await logAudit('TAREA_CREADA', 'tarea', insertResult.data?.id || 'unknown', {
+        titulo: tareaData.titulo,
+        prioridad: tareaData.prioridad,
+      });
+
+      logger.info('TAREA_CREATED', { requestId, titulo: tareaData.titulo });
+      return respondOk(insertResult.data, 201, { message: 'Tarea creada exitosamente' });
+    }
+
+    // PUT /tareas/:id/completar - Marcar tarea como completada
+    if (path.match(/^\/tareas\/[a-f0-9-]+\/completar$/) && method === 'PUT') {
+      checkRole(['admin', 'supervisor', 'empleado']);
+
+      const tareaId = path.split('/')[2];
+      if (!isUuid(tareaId)) {
+        return respondFail('VALIDATION_ERROR', 'ID de tarea inválido', 400);
+      }
+
+      const updateData = {
+        estado: 'completada',
+        fecha_completada: new Date().toISOString(),
+        completada_por_nombre: user?.email || 'Sistema',
+      };
+
+      const updateResult = await updateTable(
+        supabaseUrl!,
+        'tareas_pendientes',
+        tareaId,
+        updateData,
+        requestHeaders(),
+      );
+
+      if (!updateResult.success) {
+        return respondFail('UPDATE_ERROR', updateResult.error || 'Error al completar tarea', 500);
+      }
+
+      await logAudit('TAREA_COMPLETADA', 'tarea', tareaId, {
+        completada_por: user?.email,
+      });
+
+      logger.info('TAREA_COMPLETED', { requestId, tareaId });
+      return respondOk(updateResult.data, 200, { message: 'Tarea completada exitosamente' });
+    }
+
+    // PUT /tareas/:id/cancelar - Cancelar tarea
+    if (path.match(/^\/tareas\/[a-f0-9-]+\/cancelar$/) && method === 'PUT') {
+      checkRole(['admin', 'supervisor']);
+
+      const tareaId = path.split('/')[2];
+      if (!isUuid(tareaId)) {
+        return respondFail('VALIDATION_ERROR', 'ID de tarea inválido', 400);
+      }
+
+      const bodyResult = await parseJsonBody<{ razon?: string }>();
+      if (bodyResult instanceof Response) return bodyResult;
+      const body = bodyResult;
+
+      const updateData = {
+        estado: 'cancelada',
+        fecha_cancelada: new Date().toISOString(),
+        cancelada_por_nombre: user?.email || 'Sistema',
+        razon_cancelacion: body.razon?.trim() || 'Sin especificar',
+      };
+
+      const updateResult = await updateTable(
+        supabaseUrl!,
+        'tareas_pendientes',
+        tareaId,
+        updateData,
+        requestHeaders(),
+      );
+
+      if (!updateResult.success) {
+        return respondFail('UPDATE_ERROR', updateResult.error || 'Error al cancelar tarea', 500);
+      }
+
+      await logAudit('TAREA_CANCELADA', 'tarea', tareaId, {
+        cancelada_por: user?.email,
+        razon: updateData.razon_cancelacion,
+      }, 'warning');
+
+      logger.info('TAREA_CANCELLED', { requestId, tareaId, razon: updateData.razon_cancelacion });
+      return respondOk(updateResult.data, 200, { message: 'Tarea cancelada exitosamente' });
     }
 
     // 18. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)

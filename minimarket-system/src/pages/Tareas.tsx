@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
 import { useTareas, TareaPendiente } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import { tareasApi, ApiError } from '../lib/apiClient'
 import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Tareas() {
@@ -18,18 +18,16 @@ export default function Tareas() {
 
   const { data, isLoading, isError, error, refetch, isFetching } = useTareas()
 
-  // Mutación para crear tarea
+  // Mutación para crear tarea (via gateway)
   const createMutation = useMutation({
     mutationFn: async (newTarea: typeof formData) => {
-      const { error } = await supabase
-        .from('tareas_pendientes')
-        .insert({
-          ...newTarea,
-          estado: 'pendiente',
-          creada_por_nombre: 'Usuario Sistema',
-          fecha_vencimiento: newTarea.fecha_vencimiento || null
-        })
-      if (error) throw error
+      return tareasApi.create({
+        titulo: newTarea.titulo,
+        descripcion: newTarea.descripcion || undefined,
+        asignada_a_nombre: newTarea.asignada_a_nombre || undefined,
+        prioridad: newTarea.prioridad,
+        fecha_vencimiento: newTarea.fecha_vencimiento || null
+      })
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
@@ -44,37 +42,20 @@ export default function Tareas() {
     }
   })
 
-  // Mutación para completar tarea
+  // Mutación para completar tarea (via gateway)
   const completeMutation = useMutation({
     mutationFn: async (id: string) => {
-      const { error } = await supabase
-        .from('tareas_pendientes')
-        .update({
-          estado: 'completada',
-          fecha_completada: new Date().toISOString(),
-          completada_por_nombre: 'Usuario Sistema'
-        })
-        .eq('id', id)
-      if (error) throw error
+      return tareasApi.completar(id)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
     }
   })
 
-  // Mutación para cancelar tarea
+  // Mutación para cancelar tarea (via gateway)
   const cancelMutation = useMutation({
     mutationFn: async ({ id, razon }: { id: string; razon: string }) => {
-      const { error } = await supabase
-        .from('tareas_pendientes')
-        .update({
-          estado: 'cancelada',
-          fecha_cancelada: new Date().toISOString(),
-          cancelada_por_nombre: 'Usuario Sistema',
-          razon_cancelacion: razon
-        })
-        .eq('id', id)
-      if (error) throw error
+      return tareasApi.cancelar(id, razon)
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
@@ -206,6 +187,14 @@ export default function Tareas() {
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
+
+            {createMutation.isError && (
+              <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+                {createMutation.error instanceof ApiError
+                  ? createMutation.error.message
+                  : 'Error al crear tarea'}
+              </div>
+            )}
 
             <div className="flex gap-2">
               <button
