@@ -32,7 +32,7 @@ export interface UseKardexOptions {
 /**
  * Fetcher para Kardex
  */
-async function fetchKardex(options: UseKardexOptions = {}): Promise<KardexResult> {
+export async function fetchKardex(options: UseKardexOptions = {}): Promise<KardexResult> {
         const { productoId, fechaDesde, fechaHasta, limit = 100 } = options;
 
         let query = supabase

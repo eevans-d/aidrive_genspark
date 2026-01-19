@@ -18,7 +18,7 @@ export interface DashboardStats {
 /**
  * Fetcher que ejecuta las 3 consultas del dashboard en paralelo
  */
-async function fetchDashboardStats(): Promise<DashboardStats> {
+export async function fetchDashboardStats(): Promise<DashboardStats> {
   // Ejecutar consultas en paralelo para mejor performance
   const [tareasResult, stockResult, productosResult] = await Promise.all([
     // 1. Tareas pendientes (top 5 por prioridad)

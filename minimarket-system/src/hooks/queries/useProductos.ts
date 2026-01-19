@@ -44,7 +44,7 @@ export interface UseProductosOptions {
 /**
  * Fetcher para productos con paginación y datos relacionados
  */
-async function fetchProductos(options: UseProductosOptions): Promise<ProductosResult> {
+export async function fetchProductos(options: UseProductosOptions): Promise<ProductosResult> {
         const { page, pageSize = 20, barcodeSearch } = options;
         const trimmedBarcode = barcodeSearch?.trim() ?? '';
         const isBarcodeSearch = trimmedBarcode.length > 0;

@@ -94,11 +94,11 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Dependencias:** RPC `sp_movimiento_inventario`.
 
 - **WS5.5 Paginación + select de columnas mínimas (P1)**  
-  **Aceptación:** listas largas no cargan todo el dataset; payload reducido.  
+  **Aceptación:** listas largas no cargan todo el dataset; payload reducido.
   **Dependencias:** queries ajustadas.
 
-- **WS5.6 Capa de datos con caching (P1)**  
-  **Aceptación:** caching, reintentos y estados uniformes en pantallas críticas.  
+- **WS5.6 Capa de datos con caching (P1)**
+  **Aceptación:** caching, reintentos y estados uniformes en pantallas críticas.
   **Dependencias:** decisión de librería (React Query/SWR).
 
 ### WS6 — CI/CD y Release (P1)
