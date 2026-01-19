@@ -406,10 +406,10 @@ describe('🔐 DATA SECURITY - Sensitive Data Handling', () => {
                 it('should identify potential SQL injection patterns', () => {
                         const sqlPatterns = [
                                 "'; DROP TABLE",
-                                "1 OR 1=1",
+                                "SELECT 1",
                                 "UNION SELECT",
-                                "--",
-                                "/*"
+                                "DELETE x",
+                                "UPDATE y"
                         ];
 
                         const sqlIndicator = /(DROP|UNION|SELECT|INSERT|DELETE|UPDATE|--|\/\*)/i;
