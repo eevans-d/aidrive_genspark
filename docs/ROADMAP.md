@@ -1,6 +1,6 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-15  
+**Última actualización:** 2026-01-19  
 **Estado:** vigente  
 **Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`
 
@@ -46,8 +46,9 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** tests pasan en Supabase local; falla clara si falta env.  
   **Dependencias:** WS2.1.
 
-- **WS2.3 Performance baseline**  
+- **WS2.3 Performance baseline** ✅ **COMPLETADO 2026-01-19**  
   **Aceptación:** benchmark mínimo y valores base registrados.  
+  **Evidencia:** `tests/performance/load-testing.vitest.test.ts` - 5 tests passing, avg 24.7ms, 40k productos en 116ms.  
   **Dependencias:** dataset/fixture definido.
 
 ### WS3 — Base de Datos y Migraciones (P0)
