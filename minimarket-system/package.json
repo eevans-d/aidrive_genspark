@@ -12,6 +12,8 @@
     "install-deps": "pnpm install --prefer-offline",
     "clean": "rm -rf node_modules .pnpm-store pnpm-lock.yaml && pnpm store prune",
     "test:e2e:frontend": "npx playwright test",
+    "test:components": "npx vitest run",
+    "test:components:watch": "npx vitest",
     "setup": "bash ../setup.sh",
     "setup:dev": "bash ../setup.sh dev",
     "setup:prod": "bash ../setup.sh prod",
@@ -103,6 +105,9 @@
   "devDependencies": {
     "@eslint/js": "^9.15.0",
     "@playwright/test": "^1.57.0",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "@types/node": "^22.10.7",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
@@ -113,11 +118,13 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.12.0",
+    "jsdom": "^27.4.0",
     "postcss": "8.4.49",
     "tailwindcss": "v3.4.16",
     "typescript": "~5.6.2",
     "typescript-eslint": "^8.15.0",
     "vite": "^6.0.1",
-    "vite-plugin-source-identifier": "1.1.2"
+    "vite-plugin-source-identifier": "1.1.2",
+    "vitest": "^4.0.17"
   }
 }

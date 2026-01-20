@@ -2,9 +2,20 @@ import { defineConfig } from 'vitest/config';
 import path from 'path';
 
 export default defineConfig({
+  // Environment variables for frontend hooks tests (mocked Supabase)
+  define: {
+    'import.meta.env.VITE_SUPABASE_URL': JSON.stringify(process.env.VITE_SUPABASE_URL || 'http://localhost'),
+    'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key-for-tests'),
+  },
   test: {
     // Test environment
     environment: 'node',
+    
+    // Environment variables for frontend tests
+    env: {
+      VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || 'http://localhost',
+      VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key-for-tests',
+    },
     
     // Coverage configuration
     coverage: {
