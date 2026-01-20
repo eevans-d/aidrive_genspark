@@ -1,20 +1,14 @@
 /**
- * Unit tests for api-minimarket helpers and gateway security.
+ * Unit tests for api-minimarket helpers: validation, pagination, supabase.
+ * 
+ * NOTE: Auth helpers tests moved to gateway-auth.test.ts to avoid duplication.
+ * 
+ * @module tests/unit/api-minimarket-gateway
  */
 
 import { describe, it, expect } from 'vitest';
 
 // Import helpers
-import {
-  extractBearerToken,
-  requireRole,
-  hasRole,
-  hasAnyRole,
-  createRequestHeaders,
-  BASE_ROLES,
-  type UserInfo,
-} from '../../supabase/functions/api-minimarket/helpers/auth.ts';
-
 import {
   isUuid,
   parsePositiveNumber,
@@ -37,95 +31,6 @@ import {
 } from '../../supabase/functions/api-minimarket/helpers/supabase.ts';
 
 // ============================================================================
-// AUTH HELPERS TESTS
-// ============================================================================
-
-describe('auth helpers', () => {
-  describe('extractBearerToken', () => {
-    it('extracts token from valid Bearer header', () => {
-      expect(extractBearerToken('Bearer abc123')).toBe('abc123');
-      expect(extractBearerToken('bearer XYZ')).toBe('XYZ');
-      expect(extractBearerToken('BEARER token')).toBe('token');
-    });
-
-    it('returns null for invalid headers', () => {
-      expect(extractBearerToken(null)).toBeNull();
-      expect(extractBearerToken('')).toBeNull();
-      expect(extractBearerToken('Basic abc123')).toBeNull();
-      expect(extractBearerToken('Bearer ')).toBeNull();
-      expect(extractBearerToken('Bearer')).toBeNull();
-    });
-  });
-
-  describe('requireRole', () => {
-    const adminUser: UserInfo = { id: '1', role: 'admin' };
-    const depositoUser: UserInfo = { id: '2', role: 'deposito' };
-    const ventasUser: UserInfo = { id: '3', role: 'ventas' };
-    const noRoleUser: UserInfo = { id: '4', role: null };
-
-    it('does not throw when user has allowed role', () => {
-      expect(() => requireRole(adminUser, ['admin'])).not.toThrow();
-      expect(() => requireRole(depositoUser, ['admin', 'deposito'])).not.toThrow();
-      expect(() => requireRole(ventasUser, BASE_ROLES)).not.toThrow();
-    });
-
-    it('throws UNAUTHORIZED when user is null', () => {
-      expect(() => requireRole(null, ['admin'])).toThrow(/No autorizado/);
-    });
-
-    it('throws FORBIDDEN when user lacks required role', () => {
-      expect(() => requireRole(ventasUser, ['admin'])).toThrow(/Acceso denegado/);
-      expect(() => requireRole(noRoleUser, ['admin'])).toThrow(/Acceso denegado/);
-    });
-  });
-
-  describe('hasRole', () => {
-    const adminUser: UserInfo = { id: '1', role: 'admin' };
-
-    it('returns true for matching role', () => {
-      expect(hasRole(adminUser, 'admin')).toBe(true);
-      expect(hasRole(adminUser, 'ADMIN')).toBe(true); // case-insensitive
-    });
-
-    it('returns false for non-matching role', () => {
-      expect(hasRole(adminUser, 'deposito')).toBe(false);
-      expect(hasRole(null, 'admin')).toBe(false);
-    });
-  });
-
-  describe('hasAnyRole', () => {
-    const depositoUser: UserInfo = { id: '2', role: 'deposito' };
-
-    it('returns true if user has any of the roles', () => {
-      expect(hasAnyRole(depositoUser, ['admin', 'deposito'])).toBe(true);
-    });
-
-    it('returns false if user has none of the roles', () => {
-      expect(hasAnyRole(depositoUser, ['admin', 'ventas'])).toBe(false);
-    });
-  });
-
-  describe('createRequestHeaders', () => {
-    it('uses token when provided', () => {
-      const headers = createRequestHeaders('user-token', 'anon-key', 'req-123');
-      expect(headers.Authorization).toBe('Bearer user-token');
-      expect(headers.apikey).toBe('anon-key');
-      expect(headers['x-request-id']).toBe('req-123');
-    });
-
-    it('falls back to anon key when no token', () => {
-      const headers = createRequestHeaders(null, 'anon-key', 'req-456');
-      expect(headers.Authorization).toBe('Bearer anon-key');
-    });
-
-    it('merges extra headers', () => {
-      const headers = createRequestHeaders('token', 'key', 'id', { Prefer: 'count=exact' });
-      expect(headers.Prefer).toBe('count=exact');
-    });
-  });
-});
-
-// ============================================================================
 // VALIDATION HELPERS TESTS
 // ============================================================================
 
@@ -141,7 +46,7 @@ describe('validation helpers', () => {
       expect(isUuid(undefined)).toBe(false);
       expect(isUuid('')).toBe(false);
       expect(isUuid('not-a-uuid')).toBe(false);
-      expect(isUuid('550e8400-e29b-41d4-a716')).toBe(false); // too short
+      expect(isUuid('550e8400-e29b-41d4-a716')).toBe(false);
     });
   });
 
@@ -203,7 +108,7 @@ describe('validation helpers', () => {
       expect(isValidMovimientoTipo('salida')).toBe(true);
       expect(isValidMovimientoTipo('ajuste')).toBe(true);
       expect(isValidMovimientoTipo('transferencia')).toBe(true);
-      expect(isValidMovimientoTipo('ENTRADA')).toBe(true); // case-insensitive
+      expect(isValidMovimientoTipo('ENTRADA')).toBe(true);
     });
 
     it('rejects invalid types', () => {
@@ -343,77 +248,5 @@ describe('supabase helpers', () => {
       const url = buildQueryUrl(baseUrl, 'products', {}, '*', { order: 'nombre.asc' });
       expect(url).toContain('order=nombre.asc');
     });
-  });
-});
-
-// ============================================================================
-// CORS & RATE LIMIT BEHAVIOR TESTS (via integration scenarios)
-// ============================================================================
-
-describe('CORS behavior expectations', () => {
-  it('should block browser requests without Origin header (documented behavior)', () => {
-    // This test documents expected behavior - actual test requires HTTP client
-    // When REQUIRE_ORIGIN=true (default) and request has browser-like User-Agent
-    // but no Origin header, it should return 403 CORS_ORIGIN_REQUIRED
-    const expectedResponse = {
-      success: false,
-      error: {
-        code: 'CORS_ORIGIN_REQUIRED',
-        message: 'Origin header is required for browser requests',
-      },
-    };
-    expect(expectedResponse.error.code).toBe('CORS_ORIGIN_REQUIRED');
-  });
-
-  it('should allow server-to-server requests without Origin', () => {
-    // Server-to-server calls (no browser User-Agent, no Origin) should pass CORS
-    // This is needed for api-minimarket -> api-proveedor calls
-    const serverUserAgent = 'Deno/1.40.0';
-    expect(serverUserAgent).not.toMatch(/mozilla|chrome|safari|firefox/i);
-  });
-});
-
-describe('Rate limit behavior expectations', () => {
-  it('should return 429 when rate limit exceeded', () => {
-    // Documents expected response format when rate limit is exceeded
-    const expectedResponse = {
-      success: false,
-      error: {
-        code: 'RATE_LIMIT_EXCEEDED',
-        message: 'Too many requests. Please try again later.',
-      },
-    };
-    expect(expectedResponse.error.code).toBe('RATE_LIMIT_EXCEEDED');
-  });
-
-  it('should include rate limit headers in response', () => {
-    // Documents expected rate limit headers (IETF draft-ietf-httpapi-ratelimit-headers)
-    const expectedHeaders = [
-      'RateLimit-Limit',
-      'RateLimit-Remaining',
-      'RateLimit-Reset',
-    ];
-    expect(expectedHeaders).toHaveLength(3);
-  });
-});
-
-describe('Authentication behavior expectations', () => {
-  it('should use user JWT for RLS enforcement, not service role', () => {
-    // Documents that queries use user's token, not service role
-    // This ensures RLS policies are enforced
-    const headers = createRequestHeaders('user-jwt-token', 'anon-key', 'req-id');
-    expect(headers.Authorization).toBe('Bearer user-jwt-token');
-    expect(headers.Authorization).not.toContain('service_role');
-  });
-
-  it('should validate roles from app_metadata (server-side)', () => {
-    // Documents that roles are read from app_metadata, not client-provided
-    const user: UserInfo = {
-      id: '1',
-      role: 'admin',
-      app_metadata: { role: 'admin' },
-      user_metadata: { role: 'hacker' }, // should be ignored
-    };
-    expect(hasRole(user, 'admin')).toBe(true);
   });
 });

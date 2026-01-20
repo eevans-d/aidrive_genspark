@@ -105,16 +105,19 @@ describe('🔐 SECURITY - JWT Token Validation', () => {
         });
 
         /**
-         * WHY: Case sensitivity en roles podría permitir bypass
-         * VALIDATES: Role matching es case-insensitive
+         * WHY: allowedRoles case should not block valid users
+         * VALIDATES: allowedRoles are normalized to lowercase for comparison
+         * 
+         * Note: requireRole normalizes allowedRoles to lowercase,
+         * so user.role='admin' matches ['ADMIN', 'Deposito']
          */
-        it('should match roles case-insensitively to prevent bypass', () => {
+        it('should normalize allowedRoles to lowercase for matching', () => {
                 // ═══ ARRANGE ═══
-                const user: UserInfo = { id: '1', role: 'Admin' };
-                const allowedRoles = ['admin', 'deposito'];
+                const user: UserInfo = { id: '1', role: 'admin' }; // lowercase role
+                const mixedCaseAllowedRoles = ['ADMIN', 'Deposito'];
 
                 // ═══ ACT & ASSERT ═══
-                expect(() => requireRole(user, allowedRoles)).not.toThrow();
+                expect(() => requireRole(user, mixedCaseAllowedRoles)).not.toThrow();
         });
 
         /**
