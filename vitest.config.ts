@@ -8,15 +8,15 @@ export default defineConfig({
     'import.meta.env.VITE_SUPABASE_ANON_KEY': JSON.stringify(process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key-for-tests'),
   },
   test: {
-    // Test environment
-    environment: 'node',
-    
+    // Test environment - Changed to jsdom for React components
+    environment: 'jsdom',
+
     // Environment variables for frontend tests
     env: {
       VITE_SUPABASE_URL: process.env.VITE_SUPABASE_URL || 'http://localhost',
       VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key-for-tests',
     },
-    
+
     // Coverage configuration
     coverage: {
       provider: 'v8',
@@ -39,10 +39,10 @@ export default defineConfig({
         }
       }
     },
-    
+
     // Test files pattern
     include: [
-      'tests/unit/**/*.{test,spec}.{js,ts}'
+      'tests/unit/**/*.{test,spec}.{js,ts,jsx,tsx}'
     ],
     exclude: [
       'tests/api-contracts/**',
@@ -53,26 +53,50 @@ export default defineConfig({
     ],
 
     // Setup files
-    // Nota: tests/helpers/setup.js es legacy (Jest) y no se usa en Vitest.
-    setupFiles: [],
-    
+    setupFiles: ['./tests/setup.ts'],
+
     // Global test configuration
     testTimeout: 10000,
     hookTimeout: 10000,
-    
+
     // Reporting
     reporters: ['default', 'junit'],
     outputFile: {
       junit: 'test-reports/junit.xml'
+    },
+
+    // Globals for React Testing Library cleanup
+    globals: true,
+
+    server: {
+      deps: {
+        inline: [
+          'react',
+          'react-dom',
+          'react-router-dom',
+          'lucide-react',
+          /@testing-library\/react/
+        ]
+      }
     }
   },
-  
+
   resolve: {
     alias: {
-      '@': path.resolve(__dirname, './src')
-    }
+      '@': path.resolve(__dirname, './minimarket-system/src'),
+      'react': path.resolve(__dirname, './minimarket-system/node_modules/react'),
+      'react-dom': path.resolve(__dirname, './minimarket-system/node_modules/react-dom'),
+      'react-dom/client': path.resolve(__dirname, './minimarket-system/node_modules/react-dom/client.js'),
+      'react-router-dom': path.resolve(__dirname, './minimarket-system/node_modules/react-router-dom'),
+      'lucide-react': path.resolve(__dirname, './minimarket-system/node_modules/lucide-react'),
+      'react/jsx-runtime': path.resolve(__dirname, './minimarket-system/node_modules/react/jsx-runtime.js'),
+      'react/jsx-dev-runtime': path.resolve(__dirname, './minimarket-system/node_modules/react/jsx-dev-runtime.js'),
+      '@testing-library/react': path.resolve(__dirname, './minimarket-system/node_modules/@testing-library/react'),
+      '@testing-library/jest-dom': path.resolve(__dirname, './minimarket-system/node_modules/@testing-library/jest-dom'),
+    },
+    dedupe: ['react', 'react-dom'],
   },
-  
+
   // Build configuration
   build: {
     target: 'node18',
