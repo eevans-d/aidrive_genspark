@@ -1,7 +1,7 @@
 # BACKLOG PRIORIZADO (v1)
 
-**Fecha:** 2026-01-12  
-**Estado:** en curso (modo sin credenciales)  
+**Fecha:** 2026-01-21  
+**Estado:** Prácticamente completado (646 tests, solo queda P3-01)  
 **Metodo:** Puntaje = (Impacto x Urgencia) / Esfuerzo
 
 ---
@@ -48,7 +48,7 @@
 | P2-08 | Busqueda con codigo de barras | 3 | 2 | 2 | 3.0 | UI | Frontend | ✅ Completado (2026-01-16) |
 | P2-09 | Notificaciones de tareas | 3 | 3 | 2 | 2.0 | Cron/edge | Backend | ✅ Completado (2026-01-16, refactor notificaciones-tareas) |
 | P2-10 | Observabilidad UI (errores/reporting) | 2 | 2 | 2 | 2.0 | Sentry | Frontend/Ops | ✅ Completado (2026-01-16, dry-run local) |
-| P3-01 | Limpieza de docs divergentes | 2 | 3 | 1 | 0.7 | Docs | Docs | Pendiente |
+| P3-01 | Limpieza de docs divergentes | 2 | 3 | 1 | 0.7 | Docs | Docs | ✅ Completado (2026-01-21) |
 | DOC-01 | Reporte de análisis final (solo lectura) | 4 | 2 | 4 | 8.0 | Ninguna | Docs | ✅ Completado (2026-01-15) |
 | DOC-02 | API_README con flujo dry-run y sin claves | 3 | 1 | 4 | 12.0 | Ninguna | Docs | ✅ Completado (2026-01-16) |
 | TEST-01 | Unit tests extra parsers/routers/cache | 4 | 2 | 3 | 6.0 | Ninguna | Backend/QA | ✅ Completado (2026-01-16) |
