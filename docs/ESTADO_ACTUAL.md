@@ -4,11 +4,12 @@
 
 - **Tests Backend**: ✅ **606 tests** pasando (32 archivos)
   - Scraper, Gateway, Cron, Shared: 100% Cobertura
-- **Tests Frontend**: ✅ **25 tests** pasando (7 archivos)
+- **Tests Frontend**: ✅ **40 tests** pasando (12 archivos)
   - Componentes: Login, Dashboard, Layout, ErrorBoundary
-  - Hooks: useDashboardStats, useTareas, useStock
+  - Hooks: useDashboardStats, useTareas, useStock, useProductos, useProveedores, useKardex, useRentabilidad, useDeposito
   - MSW integrado para mocking de API
-- **E2E Tests**: ⚠️ Bloqueado por credenciales de Staging
+- **Total Tests**: ✅ **646 tests**
+- **E2E Tests**: ⚠️ Setup listo (`docker-compose.e2e.yml`), pendiente de ejecución
 
 ## 🚀 Últimos Logros (2026-01-21)
 - **Setup completo de testing frontend** con Vitest + React Testing Library
