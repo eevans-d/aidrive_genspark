@@ -1,6 +1,6 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-19  
+**Última actualización:** 2026-01-21  
 **Estado:** vigente  
 **Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`
 
@@ -97,8 +97,9 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** listas largas no cargan todo el dataset; payload reducido.
   **Dependencias:** queries ajustadas.
 
-- **WS5.6 Capa de datos con caching (P1)**
+- **WS5.6 Capa de datos con caching (P1)** ✅ **COMPLETADO 2026-01-21**
   **Aceptación:** caching, reintentos y estados uniformes en pantallas críticas.
+  **Evidencia:** React Query implementado con hooks: `useDashboardStats`, `useTareas`, `useStock`, etc. Tests con MSW pasando.
   **Dependencias:** decisión de librería (React Query/SWR).
 
 ### WS6 — CI/CD y Release (P1)
