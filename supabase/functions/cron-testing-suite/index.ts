@@ -554,7 +554,10 @@ class CronJobsTestSuite {
                         throw new Error(`Health score dropped too much: ${healthScoreDrop}`);
                     }
 
-                    console.log(`    📊 Health score change: ${initialData.data.health.healthScore} → ${finalData.data.health.healthScore}`);
+                    logger.info('HEALTH_SCORE_CHANGE', {
+                        from: initialData.data.health.healthScore,
+                        to: finalData.data.health.healthScore
+                    });
                 },
                 timeout: 90000
             }
@@ -1359,9 +1362,8 @@ export async function runTestCategory(category: 'unit' | 'integration' | 'perfor
 if (import.meta.main) {
     const testType = Deno.args[0] || 'complete';
     
-    console.log('🚀 INICIANDO TESTING DE CRON JOBS AUTOMÁTICOS');
-    console.log(`📋 Tipo de test: ${testType}`);
-    console.log('=' .repeat(80));
+    logger.info('TEST_SUITE_RUN_START', { testType });
+    logger.info('TEST_SUITE_BANNER', { line: '='.repeat(80) });
 
     try {
         let report: TestReport;
@@ -1390,29 +1392,33 @@ if (import.meta.main) {
             version: '3.0.0'
         };
 
-        console.log('\n📄 REPORTE FINAL GENERADO');
-        console.log(`✅ Success Rate: ${report.summary.successRate}%`);
-        console.log(`📊 Coverage: ${report.summary.coverage}%`);
-        console.log(`⏱️  Duration: ${report.summary.duration}ms`);
+        logger.info('TEST_SUITE_REPORT', {
+            successRate: report.summary.successRate,
+            coverage: report.summary.coverage,
+            durationMs: report.summary.duration
+        });
 
         if (report.summary.failed > 0) {
-            console.log('\n❌ TESTS FALLIDOS:');
+            logger.warn('TEST_SUITE_FAILED', { failed: report.summary.failed });
             report.failedTests.forEach(test => {
-                console.log(`  - ${test.suite}: ${test.test}`);
-                console.log(`    Error: ${test.error}`);
+                logger.warn('TEST_FAILED_DETAIL', {
+                    suite: test.suite,
+                    test: test.test,
+                    error: test.error
+                });
             });
         }
 
         if (report.recommendations.length > 0) {
-            console.log('\n💡 RECOMENDACIONES:');
-            report.recommendations.forEach(rec => console.log(`  ${rec}`));
+            report.recommendations.forEach(rec => logger.info('TEST_RECOMMENDATION', { message: rec }));
         }
 
         // En un entorno real, aquí se guardaría el reporte en archivo
-        console.log('\n🎯 Testing completado exitosamente');
+        logger.info('TEST_SUITE_RUN_COMPLETE', { status: 'success' });
 
     } catch (error) {
-        console.error('💥 Error en testing:', error);
+        const message = error instanceof Error ? error.message : String(error);
+        logger.error('TEST_SUITE_RUN_FAILED', { error: message });
         Deno.exit(1);
     }
 }

@@ -26,7 +26,8 @@
 | D-019 | **Auditoría RLS pendiente**: checklist y scripts preparados en `docs/AUDITORIA_RLS_CHECKLIST.md` y `scripts/rls_audit.sql`; requiere credenciales para ejecutar | Pendiente | 2026-01-13 | Tablas P0 sin verificar: productos, stock_deposito, movimientos_deposito, precios_historicos, proveedores, personal. |
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
 | D-021 | **WS5.6 caching diferido**: no implementar React Query/SWR hasta tener métricas reales | Aprobada | 2026-01-15 | Priorizar paginación (WS5.5) primero. |
-| D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. |
+| D-024 | **React Query consolidado** en páginas críticas (8/8) | Aprobada | 2026-01-22 | Se revierte la postergación inicial de D-021. |
+| D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. **Actualizado:** se migró a `_shared/logger` (2026-01-22). |
 | D-023 | **--dry-run en scripts**: integration/E2E soportan `--dry-run` que valida prereqs sin ejecutar | Aprobada | 2026-01-15 | Permite verificar configuración sin Supabase real. |
 
 ---

@@ -18,22 +18,20 @@
 - **Observabilidad:** logging estructurado con `requestId/jobId/runId`; métricas básicas en `cron_jobs_execution_log`.
 - **Restricción vigente:** auditoría RLS y migraciones en staging/prod bloqueadas por credenciales.
 
-> **⚠️ AUDITORÍA 2026-01-17 - HALLAZGOS CRÍTICOS:**
+> **⚠️ AUDITORÍA 2026-01-17 - HALLAZGOS CRÍTICOS (actualizado 2026-01-22):**
 >
 > **1. Frontend Data Access Pattern:**
-> - El frontend NO utiliza `api-minimarket`. Accede directamente a Supabase via cliente JS.
-> - Esto bypasea rate limiting, circuit breaker y validación de roles del gateway.
+> - El frontend realiza lecturas directas desde Supabase en varios hooks.
+> - Las escrituras se esperan vía `api-minimarket` (decisión pendiente de migración de lecturas).
 > - Ver sección 3.4 para decisión arquitectónica pendiente.
 >
-> **2. React Query (P1-05) - Solo 12.5% completado:**
-> - Solo `Dashboard.tsx` usa `useDashboardStats()` con TanStack Query.
-> - 7 páginas (Proveedores, Stock, Tareas, Productos, Kardex, Rentabilidad, Deposito) usan `useState + useEffect`.
-> - Infraestructura correcta (QueryClientProvider, queryKeys) pero migración incompleta.
+> **2. React Query (P1-05) - Completado:**
+> - Hooks React Query implementados en páginas críticas (8/8) con caching y reintentos.
+> - Infraestructura consolidada (QueryClientProvider, queryKeys).
 >
-> **3. Roles (P0-04) - VULNERABILIDAD DE SEGURIDAD:**
-> - Roles se extraen de `user.user_metadata?.rol` que es **modificable por el cliente**.
-> - Cualquier usuario puede escalar privilegios con `supabase.auth.updateUser({ data: { rol: 'admin' }})`.
-> - Requiere validación server-side urgente (ver sección 7.4).
+> **3. Roles (P0-04) - Mitigado:**
+> - Roles validados server-side (no se usan `user_metadata` para autorización).
+> - Se mantiene validación contra tabla/claims según decisión vigente.
 
 ---
 

@@ -26,7 +26,7 @@ El plan de ejecución de 6 semanas está **prácticamente completado**. Se logr�
 Pendientes críticos detectados:
 - Validación runtime de alertas/comparaciones pendiente (WS4.1)
 - Observabilidad incompleta (métricas y trazabilidad parcial)
-- Suites performance/seguridad pendientes (runner y fixtures)
+- Performance baseline completado; seguridad pendiente (runner y fixtures)
 - Verificación de migraciones en staging/prod sin evidencia (WS3.1)
 
 ---
@@ -117,14 +117,15 @@ Pendientes críticos detectados:
 - [x] Tests reales: imports de módulos reales (parsing/matching/alertas/router/cron)
 - [x] Integration: `tests/integration` en Vitest; comando `npm run test:integration`
 - [x] E2E smoke: `tests/e2e/*.smoke.test.ts`; comando `npm run test:e2e`
-- [ ] Performance/seguridad: pendientes (migrar a Vitest y definir fixtures)
+- [ ] Seguridad: pendiente (migrar a Vitest y definir fixtures)
+- [x] Performance baseline: `tests/performance/load-testing.vitest.test.ts`
   - Obs: unit tests siguen con `npx vitest run`; suites avanzadas usan configs separadas.
 
 ### F5: Observabilidad
 - [ ] Logging estructurado con requestId/jobId/runId (parcial; cron auxiliares pendientes)
 - [ ] Métricas básicas: duración, errores, items procesados (cron jobs listos; falta cobertura total)
 - [x] Logs guardan en `cron_jobs_execution_log` (payload validado runtime)
-  - Evidencia: `rg -n "console\." supabase/functions` solo muestra `cron-testing-suite` y `_shared/logger.ts`.
+  - Evidencia: `rg -n "console\." supabase/functions` solo muestra `_shared/logger.ts`.
   - Evidencia: `rg -n "console\." supabase/functions/{api-proveedor,scraper-maxiconsumo,cron-jobs-maxiconsumo}` no devuelve coincidencias.
 
 ### E4: Producto y UX (WS5)
@@ -137,9 +138,9 @@ Pendientes críticos detectados:
 
 ### WS1: Inventario y migración de logs
 - [x] WS1.0.1 Inventario `console.log|console.error` en `supabase/functions` (2026-01-09).
-- [x] WS1.0.1 Resultado: `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/cron-testing-suite/index.ts` (testing), `supabase/functions/_shared/logger.ts` (interno).
+- [x] WS1.0.1 Resultado: `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/_shared/logger.ts` (interno).
 - [x] WS1.6 Migración console.* en `supabase/functions/api-minimarket/index.ts`, `supabase/functions/notificaciones-tareas/index.ts`, `supabase/functions/api-proveedor/utils/cache.ts`.
-- [x] WS1.6 Verificación: `rg -n "console\\." supabase/functions` solo muestra `_shared/logger.ts` y `cron-testing-suite`.
+- [x] WS1.6 Verificación: `rg -n "console\\." supabase/functions` solo muestra `_shared/logger.ts`.
 - [x] WS1.4.1 Payload alineado con schema y estados `exitoso|fallido|parcial` en `supabase/functions/cron-jobs-maxiconsumo/execution-log.ts`.
 - [x] WS1.4.2 Validación runtime de payload (estado/tipos) antes de insertar en `cron_jobs_execution_log`.
 - [x] WS1.5.1 Métricas por job (`productos_*`, `alertas_*`, `emails_*`, `sms_*`) persistidas en `cron_jobs_execution_log`.
@@ -183,7 +184,7 @@ Pendientes críticos detectados:
 ### E5: Cierre y Transferencia (WS8/C4)
 - [x] WS8.1 Arquitectura actualizada → `docs/ARCHITECTURE_DOCUMENTATION.md` (2026-01-15).
 - [x] WS8.2 Fuentes de verdad referenciadas → `README.md` y `.github/copilot-instructions.md`.
-- [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-15).
+- [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-22).
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
 - [ ] Cierre final bloqueado por credenciales (RLS/migraciones) → mantener estado NO completado.

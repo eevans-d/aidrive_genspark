@@ -1,22 +1,22 @@
 # BACKLOG PRIORIZADO (v1)
 
 **Fecha:** 2026-01-21  
-**Estado:** Prácticamente completado (646 tests, solo queda P3-01)  
+**Estado:** Completado (646 tests, backlog P0–P3 cerrado)  
 **Metodo:** Puntaje = (Impacto x Urgencia) / Esfuerzo
 
 ---
 
 ## Top 5 (estado y plan corto)
 1) ~~**P0-03**~~ ✅ Gateway sin service role + CORS restringido + rate limit + circuit breaker → **COMPLETADO 2026-01-12**  
-2) **P1-01** Eliminar N+1 en Productos/Proveedores con joins o RPC.  
+2) ~~**P1-01**~~ ✅ Eliminar N+1 en Productos/Proveedores con joins o RPC (2026-01-16).  
 3) ~~**P1-02**~~ ✅ Paginacion + select de columnas minimas en catalogos (2026-01-15).  
-4) **P1-04** Error UI + reintentos simples.  
+4) ~~**P1-04**~~ ✅ Error UI + reintentos simples (2026-01-16).  
 5) ~~**WS6.1**~~ ✅ Integrar tests de integración/E2E en pipeline con guardas de env → **COMPLETADO 2026-01-12**
 
 ### Sprint inmediato sin credenciales
 - ~~**DOC-01**~~ ✅ Cerrar `REPORTE_ANALISIS_PROYECTO.md` (2026-01-15).
-- **DOC-02** Actualizar `API_README.md` con ejemplos `--dry-run` y sin claves.
-- **TEST-01** Ampliar unitarios de parsers/routers/cache en scraper y gateway.
+- ~~**DOC-02**~~ ✅ Actualizar `API_README.md` con ejemplos `--dry-run` y sin claves (2026-01-16).
+- ~~**TEST-01**~~ ✅ Ampliar unitarios de parsers/routers/cache en scraper y gateway (2026-01-16).
 
 ---
 
