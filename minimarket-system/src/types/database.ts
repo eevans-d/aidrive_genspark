@@ -74,13 +74,15 @@ export interface OrdenCompra {
 export interface MovimientoDeposito {
   id: string
   producto_id: string
-  tipo: 'entrada' | 'salida'
+  tipo_movimiento: 'entrada' | 'salida' | 'ajuste'
   cantidad: number
-  fecha: string
+  fecha_movimiento: string
   usuario_id: string | null
   usuario_nombre: string | null
   destino: string | null
   proveedor_id: string | null
+  lote: string | null
+  motivo: string | null
   observaciones: string | null
   created_at: string
 }

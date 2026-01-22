@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { Download, Filter } from 'lucide-react'
 import { useKardex, KardexMovimiento } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import apiClient from '../lib/apiClient'
 import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 export default function Kardex() {
@@ -15,13 +15,7 @@ export default function Kardex() {
   const { data: productosData } = useQuery({
     queryKey: ['productos-dropdown'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('productos')
-        .select('id, nombre')
-        .eq('activo', true)
-        .order('nombre')
-      if (error) throw error
-      return data ?? []
+      return await apiClient.productos.dropdown()
     },
     staleTime: 1000 * 60 * 10, // 10 min cache
   })
@@ -179,10 +173,10 @@ export default function Kardex() {
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.producto_nombre ?? 'Producto desconocido'}</td>
                 <td className="px-4 py-3 text-sm">
                   <span className={`px-2 py-1 rounded-full text-xs font-medium ${mov.tipo_movimiento === 'entrada'
-                      ? 'bg-green-100 text-green-700'
-                      : mov.tipo_movimiento === 'salida'
-                        ? 'bg-red-100 text-red-700'
-                        : 'bg-gray-100 text-gray-700'
+                    ? 'bg-green-100 text-green-700'
+                    : mov.tipo_movimiento === 'salida'
+                      ? 'bg-red-100 text-red-700'
+                      : 'bg-gray-100 text-gray-700'
                     }`}>
                     {mov.tipo_movimiento.toUpperCase()}
                   </span>

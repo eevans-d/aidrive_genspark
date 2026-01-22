@@ -54,6 +54,12 @@ import {
   fetchWithParams,
 } from './helpers/supabase.ts';
 
+// Import Handlers
+import {
+  getProductosDropdown,
+  getProveedoresDropdown,
+} from './handlers/utils.ts';
+
 const logger = createLogger('api-minimarket');
 
 // ============================================================================
@@ -318,6 +324,22 @@ Deno.serve(async (req) => {
         nivel
       });
     };
+
+    // ====================================================================
+    // ENDPOINTS: UTILS (Dropdowns)
+    // ====================================================================
+
+    // GET /productos/dropdown (Autenticado)
+    if (path === '/productos/dropdown' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      return await getProductosDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
+
+    // GET /proveedores/dropdown (Autenticado)
+    if (path === '/proveedores/dropdown' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      return await getProveedoresDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
 
     // ====================================================================
     // ENDPOINTS: CATEGORÍAS (2 endpoints)

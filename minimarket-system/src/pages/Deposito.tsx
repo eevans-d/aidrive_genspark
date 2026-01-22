@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
-import { depositoApi, ApiError } from '../lib/apiClient'
+import apiClient, { depositoApi, ApiError } from '../lib/apiClient'
 import { Producto, Proveedor } from '../types/database'
 import { Plus, Minus, Search } from 'lucide-react'
 
@@ -22,13 +22,17 @@ export default function Deposito() {
   const { data: productos = [] } = useQuery({
     queryKey: ['productos-deposito'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('productos')
-        .select('*')
-        .eq('activo', true)
-        .order('nombre')
-      if (error) throw error
-      return data ?? []
+      const data = await apiClient.productos.dropdown() // Usar endpoint ligero del gateway
+      // Mapear al tipo Producto si es necesario, o usar DropdownItem
+      // Como Deposito usa Producto completo pero solo necesita id, nombre y codigo_barras para la UI de busqueda,
+      // el endpoint dropdown enriquecido es suficiente. Pero setSelectedProducto espera Producto completo?
+      // Revisando el uso: setSelectedProducto se usa para guardar el item seleccionado.
+      // Luego en handleSubmit usa selectedProducto.id.
+      // En la UI de seleccion usa nombre y codigo_barras.
+      // En el bloque "Producto seleccionado" usa nombre.
+      // Parece que no usa otros campos. Pero el estado es Producto | null.
+      // Debo hacer cast o cambiar el tipo de estado.
+      return data as unknown as Producto[]
     },
     staleTime: 1000 * 60 * 5,
   })
@@ -37,13 +41,8 @@ export default function Deposito() {
   const { data: proveedores = [] } = useQuery({
     queryKey: ['proveedores-deposito'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('proveedores')
-        .select('*')
-        .eq('activo', true)
-        .order('nombre')
-      if (error) throw error
-      return data ?? []
+      const data = await apiClient.proveedores.dropdown()
+      return data as unknown as Proveedor[] // Cast seguro ya que solo usamos id y nombre
     },
     staleTime: 1000 * 60 * 10,
   })
@@ -143,8 +142,8 @@ export default function Deposito() {
                 type="button"
                 onClick={() => setTipo('entrada')}
                 className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${tipo === 'entrada'
-                    ? 'border-green-500 bg-green-50 text-green-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  ? 'border-green-500 bg-green-50 text-green-700'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
               >
                 <Plus className="w-6 h-6 mx-auto mb-2" />
@@ -154,8 +153,8 @@ export default function Deposito() {
                 type="button"
                 onClick={() => setTipo('salida')}
                 className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${tipo === 'salida'
-                    ? 'border-red-500 bg-red-50 text-red-700'
-                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                  ? 'border-red-500 bg-red-50 text-red-700'
+                  : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
                   }`}
               >
                 <Minus className="w-6 h-6 mx-auto mb-2" />
@@ -287,8 +286,8 @@ export default function Deposito() {
           {mensaje && (
             <div
               className={`p-4 rounded-lg ${mensaje.tipo === 'success'
-                  ? 'bg-green-50 text-green-800 border border-green-200'
-                  : 'bg-red-50 text-red-800 border border-red-200'
+                ? 'bg-green-50 text-green-800 border border-green-200'
+                : 'bg-red-50 text-red-800 border border-red-200'
                 }`}
             >
               {mensaje.texto}

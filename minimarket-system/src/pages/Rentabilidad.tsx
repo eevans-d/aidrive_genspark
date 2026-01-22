@@ -2,7 +2,7 @@ import { useMemo, useState } from 'react'
 import { TrendingDown, TrendingUp, Percent, Search, Filter, Banknote } from 'lucide-react'
 import { useRentabilidad } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
+import apiClient from '../lib/apiClient'
 import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
 
 type SortKey = 'margen' | 'utilidad' | 'nombre'
@@ -22,13 +22,7 @@ export default function Rentabilidad() {
   const { data: proveedoresData } = useQuery({
     queryKey: ['proveedores-dropdown'],
     queryFn: async () => {
-      const { data, error } = await supabase
-        .from('proveedores')
-        .select('id, nombre')
-        .eq('activo', true)
-        .order('nombre')
-      if (error) throw error
-      return data ?? []
+      return await apiClient.proveedores.dropdown()
     },
     staleTime: 1000 * 60 * 10,
   })
