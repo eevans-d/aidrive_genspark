@@ -47,6 +47,7 @@ import { isRetryableAPIError } from './utils/http.ts';
 import { updateRequestMetrics } from './utils/metrics.ts';
 import {
     validateApiSecret,
+    validateInternalOrigin,
     createAuthErrorResponse,
     buildSupabaseReadHeaders,
     parseReadAuthMode
@@ -285,6 +286,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
     if (requiresAuth && !isAuthenticated) {
         logger.warn('AUTH_FAILED', { ...requestLog, requestId, endpoint: endpointRaw });
         return createAuthErrorResponse(authResult.error || 'Unauthorized', corsHeaders, requestId);
+    }
+
+    // Validar origen interno (advertencia, no bloqueo)
+    const originCheck = validateInternalOrigin(request);
+    if (originCheck.warning) {
+        logger.warn('INTERNAL_API_ORIGIN_WARNING', { ...requestLog, warning: originCheck.warning });
     }
 
     const rateLimited = rateLimitRequest(endpointRaw, request, corsHeaders, requestId);

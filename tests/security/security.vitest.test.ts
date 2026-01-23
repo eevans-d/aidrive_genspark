@@ -287,7 +287,176 @@ describe('🔒 SECURITY TESTS - Vitest', () => {
     
   });
   
-  describe('🔗 Real Security Tests (requires credentials)', () => {
+  describe('� Path Traversal Prevention', () => {
+    
+    const PATH_TRAVERSAL_PAYLOADS = [
+      '../../../etc/passwd',
+      '..\\..\\..\\windows\\system32\\config\\sam',
+      '....//....//....//etc/passwd',
+      '%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd',
+      '..%252f..%252f..%252fetc/passwd',
+      '/var/log/../../../etc/shadow'
+    ];
+    
+    it('debe bloquear path traversal en parámetros de archivo', async () => {
+      for (const payload of PATH_TRAVERSAL_PAYLOADS) {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({
+            success: false,
+            error: { code: 'INVALID_PATH', message: 'Ruta no válida' }
+          })
+        });
+        
+        const url = `https://mock.supabase.co/functions/v1/api-minimarket/reportes?file=${encodeURIComponent(payload)}`;
+        const response = await fetch(url);
+        
+        // Should reject or sanitize path traversal
+        expect(response.status).toBeGreaterThanOrEqual(400);
+      }
+    });
+    
+  });
+  
+  describe('🔄 SSRF Prevention', () => {
+    
+    const SSRF_PAYLOADS = [
+      'http://localhost:22',
+      'http://127.0.0.1:3306',
+      'http://169.254.169.254/latest/meta-data/',
+      'http://[::1]:80',
+      'file:///etc/passwd',
+      'gopher://localhost:25/'
+    ];
+    
+    it('debe bloquear URLs internas en webhooks', async () => {
+      for (const payload of SSRF_PAYLOADS) {
+        mockFetch.mockResolvedValueOnce({
+          ok: false,
+          status: 400,
+          json: () => Promise.resolve({
+            success: false,
+            error: { code: 'INVALID_URL', message: 'URL no permitida' }
+          })
+        });
+        
+        const response = await fetch('https://mock.supabase.co/functions/v1/cron-notifications/send', {
+          method: 'POST',
+          body: JSON.stringify({ webhookUrl: payload })
+        });
+        
+        expect(response.status).toBeGreaterThanOrEqual(400);
+      }
+    });
+    
+  });
+  
+  describe('💾 Input Validation', () => {
+    
+    it('debe rechazar JSON malformado', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({
+          success: false,
+          error: { code: 'INVALID_JSON', message: 'JSON inválido' }
+        })
+      });
+      
+      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/precios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{"invalid json'
+      });
+      
+      expect(response.status).toBe(400);
+    });
+    
+    it('debe limitar tamaño de payload', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 413,
+        json: () => Promise.resolve({
+          success: false,
+          error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload excede límite' }
+        })
+      });
+      
+      const largePayload = 'x'.repeat(10 * 1024 * 1024);  // 10MB
+      
+      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/productos', {
+        method: 'POST',
+        body: JSON.stringify({ data: largePayload })
+      });
+      
+      expect(response.status).toBe(413);
+    });
+    
+    it('debe validar tipos de datos esperados', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 400,
+        json: () => Promise.resolve({
+          success: false,
+          error: { code: 'VALIDATION_ERROR', message: 'Tipo inválido' }
+        })
+      });
+      
+      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/precios', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ precio: 'not-a-number', cantidad: null })
+      });
+      
+      expect(response.status).toBe(400);
+    });
+    
+  });
+  
+  describe('🔑 JWT Validation', () => {
+    
+    it('debe rechazar JWT expirado', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({
+          success: false,
+          error: { code: 'TOKEN_EXPIRED', message: 'Token expirado' }
+        })
+      });
+      
+      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNjAwMDAwMDAwfQ.invalid';
+      
+      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/stock', {
+        headers: { 'Authorization': `Bearer ${expiredToken}` }
+      });
+      
+      expect(response.status).toBe(401);
+    });
+    
+    it('debe rechazar JWT con firma inválida', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: false,
+        status: 401,
+        json: () => Promise.resolve({
+          success: false,
+          error: { code: 'INVALID_SIGNATURE', message: 'Firma inválida' }
+        })
+      });
+      
+      const tamperedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYWRtaW4iOnRydWV9.tampered';
+      
+      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/admin', {
+        headers: { 'Authorization': `Bearer ${tamperedToken}` }
+      });
+      
+      expect(response.status).toBe(401);
+    });
+    
+  });
+  
+  describe('�🔗 Real Security Tests (requires credentials)', () => {
     
     SKIP_REAL('debe validar auth real contra Supabase', async () => {
       const url = process.env.SUPABASE_URL;

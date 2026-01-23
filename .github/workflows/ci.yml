@@ -121,6 +121,18 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate required env vars for build
+        run: |
+          # Build puede funcionar sin VITE_* vars (usa defaults)
+          # Pero advertimos si no están configuradas
+          if [ -z "${{ secrets.VITE_SUPABASE_URL }}" ]; then
+            echo "::warning::VITE_SUPABASE_URL not set - build will use placeholder"
+          fi
+          if [ -z "${{ secrets.VITE_SUPABASE_ANON_KEY }}" ]; then
+            echo "::warning::VITE_SUPABASE_ANON_KEY not set - build will use placeholder"
+          fi
+          echo "✅ Environment validation complete"
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -266,6 +278,27 @@ jobs:
       - name: Install test dependencies
         run: npm ci
 
+      - name: Validate required secrets
+        run: |
+          errors=0
+          if [ -z "${{ secrets.SUPABASE_URL }}" ]; then
+            echo "::error::SUPABASE_URL secret is required for integration tests"
+            errors=$((errors + 1))
+          fi
+          if [ -z "${{ secrets.SUPABASE_ANON_KEY }}" ]; then
+            echo "::error::SUPABASE_ANON_KEY secret is required for integration tests"
+            errors=$((errors + 1))
+          fi
+          if [ -z "${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ]; then
+            echo "::error::SUPABASE_SERVICE_ROLE_KEY secret is required for integration tests"
+            errors=$((errors + 1))
+          fi
+          if [ $errors -gt 0 ]; then
+            echo "::error::Missing $errors required secrets. Configure them in repository settings."
+            exit 1
+          fi
+          echo "✅ All required secrets are configured"
+
       - name: Run integration tests
         run: npx vitest run tests/integration/ --reporter=verbose
         env:
@@ -315,6 +348,28 @@ jobs:
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium
         continue-on-error: true
+
+      - name: Validate required secrets for E2E
+        run: |
+          errors=0
+          for secret in SUPABASE_URL SUPABASE_ANON_KEY SUPABASE_SERVICE_ROLE_KEY API_PROVEEDOR_SECRET; do
+            # Access secret via env var
+            case $secret in
+              SUPABASE_URL) val="${{ secrets.SUPABASE_URL }}" ;;
+              SUPABASE_ANON_KEY) val="${{ secrets.SUPABASE_ANON_KEY }}" ;;
+              SUPABASE_SERVICE_ROLE_KEY) val="${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" ;;
+              API_PROVEEDOR_SECRET) val="${{ secrets.API_PROVEEDOR_SECRET }}" ;;
+            esac
+            if [ -z "$val" ]; then
+              echo "::error::${secret} secret is required for E2E tests"
+              errors=$((errors + 1))
+            fi
+          done
+          if [ $errors -gt 0 ]; then
+            echo "::error::Missing $errors required secrets for E2E tests"
+            exit 1
+          fi
+          echo "✅ All E2E secrets are configured"
 
       - name: Run E2E tests
         run: npx vitest run tests/e2e/ --reporter=verbose

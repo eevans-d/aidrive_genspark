@@ -27,6 +27,7 @@
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
 | D-021 | **WS5.6 caching diferido**: no implementar React Query/SWR hasta tener métricas reales | Aprobada | 2026-01-15 | Priorizar paginación (WS5.5) primero. |
 | D-024 | **React Query consolidado** en páginas críticas (8/8) | Aprobada | 2026-01-22 | Se revierte la postergación inicial de D-021. |
+| D-025 | **Patrón de acceso a datos frontend**: lecturas directas a Supabase vía RLS; escrituras SIEMPRE vía Gateway | Aprobada | 2026-01-23 | Balance entre performance (lecturas) y control (escrituras). Ver detalle abajo. |
 | D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. **Actualizado:** se migró a `_shared/logger` (2026-01-22). |
 | D-023 | **--dry-run en scripts**: integration/E2E soportan `--dry-run` que valida prereqs sin ejecutar | Aprobada | 2026-01-15 | Permite verificar configuración sin Supabase real. |
 
@@ -82,3 +83,66 @@
 - `tests/unit/scraper-storage-auth.test.ts` (12 tests)
 - `docs/AUDITORIA_RLS_CHECKLIST.md` (368 líneas)
 - `minimarket-system/e2e/tareas.proveedores.spec.ts` (2 tests)
+
+---
+
+## D-025: Patrón de Acceso a Datos Frontend
+
+### Contexto
+
+El frontend necesita decidir cómo acceder a los datos:
+1. **Lecturas directas a Supabase** (hooks React Query con `supabase.from()`)
+2. **Todo via Gateway** (`apiClient.ts` → `api-minimarket`)
+
+### Decisión
+
+**Patrón híbrido:**
+
+| Operación | Canal | Justificación |
+|-----------|-------|---------------|
+| **Lecturas (SELECT)** | Supabase directo | RLS protege datos; menor latencia; menos carga en gateway |
+| **Escrituras (INSERT/UPDATE/DELETE)** | Gateway obligatorio | Audit log, validación centralizada, control de negocio |
+| **RPCs complejas** | Gateway | Centraliza lógica, evita exponer RPCs a frontend |
+
+### Implementación Actual
+
+```
+minimarket-system/src/
+├── hooks/queries/         # Lecturas directas (8 hooks)
+│   ├── useStock.ts        → supabase.from('stock_deposito')
+│   ├── useProductos.ts    → supabase.from('productos')
+│   └── ...
+├── lib/
+│   ├── supabase.ts        # Cliente Supabase (anon key)
+│   └── apiClient.ts       # Gateway (escrituras)
+```
+
+### Razones
+
+1. **RLS ya protege lecturas**: las políticas `USING(auth.uid() = ...)` aseguran que usuarios solo vean datos permitidos
+2. **Gateway para writes**: el audit log y validaciones de negocio justifican el overhead
+3. **Performance**: lecturas directas eliminan hop intermedio (frontend→gateway→supabase)
+4. **Simplicidad**: hooks de React Query son más simples que wrappers de gateway
+
+### Alternativa Descartada
+
+Mover TODAS las operaciones al gateway implicaría:
+- Duplicar lógica RLS en TypeScript
+- Aumentar latencia de lecturas
+- Más código de mantenimiento
+- Sin beneficio real (RLS ya existe)
+
+### Migración futura (no planificada)
+
+Si se requiere:
+1. Cachear respuestas en gateway con Redis
+2. Agregar transformaciones server-side
+3. Unificar para mobile apps (que no pueden usar RLS)
+
+Entonces migrar lecturas al gateway.
+
+### Validación
+
+✅ 8 hooks de lectura usan Supabase directo
+✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
+✅ RLS verificada para tablas críticas (pendiente auditoría completa D-019)

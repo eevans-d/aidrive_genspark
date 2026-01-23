@@ -6,6 +6,7 @@
 import type { JobExecutionContext, JobResult, StructuredLog } from '../types.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { writeExecutionLog } from '../execution-log.ts';
+import { validateJobContext, validateEnvVars, ValidationError } from '../validators.ts';
 
 const logger = createLogger('cron-jobs-maxiconsumo:job:weekly-analysis');
 
@@ -15,6 +16,23 @@ export async function executeWeeklyAnalysis(
   serviceRoleKey: string,
   log: StructuredLog
 ): Promise<JobResult> {
+  // Validación runtime de inputs
+  try {
+    validateJobContext(ctx);
+    validateEnvVars(supabaseUrl, serviceRoleKey);
+  } catch (e) {
+    if (e instanceof ValidationError) {
+      logger.error('VALIDATION_FAILED', { field: e.field, reason: e.reason });
+      return {
+        success: false, executionTimeMs: 0,
+        productsProcessed: 0, productsSuccessful: 0, productsFailed: 0,
+        alertsGenerated: 0, emailsSent: 0, smsSent: 0,
+        metrics: {}, errors: [`Validation: ${e.message}`], warnings: [], recommendations: []
+      };
+    }
+    throw e;
+  }
+
   const jobLog = { ...log, jobId: ctx.jobId, runId: ctx.runId };
   logger.info('JOB_START', jobLog);
 

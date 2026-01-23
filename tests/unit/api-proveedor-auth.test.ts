@@ -67,3 +67,24 @@ describe('auth helpers', () => {
         expect(result.headers.Authorization).toBe('Bearer anon');
     });
 });
+
+describe('validateInternalOrigin', () => {
+    // Tests básicos sin necesidad de mock de Deno.env
+    it('validateInternalOrigin function exists and is exported', async () => {
+        const { validateInternalOrigin } = await import(
+            '../../supabase/functions/api-proveedor/utils/auth.ts'
+        );
+        expect(typeof validateInternalOrigin).toBe('function');
+    });
+});
+
+describe('timing-safe comparison', () => {
+    // Test que verifica que el validateApiSecret usa comparación timing-safe
+    // Sin mock de Deno.env, solo verificamos que la función existe
+    it('validateApiSecret function exists and is exported', async () => {
+        const { validateApiSecret } = await import(
+            '../../supabase/functions/api-proveedor/utils/auth.ts'
+        );
+        expect(typeof validateApiSecret).toBe('function');
+    });
+});

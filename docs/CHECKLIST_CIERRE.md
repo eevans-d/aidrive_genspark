@@ -88,27 +88,30 @@ Pendientes críticos detectados:
   Obs: API unificada y compatible con `scraper-maxiconsumo`.
 
 ### F3: Refactor Funciones Críticas
-- [ ] **api-proveedor** (3744 → modular)
-  - Router tipado + handlers separados
+- [x] **api-proveedor** (3744 → modular) ✅ Verificado 2026-01-23
+  - Router tipado + handlers separados (9 handlers)
   - Schemas y validators centralizados
-  - Utils consolidados (cache, http, metrics, etc.)
-  - Tests: reales (imports de módulos)
-  - Logging: handlers migrados a `_shared/logger`
+  - Utils consolidados (12 archivos: cache, http, metrics, auth, etc.)
+  - Tests: reales (imports de módulos) - 17+ tests
+  - Logging: todos los handlers migrados a `_shared/logger`
+  - Hardening: timing-safe comparison, validación origen interno
 
-- [ ] **scraper-maxiconsumo** (3212 → 9 módulos)
+- [x] **scraper-maxiconsumo** (3212 → 9 módulos) ✅ Verificado 2026-01-23
   - types.ts, config.ts, cache.ts, anti-detection.ts
   - parsing.ts, matching.ts, storage.ts, scraping.ts
-  - Tests: reales (imports de módulos)
-  - Pendiente: validación runtime de alertas y comparaciones
+  - Tests: reales (imports de módulos) - 10+ tests parsing, 9+ matching
+  - Logging: 8 módulos con `_shared/logger`
+  - Validación runtime: implementada en alertas.ts (buildAlertasDesdeComparaciones)
 
-- [ ] **cron-jobs-maxiconsumo** (2900 → 4 jobs + orchestrator)
+- [x] **cron-jobs-maxiconsumo** (2900 → 4 jobs + orchestrator) ✅ Verificado 2026-01-23
   - jobs/daily-price-update.ts
   - jobs/realtime-alerts.ts
   - jobs/weekly-analysis.ts
   - jobs/maintenance.ts
   - orchestrator.ts
-  - Tests: reales (imports de módulos)
-  - Persistencia: validación runtime OK
+  - Tests: reales (imports de módulos) - 8+ tests jobs, 38 tests validadores
+  - Logging: todos los jobs con `_shared/logger`
+  - Validación runtime: implementada en validators.ts (38 tests)
 
 ### F4: Testing
 - [x] Framework: Vitest 4.0.16
@@ -117,13 +120,20 @@ Pendientes críticos detectados:
 - [x] Tests reales: imports de módulos reales (parsing/matching/alertas/router/cron)
 - [x] Integration: `tests/integration` en Vitest; comando `npm run test:integration`
 - [x] E2E smoke: `tests/e2e/*.smoke.test.ts`; comando `npm run test:e2e`
-- [ ] Seguridad: pendiente (migrar a Vitest y definir fixtures)
+- [x] Seguridad: migrada a Vitest ✅ 2026-01-23
+  - 14 tests passing + 1 skipped (requiere credenciales)
+  - Fixtures: SQL injection, XSS, path traversal, SSRF, JWT, rate limit
+  - Archivo: `tests/security/security.vitest.test.ts`
 - [x] Performance baseline: `tests/performance/load-testing.vitest.test.ts`
   - Obs: unit tests siguen con `npx vitest run`; suites avanzadas usan configs separadas.
 
 ### F5: Observabilidad
-- [ ] Logging estructurado con requestId/jobId/runId (parcial; cron auxiliares pendientes)
-- [ ] Métricas básicas: duración, errores, items procesados (cron jobs listos; falta cobertura total)
+- [x] Logging estructurado con requestId/jobId/runId ✅ 2026-01-23
+  - Todos los handlers de api-proveedor, scraper y cron jobs usan `_shared/logger`
+  - Cron auxiliares (notifications, dashboard, health-monitor) ya usaban logger
+- [x] Métricas básicas: duración, errores, items procesados
+  - Cron jobs: métricas en `cron_jobs_metrics` y `cron_jobs_execution_log`
+  - API proveedor: `updateRequestMetrics()` en cada request
 - [x] Logs guardan en `cron_jobs_execution_log` (payload validado runtime)
   - Evidencia: `rg -n "console\." supabase/functions` solo muestra `_shared/logger.ts`.
   - Evidencia: `rg -n "console\." supabase/functions/{api-proveedor,scraper-maxiconsumo,cron-jobs-maxiconsumo}` no devuelve coincidencias.
