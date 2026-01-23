@@ -33,7 +33,7 @@ SELECT
       ROUND((sd.cantidad_actual::numeric / sd.stock_minimo::numeric * 100)::numeric, 2)
     ELSE 100
   END AS porcentaje_stock_minimo,
-  sd.deposito_id,
+  sd.ubicacion,
   sd.updated_at AS ultima_actualizacion
 FROM stock_deposito sd
 INNER JOIN productos p ON sd.producto_id = p.id
@@ -81,7 +81,7 @@ SELECT
     WHEN sd.fecha_vencimiento <= CURRENT_DATE + INTERVAL '30 days' THEN 'proximo'
     ELSE 'normal'
   END AS nivel_alerta,
-  sd.deposito_id,
+  sd.ubicacion,
   sd.updated_at AS ultima_actualizacion
 FROM stock_deposito sd
 INNER JOIN productos p ON sd.producto_id = p.id
@@ -118,7 +118,7 @@ SELECT
   SUM(sd.cantidad_actual) AS cantidad_total_stock,
   SUM(CASE WHEN sd.cantidad_actual < sd.stock_minimo THEN sd.cantidad_actual ELSE 0 END) AS cantidad_stock_bajo,
   -- Valor total de inventario (requiere precio_compra en productos)
-  SUM(sd.cantidad_actual * COALESCE(p.precio_compra, 0)) AS valor_inventario_total
+  SUM(sd.cantidad_actual * COALESCE(p.precio_costo, 0)) AS valor_inventario_total
 FROM categorias c
 LEFT JOIN productos p ON c.id = p.categoria_id AND p.activo = true
 LEFT JOIN stock_deposito sd ON p.id = sd.producto_id
@@ -135,7 +135,7 @@ COMMENT ON VIEW vista_stock_por_categoria IS
 -- Reemplaza múltiples queries individuales con una sola llamada RPC
 
 CREATE OR REPLACE FUNCTION fn_dashboard_metrics(
-  p_deposito_id uuid DEFAULT NULL
+  p_ubicacion text DEFAULT NULL
 )
 RETURNS TABLE (
   metric_name text,
@@ -171,7 +171,7 @@ BEGIN
     p.activo = true
     AND sd.stock_minimo IS NOT NULL
     AND sd.cantidad_actual < sd.stock_minimo
-    AND (p_deposito_id IS NULL OR sd.deposito_id = p_deposito_id)
+    AND (p_ubicacion IS NULL OR sd.ubicacion = p_ubicacion)
   
   UNION ALL
   
@@ -185,7 +185,7 @@ BEGIN
   WHERE 
     p.activo = true
     AND sd.cantidad_actual <= 0
-    AND (p_deposito_id IS NULL OR sd.deposito_id = p_deposito_id)
+    AND (p_ubicacion IS NULL OR sd.ubicacion = p_ubicacion)
   
   UNION ALL
   
@@ -201,7 +201,7 @@ BEGIN
     AND sd.fecha_vencimiento IS NOT NULL
     AND sd.fecha_vencimiento <= CURRENT_DATE + INTERVAL '30 days'
     AND sd.fecha_vencimiento >= CURRENT_DATE
-    AND (p_deposito_id IS NULL OR sd.deposito_id = p_deposito_id)
+    AND (p_ubicacion IS NULL OR sd.ubicacion = p_ubicacion)
   
   UNION ALL
   
@@ -217,7 +217,7 @@ BEGIN
     AND sd.fecha_vencimiento IS NOT NULL
     AND sd.fecha_vencimiento < CURRENT_DATE
     AND sd.cantidad_actual > 0
-    AND (p_deposito_id IS NULL OR sd.deposito_id = p_deposito_id)
+    AND (p_ubicacion IS NULL OR sd.ubicacion = p_ubicacion)
   
   UNION ALL
   
@@ -243,7 +243,7 @@ END;
 $$;
 
 COMMENT ON FUNCTION fn_dashboard_metrics IS 
-  'Retorna métricas agregadas para el dashboard en una sola llamada optimizada. Filtro opcional por deposito_id.';
+  'Retorna métricas agregadas para el dashboard en una sola llamada optimizada. Filtro opcional por ubicacion.';
 
 -- ============================================================================
 -- 5. FUNCIÓN: Rotación de productos (últimos N días)
