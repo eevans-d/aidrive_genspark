@@ -1,8 +1,9 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-21  
+**Última actualización:** 2026-01-23  
 **Estado:** vigente  
-**Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`
+**Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`  
+**Plan pendientes:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
 ---
 
@@ -41,10 +42,11 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** comando único y reproducible en CI/local; checklist con prerequisitos.  
   **Dependencias:** decisión D-004 en `docs/DECISION_LOG.md`.
 
-- **WS2.2 Smoke tests E2E mínimos**  
+- **WS2.2 Smoke tests E2E mínimos** ⏳ **DESBLOQUEADO 2026-01-23**  
   **Scope:** endpoints `status`, `precios`, `alertas` + cron básico.  
-  **Aceptación:** tests pasan en Supabase local; falla clara si falta env.  
-  **Dependencias:** WS2.1.
+  **Aceptación:** tests pasan con Supabase real; falla clara si falta env.  
+  **Dependencias:** WS2.1 ✅.  
+  **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 3.
 
 - **WS2.3 Performance baseline** ✅ **COMPLETADO 2026-01-19**  
   **Aceptación:** benchmark mínimo y valores base registrados.  
@@ -119,12 +121,14 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS7 — Seguridad (P1)
 **Objetivo:** seguridad mínima documentada y ejecutable.
 
-- **WS7.1 Auditoría RLS**  
+- **WS7.1 Auditoría RLS** ⏳ **DESBLOQUEADO 2026-01-23**  
   **Aceptación:** reporte con tablas críticas y políticas activas.  
-  **Dependencias:** WS3.1.
+  **Dependencias:** WS3.1 ✅.  
+  **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 1.
 
-- **WS7.2 Escaneo de dependencias**  
-  **Aceptación:** `npm audit` y Snyk (si token) en CI con umbral definido.
+- **WS7.2 Escaneo de dependencias** ✅ **COMPLETADO 2026-01-23**  
+  **Aceptación:** `npm audit` documentado en DECISION_LOG D-026.  
+  **Evidencia:** Vulnerabilidades conocidas en deps dev (rollup, vite).
 
 - **WS7.3 Gateway sin service role para queries normales (P0)**  
   **Aceptación:** queries usan JWT de usuario + anon key; service role sólo para tareas admin.  

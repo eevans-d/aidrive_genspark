@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-18  
+**Última actualización:** 2026-01-23  
 
 ---
 
@@ -9,11 +9,22 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 78% |
+| **Avance Global** | 85% |
 | **Build** | ✅ Passing |
-| **Tests** | 285 passing |
+| **Tests** | 701 passing (646 unit + 40 frontend + 15 security) |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 85% (26 endpoints) |
+| **Gateway** | 100% (26 endpoints desplegados) |
+| **Supabase** | ✅ Producción configurada |
+
+---
+
+## 🎯 Próximos Pasos (Plan Definitivo)
+
+Ver **`docs/PLAN_PENDIENTES_DEFINITIVO.md`** para plan detallado:
+
+1. **Auditoría RLS** (30 min) - Ejecutar `scripts/rls_audit.sql`
+2. **Usuarios de prueba** (45 min) - Crear en Supabase Auth
+3. **E2E con auth real** (60 min) - Migrar de mocks a real
 
 ---
 
@@ -26,15 +37,15 @@ aidrive_genspark/
 │   ├── src/hooks/queries/    # 8 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
-│   ├── functions/            # Edge Functions (Deno)
+│   ├── functions/            # 13 Edge Functions desplegadas
 │   │   ├── api-minimarket/   # Gateway principal (26 endpoints)
 │   │   ├── api-proveedor/    # API proveedor (9 endpoints)
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # Migraciones SQL
-├── tests/                    # Unit, E2E, Performance
-└── docs/                     # Documentación (11 archivos)
+│   └── migrations/           # 10 migraciones aplicadas
+├── tests/                    # Unit, E2E, Performance, Security
+└── docs/                     # Documentación (21+ archivos)
 ```
 
 ---
@@ -44,8 +55,9 @@ aidrive_genspark/
 | Archivo | Propósito |
 |---------|-----------|
 | `docs/ESTADO_ACTUAL.md` | **FUENTE DE VERDAD** - Estado y avance |
+| `docs/PLAN_PENDIENTES_DEFINITIVO.md` | **PLAN ACTUAL** - 3 pendientes |
 | `docs/ROADMAP.md` | Plan rolling 90 días |
-| `docs/BACKLOG_PRIORIZADO.md` | Prioridades y tareas |
+| `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
 
 ---

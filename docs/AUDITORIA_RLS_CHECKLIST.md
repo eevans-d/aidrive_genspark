@@ -1,23 +1,32 @@
 # Auditoría RLS - Checklist y Scripts
 
-**Estado:** ⚠️ **PENDIENTE POR CREDENCIALES**  
-**Fecha:** 2026-01-13  
-**Propósito:** Material preparado para auditoría RLS futura (requiere acceso a Supabase real)
+**Estado:** ✅ **DESBLOQUEADO - LISTO PARA EJECUTAR**  
+**Fecha actualización:** 2026-01-23  
+**Propósito:** Auditoría RLS del sistema Mini Market  
+**Plan de ejecución:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
 ---
 
 ## 📋 Resumen
 
-Este documento prepara la auditoría de Row Level Security (RLS) para el sistema Mini Market. 
-**No se puede ejecutar sin credenciales reales de Supabase.**
+Este documento contiene el checklist y scripts para auditoría de Row Level Security (RLS).
+**Credenciales disponibles en `docs/OBTENER_SECRETOS.md`.**
 
-### Pre-requisitos para ejecutar
+### Credenciales de Producción
 ```bash
-# Variables requeridas en .env.test o entorno
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
-DATABASE_URL=postgresql://postgres:xxx@db.xxx.supabase.co:5432/postgres
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
+```
+
+### Comando de Ejecución
+```bash
+# Opción A: Dashboard SQL Editor
+# https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/sql
+# Pegar contenido de scripts/rls_audit.sql
+
+# Opción B: psql (obtener DATABASE_URL del Dashboard)
+psql "$DATABASE_URL" -f scripts/rls_audit.sql > rls_audit_output.txt
 ```
 
 ---

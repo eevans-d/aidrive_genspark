@@ -61,16 +61,23 @@ Pendientes:
   - URL: https://dqaygmjpzoqjjrywdsxi.supabase.co
   - ANON_KEY y SERVICE_ROLE_KEY disponibles en `docs/OBTENER_SECRETOS.md`
 - [ ] **Auditoría RLS completa** → DESBLOQUEADO, pendiente ejecución
+  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 1
   - Checklist preparado: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
   - Script de validación: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
   - Tablas P0 a verificar: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`
+- [ ] **Usuarios de prueba** → DESBLOQUEADO
+  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 2
+  - 3 usuarios: admin, deposito, ventas (staging)
+- [ ] **E2E con auth real** → DESBLOQUEADO
+  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 3
+  - Runner: Supabase CLI (decisión confirmada)
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
   - 10 migraciones aplicadas en producción
   - Comando: `supabase db push`
 - [ ] WS3.2 Rollback documentado → referencia en `docs/DEPLOYMENT_GUIDE.md` (actualizar).
-- [ ] WS7.1 Auditoría RLS P0 → DESBLOQUEADO, `scripts/rls_audit.sql` listo.
+- [ ] WS7.1 Auditoría RLS P0 → DESBLOQUEADO, plan en `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
   - `npm audit` documentado en `docs/DECISION_LOG.md` (D-026)
   - Vulnerabilidades conocidas en dependencias dev (rollup, vite)

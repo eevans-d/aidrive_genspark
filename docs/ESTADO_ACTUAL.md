@@ -73,3 +73,5 @@
 - [ ] Auditoría RLS completa (script preparado)
 - [ ] Crear usuarios de prueba en Supabase Auth
 - [ ] E2E con usuarios reales
+
+> **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`

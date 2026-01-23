@@ -114,37 +114,40 @@ npx vitest --coverage       # Unit tests con coverage
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
 | Plan vigente | `docs/ROADMAP.md` |
+| **Plan pendientes** | `docs/PLAN_PENDIENTES_DEFINITIVO.md` |
 | Plan operativo | `docs/PLAN_WS_DETALLADO.md` |
 | Decisiones | `docs/DECISION_LOG.md` |
 | Estado actual | `docs/ESTADO_ACTUAL.md` |
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
+| Credenciales | `docs/OBTENER_SECRETOS.md` |
 
-## Estado Actual (Enero 2025 - verificado)
+## Estado Actual (Enero 2026 - verificado)
+
+### Proyecto Supabase ✅
+- **Nombre:** minimarket-system
+- **Ref:** dqaygmjpzoqjjrywdsxi
+- **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
+- **Edge Functions:** 13 desplegadas y funcionando
+- **Migraciones:** 10/10 aplicadas
 
 ### Funciones Modularizadas
 1. **api-proveedor**: Router + handlers + schemas + validators + utils
 2. **scraper-maxiconsumo**: 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
 3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
-   - Pendientes críticos: logging unificado en handlers, validación runtime y persistencia de cron (ver `docs/ROADMAP.md`).
 
 ### Testing
 - Framework: **Vitest 4.0.16**
-- Tests: imports de módulos reales (parsing/matching/alertas/router/cron)
+- Tests unitarios: 646 passing
+- Tests frontend: 40 passing
+- Tests seguridad: 15 passing (con credenciales reales)
 - Runner/scripts: `package.json` y `test.sh` alineados con Vitest
-- Nota: suites integration/e2e/seguridad/performance usan configs Vitest auxiliares; los legacy Jest están desactivados.
 
 ### CI/CD
 - Pipeline: `.github/workflows/ci.yml`
 - Jobs: lint → test → build → typecheck → edge-functions-check
 - Nota: workflow activo en `main` y edge-check estricto
 
-### Funciones Auxiliares de Cron (documentadas en CRON_AUXILIARES.md):
-- `cron-testing-suite` - Testing e2e de cron jobs
-- `cron-notifications` - Envío de notificaciones
-- `cron-dashboard` - API para dashboard
-- `cron-health-monitor` - Monitoreo de salud
-
-### Notas:
-- CI configurado en `.github/workflows/ci.yml` (activo en `main`)
-- Vitest elegido; runner/scripts alineados
-- Plan vigente en `docs/ROADMAP.md` (si no está allí, no está planificado)
+### Pendientes (ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`)
+1. Auditoría RLS (30 min)
+2. Usuarios de prueba staging (45 min)
+3. E2E con auth real (60 min)
