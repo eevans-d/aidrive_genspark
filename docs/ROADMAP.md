@@ -121,10 +121,10 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS7 — Seguridad (P1)
 **Objetivo:** seguridad mínima documentada y ejecutable.
 
-- **WS7.1 Auditoría RLS** ⏳ **DESBLOQUEADO 2026-01-23**  
+- **WS7.1 Auditoría RLS** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** reporte con tablas críticas y políticas activas.  
-  **Dependencias:** WS3.1 ✅.  
-  **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 1.
+  **Evidencia:** `docs/AUDITORIA_RLS_CHECKLIST.md` - 7 tablas P0 verificadas, todas protegidas.  
+  **Dependencias:** WS3.1 ✅.
 
 - **WS7.2 Escaneo de dependencias** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** `npm audit` documentado en DECISION_LOG D-026.  

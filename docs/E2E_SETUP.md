@@ -49,11 +49,26 @@ TEST_PASSWORD=Staging2026!
 ```bash
 # Desde minimarket-system/
 cd minimarket-system
+
+# Con mocks (por defecto)
 pnpm exec playwright test
+
+# Con auth real (contra Supabase staging)
+VITE_USE_MOCKS=false pnpm exec playwright test auth.real
 
 # Con UI para debug
 pnpm exec playwright test --ui
+
+# Solo tests de auth real
+VITE_USE_MOCKS=false pnpm exec playwright test e2e/auth.real.spec.ts
 ```
+
+### Archivos de Test
+
+| Archivo | Descripción | Auth |
+|---------|-------------|------|
+| `e2e/app.smoke.spec.ts` | Tests smoke con mocks | Mock |
+| `e2e/auth.real.spec.ts` | Tests de autenticación real | Supabase |
 
 ---
 

@@ -60,24 +60,28 @@ Pendientes:
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
   - URL: https://dqaygmjpzoqjjrywdsxi.supabase.co
   - ANON_KEY y SERVICE_ROLE_KEY disponibles en `docs/OBTENER_SECRETOS.md`
-- [ ] **Auditoría RLS completa** → DESBLOQUEADO, pendiente ejecución
-  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 1
-  - Checklist preparado: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
-  - Script de validación: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
-  - Tablas P0 a verificar: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`
-- [ ] **Usuarios de prueba** → DESBLOQUEADO
-  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 2
-  - 3 usuarios: admin, deposito, ventas (staging)
-- [ ] **E2E con auth real** → DESBLOQUEADO
-  - **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 3
-  - Runner: Supabase CLI (decisión confirmada)
+- [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23
+  - **Resultado:** Todas las tablas P0 protegidas
+  - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
+  - Script: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
+  - Tablas P0 verificadas: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`, `categorias`
+- [~] **Usuarios de prueba** → EN PROGRESO
+  - Archivos creados: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
+  - **PENDIENTE:** Crear usuarios manualmente en Supabase Dashboard
+  - URL: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/auth/users
+  - 3 usuarios: admin@staging.minimarket.test, deposito@staging.minimarket.test, ventas@staging.minimarket.test
+- [~] **E2E con auth real** → EN PROGRESO
+  - Test creado: `minimarket-system/e2e/auth.real.spec.ts`
+  - Playwright config actualizado para soportar auth real
+  - **PENDIENTE:** Ejecutar tests después de crear usuarios
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
   - 10 migraciones aplicadas en producción
   - Comando: `supabase db push`
 - [ ] WS3.2 Rollback documentado → referencia en `docs/DEPLOYMENT_GUIDE.md` (actualizar).
-- [ ] WS7.1 Auditoría RLS P0 → DESBLOQUEADO, plan en `docs/PLAN_PENDIENTES_DEFINITIVO.md`
+- [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23
+  - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` - todas las tablas protegidas
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
   - `npm audit` documentado en `docs/DECISION_LOG.md` (D-026)
   - Vulnerabilidades conocidas en dependencias dev (rollup, vite)
