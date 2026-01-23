@@ -150,6 +150,21 @@ class MockQueryBuilder {
     return this
   }
 
+  async single(): Promise<QueryResult<any>> {
+    const result = await this.execute()
+    const rows = Array.isArray(result.data) ? result.data : result.data ? [result.data] : []
+    const data = rows[0] ?? null
+
+    if (!data) {
+      return {
+        data: null,
+        error: { code: 'PGRST116', message: 'No rows returned' }
+      }
+    }
+
+    return { data, error: null }
+  }
+
   private applyFilters(rows: Record<string, any>[]) {
     return rows.filter((row) => {
       return this.filters.every((filter) => {

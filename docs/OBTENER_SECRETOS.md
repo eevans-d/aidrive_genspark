@@ -22,6 +22,18 @@ SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhY
 VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 ```
 
+## 👥 Usuarios de Prueba (Staging)
+
+```bash
+# Archivo: .env.test (raíz del repo)
+TEST_USER_ADMIN=admin@staging.minimarket.test
+TEST_USER_DEPOSITO=deposito@staging.minimarket.test
+TEST_USER_VENTAS=ventas@staging.minimarket.test
+TEST_PASSWORD=Staging2026!
+```
+
+> Estos usuarios ya existen en Supabase Auth y tienen registros en la tabla `personal`.
+
 ### Links útiles
 - **Dashboard:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi
 - **Functions:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/functions

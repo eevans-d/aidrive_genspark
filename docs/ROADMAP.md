@@ -42,11 +42,11 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** comando único y reproducible en CI/local; checklist con prerequisitos.  
   **Dependencias:** decisión D-004 en `docs/DECISION_LOG.md`.
 
-- **WS2.2 Smoke tests E2E mínimos** ⏳ **DESBLOQUEADO 2026-01-23**  
-  **Scope:** endpoints `status`, `precios`, `alertas` + cron básico.  
+- **WS2.2 Smoke tests E2E mínimos** ✅ **COMPLETADO 2026-01-23**  
+  **Scope:** endpoints `status`, `precios`, `alertas` + cron básico y auth real frontend.  
   **Aceptación:** tests pasan con Supabase real; falla clara si falta env.  
   **Dependencias:** WS2.1 ✅.  
-  **Plan:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md` Paso 3.
+  **Evidencia:** `VITE_USE_MOCKS=false pnpm exec playwright test auth.real` (7/7).
 
 - **WS2.3 Performance baseline** ✅ **COMPLETADO 2026-01-19**  
   **Aceptación:** benchmark mínimo y valores base registrados.  

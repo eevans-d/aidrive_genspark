@@ -63,12 +63,16 @@ pnpm exec playwright test --ui
 VITE_USE_MOCKS=false pnpm exec playwright test e2e/auth.real.spec.ts
 ```
 
+> Nota: El runner inicia su propio servidor con el modo indicado por `VITE_USE_MOCKS`. Evitar reutilizar un servidor previo con otro modo para no mezclar mocks con Supabase real.
+
 ### Archivos de Test
 
 | Archivo | Descripción | Auth |
 |---------|-------------|------|
 | `e2e/app.smoke.spec.ts` | Tests smoke con mocks | Mock |
 | `e2e/auth.real.spec.ts` | Tests de autenticación real | Supabase |
+
+> `app.smoke` omite (skip) pruebas de depósito que dependen del gateway real. Para habilitarlas: `E2E_GATEWAY=true pnpm exec playwright test app.smoke`.
 
 ---
 

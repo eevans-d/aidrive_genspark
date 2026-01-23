@@ -9,22 +9,18 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 85% |
+| **Avance Global** | 100% |
 | **Build** | ✅ Passing |
-| **Tests** | 701 passing (646 unit + 40 frontend + 15 security) |
+| **Tests** | 708 passing (646 unit + 40 frontend + 15 security + 7 e2e auth real) |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (26 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
 
 ---
 
-## 🎯 Próximos Pasos (Plan Definitivo)
+## 🎯 Próximos Pasos
 
-Ver **`docs/PLAN_PENDIENTES_DEFINITIVO.md`** para plan detallado:
-
-1. **Auditoría RLS** (30 min) - Ejecutar `scripts/rls_audit.sql`
-2. **Usuarios de prueba** (45 min) - Crear en Supabase Auth
-3. **E2E con auth real** (60 min) - Migrar de mocks a real
+Todos los pasos del plan definitivo están **completados**. Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
 
 ---
 
@@ -55,7 +51,7 @@ aidrive_genspark/
 | Archivo | Propósito |
 |---------|-----------|
 | `docs/ESTADO_ACTUAL.md` | **FUENTE DE VERDAD** - Estado y avance |
-| `docs/PLAN_PENDIENTES_DEFINITIVO.md` | **PLAN ACTUAL** - 3 pendientes |
+| `docs/PLAN_PENDIENTES_DEFINITIVO.md` | **PLAN ACTUAL** - ✅ completado |
 | `docs/ROADMAP.md` | Plan rolling 90 días |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
@@ -80,9 +76,21 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-1. **RLS Audit** - Requiere credenciales staging
-2. **E2E Tests** - Con credenciales reales
-3. **Performance Tests** - Load testing con k6
+- No hay tareas críticas pendientes. Mantener mantenimiento y observabilidad.
+
+---
+
+## 🧭 Cómo obtener contexto en una nueva sesión
+
+1. Leer `docs/ESTADO_ACTUAL.md` (fuente de verdad).
+2. Confirmar checklist final en `docs/CHECKLIST_CIERRE.md`.
+3. Revisar decisiones vigentes en `docs/DECISION_LOG.md`.
+4. Validar credenciales y usuarios staging en `docs/OBTENER_SECRETOS.md`.
+5. Verificar estado del repo:
+  - `git status --short`
+  - `git log -1 --oneline`
+6. Si se tocan E2E:
+  - `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
 
 ---
 

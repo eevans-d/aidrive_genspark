@@ -27,7 +27,7 @@ export default defineConfig({
   webServer: {
     command: 'pnpm dev -- --host',
     url: 'http://localhost:5173',
-    reuseExistingServer: true,
+    reuseExistingServer: false,
     env: USE_MOCKS
       ? { VITE_USE_MOCKS: 'true' }
       : {
