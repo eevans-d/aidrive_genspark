@@ -39,18 +39,18 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **646** | 33 archivos |
+| **Tests Backend** | **606** | 33 archivos |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
 |-----------|----------|---------|
-| Páginas | 11 | Dashboard, Login, Deposito, Kardex, Productos, etc. |
-| Hooks Query | 9 | useDashboardStats, useProductos, useTareas, etc. |
-| Componentes | 5 | Layout, ErrorBoundary, ErrorMessage |
+| Páginas | 9 | Dashboard, Login, Deposito, Kardex, Productos, etc. |
+| Hooks Query | 8 | useDashboardStats, useProductos, useTareas, etc. |
+| Componentes | 3 | Layout, ErrorBoundary, ErrorMessage |
 | **Tests Frontend** | **40** | 12 archivos |
 
 ### Totales
-- **Tests Unitarios:** 646 (100% pasando)
+- **Tests Unitarios:** 646 (Backend 606 + Frontend 40)
 - **Tests Seguridad:** 15 (100% pasando con credenciales reales)
 - **Tests E2E Auth Real:** 7 (100% pasando)
 - **Migraciones:** 10/10 aplicadas
@@ -62,7 +62,7 @@
 - ✅ Scraper de precios Maxiconsumo
 - ✅ API Gateway con rate limiting + circuit breaker
 - ✅ Alertas de stock bajo y vencimientos
-- ✅ Roles verificados desde BD (no metadata)
+- ✅ Roles validados server-side via `app_metadata` (fallback a `user_metadata` si falta role); frontend verifica rol en tabla `personal`
 - ✅ React Query con caching en todas las páginas
 - ✅ Exportación CSV de productos/stock
 - ✅ **Proyecto Supabase configurado**
@@ -76,3 +76,5 @@
 - E2E con auth real (Playwright): ✅
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
+
+> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims) y rollback probado.

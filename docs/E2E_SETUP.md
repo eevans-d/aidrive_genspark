@@ -15,23 +15,23 @@
 ```bash
 # Archivo: .env.test (raíz del proyecto)
 SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMTYzNywiZXhwIjoyMDg0NzA3NjM3fQ.03JkWLjzw40kaJUW3cBLWPrjNrfzuyymWOyekV26qck
+SUPABASE_ANON_KEY=<REDACTED>
+SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
 # Usuarios de prueba (crear según PLAN_PENDIENTES_DEFINITIVO.md)
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=Staging2026!
+TEST_PASSWORD=<DEFINIR_EN_AUTH>
 ```
 
 ## Usuarios de Prueba
 
 | Email | Rol | Contraseña |
 |-------|-----|------------|
-| admin@staging.minimarket.test | admin | Staging2026! |
-| deposito@staging.minimarket.test | deposito | Staging2026! |
-| ventas@staging.minimarket.test | ventas | Staging2026! |
+| admin@staging.minimarket.test | admin | <DEFINIR_EN_AUTH> |
+| deposito@staging.minimarket.test | deposito | <DEFINIR_EN_AUTH> |
+| ventas@staging.minimarket.test | ventas | <DEFINIR_EN_AUTH> |
 
 > **IMPORTANTE:** Crear usuarios en Dashboard > Authentication > Users antes de ejecutar tests.
 

@@ -9,9 +9,9 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 100% |
+| **Avance Global** | 95% (pendientes WS7.5 + rollback probado) |
 | **Build** | ✅ Passing |
-| **Tests** | 708 passing (646 unit + 40 frontend + 15 security + 7 e2e auth real) |
+| **Tests** | 668 passing (646 unit incl frontend + 15 security + 7 e2e auth real) |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (26 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
@@ -20,7 +20,7 @@
 
 ## 🎯 Próximos Pasos
 
-Todos los pasos del plan definitivo están **completados**. Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
+Plan definitivo **completado con pendientes P1** (WS7.5 y rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
 
 ---
 
@@ -29,7 +29,7 @@ Todos los pasos del plan definitivo están **completados**. Ver estado consolida
 ```
 aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
-│   ├── src/pages/            # 8 páginas (todas con React Query)
+│   ├── src/pages/            # 9 páginas (todas con React Query)
 │   ├── src/hooks/queries/    # 8 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
@@ -76,7 +76,9 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- No hay tareas críticas pendientes. Mantener mantenimiento y observabilidad.
+- Completar WS7.5 roles server-side (tabla/claims; eliminar fallback a `user_metadata`).
+- Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
+- Mantener mantenimiento y observabilidad.
 
 ---
 

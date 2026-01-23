@@ -27,7 +27,7 @@
 | P0-01 | Fix conteo Dashboard | 5 | 1 | 5 | 25.0 | None | Frontend | Completado (usa count=exact) |
 | P0-02 | Deposito atomico via RPC | 5 | 2 | 5 | 12.5 | DB/RPC | Frontend/DB | Completado (sp_movimiento_inventario) |
 | P0-03 | Gateway sin service role + CORS restringido + rate limit | 5 | 2 | 5 | 12.5 | Env vars | Backend | ✅ Completado |
-| P0-04 | Validacion de rol server-side (no metadata) | 5 | 3 | 4 | 6.7 | Tabla roles | Backend/DB | ✅ Completado (2026-01-17, useVerifiedRole desde tabla personal) |
+| P0-04 | Validacion de rol server-side (no metadata) | 5 | 3 | 4 | 6.7 | Tabla roles | Backend/DB | ⚠️ Parcial (frontend valida en tabla `personal`; WS7.5 pendiente en gateway) |
 | P1-01 | Eliminar N+1 Productos/Proveedores | 4 | 3 | 4 | 5.3 | Vistas/RPC | Frontend/DB | ✅ Completado (2026-01-16) |
 | P1-02 | Paginacion y filtros server-side | 4 | 3 | 4 | 5.3 | API/query | Frontend | Completado (range + count exact) |
 | P1-03 | Agregaciones de stock en DB | 4 | 3 | 3 | 4.0 | RPC/vistas | DB | ✅ Completado (2026-01-16, vistas materializadas + RPCs) |
@@ -57,4 +57,4 @@
 
 ## Notas
 - Los items P0/P1 deberian entrar al ROADMAP vigente.  
-- Las dependencias DB requieren validacion de schema y RLS en entorno real.
+- Validacion de schema y RLS en entorno real: completado 2026-01-23.

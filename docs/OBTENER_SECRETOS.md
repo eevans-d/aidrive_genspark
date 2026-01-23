@@ -1,7 +1,7 @@
 # Guía para obtener secretos (Mini Market)
 
 **Fecha:** 2026-01-23  
-**Estado:** ✅ CREDENCIALES OBTENIDAS  
+**Estado:** ✅ CREDENCIALES OBTENIDAS (REDACTADAS)  
 **Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
 
 ---
@@ -14,13 +14,15 @@ SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 VITE_SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 
 # API Keys
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
-VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMTYzNywiZXhwIjoyMDg0NzA3NjM3fQ.03JkWLjzw40kaJUW3cBLWPrjNrfzuyymWOyekV26qck
+SUPABASE_ANON_KEY=<REDACTED>
+VITE_SUPABASE_ANON_KEY=<REDACTED>
+SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
 # Gateway
 VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 ```
+
+> Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.
 
 ## 👥 Usuarios de Prueba (Staging)
 
@@ -29,7 +31,7 @@ VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-m
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=Staging2026!
+TEST_PASSWORD=<DEFINIR_EN_AUTH>
 ```
 
 > Estos usuarios ya existen en Supabase Auth y tienen registros en la tabla `personal`.
@@ -152,7 +154,18 @@ TEST_PASSWORD=Staging2026!
 
 ---
 
-## 7) Qué puedo hacer yo automáticamente
+## 7) Rotación de secretos (recomendado)
+
+1. Rotar `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` en el dashboard de Supabase.
+2. Actualizar variables en:
+   - `.env.test` local (no versionar)
+   - Secrets de Supabase (Edge Functions)
+   - Secrets de CI/CD
+3. Invalidar credenciales anteriores y verificar acceso con tests.
+
+---
+
+## 8) Qué puedo hacer yo automáticamente
 
 - Verificar en el repo qué variables faltan.
 - Preparar scripts de validación sin exponer secretos.

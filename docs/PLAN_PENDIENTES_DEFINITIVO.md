@@ -40,8 +40,8 @@ Plan definitivo para completar 3 pendientes críticos en secuencia óptima:
 
 ```bash
 SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMTYzNywiZXhwIjoyMDg0NzA3NjM3fQ.03JkWLjzw40kaJUW3cBLWPrjNrfzuyymWOyekV26qck
+SUPABASE_ANON_KEY=<REDACTED>
+SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 ```
 
 ---
@@ -68,7 +68,7 @@ Verificar que las tablas P0 tienen RLS habilitado y políticas correctas.
 ### Prerequisitos
 - [x] Credenciales Supabase disponibles
 - [x] Script `scripts/rls_audit.sql` preparado (137 líneas, 7 secciones)
-- [ ] Acceso a Dashboard Supabase o psql
+- [x] Acceso a Dashboard Supabase o psql
 
 ### Comandos a Ejecutar
 
@@ -95,10 +95,10 @@ El script retorna 7 secciones:
 7. **VERIFICACIÓN P0:** Estado específico de tablas críticas
 
 ### Criterio de Éxito
-- [ ] Todas las tablas P0 tienen `rls_enabled = true`
-- [ ] Tablas de UI (`productos`, `stock_deposito`, etc.) tienen políticas para `authenticated`
-- [ ] Tablas internas (cron, scraping) tienen RLS sin políticas (service_role bypass)
-- [ ] No hay funciones SECURITY DEFINER sin `search_path` configurado
+- [x] Todas las tablas P0 tienen `rls_enabled = true`
+- [x] Tablas de UI (`productos`, `stock_deposito`, etc.) tienen políticas para `authenticated`
+- [x] Tablas internas (cron, scraping) tienen RLS sin políticas (service_role bypass)
+- [x] No hay funciones SECURITY DEFINER sin `search_path` configurado
 
 ### Acción si hay Gaps
 Si se detectan tablas P0 sin RLS o políticas faltantes:
@@ -133,7 +133,7 @@ Crear 3 usuarios de prueba en Supabase Auth vinculados a la tabla `personal`.
 ```sql
 -- Campos relevantes para vincular usuario
 id              UUID PRIMARY KEY
-auth_user_id    UUID REFERENCES auth.users(id) UNIQUE
+user_auth_id    UUID REFERENCES auth.users(id) UNIQUE
 nombre_completo VARCHAR(255)
 rol             VARCHAR(50)  -- 'admin', 'deposito', 'ventas'
 activo          BOOLEAN DEFAULT true
@@ -147,7 +147,7 @@ activo          BOOLEAN DEFAULT true
 
 -- ============================================================================
 -- USUARIOS DE PRUEBA PARA STAGING
--- Contraseña para todos: Staging2026!
+-- Contraseña para todos: <DEFINIR_EN_AUTH>
 -- ============================================================================
 
 -- 1. Crear usuarios en auth.users (Supabase Auth)
@@ -157,7 +157,7 @@ activo          BOOLEAN DEFAULT true
 -- 2. Una vez creados los auth users, vincular a personal:
 
 -- Usuario Admin
-INSERT INTO personal (id, auth_user_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
+INSERT INTO personal (id, user_auth_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
 VALUES (
   gen_random_uuid(),
   (SELECT id FROM auth.users WHERE email = 'admin@staging.minimarket.test'),
@@ -171,7 +171,7 @@ VALUES (
 );
 
 -- Usuario Deposito
-INSERT INTO personal (id, auth_user_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
+INSERT INTO personal (id, user_auth_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
 VALUES (
   gen_random_uuid(),
   (SELECT id FROM auth.users WHERE email = 'deposito@staging.minimarket.test'),
@@ -185,7 +185,7 @@ VALUES (
 );
 
 -- Usuario Ventas
-INSERT INTO personal (id, auth_user_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
+INSERT INTO personal (id, user_auth_id, nombre_completo, dni, telefono, email, rol, fecha_ingreso, activo)
 VALUES (
   gen_random_uuid(),
   (SELECT id FROM auth.users WHERE email = 'ventas@staging.minimarket.test'),
@@ -206,7 +206,7 @@ VALUES (
    URL: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/auth/users
    Acción: Add User → Create New User
    - Email: admin@staging.minimarket.test
-   - Password: Staging2026!
+   - Password: <DEFINIR_EN_AUTH>
    - (Repetir para deposito@ y ventas@)
    ```
 
@@ -220,15 +220,15 @@ VALUES (
    ```sql
    SELECT p.nombre_completo, p.rol, p.email, u.email as auth_email
    FROM personal p
-   JOIN auth.users u ON p.auth_user_id = u.id
+JOIN auth.users u ON p.user_auth_id = u.id
    WHERE p.email LIKE '%staging%';
    ```
 
 ### Criterio de Éxito
-- [ ] 3 usuarios creados en Supabase Auth
-- [ ] 3 registros en tabla `personal` con `auth_user_id` correcto
-- [ ] Login exitoso en frontend con cada usuario
-- [ ] Rol visible correctamente en sesión
+- [x] 3 usuarios creados en Supabase Auth
+- [x] 3 registros en tabla `personal` con `user_auth_id` correcto
+- [x] Login validado en frontend (E2E auth real)
+- [x] Rol visible correctamente en sesión
 
 ### Documentación a Actualizar
 - `docs/E2E_SETUP.md` - Agregar sección de credenciales de prueba
@@ -253,14 +253,14 @@ Migrar tests E2E de mocks a autenticación real con los usuarios creados.
 ```bash
 # Archivo: .env.test (raíz del proyecto)
 SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
-SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
-SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMTYzNywiZXhwIjoyMDg0NzA3NjM3fQ.03JkWLjzw40kaJUW3cBLWPrjNrfzuyymWOyekV26qck
+SUPABASE_ANON_KEY=<REDACTED>
+SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
 # Usuarios de prueba
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=Staging2026!
+TEST_PASSWORD=<DEFINIR_EN_AUTH>
 ```
 
 #### 3.2 Modificar playwright.config.ts
@@ -363,18 +363,18 @@ cd minimarket-system
 pnpm add -D dotenv
 
 # Ejecutar E2E con auth real
-pnpm exec playwright test
+VITE_USE_MOCKS=false pnpm exec playwright test auth.real
 
 # O con UI para debug
-pnpm exec playwright test --ui
+VITE_USE_MOCKS=false pnpm exec playwright test --ui
 ```
 
 ### Criterio de Éxito
-- [ ] `VITE_USE_MOCKS` removido de playwright.config.ts
-- [ ] Helper de login creado y funcional
-- [ ] Tests de smoke pasan con autenticación real
-- [ ] Cada rol puede acceder a sus rutas permitidas
-- [ ] Tests fallan correctamente si credenciales incorrectas
+- [x] `VITE_USE_MOCKS` controla el modo (mocks por defecto; real con `VITE_USE_MOCKS=false`)
+- [x] Helper de login creado y funcional
+- [x] Tests de auth real pasan
+- [x] Cada rol puede acceder a sus rutas permitidas
+- [x] Tests fallan correctamente si credenciales incorrectas
 
 ### Documentación a Actualizar
 - `docs/E2E_SETUP.md` - Actualizar con nuevo flujo
@@ -391,33 +391,33 @@ pnpm exec playwright test --ui
 - [x] Migraciones aplicadas
 
 ### Paso 1: RLS
-- [ ] Ejecutar `scripts/rls_audit.sql`
-- [ ] Capturar output en archivo
-- [ ] Analizar gaps en tablas P0
-- [ ] Crear migración correctiva si necesario
-- [ ] Actualizar `docs/AUDITORIA_RLS_CHECKLIST.md`
-- [ ] Marcar WS7.1 en CHECKLIST_CIERRE.md
+- [x] Validación RLS via REST (anon key) o `scripts/rls_audit.sql`
+- [x] Evidencia documentada en `docs/AUDITORIA_RLS_CHECKLIST.md`
+- [x] Analizar gaps en tablas P0
+- [x] Sin gaps detectados (no se requiere migración)
+- [x] Actualizar `docs/AUDITORIA_RLS_CHECKLIST.md`
+- [x] Marcar WS7.1 en CHECKLIST_CIERRE.md
 
 ### Paso 2: Usuarios
-- [ ] Crear 3 usuarios en Supabase Auth Dashboard
-- [ ] Ejecutar seed SQL para tabla `personal`
-- [ ] Verificar vinculación auth_user_id
-- [ ] Test login manual en frontend
-- [ ] Documentar en E2E_SETUP.md
+- [x] Crear 3 usuarios en Supabase Auth Dashboard
+- [x] Ejecutar seed SQL para tabla `personal`
+- [x] Verificar vinculación user_auth_id
+- [x] Login validado via E2E auth real
+- [x] Documentar en E2E_SETUP.md
 
 ### Paso 3: E2E Real
-- [ ] Crear `.env.test` con credenciales
-- [ ] Modificar `playwright.config.ts`
-- [ ] Crear `e2e/helpers/auth.ts`
-- [ ] Actualizar tests de smoke
-- [ ] Ejecutar suite completa
-- [ ] Documentar resultados
+- [x] Crear `.env.test` con credenciales
+- [x] Modificar `playwright.config.ts`
+- [x] Crear `e2e/helpers/auth.ts`
+- [x] Actualizar tests de smoke
+- [x] Ejecutar suite de auth real
+- [x] Documentar resultados
 
 ### Post-ejecución
 - [ ] Commit todos los cambios
 - [ ] Push a main
-- [ ] Actualizar ESTADO_ACTUAL.md
-- [ ] Actualizar CHECKLIST_CIERRE.md (todos los items)
+- [x] Actualizar ESTADO_ACTUAL.md
+- [x] Actualizar CHECKLIST_CIERRE.md (todos los items)
 
 ---
 

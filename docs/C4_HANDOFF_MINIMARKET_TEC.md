@@ -1,7 +1,7 @@
 # C4 — HANDOFF TÉCNICO (MINI MARKET)
 
-**Fecha:** 2026-01-22  
-**Estado:** Borrador operativo
+**Fecha:** 2026-01-23  
+**Estado:** Vigente (pendiente WS7.5)
 
 ---
 
@@ -16,12 +16,13 @@
 - Scraper: `supabase/functions/scraper-maxiconsumo`.
 - Cron jobs: `supabase/functions/cron-*`.
 
-## 3) Operación básica
+## 3) Operacion basica
 - Tests unitarios: `npx vitest run`.
-- Integration/E2E: requieren credenciales y/o Supabase local.
+- Integration/E2E: requieren `.env.test` y/o Supabase local.
 
 ## 4) Bloqueos activos
-- Auditoría RLS y migraciones en staging/prod pendientes por credenciales.
+- WS7.5 roles server-side (validar contra tabla/claims).
+- Rollback probado en staging (doc disponible en `docs/DEPLOYMENT_GUIDE.md`).
 
 ## 5) Contactos
 - PO/Tech Lead/Ops: **TBD**.

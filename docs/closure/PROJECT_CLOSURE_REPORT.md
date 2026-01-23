@@ -3,17 +3,17 @@
 **Versión:** 1.0.0  
 **Fecha:** 2026-01-23  
 **Base Commit:** f414687ea0b90be302d01de00d13b3bd93406dfc  
-**Estado:** Pre-Cierre (Pendiente RLS Audit)
+**Estado:** Cierre Parcial (pendientes WS7.5 y rollback probado)
 
 ---
 
 ## 📊 Executive Summary
 
-El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** según las métricas establecidas. El sistema está funcionalmente completo con todas las features críticas implementadas, testing comprehensivo, y pipeline CI/CD activo. Las tareas pendientes están bloqueadas por falta de credenciales de producción/staging.
+El proyecto **Sistema Mini Market** esta funcionalmente completo con features criticas implementadas, testing activo, y pipeline CI/CD operativo. Credenciales disponibles y auditoria RLS completada. Pendientes actuales: WS7.5 (roles server-side contra tabla/claims) y rollback probado.
 
 ### Logros Principales
 ✅ **Frontend:** React 18 + TypeScript + Vite + React Query (90% completitud)  
-✅ **Backend:** Supabase Edge Functions modularizadas (85% completitud)  
+✅ **Backend:** Supabase Edge Functions modularizadas (90% completitud)  
 ✅ **Testing:** 646 tests passing (100% passing rate)  
 ✅ **CI/CD:** Pipeline activo con jobs gated  
 ✅ **Security:** Gateway hardened (JWT, CORS, Rate Limit, Circuit Breaker)  
@@ -27,11 +27,11 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 | Métrica | Valor | Baseline Inicial | Mejora |
 |---------|-------|------------------|--------|
-| **Avance Global** | 78% | - | - |
+| **Avance Global** | 95% | - | - |
 | **Tests Pasando** | 646 (606 backend + 40 frontend) | ~10 | +6360% |
 | **Build Status** | ✅ Passing | ❌ Failing | ✅ Fixed |
-| **Edge Functions** | 14 activas | 3 monolíticos | +11 modularizadas |
-| **Módulos Compartidos** | 6 en `_shared/` | 0 | +6 |
+| **Edge Functions** | 13 activas | 3 monolíticos | +10 modularizadas |
+| **Módulos Compartidos** | 7 en `_shared/` | 0 | +7 |
 | **Archivos Monolíticos >2000 líneas** | 0 | 3 | -100% |
 | **Coverage Backend** | 100% | ~30% | +70pp |
 | **Coverage Frontend** | Lógica crítica | 0% | ✅ Implementado |
@@ -40,22 +40,22 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 | Categoría | Cantidad | Estado |
 |-----------|----------|--------|
-| **Páginas** | 11 | ✅ Todas con React Query |
-| **Hooks Query** | 9 | ✅ Implementados |
-| **Componentes** | 5 | ✅ Con ErrorBoundary |
+| **Páginas** | 9 | ✅ Todas con React Query |
+| **Hooks Query** | 8 | ✅ Implementados |
+| **Componentes** | 3 | ✅ Con ErrorBoundary |
 | **Tests Frontend** | 40 | ✅ 100% passing |
-| **Completitud** | 90% | ⚠️ Pendiente migración de lecturas a Gateway |
+| **Completitud** | 90% | Patron hibrido aprobado (D-025) |
 
 ### Backend (Supabase Edge Functions)
 
 | Categoría | Cantidad | Estado |
 |-----------|----------|--------|
-| **Edge Functions** | 14 | ✅ Todas modularizadas |
+| **Edge Functions** | 13 | ✅ Todas modularizadas |
 | **Gateway Endpoints** | 26 en api-minimarket | ✅ Hardened |
 | **API Proveedor Endpoints** | 9 | ✅ Modular |
 | **Cron Jobs** | 4 principales + 4 auxiliares | ✅ Orquestados |
 | **Tests Backend** | 606 | ✅ 100% passing |
-| **Completitud** | 85% | ⚠️ Pendiente RLS audit |
+| **Completitud** | 90% | Pendiente WS7.5 (roles server-side) |
 
 ### Testing
 
@@ -63,8 +63,9 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 |-------|-------|--------|-----------|
 | **Unit** | 646 | ✅ 100% passing | Backend 100%, Frontend crítico |
 | **Integration** | 31 | ✅ Passing (gated) | Requiere Supabase local |
-| **E2E** | 4 smoke tests | ✅ Passing (manual) | Requiere credenciales |
-| **Security** | 14 + 1 skipped | ✅ Migrado a Vitest | 1 test requiere credenciales |
+| **E2E Frontend (Playwright)** | 7 auth real | ✅ Passing (manual) | Requiere credenciales |
+| **E2E Backend (smoke)** | 4 tests | ✅ Passing (manual) | Requiere Supabase local |
+| **Security** | 15 | ✅ Migrado a Vitest | Credenciales reales |
 | **Performance** | Baseline | ✅ Mock implementado | Pendiente k6 real |
 
 ---
@@ -87,7 +88,7 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 - **Database:** PostgreSQL (Supabase)
 - **Auth:** Supabase Auth (JWT)
 - **Storage:** Supabase Storage
-- **Edge Functions:** 14 active
+- **Edge Functions:** 13 active
 
 ### Testing
 - **Framework:** Vitest 4.0.16
@@ -116,15 +117,15 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 | **Frontend Type Check** | ✅ Pass | `npx tsc --noEmit` | Sin errores TS |
 | **Unit Tests** | ✅ Pass | `npm run test:unit` | 646/646 passing |
 | **Coverage** | ✅ Pass | `npm run test:coverage` | Backend 100% |
-| **Edge Functions Check** | ✅ Pass | `deno check --no-lock` | 14 funciones OK |
+| **Edge Functions Check** | ✅ Pass | `deno check --no-lock` | 13 funciones OK |
 
 ### Optional Gates (Requieren Credenciales)
 
 | Gate | Estado | Requiere | Notas |
 |------|--------|----------|-------|
 | **Integration Tests** | ⏳ Gated | SUPABASE_URL, keys | 31 tests listos |
-| **E2E Tests** | ⏳ Gated | Credenciales + secrets | 4 smoke tests listos |
-| **RLS Audit** | ⚠️ Bloqueado | DB credentials | Checklist preparado |
+| **E2E Tests** | ✅ Passing | Credenciales + secrets | 7 auth real |
+| **RLS Audit** | ✅ Completado | DB credentials | Checklist verificado |
 
 ### Criterios de Aceptación
 
@@ -132,7 +133,7 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 - ✅ **Tests:** 100% passing rate en unit tests
 - ✅ **Build:** Frontend genera artefactos sin errores
 - ✅ **Deno:** Todas las Edge Functions sintácticamente correctas
-- ⚠️ **Security:** RLS audit pendiente (requiere credenciales)
+- ✅ **Security:** RLS audit completado con evidencia
 
 ---
 
@@ -178,13 +179,13 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 **Función:** Configuración SECURITY DEFINER para funciones RLS  
 **Riesgo:** Crítico - Seguridad de datos  
 **Áreas de Revisión:**
-- ⚠️ **BLOQUEADO:** Requiere audit completo de RLS policies
+- ✅ Audit de RLS completado (ver checklist)
 - ⚠️ Verificar que SECURITY DEFINER solo se usa cuando es necesario
 - ⚠️ Validar que todas las funciones tienen controles de acceso apropiados
 - ⚠️ Revisar grants y permisos de roles
 
-**Checklist Preparado:** `docs/AUDITORIA_RLS_CHECKLIST.md`  
-**Script Listo:** `scripts/rls_audit.sql`
+**Checklist Verificado:** `docs/AUDITORIA_RLS_CHECKLIST.md`  
+**Script Usado:** `scripts/rls_audit.sql`
 
 #### 5. `minimarket-system/src/contexts/AuthContext.tsx`
 **Función:** Manejo de autenticación y sesión  
@@ -234,7 +235,7 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 ---
 
-## 🚧 Decisiones Pendientes
+## 🚧 Decisiones y Bloqueos
 
 ### D-PENDING-001: Licencia del Proyecto
 **Estado:** ⚠️ Pendiente  
@@ -263,23 +264,21 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 ---
 
 ### D-PENDING-003: Auditoría RLS
-**Estado:** ⚠️ Bloqueado por credenciales  
+**Estado:** ✅ Completado (2026-01-23)  
 **Alcance:**
 - Tablas P0: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`
 - Verificar políticas RLS activas
 - Validar grants por rol
 - Probar SELECT como usuario `anon`
 
-**Documentos Preparados:**
+**Evidencia:**
 - Checklist: `docs/AUDITORIA_RLS_CHECKLIST.md`
 - Script SQL: `scripts/rls_audit.sql`
-
-**Acción Requerida:** Obtener acceso a instancia de staging/producción
 
 ---
 
 ### D-PENDING-004: Migración de Lecturas Frontend a Gateway
-**Estado:** ⚠️ Decisión arquitectónica pendiente  
+**Estado:** ✅ Decision tomada (D-025)  
 **Contexto:**
 - Actualmente: Frontend lee directo desde Supabase, escribe via Gateway
 - Propuesto: Todas las operaciones via Gateway para consistencia
@@ -292,7 +291,7 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 **Documentado en:** `docs/ARCHITECTURE_DOCUMENTATION.md` sección 3.4
 
-**Acción Requerida:** Decisión de arquitecto/tech lead
+**Acción Requerida:** Ninguna (patron hibrido vigente)
 
 ---
 
@@ -306,7 +305,7 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 - [x] Documentación técnica actualizada
 - [x] Frontend build exitoso
 - [x] Edge Functions sintácticamente correctas
-- [ ] **RLS Audit completado** (BLOQUEADO - requiere credenciales)
+- [x] **RLS Audit completado** (evidencia en `docs/AUDITORIA_RLS_CHECKLIST.md`)
 - [ ] **Secrets configurados en GitHub** (PENDIENTE)
 - [ ] **Licencia definida** (PENDIENTE - ver D-PENDING-001)
 - [ ] **Revisión de seguridad por humano** (PENDIENTE - módulos P0)
@@ -338,24 +337,24 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 | Categoría | Archivo | Estado |
 |-----------|---------|--------|
-| **Estado** | `ESTADO_ACTUAL.md` | ✅ Actualizado 2026-01-21 |
-| **Estado** | `CHECKLIST_CIERRE.md` | ✅ Actualizado 2026-01-21 |
+| **Estado** | `ESTADO_ACTUAL.md` | ✅ Actualizado 2026-01-23 |
+| **Estado** | `CHECKLIST_CIERRE.md` | ✅ Actualizado 2026-01-23 |
 | **Planificación** | `ROADMAP.md` | ✅ Vigente |
 | **Planificación** | `BACKLOG_PRIORIZADO.md` | ✅ Vigente |
 | **Decisiones** | `DECISION_LOG.md` | ✅ Vigente |
-| **Arquitectura** | `ARCHITECTURE_DOCUMENTATION.md` | ✅ Actualizado 2026-01-17 |
+| **Arquitectura** | `ARCHITECTURE_DOCUMENTATION.md` | ✅ Actualizado 2026-01-23 |
 | **Base de Datos** | `ESQUEMA_BASE_DATOS_ACTUAL.md` | ✅ Vigente |
 | **API** | `API_README.md` | ✅ Vigente |
-| **Operaciones** | `OPERATIONS_RUNBOOK.md` | ✅ Disponible |
-| **Deployment** | `DEPLOYMENT_GUIDE.md` | ✅ Disponible |
+| **Operaciones** | `OPERATIONS_RUNBOOK.md` | ✅ Disponible (2026-01-23) |
+| **Deployment** | `DEPLOYMENT_GUIDE.md` | ✅ Disponible (2026-01-23) |
 | **Seguridad** | `SECURITY_AUDIT_REPORT.md` | ✅ Disponible |
-| **Seguridad** | `AUDITORIA_RLS_CHECKLIST.md` | ✅ Preparado |
+| **Seguridad** | `AUDITORIA_RLS_CHECKLIST.md` | ✅ Completado 2026-01-23 |
 | **Análisis** | `REPORTE_ANALISIS_PROYECTO.md` | ✅ Actualizado 2026-01-22 |
 | **OpenAPI** | `api-openapi-3.1.yaml` | ✅ Disponible |
 | **OpenAPI** | `api-proveedor-openapi-3.1.yaml` | ✅ Disponible |
 | **Postman** | `postman-collection.json` | ✅ Disponible |
 | **Postman** | `postman-collection-proveedor.json` | ✅ Disponible |
-| **IA Guidance** | `AGENTS.md` | ✅ Actualizado 2026-01-18 |
+| **IA Guidance** | `AGENTS.md` | ✅ Actualizado 2026-01-23 |
 | **GitHub** | `.github/copilot-instructions.md` | ✅ Actualizado |
 | **Cierre** | `closure/BUILD_VERIFICATION.md` | ✅ Nuevo |
 | **Cierre** | `closure/PROJECT_CLOSURE_REPORT.md` | ✅ Este documento |
@@ -366,9 +365,10 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 
 ### Inmediato (Sprint 0)
 1. **Obtener credenciales:** Configurar secrets de GitHub para habilitar tests gated
-2. **RLS Audit:** Ejecutar checklist y script de auditoría en staging
-3. **Definir licencia:** Decidir MIT vs Propietaria
-4. **Revisión P0:** Revisar manualmente los 6 módulos críticos listados
+2. **WS7.5 Roles:** Validar rol contra tabla/claims y eliminar fallback a `user_metadata`
+3. **Rollback probado:** Ejecutar prueba en staging y guardar evidencia
+4. **Definir licencia:** Decidir MIT vs Propietaria
+5. **Revisión P0:** Revisar manualmente los 6 módulos críticos listados
 
 ### Corto Plazo (1-2 semanas)
 1. **Habilitar Dependabot:** Monitorear PRs de dependencias
@@ -377,10 +377,9 @@ El proyecto **Sistema Mini Market** ha alcanzado un **78% de completitud** segú
 4. **Performance baseline:** Ejecutar tests k6 reales
 
 ### Mediano Plazo (1 mes)
-1. **Decisión arquitectónica:** Resolver D-PENDING-004 sobre lecturas frontend
-2. **Staging environment:** Setup completo con pipeline automatizado
-3. **Documentation site:** Considerar docusaurus o similar
-4. **Developer onboarding:** Crear guía paso a paso
+1. **Staging environment:** Setup completo con pipeline automatizado
+2. **Documentation site:** Considerar docusaurus o similar
+3. **Developer onboarding:** Crear guía paso a paso
 
 ---
 
@@ -401,7 +400,7 @@ Según `CODEOWNERS`:
 ## 📅 Siguiente Revisión
 
 **Fecha programada:** 2026-02-09  
-**Objetivo:** Validar que RLS audit está completado y secrets configurados
+**Objetivo:** Validar WS7.5, rollback probado y secrets configurados
 
 ---
 
@@ -409,21 +408,22 @@ Según `CODEOWNERS`:
 
 ### A. Estructura del Proyecto
 ```
-aidrive_genspark_forensic/
+aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
+│   └── e2e/                  # 7 tests auth real (Playwright)
 ├── supabase/
-│   ├── functions/            # 14 Edge Functions
-│   │   ├── _shared/          # 6 módulos compartidos
+│   ├── functions/            # 13 Edge Functions
+│   │   ├── _shared/          # 7 módulos compartidos
 │   │   ├── api-minimarket/   # Gateway (26 endpoints)
 │   │   ├── api-proveedor/    # API modular (9 endpoints)
 │   │   ├── scraper-maxiconsumo/  # 9 módulos
 │   │   └── cron-*/           # 4 principales + 4 auxiliares
-│   └── migrations/           # 9+ migraciones SQL
+│   └── migrations/           # 10 migraciones SQL
 ├── tests/
-│   ├── unit/                 # 646 tests
+│   ├── unit/                 # 606 tests (backend)
 │   ├── integration/          # 31 tests (gated)
-│   ├── e2e/                  # 4 smoke tests (manual)
-│   ├── security/             # 14 tests + 1 skipped
+│   ├── e2e/                  # 4 smoke tests (backend, manual)
+│   ├── security/             # 15 tests
 │   └── performance/          # Baseline mock
 ├── docs/                     # 21 archivos
 └── .github/workflows/        # CI/CD pipeline
@@ -474,4 +474,4 @@ deno check --no-lock supabase/functions/**/index.ts
 **Reporte generado:** 2026-01-23  
 **Versión del protocolo:** CIERRE_PROYECTO_IA_V2_1  
 **Preparado para:** @eevans-d  
-**Estado final:** ⚠️ Pre-Cierre (Pendiente RLS Audit y Decisiones)
+**Estado final:** ⚠️ Cierre Parcial (pendiente WS7.5 y rollback probado)

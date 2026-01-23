@@ -24,7 +24,7 @@
 
 ## Resumen Ejecutivo
 
-El plan de ejecución de 6 semanas está **completado**. Se logró:
+El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
 - **646 tests unitarios pasando** (Backend 606 + Frontend 40) ✅
@@ -36,9 +36,8 @@ El plan de ejecución de 6 semanas está **completado**. Se logró:
 - **Frontend testing completo** con React Testing Library + MSW ✅
 
 Pendientes:
-- Auditoría RLS completa (script preparado, credenciales disponibles)
-- Crear usuarios de prueba en Supabase Auth
-- E2E con usuarios reales
+- WS7.5 Roles server-side contra tabla/claims (eliminar fallback a `user_metadata`)
+- Rollback probado en staging (OPS-SMART-1)
 
 ---
 
@@ -59,7 +58,7 @@ Pendientes:
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
   - URL: https://dqaygmjpzoqjjrywdsxi.supabase.co
-  - ANON_KEY y SERVICE_ROLE_KEY disponibles en `docs/OBTENER_SECRETOS.md`
+  - ANON_KEY y SERVICE_ROLE_KEY documentadas (redactadas) en `docs/OBTENER_SECRETOS.md` (valores reales en Dashboard/.env.test)
 - [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23
   - **Resultado:** Todas las tablas P0 protegidas
   - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
@@ -73,12 +72,13 @@ Pendientes:
   - 7 tests E2E con auth real pasando
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
+  - Evidencia: 7/7 PASS (2026-01-23)
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
   - 10 migraciones aplicadas en producción
   - Comando: `supabase db push`
-- [ ] WS3.2 Rollback documentado → referencia en `docs/DEPLOYMENT_GUIDE.md` (actualizar).
+- [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23
   - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` - todas las tablas protegidas
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
@@ -207,7 +207,7 @@ Pendientes:
 - [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-22).
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
-- [ ] Cierre final bloqueado por credenciales (RLS/migraciones) → mantener estado NO completado.
+- [ ] Cierre final pendiente por WS7.5 y rollback probado.
 
 ---
 
@@ -217,12 +217,12 @@ Pendientes:
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
 | Tests unitarios pasando | ~10 | **646** (Backend 606 + Frontend 40) ✅ |
-| Tests archivos | 5 | **44** (backend 32 + frontend 12) ✅ |
+| Tests archivos | 5 | **45** (backend 33 + frontend 12) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
-| Shared libs | Dispersas | 6 módulos `_shared/` (adopción parcial) |
+| Shared libs | Dispersas | 7 módulos `_shared/` (adopción parcial) |
 | Gateway security | Básico | **Hardened** (JWT, CORS, rate limit, circuit breaker) ✅ |
-| Logging estructurado | Parcial | Parcial (cron auxiliares pendientes) |
+| Logging estructurado | Completo | Verificado: sin `console.*` fuera de `_shared/logger.ts` |
 
 ---
 
@@ -234,6 +234,7 @@ supabase/functions/
 │   ├── cors.ts
 │   ├── response.ts
 │   ├── errors.ts
+│   ├── audit.ts
 │   ├── logger.ts
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
@@ -325,13 +326,15 @@ tests/api-contracts/      # (Vitest mock + legacy)
 | [BASELINE_TECNICO.md](BASELINE_TECNICO.md) | ✅ Vigente | Punto de partida documentado |
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |
 | [API_README.md](API_README.md) | ✅ Vigente | Endpoints documentados |
-| [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ⚠️ Revisar | Actualizar con nueva modularización |
+| [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | ✅ Vigente | Operacion diaria y tests |
+| [DEPLOYMENT_GUIDE.md](DEPLOYMENT_GUIDE.md) | ✅ Vigente | Deploy y rollback documentado |
+| [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ✅ Vigente | Estado real reflejado (v2.1.0) |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
-| [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ⚠️ Pendiente | Checklist y scripts preparados; requiere credenciales |
+| [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
 
 ---
 
 ## ✍️ Estado de Cierre
 
-- **Cierre:** Pendiente (plan no completado)
+- **Cierre:** Parcial (pendientes WS7.5 y rollback probado)
 - **Próxima revisión:** 2026-02-09

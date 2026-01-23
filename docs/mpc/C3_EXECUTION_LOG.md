@@ -44,35 +44,35 @@
 ## Gates por fase
 
 ### Gate E1
-- [ ] Logs estructurados con `requestId/runId`.
-- [ ] 0 `console.log` en handlers críticos.
+- [x] Logs estructurados con `requestId/runId`.
+- [x] 0 `console.log` en handlers críticos.
 
 ### Gate E2
-- [ ] Unit tests pasan.
-- [ ] Integración con runner definido.
-- [ ] E2E smoke con evidencia.
+- [x] Unit tests pasan.
+- [x] Integración con runner definido.
+- [x] E2E smoke con evidencia.
 
 ### Gate E3
-- [ ] Auditoría RLS ejecutada con evidencia.
-- [ ] Migraciones validadas.
-- [ ] Rollback documentado.
+- [x] Auditoría RLS ejecutada con evidencia.
+- [x] Migraciones validadas.
+- [x] Rollback documentado.
 
 ### Gate E4
-- [ ] RLS audit ejecutado con evidencia.
-- [ ] CORS restringido por env validado.
-- [ ] Roles server-side verificados.
+- [x] RLS audit ejecutado con evidencia.
+- [x] CORS restringido por env validado.
+- [ ] Roles server-side verificados (WS7.5 pendiente).
 
 ### Gate E5
-- [ ] Error boundaries y fallback UI verificados.
-- [ ] Paginación y columnas mínimas confirmadas.
+- [x] Error boundaries y fallback UI verificados.
+- [x] Paginación y columnas mínimas confirmadas.
 
 ### Gate E6
-- [ ] CI con guards de env validado.
-- [ ] Job de integración gated funcionando.
+- [x] CI con guards de env validado.
+- [x] Job de integración gated funcionando.
 
 ### Gate E8
-- [ ] Logging unificado en cron auxiliares.
-- [ ] Validación runtime activa.
+- [x] Logging unificado en cron auxiliares.
+- [ ] Validación runtime activa (WS4.1 pendiente).
 
 ---
 

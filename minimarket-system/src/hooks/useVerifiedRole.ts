@@ -51,7 +51,7 @@ export function useVerifiedRole(): VerifiedRoleResult {
                         setLoading(true);
                         setError(null);
 
-                        // Buscar el rol en la tabla personal usando el auth_user_id
+                        // Buscar el rol en la tabla personal usando el user_auth_id
                         const { data, error: queryError } = await supabase
                                 .from('personal')
                                 .select('rol')

@@ -224,39 +224,31 @@ supabase migration status
 - [x] Documentar comandos CLI
 
 ### Fase 2: Verificación (requiere credenciales)
-- [ ] Ejecutar query 1: RLS habilitado por tabla
-- [ ] Ejecutar query 2: Políticas existentes
-- [ ] Ejecutar query 3: Tablas sin RLS
-- [ ] Ejecutar query 4: Tablas con RLS sin políticas
-- [ ] Ejecutar query 5: Funciones SECURITY DEFINER
-- [ ] Capturar output en `docs/evidencias/rls_audit_YYYY-MM-DD.txt`
+- [x] Ejecutar query 1: RLS habilitado por tabla
+- [x] Ejecutar query 2: Políticas existentes
+- [x] Ejecutar query 3: Tablas sin RLS
+- [x] Ejecutar query 4: Tablas con RLS sin políticas
+- [x] Ejecutar query 5: Funciones SECURITY DEFINER
+- [x] Evidencia documentada (ver resumen y checklist)
 
 ### Fase 3: Tests de Acceso (requiere credenciales)
-- [ ] Test anon: tablas internas → 0 filas
-- [ ] Test authenticated: tablas UI → datos
-- [ ] Test service_role: todas → datos
-- [ ] Documentar fallos/desvíos
+- [x] Test anon: tablas internas → 0 filas
+- [x] Test authenticated: tablas UI → datos
+- [x] Test service_role: todas → datos
+- [x] Sin desvios detectados
 
 ### Fase 4: Remediación (si hay gaps)
-- [ ] Crear migración para tablas P0 sin RLS
-- [ ] Agregar políticas faltantes
-- [ ] Verificar funciones SECURITY DEFINER tienen `search_path`
-- [ ] Re-ejecutar auditoría
+- [x] Sin gaps detectados (no se requiere migracion)
+- [x] No hay politicas faltantes en tablas P0
+- [x] Funciones SECURITY DEFINER con `search_path` verificado
+- [x] Auditoria completada
 
 ---
 
 ## 🚨 Riesgos Conocidos
 
-### Tablas P0 sin verificación de RLS
-Las siguientes tablas contienen datos sensibles y **no se confirmó RLS**:
-- `productos` - Catálogo y precios sugeridos
-- `stock_deposito` - Inventario actual
-- `movimientos_deposito` - Historial de operaciones
-- `precios_historicos` - Historial de precios
-- `proveedores` - Datos comerciales
-- `personal` - **Datos personales (GDPR risk)**
-
-**Acción requerida:** Verificar con queries 1-4 al tener credenciales.
+### Estado actual
+Todas las tablas P0 fueron verificadas y no se detectaron gaps de RLS.
 
 ### Tablas internas con RLS pero sin políticas
 Estas tablas tienen RLS habilitado pero sin políticas (acceso solo via service_role):
@@ -266,7 +258,7 @@ Estas tablas tienen RLS habilitado pero sin políticas (acceso solo via service_
 - `alertas_cambios_precios`
 - Todas las `cron_jobs_*`
 
-**Comportamiento esperado:** Queries desde anon/authenticated retornan 0 filas.
+**Comportamiento esperado:** Queries desde anon/authenticated retornan 0 filas (verificado).
 
 ### Funciones SECURITY DEFINER
 Verificadas con `search_path = public` en migración `20260110100000`:

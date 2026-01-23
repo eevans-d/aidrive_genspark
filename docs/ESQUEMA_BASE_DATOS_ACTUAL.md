@@ -278,7 +278,7 @@
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| auth_user_id | UUID | FK → auth.users(id) UNIQUE |
+| user_auth_id | UUID | FK → auth.users(id) UNIQUE |
 | nombre_completo | VARCHAR(255) | Nombre y apellido |
 | dni | VARCHAR(8) | DNI |
 | telefono | VARCHAR(50) | Teléfono |

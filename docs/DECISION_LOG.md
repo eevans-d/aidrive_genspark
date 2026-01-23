@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-15  
+**Última actualización:** 2026-01-23  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -23,17 +23,30 @@
 | D-016 | **Carpetas Jest legacy** (`tests/performance/`, `tests/security/`, `tests/api-contracts/`) marcadas con README y desactivadas de CI | Aprobada | 2026-01-12 | Clarifica qué suites están activas vs legacy. |
 | D-017 | **API_PROVEEDOR_READ_MODE**: api-proveedor usa `anon` por defecto para lecturas; `service` solo para escrituras (sincronizar/cache persistente) | Aprobada | 2026-01-13 | Reduce exposición de service role key; hardening PROMPT 3. |
 | D-018 | **SCRAPER_READ_MODE**: scraper-maxiconsumo usa `anon` por defecto para lecturas; `service` solo para escrituras | Aprobada | 2026-01-13 | Implementado: readKey/writeKey separados en index.ts y storage.ts. Fallback a service con warning si falta ANON_KEY. |
-| D-019 | **Auditoría RLS pendiente**: checklist y scripts preparados en `docs/AUDITORIA_RLS_CHECKLIST.md` y `scripts/rls_audit.sql`; requiere credenciales para ejecutar | Pendiente | 2026-01-13 | Tablas P0 sin verificar: productos, stock_deposito, movimientos_deposito, precios_historicos, proveedores, personal. |
+| D-019 | **Auditoría RLS ejecutada**: checklist y scripts en `docs/AUDITORIA_RLS_CHECKLIST.md` y `scripts/rls_audit.sql` | Completada | 2026-01-23 | Tablas P0 verificadas y protegidas. |
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
 | D-021 | **WS5.6 caching diferido**: no implementar React Query/SWR hasta tener métricas reales | Aprobada | 2026-01-15 | Priorizar paginación (WS5.5) primero. |
 | D-024 | **React Query consolidado** en páginas críticas (8/8) | Aprobada | 2026-01-22 | Se revierte la postergación inicial de D-021. |
 | D-025 | **Patrón de acceso a datos frontend**: lecturas directas a Supabase vía RLS; escrituras SIEMPRE vía Gateway | Aprobada | 2026-01-23 | Balance entre performance (lecturas) y control (escrituras). Ver detalle abajo. |
+| D-026 | **`npm audit` documentado** (vulnerabilidades dev en rollup/vite aceptadas) | Aprobada | 2026-01-23 | Evidencia referenciada en `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`. |
 | D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. **Actualizado:** se migró a `_shared/logger` (2026-01-22). |
 | D-023 | **--dry-run en scripts**: integration/E2E soportan `--dry-run` que valida prereqs sin ejecutar | Aprobada | 2026-01-15 | Permite verificar configuración sin Supabase real. |
 
 ---
 
-## Siguientes Pasos (2026-01-13)
+## Siguientes Pasos (2026-01-23)
+
+### Pendientes actuales
+
+| Prioridad | Tarea | Referencia | Estado |
+|-----------|-------|------------|--------|
+| P1 | Completar WS7.5 roles server-side (validar contra tabla/claims) | `docs/ROADMAP.md` | Pendiente |
+| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente |
+| P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
+
+---
+
+## Siguientes Pasos (2026-01-13) - Histórico
 
 ### Pendientes SIN credenciales (priorizados)
 
@@ -145,4 +158,4 @@ Entonces migrar lecturas al gateway.
 
 ✅ 8 hooks de lectura usan Supabase directo
 ✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
-✅ RLS verificada para tablas críticas (pendiente auditoría completa D-019)
+✅ RLS verificada para tablas críticas (auditoría completa D-019)

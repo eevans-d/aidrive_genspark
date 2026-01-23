@@ -21,24 +21,24 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS1 — Observabilidad y Logging (P0)
 **Objetivo:** logging estructurado y trazabilidad mínima en funciones críticas.
 
-- **WS1.1 Adoptar `_shared/logger` en handlers críticos**  
+- **WS1.1 Adoptar `_shared/logger` en handlers críticos** ✅ **COMPLETADO 2026-01-23**  
   **Scope:** `api-proveedor`, `scraper-maxiconsumo`, `cron-jobs-maxiconsumo`  
   **Aceptación:** 0 `console.log` en handlers críticos; logs con `requestId|jobId|runId`.  
   **Dependencias:** `_shared/logger.ts`, convención de IDs definida (ver D-005).
 
-- **WS1.2 Persistencia de ejecución de cron**  
+- **WS1.2 Persistencia de ejecución de cron** ✅ **COMPLETADO 2026-01-23**  
   **Scope:** `cron_jobs_execution_log`  
   **Aceptación:** payload validado runtime y coincide con schema; errores registran `status=failed`.  
   **Dependencias:** migraciones actuales + validación runtime.
 
-- **WS1.3 Métricas básicas por job/handler**  
+- **WS1.3 Métricas básicas por job/handler** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** duración, cantidad de items, errores y alertas registradas.  
   **Dependencias:** WS1.1, WS1.2.
 
 ### WS2 — Testing & QA (P0/P1)
 **Objetivo:** tests ejecutables más allá de unitarios, sin runners ambiguos.
 
-- **WS2.1 Runner de integración definido y documentado**  
+- **WS2.1 Runner de integración definido y documentado** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** comando único y reproducible en CI/local; checklist con prerequisitos.  
   **Dependencias:** decisión D-004 en `docs/DECISION_LOG.md`.
 
@@ -56,12 +56,13 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS3 — Base de Datos y Migraciones (P0)
 **Objetivo:** migraciones validadas en entornos reales y rollback claro.
 
-- **WS3.1 Verificar migraciones en staging/prod**  
+- **WS3.1 Verificar migraciones en staging/prod** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** checklist de ejecución con evidencia por entorno.  
   **Dependencias:** acceso a entorno y credenciales.
 
-- **WS3.2 Procedimiento de rollback documentado**  
+- **WS3.2 Procedimiento de rollback documentado** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** pasos reproducibles en `docs/DEPLOYMENT_GUIDE.md`.  
+  **Nota:** prueba de rollback pendiente (OPS-SMART-1).  
   **Dependencias:** WS3.1.
 
 ### WS4 — Cron & Automatizaciones (P1)
@@ -84,18 +85,18 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Evidencia:** `pnpm build` sin warning de chunk; code splitting aplicado.  
   **Dependencias:** ninguna.
 
-- **WS5.2 Error boundaries y fallback UI**  
+- **WS5.2 Error boundaries y fallback UI** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** cobertura en rutas críticas; fallback visible.
 
-- **WS5.3 Fix conteo de productos en Dashboard (P0)**  
+- **WS5.3 Fix conteo de productos en Dashboard (P0)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** usa `count` real de Supabase; no depende de `data.length`.  
   **Dependencias:** ninguna.
 
-- **WS5.4 Movimiento de depósito atómico (P0)**  
+- **WS5.4 Movimiento de depósito atómico (P0)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** stock + movimiento se actualizan en una sola operación (RPC); no permite salidas sin stock.  
   **Dependencias:** RPC `sp_movimiento_inventario`.
 
-- **WS5.5 Paginación + select de columnas mínimas (P1)**  
+- **WS5.5 Paginación + select de columnas mínimas (P1)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** listas largas no cargan todo el dataset; payload reducido.
   **Dependencias:** queries ajustadas.
 
@@ -107,14 +108,14 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS6 — CI/CD y Release (P1)
 **Objetivo:** pipeline confiable y reproducible.
 
-- **WS6.1 Integrar pruebas de integración en pipeline (gated)**  
+- **WS6.1 Integrar pruebas de integración en pipeline (gated)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** job separado con gating; se ejecuta solo con env válidas.  
   **Dependencias:** WS2.1.
 
 - **WS6.2 Validación de envs requeridas**  
   **Aceptación:** checks de env requeridas antes de build/deploy.
 
-- **WS6.3 E2E frontend en CI (manual)**  
+- **WS6.3 E2E frontend en CI (manual)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** job manual `run_e2e_frontend=true` (o `vars.RUN_E2E_FRONTEND=true`) en CI ejecuta `pnpm test:e2e:frontend` con `VITE_USE_MOCKS=true`, sin requerir Supabase real; documentado en runbook.  
   Instrucciones locales: `cd minimarket-system && npx playwright install && pnpm test:e2e:frontend` (usa Playwright + mocks).
 
@@ -130,33 +131,34 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** `npm audit` documentado en DECISION_LOG D-026.  
   **Evidencia:** Vulnerabilidades conocidas en deps dev (rollup, vite).
 
-- **WS7.3 Gateway sin service role para queries normales (P0)**  
+- **WS7.3 Gateway sin service role para queries normales (P0)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** queries usan JWT de usuario + anon key; service role sólo para tareas admin.  
   **Dependencias:** env `SUPABASE_ANON_KEY`.
 
-- **WS7.4 CORS restringido por origen (P0)**  
+- **WS7.4 CORS restringido por origen (P0)** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** orígenes permitidos definidos por env; requests no autorizadas fallan.  
   **Dependencias:** `ALLOWED_ORIGINS`.
 
 - **WS7.5 Roles server-side (P1)**  
   **Aceptación:** rol no se toma de `user_metadata`; se valida contra tabla/claims.  
+  **Estado actual:** se usa `app_metadata` con fallback a `user_metadata` si falta role (pendiente completar).  
   **Dependencias:** DB y auth.
 
 ### WS8 — Documentación & Gobernanza (P0)
 **Objetivo:** documentación alineada y sin contradicciones.
 
-- **WS8.1 Actualizar arquitectura a estado real**  
+- **WS8.1 Actualizar arquitectura a estado real** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** `docs/ARCHITECTURE_DOCUMENTATION.md` refleja stack y límites reales.  
   **Dependencias:** WS1/WS2/WS3.
 
-- **WS8.2 Handoff y fuentes de verdad**  
+- **WS8.2 Handoff y fuentes de verdad** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** `docs/DECISION_LOG.md` y `docs/ROADMAP.md` referenciados en README y `.github/copilot-instructions.md`.
 
-- **WS8.3 Reporte final de análisis**  
+- **WS8.3 Reporte final de análisis** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** reporte consolidado en `docs/REPORTE_ANALISIS_PROYECTO.md`.  
   **Dependencias:** revisión final.
 
-- **WS8.4 Backlog priorizado**  
+- **WS8.4 Backlog priorizado** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** backlog con puntajes en `docs/BACKLOG_PRIORIZADO.md`.  
   **Dependencias:** WS8.3.
 

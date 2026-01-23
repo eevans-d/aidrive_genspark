@@ -2,21 +2,21 @@
 ## Documentación Técnica de Arquitectura Nivel Empresa
 
 **Versión:** 2.1.0  
-**Fecha:** 2026-01-17  
-**Estado:** ACTUALIZADO (incluye auditoría 2026-01-17)  
+**Fecha:** 2026-01-23  
+**Estado:** ACTUALIZADO (incluye auditoría 2026-01-23)  
 **Target:** Arquitectos, DevOps, Senior Engineers  
 
 > **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
 > Para el estado real y plan vigente, ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
 
-### Estado real (2026-01-17)
+### Estado real (2026-01-23)
 - **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).
 - **Edge Functions modularizadas:** `api-proveedor`, `scraper-maxiconsumo`, `cron-jobs-maxiconsumo` con adopción de `_shared/logger`.
 - **Cron auxiliares activos:** `cron-dashboard` (métricas dinámicas 2026-01-17), `cron-health-monitor`, `cron-notifications`, `cron-testing-suite`.
 - **Seguridad aplicada:** JWT roles, CORS restrictivo, rate limit 60 req/min, circuit breaker en gateway.
 - **Testing oficial:** Vitest (unit/integration/e2e); suites Jest legacy desactivadas (ver DECISION_LOG D-016/D-020).
 - **Observabilidad:** logging estructurado con `requestId/jobId/runId`; métricas básicas en `cron_jobs_execution_log`.
-- **Restricción vigente:** auditoría RLS y migraciones en staging/prod bloqueadas por credenciales.
+- **Restricción vigente:** rollback probado pendiente (OPS-SMART-1).
 
 > **⚠️ AUDITORÍA 2026-01-17 - HALLAZGOS CRÍTICOS (actualizado 2026-01-22):**
 >
@@ -29,9 +29,9 @@
 > - Hooks React Query implementados en páginas críticas (8/8) con caching y reintentos.
 > - Infraestructura consolidada (QueryClientProvider, queryKeys).
 >
-> **3. Roles (P0-04) - Mitigado:**
-> - Roles validados server-side (no se usan `user_metadata` para autorización).
-> - Se mantiene validación contra tabla/claims según decisión vigente.
+> **3. Roles (P0-04) - Parcial:**
+> - Roles validados server-side desde `app_metadata`.
+> - Existe fallback a `user_metadata` si falta `role` (pendiente WS7.5 para validar contra tabla/claims y eliminar fallback).
 
 ---
 
