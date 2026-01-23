@@ -1,0 +1,22 @@
+# CODEOWNERS - Sistema Mini Market
+
+# Default owner for everything
+* @eevans-d
+
+# Critical paths require review from owner
+/supabase/functions/ @eevans-d
+/minimarket-system/src/ @eevans-d
+/.github/ @eevans-d
+
+# Database migrations - extra critical
+/supabase/migrations/ @eevans-d
+
+# Security and configuration files
+/SECURITY.md @eevans-d
+/.github/workflows/ @eevans-d
+/.github/dependabot.yml @eevans-d
+
+# Documentation - owner should be aware of changes
+/docs/ @eevans-d
+/README.md @eevans-d
+/IA_USAGE_GUIDE.md @eevans-d
