@@ -1,12 +1,18 @@
 import { defineConfig } from '@playwright/test'
 import * as dotenv from 'dotenv'
 import * as path from 'path'
+import { fileURLToPath } from 'url'
+
+// ESM compatible __dirname
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 // Cargar variables de entorno desde .env.test en la raíz del proyecto
 dotenv.config({ path: path.resolve(__dirname, '../.env.test') })
 
 // Determinar si usar mocks o Supabase real
-const USE_MOCKS = process.env.VITE_USE_MOCKS === 'true' || !process.env.SUPABASE_URL
+// Por defecto usa mocks, a menos que VITE_USE_MOCKS=false explícitamente
+const USE_MOCKS = process.env.VITE_USE_MOCKS !== 'false'
 
 export default defineConfig({
   testDir: './e2e',

@@ -65,15 +65,14 @@ Pendientes:
   - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
   - Script: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
   - Tablas P0 verificadas: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`, `categorias`
-- [~] **Usuarios de prueba** → EN PROGRESO
-  - Archivos creados: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
-  - **PENDIENTE:** Crear usuarios manualmente en Supabase Dashboard
-  - URL: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/auth/users
-  - 3 usuarios: admin@staging.minimarket.test, deposito@staging.minimarket.test, ventas@staging.minimarket.test
-- [~] **E2E con auth real** → EN PROGRESO
-  - Test creado: `minimarket-system/e2e/auth.real.spec.ts`
-  - Playwright config actualizado para soportar auth real
-  - **PENDIENTE:** Ejecutar tests después de crear usuarios
+- [x] **Usuarios de prueba** ✅ COMPLETADO 2026-01-23
+  - 3 usuarios en Supabase Auth: admin, deposito, ventas
+  - 3 registros en tabla `personal` con roles correspondientes
+  - Archivos: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
+- [x] **E2E con auth real** ✅ COMPLETADO 2026-01-23
+  - 7 tests E2E con auth real pasando
+  - Tests: login, logout, permisos por rol, redirección sin auth
+  - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23

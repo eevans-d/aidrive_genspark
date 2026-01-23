@@ -25,18 +25,20 @@ export async function loginAs(page: Page, role: UserRole): Promise<void> {
   // Ir a la página de login
   await page.goto('/login')
 
-  // Esperar que el formulario esté visible
-  await expect(page.getByRole('heading', { name: /iniciar sesión|login/i })).toBeVisible()
+  // Esperar que el formulario esté visible (buscar el título de la app)
+  await expect(
+    page.getByRole('heading', { name: 'Mini Market System' })
+  ).toBeVisible({ timeout: 10000 })
 
-  // Llenar credenciales
-  await page.getByPlaceholder(/email|correo/i).fill(email)
-  await page.getByPlaceholder(/contraseña|password/i).fill(TEST_PASSWORD)
+  // Llenar credenciales usando los labels exactos
+  await page.getByLabel('Email').fill(email)
+  await page.getByLabel('Contraseña').fill(TEST_PASSWORD)
 
   // Click en botón de login
-  await page.getByRole('button', { name: /iniciar sesión|ingresar|login/i }).click()
+  await page.getByRole('button', { name: /Iniciar Sesión/i }).click()
 
   // Esperar redirección al dashboard
-  await page.waitForURL('/', { timeout: 10000 })
+  await page.waitForURL('/', { timeout: 15000 })
 
   // Verificar que estamos logueados
   await expect(page.getByRole('heading', { name: 'Dashboard' })).toBeVisible({ timeout: 5000 })
