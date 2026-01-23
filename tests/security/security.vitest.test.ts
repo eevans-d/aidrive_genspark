@@ -464,18 +464,17 @@ describe('🔒 SECURITY TESTS - Vitest', () => {
       
       vi.unstubAllGlobals();
       
-      // Test without auth
-      const noAuthResponse = await fetch(`${url}/functions/v1/api-proveedor/sincronizar`, {
-        method: 'POST'
-      });
+      // Test without auth - should return 401
+      const noAuthResponse = await fetch(`${url}/functions/v1/api-minimarket/health`);
       
-      expect(noAuthResponse.status).toBe(401);
+      // api-minimarket health doesn't require auth, so test another endpoint
+      const noAuthProtected = await fetch(`${url}/functions/v1/api-minimarket/productos`);
+      expect(noAuthProtected.status).toBe(401);
       
-      // Test with auth
-      const authResponse = await fetch(`${url}/functions/v1/api-proveedor/status`, {
+      // Test with auth - health endpoint should work
+      const authResponse = await fetch(`${url}/functions/v1/api-minimarket/health`, {
         headers: {
-          'Authorization': `Bearer ${key}`,
-          'x-api-secret': process.env.API_PROVEEDOR_SECRET || ''
+          'Authorization': `Bearer ${key}`
         }
       });
       

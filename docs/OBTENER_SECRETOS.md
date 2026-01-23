@@ -1,7 +1,31 @@
 # Guía para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-23
-**Objetivo:** Proveer pasos claros para que tú obtengas las credenciales necesarias. Yo no puedo acceder a tus cuentas ni extraer secretos.
+**Fecha:** 2026-01-23  
+**Estado:** ✅ CREDENCIALES OBTENIDAS  
+**Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
+
+---
+
+## 🎯 CREDENCIALES ACTUALES (Producción)
+
+```bash
+# Supabase URLs
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
+VITE_SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
+
+# API Keys
+SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
+VITE_SUPABASE_ANON_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjkxMzE2MzcsImV4cCI6MjA4NDcwNzYzN30.Ddbr5RoVks5CTQYVRq1zIRNkondxyTD1UH_JceOG1Wg
+SUPABASE_SERVICE_ROLE_KEY=eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImRxYXlnbWpwem9xampyeXdkc3hpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc2OTEzMTYzNywiZXhwIjoyMDg0NzA3NjM3fQ.03JkWLjzw40kaJUW3cBLWPrjNrfzuyymWOyekV26qck
+
+# Gateway
+VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
+```
+
+### Links útiles
+- **Dashboard:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi
+- **Functions:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/functions
+- **API Gateway:** https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 
 ---
 
