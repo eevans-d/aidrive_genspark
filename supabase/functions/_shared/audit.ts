@@ -24,8 +24,10 @@
  * ```
  */
 
-import { logger } from './logger.ts'
-import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import { createLogger } from './logger.ts'
+import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+
+const logger = createLogger('audit');
 
 /**
  * Standard audit actions for consistency

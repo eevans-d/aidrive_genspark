@@ -29,7 +29,7 @@
 import { getCorsHeaders, handleCors } from '../_shared/cors.ts'
 import { ok, fail } from '../_shared/response.ts'
 import { logger } from '../_shared/logger.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
 
 interface SugerenciaReposicion {
   producto_id: string
