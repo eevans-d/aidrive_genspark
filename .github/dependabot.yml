@@ -1,0 +1,34 @@
+version: 2
+updates:
+  # Root package.json (test dependencies)
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps)"
+    reviewers:
+      - "eevans-d"
+    
+  # Frontend package.json (pnpm)
+  - package-ecosystem: "npm"
+    directory: "/minimarket-system"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "09:00"
+    open-pull-requests-limit: 5
+    labels:
+      - "dependencies"
+      - "frontend"
+      - "automated"
+    commit-message:
+      prefix: "chore(deps-frontend)"
+    reviewers:
+      - "eevans-d"
