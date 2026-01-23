@@ -172,14 +172,13 @@ run_integration_tests() {
 
         log "Ejecutando tests desde: $integration_path"
 
-            if [ "$VITEST_AVAILABLE" = true ]; then
-                npx vitest run --config "$VITEST_CONFIG" "$integration_path" || {
-                    log_error "Tests de integración fallaron"
-                    return 1
-                }
-            else
-                log_warning "Tests de integración requieren Vitest; se omiten por ahora"
-            fi
+        if [ "$VITEST_AVAILABLE" = true ]; then
+            npx vitest run --config "$VITEST_CONFIG" "$integration_path" || {
+                log_error "Tests de integración fallaron"
+                return 1
+            }
+        else
+            log_warning "Tests de integración requieren Vitest; se omiten por ahora"
         fi
 
         log_success "Tests de integración completados"

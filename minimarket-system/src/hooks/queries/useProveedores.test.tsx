@@ -22,9 +22,9 @@ describe('useProveedores Hook', () => {
                 expect(result.current.isLoading).toBe(true);
         });
 
-        it('acepta filtro por activos', () => {
-                const { result } = renderHook(
-                        () => useProveedores({ soloActivos: true }),
+it('acepta opciones de paginación', () => {
+		const { result } = renderHook(
+			() => useProveedores({ page: 2, pageSize: 10 }),
                         { wrapper: createWrapper() }
                 );
                 expect(result.current.isLoading).toBe(true);
