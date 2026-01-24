@@ -68,8 +68,9 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 ### WS4 — Cron & Automatizaciones (P1)
 **Objetivo:** cron jobs consistentes y observables.
 
-- **WS4.1 Validación runtime de alertas/comparaciones**  
+- **WS4.1 Validación runtime de alertas/comparaciones** ✅ **COMPLETADO 2026-01-23**  
   **Aceptación:** validadores activos; errores quedan registrados.  
+  **Evidencia:** `supabase/functions/cron-jobs-maxiconsumo/validators.ts`.  
   **Dependencias:** WS1.1.
 
 - **WS4.2 Consistencia en uso de `_shared`**  

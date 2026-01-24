@@ -7,7 +7,7 @@
 
 ---
 
-> **Nota:** este plan esta cerrado; la planificación modular vigente esta en `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`.
+> **Nota:** este plan esta cerrado; la planificación modular vigente esta en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
 

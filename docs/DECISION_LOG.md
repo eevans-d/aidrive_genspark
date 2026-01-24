@@ -61,11 +61,11 @@
 
 | Prioridad | Tarea | Checklist/Script | Bloqueador |
 |-----------|-------|------------------|------------|
-| P0 | Ejecutar auditoría RLS (D-019) | `docs/AUDITORIA_RLS_CHECKLIST.md`, `scripts/rls_audit.sql` | Credenciales Supabase |
-| P0 | Verificar migraciones en staging/prod (WS3.1) | `migrate.sh`, checklist en DEPLOYMENT_GUIDE | Acceso entorno |
-| P1 | Tests de integración reales | `npm run test:integration` | `.env.test` con claves |
-| P1 | E2E smoke con Supabase local | `npm run test:e2e` | Supabase CLI + claves |
-| P2 | Validación runtime de alertas/comparaciones (WS4.1) | `cron-jobs-maxiconsumo/jobs/realtime-alerts.ts` | Datos reales |
+| P0 | ~~Ejecutar auditoría RLS (D-019)~~ | `docs/AUDITORIA_RLS_CHECKLIST.md`, `scripts/rls_audit.sql` | ✅ Completado 2026-01-23 |
+| P0 | ~~Verificar migraciones en staging/prod (WS3.1)~~ | `migrate.sh`, checklist en DEPLOYMENT_GUIDE | ✅ Completado 2026-01-23 |
+| P1 | ~~Tests de integración reales~~ | `npm run test:integration` | ✅ Completado 2026-01-23 |
+| P1 | ~~E2E smoke con Supabase local~~ | `npm run test:e2e` | ✅ Completado 2026-01-23 |
+| P2 | ~~Validación runtime de alertas/comparaciones (WS4.1)~~ | `cron-jobs-maxiconsumo/jobs/realtime-alerts.ts` | ✅ Completado 2026-01-23 |
 
 ### Riesgos y mitigaciones
 

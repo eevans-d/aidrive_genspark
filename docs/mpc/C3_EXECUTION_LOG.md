@@ -72,7 +72,7 @@
 
 ### Gate E8
 - [x] Logging unificado en cron auxiliares.
-- [ ] Validación runtime activa (WS4.1 pendiente).
+- [x] Validación runtime activa (WS4.1).
 
 ---
 

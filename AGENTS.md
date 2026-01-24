@@ -21,7 +21,7 @@
 ## 🎯 Próximos Pasos
 
 Plan definitivo **completado con pendientes P1** (WS7.5 y rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
-Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`.
+Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
 

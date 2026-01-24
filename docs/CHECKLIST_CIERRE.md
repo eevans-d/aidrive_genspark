@@ -298,7 +298,7 @@ tests/api-contracts/      # (Vitest mock + legacy)
 ### Corto plazo (próximas 2 semanas)
 1. **Aumentar coverage**: Objetivo 80% en módulos críticos (actual ~70%)
 2. ~~**CI**: integrar `test:integration` y `test:e2e` en pipeline (WS6.1)~~ ✅ COMPLETADO
-3. **Observabilidad**: cerrar validación runtime de alertas/comparaciones (WS4.1)
+3. ~~**Observabilidad**: cerrar validación runtime de alertas/comparaciones (WS4.1)~~ ✅ COMPLETADO
 4. **Retiro de stubs legacy** si se desea limpieza total (opcional)
 
 ### Mediano plazo (1-2 meses)

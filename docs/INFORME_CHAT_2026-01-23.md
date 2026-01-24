@@ -1,7 +1,7 @@
 # Informe de Ejecucion — Sesion 2026-01-23 (Revisado)
 
 ## Alcance de esta revision
-- Revision local del repo en `/home/eevan/ProyectosIA/aidrive_genspark` (remoto: `aidrive_genspark_forensic`).
+- Revision local del repo en `/home/eevan/ProyectosIA/aidrive_genspark_forensic` (remoto: `aidrive_genspark_forensic`).
 - Se ejecuto E2E auth real con Playwright.
 - No se ejecutaron queries manuales a Supabase fuera de los tests.
 
@@ -55,8 +55,10 @@
 - Arbol del repo corregido a `aidrive_genspark_forensic` y agregado `minimarket-system/e2e` (7 tests auth real).
 - Links del repo en cierre/seguridad normalizados a `aidrive_genspark_forensic`.
 - `AGENTS.md` actualizado para reflejar cierre parcial y pendientes P1.
-- Mega planificación modular actualizada en `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`.
-- Alcance de contratos frontend-backend aclarado (faltan `Kardex` y `Rentabilidad`).
+- Mega planificación modular actualizada en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+- Subplanificaciones MPC E1–E8 actualizadas a v1.1.0 y alineadas con el estado actual.
+- Carpeta local renombrada a `/home/eevan/ProyectosIA/aidrive_genspark_forensic`.
+- Contratos frontend-backend completados para `Kardex` y `Rentabilidad`.
 
 ---
 

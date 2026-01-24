@@ -80,10 +80,10 @@
 
 ## 6) Deuda técnica conocida / issues críticos
 
-- **Auditoría RLS pendiente por credenciales.**
-- **Logging parcial en cron auxiliares / propagación de `requestId`** (roadmap WS1.1/WS4.2).
-- **E2E real bloqueado por credenciales** (WS2.2).
-- **Validación runtime de payloads de cron** aún parcial (WS1.2/WS4.1).
+- ~~**Auditoría RLS pendiente por credenciales.**~~ ✅ Completada (2026-01-23).
+- ~~**Logging parcial en cron auxiliares / propagación de `requestId`** (roadmap WS1.1/WS4.2).~~ ✅ Completado.
+- ~~**E2E real bloqueado por credenciales** (WS2.2).~~ ✅ Completado (auth real 7/7).
+- ~~**Validación runtime de payloads de cron** aún parcial (WS1.2/WS4.1).~~ ✅ Completado.
 - **Frontend lee directo de Supabase (confirmado)**: lecturas en hooks; writes deben ir por gateway. Evidencia: `minimarket-system/src/hooks/queries/useProveedores.ts` (consultas a `supabase.from(...)`).
 
 ---

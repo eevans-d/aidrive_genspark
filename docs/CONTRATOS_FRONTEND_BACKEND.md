@@ -1,7 +1,7 @@
 # CONTRATOS FRONTEND - BACKEND (mock + datos esperados)
 
 **Objetivo:** definir contratos reales entre UI y Supabase, mas mocks sugeridos sin credenciales.
-**Alcance:** paginas documentadas `Login`, `Dashboard`, `Deposito`, `Stock`, `Productos`, `Proveedores`, `Tareas`. Pendiente documentar contratos de `Kardex` y `Rentabilidad`.
+**Alcance:** paginas documentadas `Login`, `Dashboard`, `Deposito`, `Stock`, `Productos`, `Proveedores`, `Tareas`, `Kardex`, `Rentabilidad`.
 
 ---
 
@@ -164,6 +164,101 @@
   "productos": [
     { "id": "p1", "nombre": "Arroz 1kg", "categoria": "Almacen", "precio_actual": 1000, "margen_ganancia": 30 }
   ]
+}
+```
+
+
+---
+
+## Kardex
+**Consultas reales:**
+- `movimientos_deposito`: `select('*, productos(nombre), proveedores(nombre)', { count: 'exact' })`,
+  `order('fecha_movimiento', desc)`, `limit(200)`.
+- Filtros opcionales en hook: `eq('producto_id', productoId)`, `gte('fecha_movimiento', fechaDesde)`, `lte('fecha_movimiento', fechaHasta)`.
+- Gateway (dropdown productos): `GET /productos/dropdown` via `apiClient.productos.dropdown()`.
+
+**Filtros UI (cliente):**
+- `productoFiltro` se aplica localmente sobre `movimientos`.
+- `loteFiltro` se filtra por substring en `mov.lote`.
+
+**Campos minimos usados:**
+- `movimientos_deposito`: `id`, `producto_id`, `tipo_movimiento`, `cantidad`, `fecha_movimiento`, `lote`, `motivo`, `observaciones`.
+- `productos(nombre)` -> `producto_nombre`.
+- `proveedores(nombre)` -> `proveedor_nombre` (mapeado en hook, no visible en UI actual).
+- `resumen` (entradas/salidas/ajustes) se calcula en frontend.
+
+**Mock sugerido:**
+```json
+{
+  "movimientos": [
+    {
+      "id": "m1",
+      "producto_id": "p1",
+      "producto_nombre": "Arroz 1kg",
+      "tipo_movimiento": "entrada",
+      "cantidad": 5,
+      "fecha_movimiento": "2026-01-20T10:00:00Z",
+      "lote": "L-001",
+      "motivo": "compra",
+      "observaciones": "Ingreso inicial"
+    },
+    {
+      "id": "m2",
+      "producto_id": "p1",
+      "producto_nombre": "Arroz 1kg",
+      "tipo_movimiento": "salida",
+      "cantidad": 2,
+      "fecha_movimiento": "2026-01-21T09:00:00Z",
+      "lote": "L-001",
+      "motivo": "venta",
+      "observaciones": "Venta mostrador"
+    }
+  ],
+  "total": 2,
+  "resumen": { "entradas": 1, "salidas": 1, "ajustes": 0 }
+}
+```
+
+---
+
+## Rentabilidad
+**Consultas reales:**
+- `productos`: `select('id,nombre,categoria,precio_actual,precio_costo,margen_ganancia', { count: 'exact' })`,
+  `eq('activo', true)`, `not('precio_actual','is', null)`, `not('precio_costo','is', null)`,
+  `order('margen_ganancia', desc)`.
+- Gateway (dropdown proveedores): `GET /proveedores/dropdown` via `apiClient.proveedores.dropdown()`.
+  Nota: el filtro por proveedor no se aplica aun (no hay `proveedor_id` en el hook).
+
+**Campos minimos usados:**
+- `productos`: `id`, `nombre`, `categoria`, `precio_actual`, `precio_costo`, `margen_ganancia`.
+- `margen_porcentaje` se calcula en frontend: `(precio_actual - precio_costo) / precio_costo`.
+- `promedios` se calcula en frontend (margen, precio promedio venta/costo).
+
+**Mock sugerido:**
+```json
+{
+  "productos": [
+    {
+      "id": "p1",
+      "nombre": "Arroz 1kg",
+      "categoria": "Almacen",
+      "precio_actual": 1000,
+      "precio_costo": 700,
+      "margen_ganancia": 300,
+      "margen_porcentaje": 42.9
+    },
+    {
+      "id": "p2",
+      "nombre": "Leche 1L",
+      "categoria": "Lacteos",
+      "precio_actual": 800,
+      "precio_costo": 850,
+      "margen_ganancia": -50,
+      "margen_porcentaje": -5.9
+    }
+  ],
+  "total": 2,
+  "promedios": { "margenPromedio": 18.5, "precioPromedioVenta": 900, "precioPromedioCosto": 775 }
 }
 ```
 

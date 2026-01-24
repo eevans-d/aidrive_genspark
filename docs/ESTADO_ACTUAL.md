@@ -77,6 +77,6 @@
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
-> **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`
+> **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
 > **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims) y rollback probado.
