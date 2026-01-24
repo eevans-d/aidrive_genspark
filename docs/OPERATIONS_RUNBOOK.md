@@ -90,4 +90,4 @@ VITE_USE_MOCKS=false pnpm exec playwright test auth.real
 ## 8) Seguridad basica
 - No exponer `SERVICE_ROLE_KEY` en frontend.
 - Rotar secretos si hay sospecha de exposure.
-- Restringir `ALLOWED_ORIGINS`.
+- Mantener `ALLOWED_ORIGINS` en la lista vigente (local-only) y registrar cambios en `docs/DECISION_LOG.md`.

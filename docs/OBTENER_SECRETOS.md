@@ -1,7 +1,7 @@
 # Guía para obtener secretos (Mini Market)
 
 **Fecha:** 2026-01-23  
-**Estado:** ✅ CREDENCIALES OBTENIDAS (REDACTADAS)  
+**Estado:** ✅ URLs confirmadas; claves redactadas (pendiente obtencion real)  
 **Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
 
 ---
@@ -23,6 +23,8 @@ VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-m
 ```
 
 > Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.
+
+**Nota de estado:** en el repo solo estan confirmadas las URLs y el gateway. Las claves reales deben obtenerse del dashboard y registrarse segun `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`.
 
 ## 👥 Usuarios de Prueba (Staging)
 
@@ -96,9 +98,9 @@ TEST_PASSWORD=<DEFINIR_EN_AUTH>
 ## 3) Secrets específicos del proyecto
 
 ### 3.1 ALLOWED_ORIGINS
-1. Definir la lista de orígenes permitidos (prod/staging/local). Ejemplo:
-   - `https://tu-dominio.com,https://staging.tu-dominio.com,http://localhost:5173`
+1. Lista vigente (sin wildcard): `http://localhost:5173,http://127.0.0.1:5173`
 2. Guardar en `ALLOWED_ORIGINS`.
+3. Si se agrega dominio publico, registrar el cambio en `docs/DECISION_LOG.md`.
 
 ### 3.2 API_PROVEEDOR_SECRET
 1. Generar un secreto fuerte (mínimo 32 caracteres, ideal 64+).
@@ -149,7 +151,7 @@ TEST_PASSWORD=<DEFINIR_EN_AUTH>
 
 - No compartir secretos por chat.
 - Rotar `API_PROVEEDOR_SECRET` si se expone.
-- Restringir `ALLOWED_ORIGINS` a dominios reales.
+- Mantener `ALLOWED_ORIGINS` en la lista vigente (local-only) y registrar cambios en `docs/DECISION_LOG.md`.
 - Mantener `SERVICE_ROLE_KEY` solo en backend/CI.
 - No subir `.env` al repositorio.
 

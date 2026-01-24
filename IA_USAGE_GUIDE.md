@@ -695,7 +695,7 @@ VITE_API_GATEWAY_URL=/api-minimarket  # Opcional, default es este
 # .env (NO commitear, usar Supabase Secrets)
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=eyJ...
-ALLOWED_ORIGINS=https://dominio.com,https://otro.com
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 API_PROVEEDOR_SECRET=secret-here
 SCRAPER_READ_MODE=false
 API_PROVEEDOR_READ_MODE=false

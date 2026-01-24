@@ -129,7 +129,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 # Producción
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=eyJ...
-ALLOWED_ORIGINS=https://dominio.com
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 API_PROVEEDOR_SECRET=secret-here
 
 # Desarrollo

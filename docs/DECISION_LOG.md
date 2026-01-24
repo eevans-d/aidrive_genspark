@@ -31,6 +31,7 @@
 | D-026 | **`npm audit` documentado** (vulnerabilidades dev en rollup/vite aceptadas) | Aprobada | 2026-01-23 | Evidencia referenciada en `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`. |
 | D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. **Actualizado:** se migró a `_shared/logger` (2026-01-22). |
 | D-023 | **--dry-run en scripts**: integration/E2E soportan `--dry-run` que valida prereqs sin ejecutar | Aprobada | 2026-01-15 | Permite verificar configuración sin Supabase real. |
+| D-027 | **ALLOWED_ORIGINS local-only**: lista exacta `http://localhost:5173,http://127.0.0.1:5173` | Aprobada | 2026-01-23 | Si se agrega dominio publico, registrar cambio y actualizar Supabase/CI. |
 
 ---
 
@@ -43,6 +44,7 @@
 | P1 | Completar WS7.5 roles server-side (validar contra tabla/claims) | `docs/ROADMAP.md` | Pendiente |
 | P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente |
 | P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
+| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Pendiente |
 
 ---
 
