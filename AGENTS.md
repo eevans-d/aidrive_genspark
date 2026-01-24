@@ -25,6 +25,20 @@ Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
 
+## 🧭 Rol del Director (Codex) y Ejecutores
+
+**Director (Codex):**
+- Diseña y actualiza planificación modular (mega plan + subplanes).
+- Detecta inconsistencias y actualiza documentación/evidencias.
+- No ejecuta tareas operativas salvo pedido explícito.
+
+**Ejecutores (juniors/otros agentes):**
+- Ejecutan tareas siguiendo la plantilla y condiciones definidas en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+- Registran evidencia y actualizan `docs/CHECKLIST_CIERRE.md` y `docs/DECISION_LOG.md`.
+- No improvisan comandos ni flujos fuera del plan.
+
+---
+
 ## 📂 Estructura del Proyecto
 
 ```

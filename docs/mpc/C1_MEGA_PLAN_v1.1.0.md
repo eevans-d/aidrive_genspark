@@ -13,6 +13,31 @@
 - **Pendientes P1 activos:** WS7.5 (roles server-side contra tabla/claims) y rollback probado (OPS-SMART-1).
 - **Reglas clave:** frontend escribe via gateway; evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
 
+
+---
+
+## 0.1 Roles y metodologia de ejecucion
+
+**Director (Codex):**
+- Define y actualiza mega plan y subplanes.
+- Detecta inconsistencias y ajusta documentacion.
+- No ejecuta tareas operativas salvo solicitud explicita.
+
+**Ejecutores (juniors/otros agentes):**
+- Ejecutan tareas siguiendo la plantilla obligatoria y condiciones.
+- Usan comandos exactos y registran evidencia.
+- Actualizan `docs/CHECKLIST_CIERRE.md` y `docs/DECISION_LOG.md` al finalizar.
+
+## 0.2 Plantilla obligatoria por tarea (para ejecutores)
+
+- **Objetivo:** que problema resuelve.
+- **Precondiciones:** credenciales, entorno, flags, branch.
+- **Comandos exactos:** ruta + comando concreto (sin variantes).
+- **Resultado esperado (DoD):** condiciones verificables.
+- **Evidencia:** archivo/registro/resultado esperado.
+- **Rollback:** pasos concretos si falla.
+- **Riesgos/Notas:** limites o dependencias.
+
 ---
 
 ## 1) Pre-plan general (mapa modular)

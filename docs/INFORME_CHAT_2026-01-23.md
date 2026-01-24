@@ -56,6 +56,7 @@
 - Links del repo en cierre/seguridad normalizados a `aidrive_genspark_forensic`.
 - `AGENTS.md` actualizado para reflejar cierre parcial y pendientes P1.
 - Mega planificación modular actualizada en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+- Rol director vs ejecutores explicitado en `AGENTS.md` y MPC.
 - Subplanificaciones MPC E1–E8 actualizadas a v1.1.0 y alineadas con el estado actual.
 - Carpeta local renombrada a `/home/eevan/ProyectosIA/aidrive_genspark_forensic`.
 - Contratos frontend-backend completados para `Kardex` y `Rentabilidad`.

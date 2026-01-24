@@ -7,6 +7,12 @@
 
 ---
 
+
+## Nota de ejecucion (para ejecutores)
+- Seguir plantilla obligatoria definida en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+- No improvisar comandos ni flujos fuera del plan.
+- Registrar evidencia y actualizar `docs/CHECKLIST_CIERRE.md` y `docs/DECISION_LOG.md`.
+
 ## 1) Estado actual
 
 - Arquitectura alineada con estado real.
