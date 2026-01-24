@@ -57,6 +57,7 @@
 - Repo remoto renombrado a `aidrive_genspark` y `origin` actualizado.
 - `AGENTS.md` actualizado para reflejar cierre parcial y pendientes P1.
 - Mega planificación modular actualizada en `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+- M10 agregado (gestion de secretos) + subplan E9 y doc `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`.
 - Rol director vs ejecutores explicitado en `AGENTS.md` y MPC.
 - Subplanificaciones MPC E1–E8 actualizadas a v1.1.0 y alineadas con el estado actual.
 - Plantilla obligatoria, comandos exactos y condiciones no negociables agregados al MPC.
@@ -75,6 +76,7 @@
 1) Completar WS7.5 (roles server-side contra tabla/claims).
 2) Probar rollback en staging y registrar evidencia.
 3) Rotar credenciales en Supabase/CI y actualizar `.env.test` local.
+4) Completar inventario/validacion de secretos y owners (M10).
 
 ---
 

@@ -79,4 +79,4 @@
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims) y rollback probado.
+> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims), rollback probado, e inventario/validacion de secretos (M10).

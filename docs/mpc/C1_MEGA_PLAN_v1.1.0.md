@@ -62,6 +62,7 @@
 | M7 Ops/Deployment | Rollback probado y runbooks operativos | Parcial | P1 | Staging | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
 | M8 Seguridad & Compliance | Rotación de secretos y scanning controlado | Pendiente | P1 | Accesos | `C2_SUBPLAN_E4_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
 | M9 Ingesta & Automatizaciones | Scraper/cron resilientes con métricas | Mantenimiento | P2 | Datos reales | `C2_SUBPLAN_E8_v1.1.0.md` |
+| M10 Gestion de secretos y accesos | Inventario, validacion y rotacion de secretos | Pendiente | P1 | Accesos | `C2_SUBPLAN_E9_v1.1.0.md` |
 
 ---
 
@@ -69,7 +70,7 @@
 
 1. **M1 (Docs) + M6 (QA)** en paralelo para asegurar coherencia y evidencia.
 2. **M2 (Roles)** y **M7 (Rollback)** como pendientes P1 críticos.
-3. **M8 (Seguridad/Secrets)** inmediatamente después de M2/M7.
+3. **M8 (Seguridad/Secrets)** y **M10 (Gestion de secretos)** inmediatamente después de M2/M7.
 4. **M3/M4/M5/M9** como mantenimiento periódico o cuando haya cambios.
 
 ---
@@ -87,6 +88,7 @@
 | M7 | Rollback probado con evidencia | `docs/DEPLOYMENT_GUIDE.md` |
 | M8 | Secrets rotados + decision log | `docs/DECISION_LOG.md` |
 | M9 | Cron y scraper con métricas estables | `cron_jobs_execution_log` |
+| M10 | Inventario/validacion de secretos + owners | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
 
 ---
 
@@ -273,6 +275,23 @@
 
 ---
 
+
+### M10 — Gestion de secretos y accesos
+**Objetivo:** inventario, validacion y rotacion de secretos sin exposicion.
+
+**Checklist de ejecucion**
+| ID | Tarea | Estado | Evidencia |
+|---|---|---|---|
+| M10-T1 | Inventario completo de secretos | ⏳ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
+| M10-T2 | Validacion minima sin exponer | ⏳ | Logs de comandos | 
+| M10-T3 | Rotacion documentada | ⏳ | `docs/DECISION_LOG.md` |
+| M10-T4 | Accesos/owners definidos | ⏳ | Registro interno |
+
+**DoD / Validacion**
+- Checklist de secretos completo y verificado.
+- No hay secretos en repo.
+
+
 ## 5) Matriz RAID (actualizada)
 
 | Tipo | ID | Descripción | Impacto | Prob. | Mitigación | Owner |
@@ -281,6 +300,7 @@
 | Riesgo | R-02 | Rollback sin prueba real | Alto | Medio | M7.2 con evidencia | Ops |
 | Riesgo | R-03 | Secrets expuestos históricamente | Alto | Medio | M8.1 rotación | Ops/Sec |
 | Issue | I-01 | ~~Contratos FE/BE incompletos (Kardex/Rentabilidad)~~ | Bajo | Bajo | ✅ Completado | Frontend/Docs |
+| Issue | I-02 | Inventario de secretos sin cierre operativo | Medio | Medio | M10 | Ops/Sec |
 | Dependencia | D-01 | Credenciales Supabase | Alto | Medio | `docs/OBTENER_SECRETOS.md` | Ops |
 
 ---
@@ -290,6 +310,7 @@
 - **FR-SMART-1:** WS7.5 completado y verificado en gateway (✓/✗).
 - **NFR-SMART-1:** Rollback probado en staging con evidencia (✓/✗).
 - **SEC-SMART-1:** Rotación de secretos registrada y variables actualizadas (✓/✗).
+- **SEC-SMART-2:** Inventario y validacion de secretos completado (✓/✗).
 - **DOC-SMART-1:** Contratos FE/BE completos (Kardex/Rentabilidad) (✓).
 
 ---

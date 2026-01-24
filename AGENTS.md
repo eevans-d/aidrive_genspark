@@ -9,7 +9,7 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 95% (pendientes WS7.5 + rollback probado) |
+| **Avance Global** | 95% (pendientes WS7.5 + rollback probado + inventario/validacion de secretos) |
 | **Build** | ✅ Passing |
 | **Tests** | 668 passing (646 unit incl frontend + 15 security + 7 e2e auth real) |
 | **Frontend** | 90% (React Query + Gateway) |
@@ -69,6 +69,7 @@ aidrive_genspark/
 | `docs/PLAN_PENDIENTES_DEFINITIVO.md` | **PLAN ACTUAL** - ✅ completado |
 | `docs/ROADMAP.md` | Plan rolling 90 días |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
+| `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Inventario y validación de secretos |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
 
 ---
@@ -93,6 +94,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 - Completar WS7.5 roles server-side (tabla/claims; eliminar fallback a `user_metadata`).
 - Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
+- Completar inventario/validacion de secretos (M10) y registrar owners.
 - Mantener mantenimiento y observabilidad.
 
 ---

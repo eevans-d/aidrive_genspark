@@ -42,6 +42,7 @@ TEST_PASSWORD=<DEFINIR_EN_AUTH>
 - **API Gateway:** https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 
 ---
+> Anexo operativo: ver `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`.
 
 ## 1) Lista mínima de secretos requeridos
 
