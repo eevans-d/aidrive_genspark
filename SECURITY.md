@@ -33,7 +33,7 @@ Si descubres una vulnerabilidad de seguridad, **NO** abras un issue público. Si
 3. **Contacto alternativo:**
    - Si no puedes usar GitHub Security Advisories, contacta al maintainer:
    - **GitHub:** @eevans-d
-   - **Asunto:** `[SECURITY] Vulnerabilidad en aidrive_genspark_forensic`
+   - **Asunto:** `[SECURITY] Vulnerabilidad en aidrive_genspark`
 
 ---
 

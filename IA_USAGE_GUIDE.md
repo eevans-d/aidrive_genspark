@@ -57,7 +57,7 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 ## Estructura del Proyecto
 
 ```
-aidrive_genspark_forensic/
+aidrive_genspark/
 ├── minimarket-system/              # Frontend React + Vite + TypeScript
 │   ├── src/
 │   │   ├── pages/                  # 11 páginas (todas con React Query)
@@ -861,7 +861,7 @@ Según `.github/CODEOWNERS`:
 - `/.github/`: @eevans-d
 
 ### Reportar Issues
-https://github.com/eevans-d/aidrive_genspark_forensic/issues
+https://github.com/eevans-d/aidrive_genspark/issues
 
 ---
 

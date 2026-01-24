@@ -38,13 +38,22 @@
 - **Rollback:** pasos concretos si falla.
 - **Riesgos/Notas:** limites o dependencias.
 
+
+## 0.3 Condiciones no negociables (para ejecutores)
+
+- No cambiar el orden ni el metodo indicado en cada tarea.
+- No usar `console.*` en `supabase/functions` (usar `_shared/logger.ts`).
+- Frontend **solo** escribe via gateway; no escribir directo a Supabase.
+- Registrar evidencia con comando, salida, fecha y commit.
+- Si falta acceso/credenciales, detener y reportar bloqueador.
+
 ---
 
 ## 1) Pre-plan general (mapa modular)
 
 | Módulo | Objetivo | Estado | Prioridad | Bloqueadores | Subplanes |
 |---|---|---|---|---|---|
-| M1 Gobierno & Documentación | Fuentes de verdad alineadas y sin ambigüedades | En curso | P0 | N/A | `C2_SUBPLAN_E7_v1.1.0.md` |
+| M1 Gobierno & Documentación | Fuentes de verdad alineadas y sin ambigüedades | Completado/Mantenimiento | P0 | N/A | `C2_SUBPLAN_E7_v1.1.0.md` |
 | M2 Auth/RBAC & Roles | Eliminar fallback `user_metadata` y validar roles contra tabla/claims | Parcial | P1 | Acceso DB/Auth | `C2_SUBPLAN_E4_v1.1.0.md` |
 | M3 DB/Migraciones/RLS | Integridad de schema y RLS | Completado/Mantenimiento | P1 | Acceso DB | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E4_v1.1.0.md` |
 | M4 Gateway & APIs | Robustez operativa, errores y timeouts | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E4_v1.1.0.md` |
@@ -86,6 +95,14 @@
 ### M1 — Gobierno & Documentación
 **Objetivo:** eliminar contradicciones y mantener una única versión de verdad.
 
+
+**Comandos exactos (M1)**
+- `rg -n "Tests Unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 646/606/40).
+- `find tests/unit -maxdepth 1 -type f -name '*.test.*' | wc -l` (esperado: 33).
+- `find minimarket-system/src -type f -name '*.test.tsx' | wc -l` (esperado: 12).
+- `rg -n "aidrive_genspark" docs` (no debe haber referencias a nombres antiguos).
+
+
 **Alcance**
 - Conteos (tests, páginas, hooks, módulos) y referencias al repo.
 - Fuentes de verdad + registros de cambios.
@@ -106,6 +123,18 @@
 
 ### M2 — Auth/RBAC & Roles (WS7.5)
 **Objetivo:** validar roles server-side sin fallback a `user_metadata`.
+
+
+**Archivos exactos (M2)**
+- `supabase/functions/api-minimarket/helpers/auth.ts` (fuente de rol y validaciones).
+- `supabase/functions/api-minimarket/index.ts` (uso de `requireRole`).
+- `tests/unit/gateway-auth.test.ts` (casos de rol).
+
+**Condiciones de implementacion (M2)**
+- Orden de verificacion: `app_metadata.role` -> tabla `personal` (JWT del usuario).
+- Prohibido usar `user_metadata` para autorizacion.
+- Si la consulta a `personal` falla por RLS, reportar y detener (no usar service role).
+
 
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
@@ -188,6 +217,13 @@
 ### M7 — Ops/Deployment
 **Objetivo:** rollback probado y operativo.
 
+
+**Evidencia obligatoria (M7)**
+- Log de comandos ejecutados (fecha/hora).
+- Resultado de `./migrate.sh status staging` antes y despues.
+- Confirmacion de integridad post-rollback.
+
+
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
@@ -202,6 +238,13 @@
 
 ### M8 — Seguridad & Compliance
 **Objetivo:** reducir exposición y formalizar scanning.
+
+
+**Condiciones de seguridad (M8)**
+- Rotar secretos en Supabase y GitHub antes de actualizar `.env.test` local.
+- No versionar `.env.test` ni credenciales.
+- Registrar decision en `docs/DECISION_LOG.md`.
+
 
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |

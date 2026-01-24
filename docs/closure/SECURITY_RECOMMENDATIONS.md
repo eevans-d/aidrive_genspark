@@ -498,7 +498,7 @@ En **GitHub Repository Settings → Secrets and variables → Actions**:
 
 Para dudas sobre implementación de herramientas de seguridad:
 - **Owner:** @eevans-d
-- **Issues:** https://github.com/eevans-d/aidrive_genspark_forensic/issues
+- **Issues:** https://github.com/eevans-d/aidrive_genspark/issues
 
 ---
 

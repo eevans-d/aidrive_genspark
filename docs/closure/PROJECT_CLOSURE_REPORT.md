@@ -408,7 +408,7 @@ Según `CODEOWNERS`:
 
 ### A. Estructura del Proyecto
 ```
-aidrive_genspark_forensic/
+aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
 │   └── e2e/                  # 7 tests auth real (Playwright)
 ├── supabase/

@@ -54,21 +54,26 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `npx vitest run tests/unit/cron-validators.test.ts` (validadores).
+- `npx vitest run tests/unit/cron-jobs.test.ts` (jobs).
+
+## 7) Plan de testing
 
 - Ejecutar cron jobs en local con Supabase local.
 - Validar inserciones en `cron_jobs_execution_log`.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Revertir cambios en cron auxiliares.
 2. Re-ejecutar smoke de cron.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Logs estructurados en cron auxiliares.
 - [x] Validaciones runtime activas.

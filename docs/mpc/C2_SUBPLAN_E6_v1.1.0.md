@@ -55,21 +55,26 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `gh workflow run ci.yml -R eevans-d/aidrive_genspark` (pipeline base).
+- `gh workflow view ci.yml -R eevans-d/aidrive_genspark` (ver estado).
+
+## 7) Plan de testing
 
 - Ejecutar pipeline con envs válidas.
 - Verificar que jobs gated se omiten sin env.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Revertir cambios en workflow si fallan jobs obligatorios.
 2. Re-ejecutar pipeline estable.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Jobs gated pasan con env válidas.
 - [x] E2E frontend documentado.

@@ -42,9 +42,9 @@ Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 ## 📂 Estructura del Proyecto
 
 ```
-aidrive_genspark_forensic/
+aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
-│   ├── src/pages/            # 9 páginas (todas con React Query)
+│   ├── src/pages/            # 9 páginas (8 con data; Login no aplica)
 │   ├── src/hooks/queries/    # 8 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/

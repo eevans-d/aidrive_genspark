@@ -22,6 +22,12 @@
 
 ---
 
+## 1.1 Criterio WS7.5 (implementacion exacta)
+
+- Fuente de rol: `app_metadata.role` si existe; si no existe, consultar tabla `personal` con JWT del usuario.
+- Prohibido usar `user_metadata` para autorizacion.
+- La consulta a `personal` debe respetar RLS (no usar service role).
+
 ## 2) Alcance
 
 - **WS7.1** Auditoría RLS.
@@ -60,21 +66,27 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `rg -n "user_metadata" supabase/functions/api-minimarket` (no debe usarse para auth).
+- `npx vitest run tests/unit/gateway-auth.test.ts` (roles).
+- `npx vitest run tests/unit/gateway-validation.test.ts` (validaciones relacionadas).
+
+## 7) Plan de testing
 
 - Smoke con roles `anon/authenticated`.
 - Unit tests de auth en gateway.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Revertir cambios de roles si rompen autorización.
 2. Mantener CORS restrictivo en producción.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Auditoría RLS con evidencia.
 - [x] CORS validado.

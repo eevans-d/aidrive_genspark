@@ -65,7 +65,14 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `npm run test:unit` (root).
+- `npm run test:integration` (gated; requiere `.env.test`).
+- `npm run test:e2e` (backend smoke; requiere Supabase local).
+- `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` (frontend auth real).
+
+## 7) Plan de testing
 
 - `npm run test:unit`
 - `npm run test:integration` (gated)
@@ -74,14 +81,14 @@
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Si fallan suites por envs, ejecutar `--dry-run` y documentar.
 2. Revertir configs si afectan unit tests.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Unitarios ejecutan sin errores.
 - [x] Integración y E2E con guards de env.

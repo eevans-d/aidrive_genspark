@@ -59,21 +59,26 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `rg -n "console\." supabase/functions` (debe listar solo `_shared/logger.ts`).
+- `npm run test:unit` (root).
+
+## 7) Plan de testing
 
 - Unit tests con Vitest.
 - Smoke de cron y lectura de `cron_jobs_execution_log`.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Revertir cambios en handlers si el logging genera errores de runtime.
 2. Deshabilitar métricas adicionales si impactan performance.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] 0 `console.*` en `supabase/functions` fuera de `_shared/logger.ts`.
 - [x] Logs incluyen `requestId` o `runId`.

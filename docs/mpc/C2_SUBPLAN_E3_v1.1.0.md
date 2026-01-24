@@ -56,14 +56,20 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `./migrate.sh status staging` (verifica migraciones).
+- `./migrate.sh up staging` (aplica migraciones).
+- `./migrate.sh down staging` (rollback controlado; solo con backup).
+
+## 7) Plan de testing
 
 - Validar migraciones en staging/prod.
 - Ejecutar rollback controlado y verificar schema.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Identificar migración a revertir (timestamp en `supabase/migrations/`).
 2. Ejecutar rollback controlado.
@@ -71,7 +77,7 @@
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Migraciones validadas por entorno.
 - [ ] Rollback probado en staging con evidencia.

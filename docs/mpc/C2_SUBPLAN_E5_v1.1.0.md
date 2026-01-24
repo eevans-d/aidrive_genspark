@@ -54,21 +54,26 @@
 
 ---
 
-## 6) Plan de testing
+## 6) Comandos exactos
+
+- `npm run test:unit` (root).
+- `cd minimarket-system && pnpm exec playwright test app.smoke` (mocks).
+
+## 7) Plan de testing
 
 - Unit tests de hooks y UI.
 - Verificación visual de estados loading/error.
 
 ---
 
-## 7) Plan de rollback
+## 8) Plan de rollback
 
 1. Revertir cambios de hooks a versión estable.
 2. Re-ejecutar unitarios de frontend.
 
 ---
 
-## 8) Checklist post-implementación
+## 9) Checklist post-implementación
 
 - [x] Error boundaries activos.
 - [x] Paginación confirmada en listados.

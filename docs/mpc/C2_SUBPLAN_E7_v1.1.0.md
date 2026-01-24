@@ -53,14 +53,19 @@
 
 ---
 
-## 5) Plan de rollback
+## 5) Comandos exactos
+
+- `rg -n "WS7.5|rollback" docs` (pendientes actuales).
+- `rg -n "C1_MEGA_PLAN_v1.1.0.md" docs` (referencias vigentes).
+
+## 6) Plan de rollback
 
 1. Revertir cambios de documentación si contradicen fuentes de verdad.
 2. Mantener historial en `docs/DECISION_LOG.md`.
 
 ---
 
-## 6) Checklist post-implementación
+## 7) Checklist post-implementación
 
 - [x] Arquitectura alineada al estado real.
 - [x] Backlog priorizado consistente.
