@@ -1,9 +1,9 @@
 # C2 — Subplan E9 Gestion de secretos y accesos (MPC v2.1)
 
 **Etapa:** E9  
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-24  
 **Version:** 1.1.0  
-**Estado:** ⏳ Pendiente  
+**Estado:** ⏳ En progreso  
 
 ---
 
@@ -16,8 +16,11 @@
 ## 1) Estado actual
 
 - Inventario base creado en `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` (sin claves).
-- `docs/OBTENER_SECRETOS.md` mantiene URLs y valores redactados.
-- No hay validacion operativa ejecutada en esta etapa.
+- `docs/OBTENER_SECRETOS.md` actualizado con estado y pasos.
+- `ALLOWED_ORIGINS` alineado en Supabase/GitHub (local-only).
+- `API_PROVEEDOR_SECRET` regenerado y alineado (Supabase/GitHub/.env.test).
+- `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
+- Validacion parcial: `migrate.sh status staging` OK; `auth.real` fallo por login (pendiente sincronizar `TEST_PASSWORD`).
 
 ---
 
@@ -42,10 +45,10 @@
 
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| E9-T1 | Validar inventario completo de secretos | ⏳ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
-| E9-T2 | Comprobar ausencia de secretos en repo | ⏳ | Logs de comandos |
-| E9-T3 | Registrar rotacion y owners | ⏳ | `docs/DECISION_LOG.md` |
-| E9-T4 | Validaciones minimas sin exponer valores | ⏳ | Logs de comandos |
+| E9-T1 | Validar inventario completo de secretos | ✅ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
+| E9-T2 | Comprobar ausencia de secretos en repo | ✅ | `git ls-files | rg -n "\\.env\\.test$"` |
+| E9-T3 | Registrar rotacion y owners | ⏳ (parcial) | `docs/DECISION_LOG.md` |
+| E9-T4 | Validaciones minimas sin exponer valores | ⏳ (parcial) | `migrate.sh status staging` OK; `auth.real` FAIL (login) |
 
 ---
 
@@ -77,6 +80,7 @@
 
 - Ejecutar `scripts/run-integration-tests.sh --dry-run`.
 - Ejecutar `./migrate.sh status staging` si hay acceso.
+- Re-ejecutar `auth.real` luego de sincronizar `TEST_PASSWORD`.
 - No imprimir valores en consola ni logs.
 
 ---

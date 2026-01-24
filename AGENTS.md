@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-23  
+**Última actualización:** 2026-01-24  
 
 ---
 
@@ -9,7 +9,7 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 95% (pendientes WS7.5 + rollback probado + inventario/validacion de secretos) |
+| **Avance Global** | 95% (pendientes WS7.5 + rollback probado + M10 parcial + sync TEST_PASSWORD) |
 | **Build** | ✅ Passing |
 | **Tests** | 668 passing (646 unit incl frontend + 15 security + 7 e2e auth real) |
 | **Frontend** | 90% (React Query + Gateway) |
@@ -94,7 +94,8 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 - Completar WS7.5 roles server-side (tabla/claims; eliminar fallback a `user_metadata`).
 - Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
-- Completar inventario/validacion de secretos (M10) y registrar owners.
+- Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real.
+- Completar inventario/validacion de secretos (M10) y registrar owners/rotacion.
 - Mantener mantenimiento y observabilidad.
 
 ---

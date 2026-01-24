@@ -1,6 +1,6 @@
 # Secretos Requeridos y Validacion (Mini Market)
 
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-24  
 **Estado:** Checklist operativo (sin claves; solo valores no sensibles)  
 
 ---
@@ -11,8 +11,11 @@ Este documento lista **que secretos obtener**, **donde obtenerlos** y **como val
 
 **Estado actual confirmado (repo):**
 - URLs de Supabase y gateway ya definidas (no sensibles).
-- `ALLOWED_ORIGINS` definido para desarrollo local (no sensible).
-- Claves y passwords reales siguen redactadas; deben obtenerse del dashboard.
+- `ALLOWED_ORIGINS` configurado en Supabase/GitHub (local-only, sin wildcard).
+- `API_PROVEEDOR_SECRET` regenerado y alineado en Supabase/GitHub/.env.test.
+- `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
+- Pendiente: sincronizar `TEST_PASSWORD` en Supabase Auth para usuarios E2E.
+- Claves reales siguen fuera de documentación y repositorio.
 
 ---
 
@@ -41,7 +44,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 | `SUPABASE_URL` | Staging/Prod | Supabase → Project Settings → API → Project URL | Backend/CI | Supabase Secrets + GitHub Actions | `scripts/run-integration-tests.sh --dry-run` |
 | `SUPABASE_ANON_KEY` | Staging/Prod | Supabase → Project Settings → API → anon public | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) |
 | `SUPABASE_SERVICE_ROLE_KEY` | Staging/Prod | Supabase → Project Settings → API → service_role | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) |
-| `DATABASE_URL` | Staging/Prod | Supabase → Project Settings → Database → Connection string | Ops/CI | GitHub Actions | `./migrate.sh status staging` |
+| `DATABASE_URL` | Staging/Prod | Supabase → Project Settings → Database → Connection string (alias `SUPABASE_DB_URL`) | Ops/CI | GitHub Actions | `./migrate.sh status staging` |
 | `ALLOWED_ORIGINS` | Staging/Prod | Lista definida (local dev) | Edge Functions | Supabase Secrets | Curl con Origin bloqueado/permitido |
 | `API_PROVEEDOR_SECRET` | Staging/Prod | Generado por equipo | Edge Functions | Supabase Secrets | Tests de api-proveedor |
 | `VITE_SUPABASE_URL` | Frontend | Igual a `SUPABASE_URL` | Frontend | `.env`/Vercel | `pnpm build` |
@@ -77,6 +80,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 1) Ir a Project Settings → Database.
 2) Copiar **Connection string** (del entorno correcto).
 3) Guardar como `DATABASE_URL` en CI/operacion.
+4) Si en Supabase Secrets figura como `SUPABASE_DB_URL`, usar ese nombre (alias aceptado).
 
 ### 4.5 `ALLOWED_ORIGINS`
 1) Valor vigente (lista exacta, sin wildcard): `http://localhost:5173,http://127.0.0.1:5173`.
@@ -124,6 +128,10 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ---
 
 ## 7) Checklist de cierre (secrets)
+
+**Estado operativo (2026-01-24):**
+- Supabase/GitHub secrets alineados.
+- `TEST_PASSWORD` pendiente de sincronizar en Supabase Auth.
 
 - [ ] Secretos cargados en Supabase (Edge Functions).  
 - [ ] Secretos cargados en GitHub Actions.  

@@ -80,6 +80,20 @@
 
 ---
 
+## Actualizacion 2026-01-24 (secrets & QA)
+
+- `ALLOWED_ORIGINS` alineado a local-only en Supabase y GitHub Actions.
+- `API_PROVEEDOR_SECRET` regenerado y alineado en Supabase/GitHub/.env.test.
+- `.env.test` actualizado con `SUPABASE_*` y `TEST_PASSWORD` (sin exponer valores).
+- `migrate.sh status staging` ejecutado con exito (migraciones listadas).
+- E2E auth real ejecutado y fallo por timeout de login; requiere sincronizar `TEST_PASSWORD` en Supabase Auth.
+- Se recomienda rotar keys si se imprimieron tokens en consola durante la configuracion.
+
+Pendiente inmediato:
+- Resetear passwords de usuarios E2E (admin/deposito/ventas) para que coincidan con `.env.test`, y re-ejecutar `auth.real`.
+
+---
+
 ## Comandos utiles
 ```bash
 # E2E auth real

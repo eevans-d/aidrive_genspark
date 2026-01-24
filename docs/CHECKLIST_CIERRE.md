@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-24  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA  
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
@@ -38,6 +38,7 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 Pendientes:
 - WS7.5 Roles server-side contra tabla/claims (eliminar fallback a `user_metadata`)
 - Rollback probado en staging (OPS-SMART-1)
+- Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar `auth.real`
 
 ---
 
@@ -68,11 +69,13 @@ Pendientes:
   - 3 usuarios en Supabase Auth: admin, deposito, ventas
   - 3 registros en tabla `personal` con roles correspondientes
   - Archivos: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
+  - Nota: si se regenera `TEST_PASSWORD`, se debe resetear en Auth y revalidar.
 - [x] **E2E con auth real** ✅ COMPLETADO 2026-01-23
   - 7 tests E2E con auth real pasando
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
   - Evidencia: 7/7 PASS (2026-01-23)
+  - Revalidación requerida tras reset de `TEST_PASSWORD` (run 2026-01-24 falló por timeout de login).
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23

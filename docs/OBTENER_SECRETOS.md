@@ -1,7 +1,7 @@
 # Guía para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-23  
-**Estado:** ✅ URLs confirmadas; claves redactadas (pendiente obtencion real)  
+**Fecha:** 2026-01-24  
+**Estado:** ✅ secretos alineados en Supabase/GitHub; pendiente sincronizar TEST_PASSWORD en Auth  
 **Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
 
 ---
@@ -24,19 +24,19 @@ VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-m
 
 > Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.
 
-**Nota de estado:** en el repo solo estan confirmadas las URLs y el gateway. Las claves reales deben obtenerse del dashboard y registrarse segun `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`.
+**Nota de estado:** secretos alineados en Supabase/GitHub y `.env.test` actualizado (sin exponer valores). Pendiente: sincronizar `TEST_PASSWORD` con Supabase Auth.
 
 ## 👥 Usuarios de Prueba (Staging)
 
 ```bash
 # Archivo: .env.test (raíz del repo)
-TEST_USER_ADMIN=admin@staging.minimarket.test
-TEST_USER_DEPOSITO=deposito@staging.minimarket.test
-TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=<DEFINIR_EN_AUTH>
+TEST_USER_ADMIN=<definido_en_env_test>
+TEST_USER_DEPOSITO=<definido_en_env_test>
+TEST_USER_VENTAS=<definido_en_env_test>
+TEST_PASSWORD=<definido_en_env_test>
 ```
 
-> Estos usuarios ya existen en Supabase Auth y tienen registros en la tabla `personal`.
+> Estos usuarios deben existir en Supabase Auth y en la tabla `personal`. Si se regenera `TEST_PASSWORD`, resetear en Auth.
 
 ### Links útiles
 - **Dashboard:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi

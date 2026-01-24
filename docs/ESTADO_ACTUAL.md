@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-23 05:30 UTC-3  
+**Última actualización:** 2026-01-24 06:16 UTC  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (RLS + E2E AUTH REAL COMPLETADOS)
 
 ## 🎯 Proyecto Supabase
@@ -79,4 +79,4 @@
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims), rollback probado, e inventario/validacion de secretos (M10).
+> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims), rollback probado, sincronizar `TEST_PASSWORD` E2E en Auth, y completar M10 (owners/rotacion).
