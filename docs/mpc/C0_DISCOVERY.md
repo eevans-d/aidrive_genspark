@@ -10,7 +10,7 @@
 ## 1) Inventario de assets (actual)
 
 ### 1.1 Repositorios y apps
-- **Repositorio monolítico:** `aidrive_genspark` (raíz)
+- **Repositorio monolítico:** `aidrive_genspark_forensic` (raíz)
 - **Frontend:** `minimarket-system/` (React + Vite + TS)
 - **Backend/Edge Functions (Supabase):** `supabase/functions/`
 - **DB y migraciones:** `supabase/migrations/` + `supabase/sql/`

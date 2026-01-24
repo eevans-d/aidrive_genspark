@@ -19,7 +19,7 @@
 ## 2) Estado técnico (síntesis)
 
 - **Backend (Supabase Edge Functions):** gateway, proveedor, scraper y cron jobs operativos, con logging estructurado completo.
-- **Frontend:** React Query implementado en páginas críticas; paginación y columnas mínimas aplicadas; error boundaries activos.
+- **Frontend:** React Query implementado en páginas críticas (8/8 con data; Login no aplica); paginación y columnas mínimas aplicadas; error boundaries activos.
 - **Testing:** unit + seguridad + E2E auth real reportados en docs.
 - **Seguridad:** CORS restringido por env; roles server-side parcial (WS7.5 pendiente); auditoria RLS completada.
 

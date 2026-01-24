@@ -26,7 +26,7 @@
 > - Ver sección 3.4 para decisión arquitectónica pendiente.
 >
 > **2. React Query (P1-05) - Completado:**
-> - Hooks React Query implementados en páginas críticas (8/8) con caching y reintentos.
+> - Hooks React Query implementados en páginas críticas (8/8 con data; Login no aplica) con caching y reintentos.
 > - Infraestructura consolidada (QueryClientProvider, queryKeys).
 >
 > **3. Roles (P0-04) - Parcial:**

@@ -85,8 +85,8 @@
 ### Preparación
 ```bash
 # Clonar repositorio
-git clone https://github.com/eevans-d/aidrive_genspark.git
-cd aidrive_genspark
+git clone https://github.com/eevans-d/aidrive_genspark_forensic.git
+cd aidrive_genspark_forensic
 git checkout f414687ea0b90be302d01de00d13b3bd93406dfc
 
 # Verificar prerequisitos

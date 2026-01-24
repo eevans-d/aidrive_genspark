@@ -62,7 +62,6 @@ export function useVerifiedRole(): VerifiedRoleResult {
                         if (queryError) {
                                 // Si no encuentra registro, el usuario no está en personal
                                 if (queryError.code === 'PGRST116') {
-                                        console.warn('Usuario no encontrado en tabla personal, usando rol por defecto');
                                         setRole('usuario');
                                 } else {
                                         throw queryError;
@@ -75,7 +74,6 @@ export function useVerifiedRole(): VerifiedRoleResult {
                                 setRole('usuario');
                         }
                 } catch (err) {
-                        console.error('Error fetching verified role:', err);
                         setError(err instanceof Error ? err.message : 'Error desconocido');
                         setRole('usuario'); // Fallback seguro: mínimos permisos
                 } finally {

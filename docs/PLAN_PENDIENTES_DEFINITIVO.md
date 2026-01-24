@@ -7,6 +7,10 @@
 
 ---
 
+> **Nota:** este plan esta cerrado; la planificación modular vigente esta en `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`.
+
+---
+
 ## 🎯 RESUMEN EJECUTIVO
 
 Plan definitivo para completar 3 pendientes críticos en secuencia óptima:
@@ -242,7 +246,7 @@ JOIN auth.users u ON p.user_auth_id = u.id
 Migrar tests E2E de mocks a autenticación real con los usuarios creados.
 
 ### Estado Actual
-- Frontend E2E: Playwright con `VITE_USE_MOCKS=true` (6 tests)
+- Frontend E2E: Playwright con `VITE_USE_MOCKS=true` (8 tests)
 - Backend E2E: Vitest con Supabase CLI (4 tests)
 - Archivo: `minimarket-system/playwright.config.ts`
 

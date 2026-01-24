@@ -21,13 +21,14 @@
 ## 🎯 Próximos Pasos
 
 Plan definitivo **completado con pendientes P1** (WS7.5 y rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
+Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`.
 
 ---
 
 ## 📂 Estructura del Proyecto
 
 ```
-aidrive_genspark/
+aidrive_genspark_forensic/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
 │   ├── src/pages/            # 9 páginas (todas con React Query)
 │   ├── src/hooks/queries/    # 8 custom hooks
@@ -99,7 +100,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 ## ⚠️ Advertencias Importantes
 
 1. **NO crear archivos duplicados** - Verificar si ya existe
-2. **NO usar console.log** - Usar `createLogger()` de `_shared/logger.ts`
+2. **NO usar console.log en supabase/functions** - Usar `createLogger()` de `_shared/logger.ts`
 3. **Writes via Gateway** - Frontend NO escribe directo a Supabase
 4. **Verificar build** - Siempre ejecutar `npm run build` después de cambios
 5. **Documentar decisiones** - Actualizar `DECISION_LOG.md`

@@ -1,7 +1,7 @@
 # CONTRATOS FRONTEND - BACKEND (mock + datos esperados)
 
 **Objetivo:** definir contratos reales entre UI y Supabase, mas mocks sugeridos sin credenciales.
-**Alcance:** paginas `Login`, `Dashboard`, `Deposito`, `Stock`, `Productos`, `Proveedores`, `Tareas`.
+**Alcance:** paginas documentadas `Login`, `Dashboard`, `Deposito`, `Stock`, `Productos`, `Proveedores`, `Tareas`. Pendiente documentar contratos de `Kardex` y `Rentabilidad`.
 
 ---
 

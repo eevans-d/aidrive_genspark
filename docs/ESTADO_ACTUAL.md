@@ -63,7 +63,7 @@
 - ✅ API Gateway con rate limiting + circuit breaker
 - ✅ Alertas de stock bajo y vencimientos
 - ✅ Roles validados server-side via `app_metadata` (fallback a `user_metadata` si falta role); frontend verifica rol en tabla `personal`
-- ✅ React Query con caching en todas las páginas
+- ✅ React Query con caching en páginas con data (8/8); Login sin hook
 - ✅ Exportación CSV de productos/stock
 - ✅ **Proyecto Supabase configurado**
 - ✅ **Migraciones aplicadas**
@@ -76,5 +76,7 @@
 - E2E con auth real (Playwright): ✅
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
+
+> **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.0.0.md`
 
 > **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims) y rollback probado.

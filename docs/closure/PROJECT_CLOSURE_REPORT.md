@@ -40,7 +40,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 
 | Categoría | Cantidad | Estado |
 |-----------|----------|--------|
-| **Páginas** | 9 | ✅ Todas con React Query |
+| **Páginas** | 9 | ✅ 8 con data (Login sin hook) |
 | **Hooks Query** | 8 | ✅ Implementados |
 | **Componentes** | 3 | ✅ Con ErrorBoundary |
 | **Tests Frontend** | 40 | ✅ 100% passing |
@@ -408,7 +408,7 @@ Según `CODEOWNERS`:
 
 ### A. Estructura del Proyecto
 ```
-aidrive_genspark/
+aidrive_genspark_forensic/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
 │   └── e2e/                  # 7 tests auth real (Playwright)
 ├── supabase/
