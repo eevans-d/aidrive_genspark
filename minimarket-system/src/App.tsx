@@ -6,7 +6,6 @@ import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { useUserRole } from './hooks/useUserRole'
-import { UserRole } from './lib/roles'
 import Layout from './components/Layout'
 
 const Login = lazy(() => import('./pages/Login'))
@@ -19,18 +18,12 @@ const Tareas = lazy(() => import('./pages/Tareas'))
 const Productos = lazy(() => import('./pages/Productos'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
 
-interface ProtectedRouteProps {
-  children: React.ReactNode
-  /** Roles permitidos. Vacío = todos los roles autenticados */
-  allowedRoles?: UserRole[]
-}
-
-function ProtectedRoute({ children, allowedRoles = [] }: ProtectedRouteProps) {
+function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
-  const { canAccess } = useUserRole()
+  const { canAccess, loading: roleLoading } = useUserRole()
   const location = useLocation()
 
-  if (loading) {
+  if (loading || roleLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-gray-500">Cargando...</div>
@@ -42,8 +35,7 @@ function ProtectedRoute({ children, allowedRoles = [] }: ProtectedRouteProps) {
     return <Navigate to="/login" replace />
   }
 
-  // Si hay roles especificados, verificar acceso
-  if (allowedRoles.length > 0 && !canAccess(location.pathname)) {
+  if (!canAccess(location.pathname)) {
     // Redireccionar a dashboard si no tiene permiso
     return <Navigate to="/" replace />
   }

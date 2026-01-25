@@ -1,7 +1,7 @@
 # C1 — Mega Plan Modular (MPC v2.1)
 
 **Proyecto:** Mini Market System  
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-25  
 **Versión:** 1.1.0  
 **Estado:** Vigente (plan para ejecución por módulos)  
 
@@ -10,7 +10,7 @@
 ## 0) Contexto base y reglas
 
 - **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`, `docs/DECISION_LOG.md`.
-- **Pendientes P1 activos:** WS7.5 (roles server-side contra tabla/claims) y rollback probado (OPS-SMART-1).
+- **Pendientes P1 activos:** rollback probado (OPS-SMART-1), sync `TEST_PASSWORD` y M10 (owners/rotación).
 - **Reglas clave:** frontend escribe via gateway; evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
 
 
@@ -54,7 +54,7 @@
 | Módulo | Objetivo | Estado | Prioridad | Bloqueadores | Subplanes |
 |---|---|---|---|---|---|
 | M1 Gobierno & Documentación | Fuentes de verdad alineadas y sin ambigüedades | Completado/Mantenimiento | P0 | N/A | `C2_SUBPLAN_E7_v1.1.0.md` |
-| M2 Auth/RBAC & Roles | Eliminar fallback `user_metadata` y validar roles contra tabla/claims | Parcial | P1 | Acceso DB/Auth | `C2_SUBPLAN_E4_v1.1.0.md` |
+| M2 Auth/RBAC & Roles | Eliminar fallback `user_metadata` y validar roles contra tabla/claims | Completado/Mantenimiento | P1 | Acceso DB/Auth | `C2_SUBPLAN_E4_v1.1.0.md` |
 | M3 DB/Migraciones/RLS | Integridad de schema y RLS | Completado/Mantenimiento | P1 | Acceso DB | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E4_v1.1.0.md` |
 | M4 Gateway & APIs | Robustez operativa, errores y timeouts | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E4_v1.1.0.md` |
 | M5 Frontend & UX/Data | React Query estable y UX coherente | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E5_v1.1.0.md` |
@@ -69,7 +69,7 @@
 ## 2) Orden recomendado de ejecución
 
 1. **M1 (Docs) + M6 (QA)** en paralelo para asegurar coherencia y evidencia.
-2. **M2 (Roles)** y **M7 (Rollback)** como pendientes P1 críticos.
+2. **M7 (Rollback)** y **M10 (Secretos)** como pendientes P1 críticos.
 3. **M8 (Seguridad/Secrets)** y **M10 (Gestion de secretos)** inmediatamente después de M2/M7.
 4. **M3/M4/M5/M9** como mantenimiento periódico o cuando haya cambios.
 
@@ -99,7 +99,7 @@
 
 
 **Comandos exactos (M1)**
-- `rg -n "Tests Unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 646/606/40).
+- `rg -n "Tests Unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 649/609/40).
 - `find tests/unit -maxdepth 1 -type f -name '*.test.*' | wc -l` (esperado: 33).
 - `find minimarket-system/src -type f -name '*.test.tsx' | wc -l` (esperado: 12).
 - `rg -n "aidrive_genspark" docs` (no debe haber referencias a nombres antiguos).
@@ -124,7 +124,7 @@
 ---
 
 ### M2 — Auth/RBAC & Roles (WS7.5)
-**Objetivo:** validar roles server-side sin fallback a `user_metadata`.
+**Objetivo:** validar roles server-side sin fallback a `user_metadata` (claims `app_metadata`).
 
 
 **Archivos exactos (M2)**
@@ -133,18 +133,18 @@
 - `tests/unit/gateway-auth.test.ts` (casos de rol).
 
 **Condiciones de implementacion (M2)**
-- Orden de verificacion: `app_metadata.role` -> tabla `personal` (JWT del usuario).
+- Fuente de verdad: `app_metadata.role` (claims del JWT).
 - Prohibido usar `user_metadata` para autorizacion.
-- Si la consulta a `personal` falla por RLS, reportar y detener (no usar service role).
+- Si `role` falta, denegar acceso (no fallback).
 
 
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| M2-T1 | Definir fuente de verdad (tabla `personal` vs claims) | ⏳ | `docs/DECISION_LOG.md` |
-| M2-T2 | Implementar verificación en gateway | ⏳ | `supabase/functions/api-minimarket` |
-| M2-T3 | Ajustar tests de roles en gateway | ⏳ | `tests/unit/gateway-auth.test.ts` |
-| M2-T4 | Actualizar documentación de roles | ⏳ | `docs/ARCHITECTURE_DOCUMENTATION.md` |
+| M2-T1 | Definir fuente de verdad (claims `app_metadata`) | ✅ | `docs/DECISION_LOG.md` (D-029) |
+| M2-T2 | Implementar verificación en gateway | ✅ | `supabase/functions/api-minimarket/helpers/auth.ts` |
+| M2-T3 | Ajustar tests de roles en gateway | ✅ | `tests/unit/gateway-auth.test.ts` |
+| M2-T4 | Actualizar documentación de roles | ✅ | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 
 **DoD / Validación**
 - `user_metadata` no se usa para autorización.
@@ -205,7 +205,7 @@
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| M6-T1 | Unit tests 646/646 | ✅ | `test-reports/junit.xml` |
+| M6-T1 | Unit tests 649/649 | ✅ | `test-reports/junit.xml` |
 | M6-T2 | Integration 31/31 (gated) | ✅ | `tests/integration` |
 | M6-T3 | E2E backend smoke 4/4 | ✅ | `tests/e2e/*.smoke.test.ts` |
 | M6-T4 | E2E auth real 7/7 | ✅ | `minimarket-system/e2e/auth.real.spec.ts` |
@@ -296,7 +296,7 @@
 
 | Tipo | ID | Descripción | Impacto | Prob. | Mitigación | Owner |
 |---|---|---|---|---|---|---|
-| Riesgo | R-01 | WS7.5 sin cierre (roles server-side) | Alto | Medio | M2 completo + tests | Backend |
+| Riesgo | R-01 | ~~WS7.5 sin cierre (roles server-side)~~ | Bajo | Bajo | ✅ Cerrado (D-029) | Backend |
 | Riesgo | R-02 | Rollback sin prueba real | Alto | Medio | M7.2 con evidencia | Ops |
 | Riesgo | R-03 | Secrets expuestos históricamente | Alto | Medio | M8.1 rotación | Ops/Sec |
 | Issue | I-01 | ~~Contratos FE/BE incompletos (Kardex/Rentabilidad)~~ | Bajo | Bajo | ✅ Completado | Frontend/Docs |
@@ -307,7 +307,7 @@
 
 ## 6) Criterios SMART (2026-01-23)
 
-- **FR-SMART-1:** WS7.5 completado y verificado en gateway (✓/✗).
+- **FR-SMART-1:** WS7.5 completado y verificado en gateway (✓).
 - **NFR-SMART-1:** Rollback probado en staging con evidencia (✓/✗).
 - **SEC-SMART-1:** Rotación de secretos registrada y variables actualizadas (✓/✗).
 - **SEC-SMART-2:** Inventario y validacion de secretos completado (✓/✗).

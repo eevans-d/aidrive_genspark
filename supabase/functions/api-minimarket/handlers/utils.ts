@@ -1,9 +1,6 @@
 
 import { queryTable } from '../helpers/supabase.ts';
 import { ok } from '../../_shared/response.ts';
-import { createLogger } from '../../_shared/logger.ts';
-
-const logger = createLogger('api-minimarket-utils');
 
 export const getProductosDropdown = async (
         supabaseUrl: string,
@@ -16,7 +13,7 @@ export const getProductosDropdown = async (
                 'productos',
                 requestHeaders,
                 { activo: true },
-                'id,nombre',
+                'id,nombre,codigo_barras',
                 { order: 'nombre' }
         );
 

@@ -1,20 +1,20 @@
 # Project Closure Report - Sistema Mini Market
 
 **Versión:** 1.0.0  
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-25  
 **Base Commit:** f414687ea0b90be302d01de00d13b3bd93406dfc  
-**Estado:** Cierre Parcial (pendientes WS7.5 y rollback probado)
+**Estado:** Cierre Parcial (pendientes rollback probado, sync TEST_PASSWORD y M10)
 
 ---
 
 ## 📊 Executive Summary
 
-El proyecto **Sistema Mini Market** esta funcionalmente completo con features criticas implementadas, testing activo, y pipeline CI/CD operativo. Credenciales disponibles y auditoria RLS completada. Pendientes actuales: WS7.5 (roles server-side contra tabla/claims) y rollback probado.
+El proyecto **Sistema Mini Market** esta funcionalmente completo con features criticas implementadas, testing activo, y pipeline CI/CD operativo. Credenciales disponibles y auditoria RLS completada. Pendientes actuales: rollback probado, sync TEST_PASSWORD y completar M10 (owners/rotacion).
 
 ### Logros Principales
 ✅ **Frontend:** React 18 + TypeScript + Vite + React Query (90% completitud)  
 ✅ **Backend:** Supabase Edge Functions modularizadas (90% completitud)  
-✅ **Testing:** 646 tests passing (100% passing rate)  
+✅ **Testing:** 649 tests passing (100% passing rate)  
 ✅ **CI/CD:** Pipeline activo con jobs gated  
 ✅ **Security:** Gateway hardened (JWT, CORS, Rate Limit, Circuit Breaker)  
 ✅ **Documentation:** 21 archivos técnicos actualizados
@@ -28,7 +28,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 | Métrica | Valor | Baseline Inicial | Mejora |
 |---------|-------|------------------|--------|
 | **Avance Global** | 95% | - | - |
-| **Tests Pasando** | 646 (606 backend + 40 frontend) | ~10 | +6360% |
+| **Tests Pasando** | 649 (609 backend + 40 frontend) | ~10 | +6360% |
 | **Build Status** | ✅ Passing | ❌ Failing | ✅ Fixed |
 | **Edge Functions** | 13 activas | 3 monolíticos | +10 modularizadas |
 | **Módulos Compartidos** | 7 en `_shared/` | 0 | +7 |
@@ -54,14 +54,14 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 | **Gateway Endpoints** | 26 en api-minimarket | ✅ Hardened |
 | **API Proveedor Endpoints** | 9 | ✅ Modular |
 | **Cron Jobs** | 4 principales + 4 auxiliares | ✅ Orquestados |
-| **Tests Backend** | 606 | ✅ 100% passing |
-| **Completitud** | 90% | Pendiente WS7.5 (roles server-side) |
+| **Tests Backend** | 609 | ✅ 100% passing |
+| **Completitud** | 90% | Pendientes operativos (rollback + TEST_PASSWORD + M10) |
 
 ### Testing
 
 | Suite | Tests | Estado | Cobertura |
 |-------|-------|--------|-----------|
-| **Unit** | 646 | ✅ 100% passing | Backend 100%, Frontend crítico |
+| **Unit** | 649 | ✅ 100% passing | Backend 100%, Frontend crítico |
 | **Integration** | 31 | ✅ Passing (gated) | Requiere Supabase local |
 | **E2E Frontend (Playwright)** | 7 auth real | ✅ Passing (manual) | Requiere credenciales |
 | **E2E Backend (smoke)** | 4 tests | ✅ Passing (manual) | Requiere Supabase local |
@@ -115,7 +115,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 | **Frontend Lint** | ✅ Pass | `pnpm lint` | Sin errores |
 | **Frontend Build** | ✅ Pass | `pnpm build:prod` | Genera `dist/` |
 | **Frontend Type Check** | ✅ Pass | `npx tsc --noEmit` | Sin errores TS |
-| **Unit Tests** | ✅ Pass | `npm run test:unit` | 646/646 passing |
+| **Unit Tests** | ✅ Pass | `npm run test:unit` | 649/649 passing |
 | **Coverage** | ✅ Pass | `npm run test:coverage` | Backend 100% |
 | **Edge Functions Check** | ✅ Pass | `deno check --no-lock` | 13 funciones OK |
 
@@ -365,7 +365,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 
 ### Inmediato (Sprint 0)
 1. **Obtener credenciales:** Configurar secrets de GitHub para habilitar tests gated
-2. **WS7.5 Roles:** Validar rol contra tabla/claims y eliminar fallback a `user_metadata`
+2. **WS7.5 Roles:** ✅ Completado (rol desde `app_metadata`, sin fallback a `user_metadata`)
 3. **Rollback probado:** Ejecutar prueba en staging y guardar evidencia
 4. **Definir licencia:** Decidir MIT vs Propietaria
 5. **Revisión P0:** Revisar manualmente los 6 módulos críticos listados
@@ -400,7 +400,7 @@ Según `CODEOWNERS`:
 ## 📅 Siguiente Revisión
 
 **Fecha programada:** 2026-02-09  
-**Objetivo:** Validar WS7.5, rollback probado y secrets configurados
+**Objetivo:** Validar rollback probado, sync TEST_PASSWORD y secrets configurados
 
 ---
 
@@ -420,7 +420,7 @@ aidrive_genspark/
 │   │   └── cron-*/           # 4 principales + 4 auxiliares
 │   └── migrations/           # 10 migraciones SQL
 ├── tests/
-│   ├── unit/                 # 606 tests (backend)
+│   ├── unit/                 # 609 tests (backend)
 │   ├── integration/          # 31 tests (gated)
 │   ├── e2e/                  # 4 smoke tests (backend, manual)
 │   ├── security/             # 15 tests
@@ -474,4 +474,4 @@ deno check --no-lock supabase/functions/**/index.ts
 **Reporte generado:** 2026-01-23  
 **Versión del protocolo:** CIERRE_PROYECTO_IA_V2_1  
 **Preparado para:** @eevans-d  
-**Estado final:** ⚠️ Cierre Parcial (pendiente WS7.5 y rollback probado)
+**Estado final:** ⚠️ Cierre Parcial (pendientes rollback probado, sync TEST_PASSWORD y M10)

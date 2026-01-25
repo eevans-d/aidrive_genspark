@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-24  
+**Fecha:** 2026-01-25  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA  
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
@@ -27,7 +27,7 @@
 El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **646 tests unitarios pasando** (Backend 606 + Frontend 40) ✅
+- **649 tests unitarios pasando** (Backend 609 + Frontend 40) ✅
 - **15 tests de seguridad con credenciales reales** ✅
 - **Migraciones aplicadas en producción** ✅
 - **13 Edge Functions desplegadas** ✅
@@ -36,7 +36,6 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 - **Frontend testing completo** con React Testing Library + MSW ✅
 
 Pendientes:
-- WS7.5 Roles server-side contra tabla/claims (eliminar fallback a `user_metadata`)
 - Rollback probado en staging (OPS-SMART-1)
 - Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar `auth.real`
 
@@ -184,7 +183,7 @@ Pendientes:
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
-  - Job: test (Vitest) - **646 tests pasando** (Backend 606 + Frontend 40) ✅
+  - Job: test (Vitest) - **649 tests pasando** (Backend 609 + Frontend 40) ✅
   - Job: build (Vite)
   - Job: typecheck (tsc)
   - Job: edge-functions-check (Deno, estricto)
@@ -210,7 +209,7 @@ Pendientes:
 - [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-22).
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
-- [ ] Cierre final pendiente por WS7.5 y rollback probado.
+- [ ] Cierre final pendiente por rollback probado.
 
 ---
 
@@ -219,7 +218,7 @@ Pendientes:
 | Métrica | Antes | Después (2026-01-12) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios pasando | ~10 | **646** (Backend 606 + Frontend 40) ✅ |
+| Tests unitarios pasando | ~10 | **649** (Backend 609 + Frontend 40) ✅ |
 | Tests archivos | 5 | **45** (backend 33 + frontend 12) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
@@ -339,5 +338,5 @@ tests/api-contracts/      # (Vitest mock + legacy)
 
 ## ✍️ Estado de Cierre
 
-- **Cierre:** Parcial (pendientes WS7.5 y rollback probado)
+- **Cierre:** Parcial (pendiente rollback probado)
 - **Próxima revisión:** 2026-02-09

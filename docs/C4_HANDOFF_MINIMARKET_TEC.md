@@ -1,7 +1,7 @@
 # C4 — HANDOFF TÉCNICO (MINI MARKET)
 
-**Fecha:** 2026-01-23  
-**Estado:** Vigente (pendiente WS7.5)
+**Fecha:** 2026-01-25  
+**Estado:** Vigente (pendiente rollback + sync TEST_PASSWORD)
 
 ---
 
@@ -21,8 +21,9 @@
 - Integration/E2E: requieren `.env.test` y/o Supabase local.
 
 ## 4) Bloqueos activos
-- WS7.5 roles server-side (validar contra tabla/claims).
 - Rollback probado en staging (doc disponible en `docs/DEPLOYMENT_GUIDE.md`).
+- Sync `TEST_PASSWORD` en Supabase Auth y revalidar `auth.real`.
+- Completar M10 (owners/rotación de secretos).
 
 ## 5) Contactos
 - PO/Tech Lead/Ops: **TBD**.

@@ -279,15 +279,16 @@
 |-------|------|-------------|
 | id | UUID | PK |
 | user_auth_id | UUID | FK → auth.users(id) UNIQUE |
-| nombre_completo | VARCHAR(255) | Nombre y apellido |
-| dni | VARCHAR(8) | DNI |
-| telefono | VARCHAR(50) | Teléfono |
-| email | VARCHAR(255) | Email |
-| rol | VARCHAR(50) | Rol/Puesto |
-| fecha_ingreso | DATE | Fecha de ingreso |
+| nombre | TEXT | Nombre completo |
+| email | TEXT | Email |
+| telefono | TEXT | Teléfono |
+| rol | TEXT | Rol/Puesto |
+| departamento | TEXT | Área/Departamento |
 | activo | BOOLEAN | Estado laboral |
+| fecha_ingreso | DATE | Fecha de ingreso |
 | direccion | TEXT | Dirección |
 | created_at | TIMESTAMPTZ | Fecha de creación |
+| updated_at | TIMESTAMPTZ | Fecha de actualización |
 
 ---
 

@@ -6,7 +6,7 @@
  * @module tests/unit/api-minimarket-gateway
  */
 
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 
 // Import helpers
 import {
@@ -28,6 +28,9 @@ import {
 import {
   parseContentRange,
   buildQueryUrl,
+  insertTable,
+  updateTable,
+  callFunction,
 } from '../../supabase/functions/api-minimarket/helpers/supabase.ts';
 
 // ============================================================================
@@ -200,6 +203,108 @@ describe('pagination helpers', () => {
       expect(meta.total).toBeUndefined();
       expect(meta.hasMore).toBeUndefined();
     });
+  });
+});
+
+// ============================================================================
+// SUPABASE FETCH HELPERS TESTS
+// ============================================================================
+
+describe('supabase fetch helpers', () => {
+  const originalFetch = globalThis.fetch;
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+  });
+
+  afterEach(() => {
+    fetchMock.mockReset();
+    globalThis.fetch = originalFetch;
+  });
+
+  it('insertTable posts with headers and payload', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 't1', titulo: 'Test' }],
+    } as Response);
+
+    const result = await insertTable(
+      'https://example.supabase.co',
+      'tareas_pendientes',
+      { Authorization: 'Bearer token', apikey: 'anon' },
+      { titulo: 'Test' },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.supabase.co/rest/v1/tareas_pendientes',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer token',
+          apikey: 'anon',
+          Prefer: 'return=representation',
+        }),
+        body: JSON.stringify({ titulo: 'Test' }),
+      }),
+    );
+    expect(result).toEqual([{ id: 't1', titulo: 'Test' }]);
+  });
+
+  it('updateTable patches with id filter', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => [{ id: 't1', estado: 'completada' }],
+    } as Response);
+
+    const result = await updateTable(
+      'https://example.supabase.co',
+      'tareas_pendientes',
+      't1',
+      { Authorization: 'Bearer token', apikey: 'anon' },
+      { estado: 'completada' },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.supabase.co/rest/v1/tareas_pendientes?id=eq.t1',
+      expect.objectContaining({
+        method: 'PATCH',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer token',
+          apikey: 'anon',
+          Prefer: 'return=representation',
+        }),
+        body: JSON.stringify({ estado: 'completada' }),
+      }),
+    );
+    expect(result).toEqual([{ id: 't1', estado: 'completada' }]);
+  });
+
+  it('callFunction posts to rpc endpoint', async () => {
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ ok: true }),
+    } as Response);
+
+    const result = await callFunction(
+      'https://example.supabase.co',
+      'sp_test',
+      { Authorization: 'Bearer token', apikey: 'anon' },
+      { foo: 'bar' },
+    );
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://example.supabase.co/rest/v1/rpc/sp_test',
+      expect.objectContaining({
+        method: 'POST',
+        headers: expect.objectContaining({
+          Authorization: 'Bearer token',
+          apikey: 'anon',
+        }),
+        body: JSON.stringify({ foo: 'bar' }),
+      }),
+    );
+    expect(result).toEqual({ ok: true });
   });
 });
 

@@ -1121,7 +1121,7 @@ Deno.serve(async (req) => {
 
     // POST /tareas - Crear nueva tarea
     if (path === '/tareas' && method === 'POST') {
-      checkRole(['admin', 'supervisor', 'empleado']);
+      checkRole(BASE_ROLES);
 
       const bodyResult = await parseJsonBody<{
         titulo: string;
@@ -1156,26 +1156,27 @@ Deno.serve(async (req) => {
       const insertResult = await insertTable(
         supabaseUrl!,
         'tareas_pendientes',
-        tareaData,
         requestHeaders(),
+        tareaData,
       );
+      const tareaCreada = (insertResult as unknown[])[0] as Record<string, unknown> | undefined;
 
-      if (!insertResult.success) {
-        return respondFail('INSERT_ERROR', insertResult.error || 'Error al crear tarea', 500);
+      if (!tareaCreada) {
+        return respondFail('INSERT_ERROR', 'Error al crear tarea', 500);
       }
 
-      await logAudit('TAREA_CREADA', 'tarea', insertResult.data?.id || 'unknown', {
+      await logAudit('TAREA_CREADA', 'tarea', String(tareaCreada.id ?? 'unknown'), {
         titulo: tareaData.titulo,
         prioridad: tareaData.prioridad,
       });
 
       logger.info('TAREA_CREATED', { requestId, titulo: tareaData.titulo });
-      return respondOk(insertResult.data, 201, { message: 'Tarea creada exitosamente' });
+      return respondOk(tareaCreada, 201, { message: 'Tarea creada exitosamente' });
     }
 
     // PUT /tareas/:id/completar - Marcar tarea como completada
     if (path.match(/^\/tareas\/[a-f0-9-]+\/completar$/) && method === 'PUT') {
-      checkRole(['admin', 'supervisor', 'empleado']);
+      checkRole(BASE_ROLES);
 
       const tareaId = path.split('/')[2];
       if (!isUuid(tareaId)) {
@@ -1192,12 +1193,13 @@ Deno.serve(async (req) => {
         supabaseUrl!,
         'tareas_pendientes',
         tareaId,
-        updateData,
         requestHeaders(),
+        updateData,
       );
+      const tareaActualizada = (updateResult as unknown[])[0] as Record<string, unknown> | undefined;
 
-      if (!updateResult.success) {
-        return respondFail('UPDATE_ERROR', updateResult.error || 'Error al completar tarea', 500);
+      if (!tareaActualizada) {
+        return respondFail('NOT_FOUND', 'Tarea no encontrada', 404);
       }
 
       await logAudit('TAREA_COMPLETADA', 'tarea', tareaId, {
@@ -1205,12 +1207,12 @@ Deno.serve(async (req) => {
       });
 
       logger.info('TAREA_COMPLETED', { requestId, tareaId });
-      return respondOk(updateResult.data, 200, { message: 'Tarea completada exitosamente' });
+      return respondOk(tareaActualizada, 200, { message: 'Tarea completada exitosamente' });
     }
 
     // PUT /tareas/:id/cancelar - Cancelar tarea
     if (path.match(/^\/tareas\/[a-f0-9-]+\/cancelar$/) && method === 'PUT') {
-      checkRole(['admin', 'supervisor']);
+      checkRole(BASE_ROLES);
 
       const tareaId = path.split('/')[2];
       if (!isUuid(tareaId)) {
@@ -1232,12 +1234,13 @@ Deno.serve(async (req) => {
         supabaseUrl!,
         'tareas_pendientes',
         tareaId,
-        updateData,
         requestHeaders(),
+        updateData,
       );
+      const tareaActualizada = (updateResult as unknown[])[0] as Record<string, unknown> | undefined;
 
-      if (!updateResult.success) {
-        return respondFail('UPDATE_ERROR', updateResult.error || 'Error al cancelar tarea', 500);
+      if (!tareaActualizada) {
+        return respondFail('NOT_FOUND', 'Tarea no encontrada', 404);
       }
 
       await logAudit('TAREA_CANCELADA', 'tarea', tareaId, {
@@ -1246,7 +1249,7 @@ Deno.serve(async (req) => {
       }, 'warning');
 
       logger.info('TAREA_CANCELLED', { requestId, tareaId, razon: updateData.razon_cancelacion });
-      return respondOk(updateResult.data, 200, { message: 'Tarea cancelada exitosamente' });
+      return respondOk(tareaActualizada, 200, { message: 'Tarea cancelada exitosamente' });
     }
 
     // 18. POST /deposito/movimiento - Registrar movimiento de inventario (admin/deposito)
@@ -1256,19 +1259,32 @@ Deno.serve(async (req) => {
       const bodyResult = await parseJsonBody();
       if (bodyResult instanceof Response) return bodyResult;
 
-      const { producto_id, tipo_movimiento, cantidad, origen, destino, motivo } = bodyResult as Record<
-        string,
-        unknown
-      >;
+      const {
+        producto_id,
+        tipo_movimiento,
+        tipo,
+        cantidad,
+        origen,
+        destino,
+        motivo,
+        proveedor_id,
+        observaciones,
+      } = bodyResult as Record<string, unknown>;
 
       if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
         return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
       }
-      if (typeof tipo_movimiento !== 'string' || !tipo_movimiento.trim()) {
-        return respondFail('VALIDATION_ERROR', 'tipo_movimiento es requerido', 400);
+      const rawTipo =
+        typeof tipo_movimiento === 'string' && tipo_movimiento.trim()
+          ? tipo_movimiento
+          : typeof tipo === 'string' && tipo.trim()
+            ? tipo
+            : null;
+      if (!rawTipo) {
+        return respondFail('VALIDATION_ERROR', 'tipo_movimiento o tipo es requerido', 400);
       }
 
-      const tipoMovimiento = tipo_movimiento.trim().toLowerCase();
+      const tipoMovimiento = rawTipo.trim().toLowerCase();
       if (!isValidMovimientoTipo(tipoMovimiento)) {
         return respondFail(
           'VALIDATION_ERROR',
@@ -1289,6 +1305,15 @@ Deno.serve(async (req) => {
             ? motivo.trim()
             : null;
       const destinoValue = typeof destino === 'string' && destino.trim() ? destino.trim() : null;
+      let proveedorId: string | null = null;
+      if (proveedor_id !== undefined && proveedor_id !== null) {
+        if (typeof proveedor_id !== 'string' || !isUuid(proveedor_id)) {
+          return respondFail('VALIDATION_ERROR', 'proveedor_id invalido', 400);
+        }
+        proveedorId = proveedor_id;
+      }
+      const observacionesValue =
+        typeof observaciones === 'string' && observaciones.trim() ? observaciones.trim() : null;
 
       // Llamar a sp_movimiento_inventario
       const result = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
@@ -1298,6 +1323,8 @@ Deno.serve(async (req) => {
         p_origen: origenValue,
         p_destino: destinoValue,
         p_usuario: user!.id,
+        p_proveedor_id: proveedorId,
+        p_observaciones: observacionesValue,
       });
 
       // Audit log for stock adjustments (ajuste) and large movements

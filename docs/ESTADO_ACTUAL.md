@@ -1,7 +1,7 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-24 06:16 UTC  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (RLS + E2E AUTH REAL COMPLETADOS)
+**Última actualización:** 2026-01-25 04:12 UTC  
+**Estado:** ✅ PRODUCCIÓN CONFIGURADA (revalidación E2E pendiente por sync `TEST_PASSWORD`)
 
 ## 🎯 Proyecto Supabase
 
@@ -39,7 +39,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **606** | 33 archivos |
+| **Tests Backend** | **609** | 33 archivos |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -50,9 +50,9 @@
 | **Tests Frontend** | **40** | 12 archivos |
 
 ### Totales
-- **Tests Unitarios:** 646 (Backend 606 + Frontend 40)
+- **Tests Unitarios:** 649 (Backend 609 + Frontend 40)
 - **Tests Seguridad:** 15 (100% pasando con credenciales reales)
-- **Tests E2E Auth Real:** 7 (100% pasando)
+- **Tests E2E Auth Real:** 7 (revalidación pendiente)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado
 
@@ -62,7 +62,7 @@
 - ✅ Scraper de precios Maxiconsumo
 - ✅ API Gateway con rate limiting + circuit breaker
 - ✅ Alertas de stock bajo y vencimientos
-- ✅ Roles validados server-side via `app_metadata` (fallback a `user_metadata` si falta role); frontend verifica rol en tabla `personal`
+- ✅ Roles validados server-side via `app_metadata` (sin fallback a `user_metadata`); frontend verifica rol en tabla `personal`
 - ✅ React Query con caching en páginas con data (8/8); Login sin hook
 - ✅ Exportación CSV de productos/stock
 - ✅ **Proyecto Supabase configurado**
@@ -73,10 +73,10 @@
 ## ✅ Estado de Pendientes
 - Auditoría RLS completa: ✅
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
-- E2E con auth real (Playwright): ✅
+- E2E con auth real (Playwright): ⚠️ revalidación pendiente (sync `TEST_PASSWORD`)
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** pendientes WS7.5 (roles server-side contra tabla/claims), rollback probado, sincronizar `TEST_PASSWORD` E2E en Auth, y completar M10 (owners/rotacion).
+> **Nota:** pendientes rollback probado, sincronizar `TEST_PASSWORD` E2E en Auth, y completar M10 (owners/rotacion).

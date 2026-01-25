@@ -60,7 +60,7 @@
 ### Gate E4
 - [x] RLS audit ejecutado con evidencia.
 - [x] CORS restringido por env validado.
-- [ ] Roles server-side verificados (WS7.5 pendiente).
+- [x] Roles server-side verificados (WS7.5 completado).
 
 ### Gate E5
 - [x] Error boundaries y fallback UI verificados.

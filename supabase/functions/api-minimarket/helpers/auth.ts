@@ -77,11 +77,8 @@ export async function fetchUserInfo(
     const userData = await response.json();
     
     // Extract role from app_metadata ONLY (more secure)
-    // Falls back to user_metadata only if app_metadata doesn't have role
     const appRole = userData.app_metadata?.role;
-    const userRole = userData.user_metadata?.role;
-    const rawRole = appRole ?? userRole ?? null;
-    const role = typeof rawRole === 'string' ? rawRole.toLowerCase() : null;
+    const role = typeof appRole === 'string' ? appRole.toLowerCase() : null;
 
     const user: UserInfo = {
       id: userData.id,

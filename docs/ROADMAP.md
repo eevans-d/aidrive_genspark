@@ -1,6 +1,6 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-23  
+**Última actualización:** 2026-01-25  
 **Estado:** vigente  
 **Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`  
 **Plan pendientes:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
@@ -140,9 +140,9 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** orígenes permitidos definidos por env; requests no autorizadas fallan.  
   **Dependencias:** `ALLOWED_ORIGINS`.
 
-- **WS7.5 Roles server-side (P1)**  
+- **WS7.5 Roles server-side (P1)** ✅ **COMPLETADO 2026-01-25**  
   **Aceptación:** rol no se toma de `user_metadata`; se valida contra tabla/claims.  
-  **Estado actual:** se usa `app_metadata` con fallback a `user_metadata` si falta role (pendiente completar).  
+  **Estado actual:** gateway usa `app_metadata.role` sin fallback a `user_metadata`.  
   **Dependencias:** DB y auth.
 
 ### WS8 — Documentación & Gobernanza (P0)

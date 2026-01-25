@@ -1,8 +1,8 @@
 # C4 — Cierre y consolidación (MPC v2.0)
 
 **Proyecto:** Mini Market System
-**Fecha:** 2026-01-23
-**Estado:** Parcial (pendientes WS7.5 roles server-side y rollback probado)
+**Fecha:** 2026-01-25
+**Estado:** Parcial (pendientes rollback probado y sync TEST_PASSWORD)
 
 ---
 
@@ -40,7 +40,7 @@
 
 | Métrica | Objetivo | Resultado | Estado |
 |---|---|---|---|
-| Tests | 100% passing | 646 passing (según `docs/ESTADO_ACTUAL.md`) | ✓ |
+| Tests | 100% passing | 649 passing (según `docs/ESTADO_ACTUAL.md`) | ✓ |
 | RLS audit | Ejecutado | 2026-01-23 | ✓ |
 | Logs estructurados | 100% handlers | Completo (logger _shared) | ✓ |
 

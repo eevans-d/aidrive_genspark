@@ -8,6 +8,7 @@
 ## Variables de entorno (frontend)
 - `VITE_SUPABASE_URL`
 - `VITE_SUPABASE_ANON_KEY`
+- `VITE_API_GATEWAY_URL`
 - `VITE_USE_MOCKS`
 
 ---
@@ -64,11 +65,14 @@
 
 ## Deposito
 **Consultas reales:**
-- `productos`: `select('*')`, `eq('activo', true)`, `order('nombre')`.
-- `proveedores`: `select('*')`, `eq('activo', true)`, `order('nombre')`.
-- RPC: `sp_movimiento_inventario(...)`.
+- Gateway: `GET /productos/dropdown` (campos: `id`, `nombre`, `codigo_barras`).
+- Gateway: `GET /proveedores/dropdown` (campos: `id`, `nombre`).
+- Gateway: `POST /deposito/movimiento` → server-side ejecuta `sp_movimiento_inventario(...)`.
 
-**RPC parametros:**
+**Payload gateway (`/deposito/movimiento`):**
+- `producto_id`, `tipo` (alias: `tipo_movimiento`), `cantidad`, `motivo` (alias: `origen`), `destino`, `proveedor_id`, `observaciones`.
+
+**RPC parametros (server-side):**
 - `p_producto_id`, `p_tipo`, `p_cantidad`, `p_origen`, `p_destino`, `p_usuario`, `p_orden_compra_id`, `p_proveedor_id`, `p_observaciones`.
 
 **Mock sugerido (RPC response):**
@@ -266,9 +270,10 @@
 
 ## Tareas
 **Consultas reales:**
-- `tareas_pendientes`: `select('*')`, `order('prioridad', desc)`, `order('fecha_creacion', desc)`.
-- `tareas_pendientes`: `insert(...)` para nueva tarea.
-- `tareas_pendientes`: `update(...)` para completar o cancelar.
+- `tareas_pendientes`: `select('*')`, `order('prioridad', desc)`, `order('created_at', desc)`.
+- Gateway: `POST /tareas` para nueva tarea.
+- Gateway: `PUT /tareas/:id/completar` para completar.
+- Gateway: `PUT /tareas/:id/cancelar` para cancelar.
 
 **Mock sugerido:**
 ```json

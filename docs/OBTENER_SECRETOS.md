@@ -1,6 +1,6 @@
 # Guía para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-24  
+**Fecha:** 2026-01-25  
 **Estado:** ✅ secretos alineados en Supabase/GitHub; pendiente sincronizar TEST_PASSWORD en Auth  
 **Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
 
@@ -18,8 +18,10 @@ SUPABASE_ANON_KEY=<REDACTED>
 VITE_SUPABASE_ANON_KEY=<REDACTED>
 SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
-# Gateway
+# Gateway (producción)
 VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
+# Gateway (local, proxy)
+VITE_API_GATEWAY_URL=/api-minimarket
 ```
 
 > Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.

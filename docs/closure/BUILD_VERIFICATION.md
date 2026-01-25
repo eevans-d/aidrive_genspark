@@ -43,7 +43,7 @@
 | Coverage | `npm run test:coverage` | ⏳ Pendiente | - | Genera reporte en `coverage/` |
 
 **Tests esperados:**
-- **Total de tests:** ~646 (Backend 606 + Frontend 40)
+- **Total de tests:** ~649 (Backend 609 + Frontend 40)
 - **Estado esperado:** 100% passing
 - **Cobertura mínima:** Backend 100%, Frontend lógica crítica
 

@@ -1,7 +1,7 @@
 # C2 — Subplan E7 Documentación & Gobernanza (MPC v2.1)
 
 **Etapa:** E7  
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-25  
 **Versión:** 1.1.0  
 **Estado:** ✅ Completado (con mantenimiento menor)  
 
@@ -55,7 +55,7 @@
 
 ## 5) Comandos exactos
 
-- `rg -n "WS7.5|rollback" docs` (pendientes actuales).
+- `rg -n "rollback|TEST_PASSWORD|M10" docs` (pendientes actuales).
 - `rg -n "C1_MEGA_PLAN_v1.1.0.md" docs` (referencias vigentes).
 
 ## 6) Plan de rollback

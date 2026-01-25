@@ -1,6 +1,6 @@
 # Secretos Requeridos y Validacion (Mini Market)
 
-**Fecha:** 2026-01-24  
+**Fecha:** 2026-01-25  
 **Estado:** Checklist operativo (sin claves; solo valores no sensibles)  
 
 ---
@@ -35,7 +35,10 @@ Este documento lista **que secretos obtener**, **donde obtenerlos** y **como val
 ```bash
 SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 VITE_SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
+# Producción
 VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
+# Local (proxy)
+VITE_API_GATEWAY_URL=/api-minimarket
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ```
 
@@ -94,7 +97,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 ### 4.7 `VITE_API_GATEWAY_URL`
 1) Construir URL: `https://<ref>.supabase.co/functions/v1/api-minimarket`.
-2) Para local, usar `/api-minimarket`.
+2) Para local, usar `/api-minimarket` (proxy) o `http://localhost:54321/functions/v1/api-minimarket` si se expone directo.
 3) Guardar en `.env`/Vercel.
 
 ### 4.8 `TEST_USER_*` + `TEST_PASSWORD` (E2E auth real)

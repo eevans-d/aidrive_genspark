@@ -1,9 +1,9 @@
 # C2 — Subplan E4 Seguridad Operacional (MPC v2.1)
 
 **Etapa:** E4  
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-01-25  
 **Versión:** 1.1.0  
-**Estado:** ⚠️ Parcial (WS7.5 pendiente)  
+**Estado:** ✅ Completado (WS7.5 aplicado)  
 
 ---
 
@@ -18,15 +18,15 @@
 - Auditoría RLS completada (WS7.1).
 - CORS restringido por `ALLOWED_ORIGINS` (WS7.4).
 - Lecturas sin service role en gateway (WS7.3).
-- **Pendiente:** WS7.5 roles server-side contra tabla/claims (eliminar fallback a `user_metadata`).
+- **Completado:** WS7.5 roles server-side (sin fallback a `user_metadata`).
 
 ---
 
 ## 1.1 Criterio WS7.5 (implementacion exacta)
 
-- Fuente de rol: `app_metadata.role` si existe; si no existe, consultar tabla `personal` con JWT del usuario.
+- Fuente de rol: `app_metadata.role`.
 - Prohibido usar `user_metadata` para autorizacion.
-- La consulta a `personal` debe respetar RLS (no usar service role).
+- Si `role` falta, denegar acceso (sin fallback).
 
 ## 2) Alcance
 
@@ -53,7 +53,7 @@
 | E4-T1 | Ejecutar auditoría RLS | ✅ | `docs/AUDITORIA_RLS_CHECKLIST.md` |
 | E4-T2 | Verificar CORS por `ALLOWED_ORIGINS` | ✅ | `_shared/cors.ts` |
 | E4-T3 | Verificar lecturas con anon/JWT | ✅ | `api-minimarket` |
-| E4-T4 | Validar roles server-side (WS7.5) | ⏳ | Pendiente |
+| E4-T4 | Validar roles server-side (WS7.5) | ✅ | `supabase/functions/api-minimarket/helpers/auth.ts` |
 
 ---
 
@@ -90,4 +90,4 @@
 
 - [x] Auditoría RLS con evidencia.
 - [x] CORS validado.
-- [ ] WS7.5 completado.
+- [x] WS7.5 completado.

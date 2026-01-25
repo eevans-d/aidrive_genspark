@@ -1,16 +1,12 @@
 import { useState } from 'react'
-import { useAuth } from '../hooks/useAuth'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { supabase } from '../lib/supabase'
-import apiClient, { depositoApi, ApiError } from '../lib/apiClient'
-import { Producto, Proveedor } from '../types/database'
+import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
 import { Plus, Minus, Search } from 'lucide-react'
 
 export default function Deposito() {
-  const { user } = useAuth()
   const queryClient = useQueryClient()
   const [searchTerm, setSearchTerm] = useState('')
-  const [selectedProducto, setSelectedProducto] = useState<Producto | null>(null)
+  const [selectedProducto, setSelectedProducto] = useState<DropdownItem | null>(null)
   const [tipo, setTipo] = useState<'entrada' | 'salida'>('entrada')
   const [cantidad, setCantidad] = useState('')
   const [destino, setDestino] = useState('')
@@ -22,17 +18,7 @@ export default function Deposito() {
   const { data: productos = [] } = useQuery({
     queryKey: ['productos-deposito'],
     queryFn: async () => {
-      const data = await apiClient.productos.dropdown() // Usar endpoint ligero del gateway
-      // Mapear al tipo Producto si es necesario, o usar DropdownItem
-      // Como Deposito usa Producto completo pero solo necesita id, nombre y codigo_barras para la UI de busqueda,
-      // el endpoint dropdown enriquecido es suficiente. Pero setSelectedProducto espera Producto completo?
-      // Revisando el uso: setSelectedProducto se usa para guardar el item seleccionado.
-      // Luego en handleSubmit usa selectedProducto.id.
-      // En la UI de seleccion usa nombre y codigo_barras.
-      // En el bloque "Producto seleccionado" usa nombre.
-      // Parece que no usa otros campos. Pero el estado es Producto | null.
-      // Debo hacer cast o cambiar el tipo de estado.
-      return data as unknown as Producto[]
+      return await apiClient.productos.dropdown()
     },
     staleTime: 1000 * 60 * 5,
   })
@@ -41,8 +27,7 @@ export default function Deposito() {
   const { data: proveedores = [] } = useQuery({
     queryKey: ['proveedores-deposito'],
     queryFn: async () => {
-      const data = await apiClient.proveedores.dropdown()
-      return data as unknown as Proveedor[] // Cast seguro ya que solo usamos id y nombre
+      return await apiClient.proveedores.dropdown()
     },
     staleTime: 1000 * 60 * 10,
   })

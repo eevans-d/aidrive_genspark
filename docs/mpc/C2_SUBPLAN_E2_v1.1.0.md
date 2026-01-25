@@ -15,7 +15,7 @@
 
 ## 1) Estado actual
 
-- Unit tests: 646/646 passing (backend 606 + frontend 40).
+- Unit tests: 649/649 passing (backend 609 + frontend 40).
 - Integration tests: 31/31 (gated por credenciales).
 - E2E backend smoke: 4/4 (gated por Supabase local).
 - E2E frontend auth real: 7/7 (gated por credenciales).
