@@ -1,9 +1,9 @@
 # C2 — Subplan E9 Gestion de secretos y accesos (MPC v2.1)
 
 **Etapa:** E9  
-**Fecha:** 2026-01-24  
+**Fecha:** 2026-01-26  
 **Version:** 1.1.0  
-**Estado:** ⏳ En progreso  
+**Estado:** ✅ Completado  
 
 ---
 
@@ -20,7 +20,7 @@
 - `ALLOWED_ORIGINS` alineado en Supabase/GitHub (local-only).
 - `API_PROVEEDOR_SECRET` regenerado y alineado (Supabase/GitHub/.env.test).
 - `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
-- Validacion parcial: `migrate.sh status staging` OK; `auth.real` fallo por login (pendiente sincronizar `TEST_PASSWORD`).
+- Validacion completa: `migrate.sh status staging` OK; `auth.real` PASS (7/7, 2026-01-26).
 
 ---
 
@@ -47,8 +47,8 @@
 |---|---|---|---|
 | E9-T1 | Validar inventario completo de secretos | ✅ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
 | E9-T2 | Comprobar ausencia de secretos en repo | ✅ | `git ls-files | rg -n "\\.env\\.test$"` |
-| E9-T3 | Registrar rotacion y owners | ⏳ (parcial) | `docs/DECISION_LOG.md` |
-| E9-T4 | Validaciones minimas sin exponer valores | ⏳ (parcial) | `migrate.sh status staging` OK; `auth.real` FAIL (login) |
+| E9-T3 | Registrar rotacion y owners | ✅ | `docs/DECISION_LOG.md` |
+| E9-T4 | Validaciones minimas sin exponer valores | ✅ | `migrate.sh status staging` OK; `auth.real` PASS (2026-01-26) |
 
 ---
 
@@ -80,7 +80,7 @@
 
 - Ejecutar `scripts/run-integration-tests.sh --dry-run`.
 - Ejecutar `./migrate.sh status staging` si hay acceso.
-- Re-ejecutar `auth.real` luego de sincronizar `TEST_PASSWORD`.
+- Re-ejecutar `auth.real` luego de sincronizar `TEST_PASSWORD` (✅ 2026-01-26).
 - No imprimir valores en consola ni logs.
 
 ---
@@ -95,7 +95,7 @@
 
 ## 9) Checklist post-implementacion
 
-- [ ] Inventario de secretos completo y validado.
-- [ ] Repo sin valores sensibles.
-- [ ] Rotacion documentada en `docs/DECISION_LOG.md`.
-- [ ] Evidencia de validaciones registrada.
+- [x] Inventario de secretos completo y validado.
+- [x] Repo sin valores sensibles.
+- [x] Rotacion documentada en `docs/DECISION_LOG.md`.
+- [x] Evidencia de validaciones registrada.

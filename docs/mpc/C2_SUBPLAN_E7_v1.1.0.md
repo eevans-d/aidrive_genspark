@@ -55,7 +55,7 @@
 
 ## 5) Comandos exactos
 
-- `rg -n "rollback|TEST_PASSWORD|M10" docs` (pendientes actuales).
+- `rg -n "rollback" docs` (pendientes actuales).
 - `rg -n "C1_MEGA_PLAN_v1.1.0.md" docs` (referencias vigentes).
 
 ## 6) Plan de rollback

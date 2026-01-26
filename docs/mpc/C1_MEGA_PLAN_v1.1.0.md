@@ -1,7 +1,7 @@
 # C1 — Mega Plan Modular (MPC v2.1)
 
 **Proyecto:** Mini Market System  
-**Fecha:** 2026-01-25  
+**Fecha:** 2026-01-26  
 **Versión:** 1.1.0  
 **Estado:** Vigente (plan para ejecución por módulos)  
 
@@ -10,7 +10,7 @@
 ## 0) Contexto base y reglas
 
 - **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`, `docs/DECISION_LOG.md`.
-- **Pendientes P1 activos:** rollback probado (OPS-SMART-1), sync `TEST_PASSWORD` y M10 (owners/rotación).
+- **Pendientes P1 activos:** rollback probado (OPS-SMART-1) y M8 (rotación de secretos/scan controlado).
 - **Reglas clave:** frontend escribe via gateway; evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
 
 
@@ -62,15 +62,15 @@
 | M7 Ops/Deployment | Rollback probado y runbooks operativos | Parcial | P1 | Staging | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
 | M8 Seguridad & Compliance | Rotación de secretos y scanning controlado | Pendiente | P1 | Accesos | `C2_SUBPLAN_E4_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
 | M9 Ingesta & Automatizaciones | Scraper/cron resilientes con métricas | Mantenimiento | P2 | Datos reales | `C2_SUBPLAN_E8_v1.1.0.md` |
-| M10 Gestion de secretos y accesos | Inventario, validacion y rotacion de secretos | Pendiente | P1 | Accesos | `C2_SUBPLAN_E9_v1.1.0.md` |
+| M10 Gestion de secretos y accesos | Inventario, validacion y rotacion de secretos | Completado/Mantenimiento | P1 | Accesos | `C2_SUBPLAN_E9_v1.1.0.md` |
 
 ---
 
 ## 2) Orden recomendado de ejecución
 
 1. **M1 (Docs) + M6 (QA)** en paralelo para asegurar coherencia y evidencia.
-2. **M7 (Rollback)** y **M10 (Secretos)** como pendientes P1 críticos.
-3. **M8 (Seguridad/Secrets)** y **M10 (Gestion de secretos)** inmediatamente después de M2/M7.
+2. **M7 (Rollback)** como pendiente P1 crítico.
+3. **M8 (Seguridad/Secrets)** inmediatamente después de M2/M7.
 4. **M3/M4/M5/M9** como mantenimiento periódico o cuando haya cambios.
 
 ---
@@ -282,10 +282,10 @@
 **Checklist de ejecucion**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| M10-T1 | Inventario completo de secretos | ⏳ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
-| M10-T2 | Validacion minima sin exponer | ⏳ | Logs de comandos | 
-| M10-T3 | Rotacion documentada | ⏳ | `docs/DECISION_LOG.md` |
-| M10-T4 | Accesos/owners definidos | ⏳ | Registro interno |
+| M10-T1 | Inventario completo de secretos | ✅ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
+| M10-T2 | Validacion minima sin exponer | ✅ | Logs de comandos | 
+| M10-T3 | Rotacion documentada | ✅ | `docs/DECISION_LOG.md` |
+| M10-T4 | Accesos/owners definidos | ✅ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
 
 **DoD / Validacion**
 - Checklist de secretos completo y verificado.
@@ -300,7 +300,7 @@
 | Riesgo | R-02 | Rollback sin prueba real | Alto | Medio | M7.2 con evidencia | Ops |
 | Riesgo | R-03 | Secrets expuestos históricamente | Alto | Medio | M8.1 rotación | Ops/Sec |
 | Issue | I-01 | ~~Contratos FE/BE incompletos (Kardex/Rentabilidad)~~ | Bajo | Bajo | ✅ Completado | Frontend/Docs |
-| Issue | I-02 | Inventario de secretos sin cierre operativo | Medio | Medio | M10 | Ops/Sec |
+| Issue | I-02 | Inventario de secretos sin cierre operativo (resuelto 2026-01-26) | Medio | Medio | M10 | Ops/Sec |
 | Dependencia | D-01 | Credenciales Supabase | Alto | Medio | `docs/OBTENER_SECRETOS.md` | Ops |
 
 ---
@@ -309,8 +309,8 @@
 
 - **FR-SMART-1:** WS7.5 completado y verificado en gateway (✓).
 - **NFR-SMART-1:** Rollback probado en staging con evidencia (✓/✗).
-- **SEC-SMART-1:** Rotación de secretos registrada y variables actualizadas (✓/✗).
-- **SEC-SMART-2:** Inventario y validacion de secretos completado (✓/✗).
+- **SEC-SMART-1:** Rotación de secretos registrada y variables actualizadas (✓).
+- **SEC-SMART-2:** Inventario y validacion de secretos completado (✓).
 - **DOC-SMART-1:** Contratos FE/BE completos (Kardex/Rentabilidad) (✓).
 
 ---

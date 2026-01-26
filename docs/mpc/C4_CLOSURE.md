@@ -1,8 +1,8 @@
 # C4 — Cierre y consolidación (MPC v2.0)
 
 **Proyecto:** Mini Market System
-**Fecha:** 2026-01-25
-**Estado:** Parcial (pendientes rollback probado y sync TEST_PASSWORD)
+**Fecha:** 2026-01-26
+**Estado:** Parcial (pendiente rollback probado)
 
 ---
 

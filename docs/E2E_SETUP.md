@@ -1,7 +1,7 @@
 # Setup E2E Testing
 
 **Última actualización:** 2026-01-26  
-**Estado:** ⚠️ Revalidación pendiente (auth.real falló 2026-01-26 por timeout de login)  
+**Estado:** ✅ Revalidado (auth.real 7/7 PASS)  
 **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
 ---

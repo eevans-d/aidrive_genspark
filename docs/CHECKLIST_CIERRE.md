@@ -37,7 +37,6 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 
 Pendientes:
 - Rollback probado en staging (OPS-SMART-1) — intento 2026-01-26: `bash migrate.sh status staging` OK; rollback no ejecutado.
-- Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar `auth.real` — intento 2026-01-26 falló por timeout de login.
 
 ---
 
@@ -74,7 +73,7 @@ Pendientes:
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
   - Evidencia: 7/7 PASS (2026-01-23)
-  - Revalidación requerida tras reset de `TEST_PASSWORD` (run 2026-01-26 falló por timeout de login).
+  - Revalidación completada tras reset de `TEST_PASSWORD` (2026-01-26: 7/7 PASS).
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23

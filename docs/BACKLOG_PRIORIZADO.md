@@ -1,7 +1,7 @@
 # BACKLOG PRIORIZADO (v1)
 
-**Fecha:** 2026-01-21  
-**Estado:** Parcial (649 tests; pendientes rollback y sync TEST_PASSWORD)  
+**Fecha:** 2026-01-26  
+**Estado:** Parcial (pendiente rollback probado)  
 **Metodo:** Puntaje = (Impacto x Urgencia) / Esfuerzo
 
 ---

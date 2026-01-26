@@ -34,6 +34,8 @@
 | D-027 | **ALLOWED_ORIGINS local-only**: lista exacta `http://localhost:5173,http://127.0.0.1:5173` | Aprobada | 2026-01-23 | Si se agrega dominio publico, registrar cambio y actualizar Supabase/CI. |
 | D-028 | **API_PROVEEDOR_SECRET unico y alineado** entre Supabase, GitHub Actions y `.env.test` | Aprobada | 2026-01-24 | Regenerado y alineado (2026-01-24). Registrar futuras rotaciones. |
 | D-029 | **Roles server-side**: usar solo `app_metadata.role` (sin fallback a `user_metadata`) | Aprobada | 2026-01-25 | WS7.5 aplicado en `api-minimarket` auth helper. |
+| D-030 | **TEST_PASSWORD re-sincronizado** para usuarios E2E (staging) | Completada | 2026-01-26 | Password actualizado en Auth + `.env.test`; E2E auth real revalidado. |
+| D-031 | **Owners + rotación de secretos** documentados (M10) | Completada | 2026-01-26 | Owners y ventana de rotación definidos en `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`. |
 
 ---
 
@@ -45,8 +47,8 @@
 |-----------|-------|------------|--------|
 | P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente (intento 2026-01-26: status OK; rollback no ejecutado) |
 | P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
-| P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | Pendiente (auth.real falló 2026-01-26) |
-| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | En progreso (tabla actualizada; owners pendientes) |
+| P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | ✅ Completado (2026-01-26) |
+| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | ✅ Completado (2026-01-26) |
 
 ---
 

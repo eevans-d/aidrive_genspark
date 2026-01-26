@@ -9,7 +9,7 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 95% (pendientes rollback probado + M10 parcial + sync TEST_PASSWORD) |
+| **Avance Global** | 95% (pendiente rollback probado) |
 | **Build** | ✅ Passing |
 | **Tests** | Ver `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 90% (React Query + Gateway) |
@@ -21,7 +21,7 @@
 
 ## 🎯 Próximos Pasos
 
-Plan definitivo **completado con pendientes P1** (rollback probado, sync `TEST_PASSWORD`, M10). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
+Plan definitivo **completado con pendiente P1** (rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
 Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
@@ -94,8 +94,6 @@ git status && git add -A && git commit -m "msg" && git push origin main
 ## 🎯 Próximas Tareas Priorizadas
 
 - Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
-- Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real.
-- Completar inventario/validacion de secretos (M10) y registrar owners/rotacion.
 - Mantener mantenimiento y observabilidad.
 
 ---

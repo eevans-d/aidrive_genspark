@@ -1,7 +1,7 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-26 06:00 UTC  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (revalidación E2E pendiente por sync `TEST_PASSWORD`)
+**Última actualización:** 2026-01-26 06:28 UTC  
+**Estado:** ✅ PRODUCCIÓN CONFIGURADA (E2E auth real revalidado)
 
 ## 🎯 Proyecto Supabase
 
@@ -52,7 +52,7 @@
 ### Totales
 - **Tests Unitarios:** 649 (Backend 609 + Frontend 40)
 - **Tests Seguridad:** 15 (100% pasando con credenciales reales)
-- **Tests E2E Auth Real:** 7 (revalidación pendiente; intento 2026-01-26 falló por timeout de login)
+- **Tests E2E Auth Real:** 7 (revalidado 2026-01-26)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado
 - **Agent Skills:** 4 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft)
@@ -74,10 +74,10 @@
 ## ✅ Estado de Pendientes
 - Auditoría RLS completa: ✅
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
-- E2E con auth real (Playwright): ⚠️ revalidación pendiente (sync `TEST_PASSWORD`; intento 2026-01-26 falló por timeout)
+- E2E con auth real (Playwright): ✅ revalidado 2026-01-26 (7/7 PASS)
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** pendientes rollback probado, sincronizar `TEST_PASSWORD` E2E en Auth, y completar M10 (owners/rotacion).
+> **Nota:** pendiente rollback probado (OPS-SMART-1).

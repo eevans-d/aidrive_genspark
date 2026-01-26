@@ -14,8 +14,8 @@ Este documento lista **que secretos obtener**, **donde obtenerlos** y **como val
 - `ALLOWED_ORIGINS` configurado en Supabase/GitHub (local-only, sin wildcard).
 - `API_PROVEEDOR_SECRET` regenerado y alineado en Supabase/GitHub/.env.test.
 - `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
-- Pendiente: sincronizar `TEST_PASSWORD` en Supabase Auth para usuarios E2E.
-- Validacion local ejecutada (2026-01-26): prerequisitos OK; E2E auth real falla por timeout de login.
+- `TEST_PASSWORD` sincronizado en Supabase Auth (usuarios E2E).
+- Validacion local ejecutada (2026-01-26): prerequisitos OK; E2E auth real OK (7/7).
 - Claves reales siguen fuera de documentación y repositorio.
 
 ---
@@ -45,16 +45,16 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 | Secreto | Entorno | Origen exacto | Se usa en | Donde guardar | Validacion | Owner | Rotacion |
 |---|---|---|---|---|---|---|---|
-| `SUPABASE_URL` | Staging/Prod | Supabase → Project Settings → API → Project URL | Backend/CI | Supabase Secrets + GitHub Actions | `scripts/run-integration-tests.sh --dry-run` | Pendiente | Pendiente |
-| `SUPABASE_ANON_KEY` | Staging/Prod | Supabase → Project Settings → API → anon public | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | Pendiente | Pendiente |
-| `SUPABASE_SERVICE_ROLE_KEY` | Staging/Prod | Supabase → Project Settings → API → service_role | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | Pendiente | Pendiente |
-| `DATABASE_URL` | Staging/Prod | Supabase → Project Settings → Database → Connection string (alias `SUPABASE_DB_URL`) | Ops/CI | GitHub Actions | `./migrate.sh status staging` | Pendiente | Pendiente |
-| `ALLOWED_ORIGINS` | Staging/Prod | Lista definida (local dev) | Edge Functions | Supabase Secrets | Curl con Origin bloqueado/permitido | Pendiente | Pendiente |
-| `API_PROVEEDOR_SECRET` | Staging/Prod | Generado por equipo | Edge Functions | Supabase Secrets | Tests de api-proveedor | Pendiente | Pendiente |
-| `VITE_SUPABASE_URL` | Frontend | Igual a `SUPABASE_URL` | Frontend | `.env`/Vercel | `pnpm build` | Pendiente | Pendiente |
-| `VITE_SUPABASE_ANON_KEY` | Frontend | Igual a `SUPABASE_ANON_KEY` | Frontend | `.env`/Vercel | `pnpm build` | Pendiente | Pendiente |
-| `VITE_API_GATEWAY_URL` | Frontend | URL gateway | Frontend | `.env`/Vercel | Smoke UI | Pendiente | Pendiente |
-| `TEST_USER_*` + `TEST_PASSWORD` | Local | Supabase Auth (staging) | E2E auth real | `.env.test` local | `playwright test auth.real` | Pendiente | Pendiente |
+| `SUPABASE_URL` | Staging/Prod | Supabase → Project Settings → API → Project URL | Backend/CI | Supabase Secrets + GitHub Actions | `scripts/run-integration-tests.sh --dry-run` | eevans-d | N/A (cambia con proyecto) |
+| `SUPABASE_ANON_KEY` | Staging/Prod | Supabase → Project Settings → API → anon public | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | eevans-d | 180d |
+| `SUPABASE_SERVICE_ROLE_KEY` | Staging/Prod | Supabase → Project Settings → API → service_role | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | eevans-d | 90d |
+| `DATABASE_URL` | Staging/Prod | Supabase → Project Settings → Database → Connection string (alias `SUPABASE_DB_URL`) | Ops/CI | GitHub Actions | `./migrate.sh status staging` | eevans-d | 90d |
+| `ALLOWED_ORIGINS` | Staging/Prod | Lista definida (local dev) | Edge Functions | Supabase Secrets | Curl con Origin bloqueado/permitido | eevans-d | N/A (cambio controlado) |
+| `API_PROVEEDOR_SECRET` | Staging/Prod | Generado por equipo | Edge Functions | Supabase Secrets | Tests de api-proveedor | eevans-d | 90d |
+| `VITE_SUPABASE_URL` | Frontend | Igual a `SUPABASE_URL` | Frontend | `.env`/Vercel | `pnpm build` | eevans-d | N/A (cambia con proyecto) |
+| `VITE_SUPABASE_ANON_KEY` | Frontend | Igual a `SUPABASE_ANON_KEY` | Frontend | `.env`/Vercel | `pnpm build` | eevans-d | 180d |
+| `VITE_API_GATEWAY_URL` | Frontend | URL gateway | Frontend | `.env`/Vercel | Smoke UI | eevans-d | N/A (cambio controlado) |
+| `TEST_USER_*` + `TEST_PASSWORD` | Local | Supabase Auth (staging) | E2E auth real | `.env.test` local | `playwright test auth.real` | eevans-d | On reset |
 
 > **Nota:** si algun secreto falta, detener ejecucion y reportar bloqueador.
 
@@ -124,8 +124,8 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 ### 5.1 Registro de validacion (2026-01-26)
 - `scripts/run-integration-tests.sh --dry-run` → OK (prerequisitos verificados).
-- `bash migrate.sh status staging` → OK (migraciones listadas; warning: README_20260116_stock_aggregations.md no cumple patron).
-- `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` → FAIL (timeout login; 3 fallas, 4 no ejecutadas).
+- `bash migrate.sh status staging` → OK (migraciones listadas; README movido a `docs/db/`).
+- `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` → OK (7/7 PASS).
 
 ---
 
@@ -138,12 +138,12 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 ## 7) Checklist de cierre (secrets)
 
-**Estado operativo (2026-01-24):**
+**Estado operativo (2026-01-26):**
 - Supabase/GitHub secrets alineados.
-- `TEST_PASSWORD` pendiente de sincronizar en Supabase Auth.
+- `TEST_PASSWORD` sincronizado en Supabase Auth (2026-01-26).
 
 - [ ] Secretos cargados en Supabase (Edge Functions).  
 - [ ] Secretos cargados en GitHub Actions.  
 - [x] `.env.test` local actualizado y NO versionado (verificado 2026-01-26).  
-- [ ] Rotacion documentada en `docs/DECISION_LOG.md`.  
-- [ ] Owners definidos y responsables asignados.  
+- [x] Rotacion documentada en `docs/DECISION_LOG.md`.  
+- [x] Owners definidos y responsables asignados.  

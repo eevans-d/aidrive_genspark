@@ -1,7 +1,7 @@
 # Guía para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-25  
-**Estado:** ✅ secretos alineados en Supabase/GitHub; pendiente sincronizar TEST_PASSWORD en Auth  
+**Fecha:** 2026-01-26  
+**Estado:** ✅ secretos alineados en Supabase/GitHub; TEST_PASSWORD sincronizado en Auth  
 **Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
 
 ---
@@ -26,7 +26,7 @@ VITE_API_GATEWAY_URL=/api-minimarket
 
 > Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.
 
-**Nota de estado:** secretos alineados en Supabase/GitHub y `.env.test` actualizado (sin exponer valores). Pendiente: sincronizar `TEST_PASSWORD` con Supabase Auth.
+**Nota de estado:** secretos alineados en Supabase/GitHub y `.env.test` actualizado (sin exponer valores). `TEST_PASSWORD` sincronizado con Supabase Auth (2026-01-26).
 
 ## 👥 Usuarios de Prueba (Staging)
 
