@@ -937,3 +937,6 @@ testing_reporte_*.md
 # Allow repo lockfiles for reproducible installs
 !package-lock.json
 !minimarket-system/pnpm-lock.yaml
+
+# local secrets
+.env.local
