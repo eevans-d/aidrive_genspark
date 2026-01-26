@@ -51,19 +51,18 @@ npm run test:unit # Tests unitarios (Vitest)
 ├── tests/                 # Tests (Vitest)
 │   └── unit/             # 285 tests
 │
-├── docs/                  # Documentación (11 archivos)
-└── AGENTS.md             # Guía para agentes IA
+├── docs/                  # Documentación (14 archivos)
 ```
 
 ---
 
 ## 📚 Documentación
 
-> **Para Agentes IA:** Ver [AGENTS.md](AGENTS.md) para consultar los **Skills** activos (TestMaster, DeployOps, DocuGuard).
+> **Para Agentes IA:** Ver [docs/AGENTS.md](docs/AGENTS.md) para consultar los **Skills** activos (TestMaster, DeployOps, DocuGuard).
 
 | Documento | Descripción |
 |-----------|-------------|
-| [AGENTS.md](AGENTS.md) | **Guía rápida para agentes IA** |
+| [docs/AGENTS.md](docs/AGENTS.md) | **Guía rápida para agentes IA** |
 | [docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md) | Fuente de verdad - estado actual |
 | [docs/ROADMAP.md](docs/ROADMAP.md) | Plan rolling 90 días |
 | [docs/BACKLOG_PRIORIZADO.md](docs/BACKLOG_PRIORIZADO.md) | Prioridades |

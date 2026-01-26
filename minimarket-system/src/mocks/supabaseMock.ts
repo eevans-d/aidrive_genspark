@@ -1,7 +1,7 @@
 import type { User } from '@supabase/supabase-js'
 import { createMockStore, MOCK_USER_ID, type MockDataStore } from './data'
 
-type QueryError = { message: string }
+type QueryError = { message: string; code?: string }
 
 type QueryResult<T> = {
   data: T | null
@@ -98,7 +98,7 @@ class MockQueryBuilder {
   constructor(
     private tableName: keyof MockDataStore,
     private store: MockDataStore
-  ) {}
+  ) { }
 
   select(columns = '*', options: { count?: 'exact'; head?: boolean } = {}) {
     this.mode = 'select'

@@ -51,7 +51,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   // Calcular métricas derivadas
   const stockBajoCount = stock.filter(
-    (s: StockDeposito) => s.cantidad_actual <= s.stock_minimo
+    (s: { cantidad_actual: number; stock_minimo: number }) => s.cantidad_actual <= s.stock_minimo
   ).length;
 
   const tareasUrgentesCount = tareas.filter(

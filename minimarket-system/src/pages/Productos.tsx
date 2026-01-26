@@ -218,7 +218,7 @@ export default function Productos() {
                             ) : (
                               <TrendingDown className="w-4 h-4 mr-1" />
                             )}
-                            {Math.abs(ultimoCambio.cambio_porcentaje || 0).toFixed(1)}%
+                            {ultimoCambio && Math.abs(ultimoCambio.cambio_porcentaje || 0).toFixed(1)}%
                           </div>
                         )}
                       </div>
