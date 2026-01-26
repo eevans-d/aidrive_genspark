@@ -44,7 +44,7 @@
 |---|---|---|---|
 | E3-T1 | Validar migraciones recientes | ✅ | `docs/CHECKLIST_CIERRE.md` |
 | E3-T2 | Documentar rollback | ✅ | `docs/DEPLOYMENT_GUIDE.md` |
-| E3-T3 | Probar rollback en staging | ⏳ | Evidencia por completar |
+| E3-T3 | Probar rollback en staging | ⏳ | Intento 2026-01-26: `bash migrate.sh status staging` OK; rollback no ejecutado |
 
 ---
 

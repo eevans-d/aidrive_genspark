@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-26 05:47 UTC  
+**Última actualización:** 2026-01-26 06:00 UTC  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (revalidación E2E pendiente por sync `TEST_PASSWORD`)
 
 ## 🎯 Proyecto Supabase
@@ -52,7 +52,7 @@
 ### Totales
 - **Tests Unitarios:** 649 (Backend 609 + Frontend 40)
 - **Tests Seguridad:** 15 (100% pasando con credenciales reales)
-- **Tests E2E Auth Real:** 7 (revalidación pendiente)
+- **Tests E2E Auth Real:** 7 (revalidación pendiente; intento 2026-01-26 falló por timeout de login)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado
 - **Agent Skills:** 4 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft)
@@ -74,7 +74,7 @@
 ## ✅ Estado de Pendientes
 - Auditoría RLS completa: ✅
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
-- E2E con auth real (Playwright): ⚠️ revalidación pendiente (sync `TEST_PASSWORD`)
+- E2E con auth real (Playwright): ⚠️ revalidación pendiente (sync `TEST_PASSWORD`; intento 2026-01-26 falló por timeout)
 
 > **Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
 

@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-25  
+**Última actualización:** 2026-01-26  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -43,10 +43,10 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente |
+| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente (intento 2026-01-26: status OK; rollback no ejecutado) |
 | P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
-| P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | Pendiente |
-| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Pendiente |
+| P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | Pendiente (auth.real falló 2026-01-26) |
+| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | En progreso (tabla actualizada; owners pendientes) |
 
 ---
 
