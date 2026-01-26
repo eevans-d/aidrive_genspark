@@ -1,0 +1,44 @@
+project:
+  name: "aidrive_genspark"
+  environment: "hybrid (local/cloud-run)"
+
+paths:
+  # Base roots
+  root: "."
+  docs: "docs"
+  
+  # Source code
+  backend_src: "supabase/functions"
+  frontend_src: "minimarket-system/src"
+  tests_root: "tests"
+  
+  # Configuration files
+  env_example: ".env.example"
+  agents_guide: "IA_USAGE_GUIDE.md"
+
+scripts:
+  # Primary execution scripts
+  test_script: "./test.sh"
+  deploy_script: "./deploy.sh"
+  
+  # Fallback commands if scripts fail
+  lint_cmd: "npm run lint"
+  install_cmd: "npm install"
+
+policies:
+  # Universal Agent Policies
+  retry_max: 2
+  timeout_seconds: 300
+  
+  # Testing Thresholds
+  coverage_min: 80
+  
+  # Security
+  forbidden_patterns:
+    - "console.log"
+    - "ey[A-Za-z0-9-_=]{20,}" # Application secrets regex
+
+outputs:
+  # Expected artifacts
+  test_report: "test-reports/test-summary.json"
+  deploy_log: "logs/deployment-*.json"

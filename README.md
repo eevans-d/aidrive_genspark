@@ -59,6 +59,8 @@ npm run test:unit # Tests unitarios (Vitest)
 
 ## 📚 Documentación
 
+> **Para Agentes IA:** Ver [AGENTS.md](AGENTS.md) para consultar los **Skills** activos (TestMaster, DeployOps, DocuGuard).
+
 | Documento | Descripción |
 |-----------|-------------|
 | [AGENTS.md](AGENTS.md) | **Guía rápida para agentes IA** |

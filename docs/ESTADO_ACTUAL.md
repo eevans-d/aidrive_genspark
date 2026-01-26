@@ -55,6 +55,7 @@
 - **Tests E2E Auth Real:** 7 (revalidación pendiente)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado
+- **Agent Skills:** 3 activos (TestMaster V2, DeployOps V2, DocuGuard V2)
 
 ---
 

@@ -15,6 +15,7 @@
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (26 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
+| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard activos |
 
 ---
 
@@ -44,8 +45,8 @@ Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 ```
 aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
-│   ├── src/pages/            # 9 páginas (8 con data; Login no aplica)
-│   ├── src/hooks/queries/    # 8 custom hooks
+│   ├── src/pages/            # 11 páginas (Rentabilidad, Kardex, etc.)
+│   ├── src/hooks/queries/    # 17 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
 │   ├── functions/            # 13 Edge Functions desplegadas
@@ -136,6 +137,19 @@ API_PROVEEDOR_SECRET=secret-here
 # Desarrollo
 VITE_API_GATEWAY_URL=/api-minimarket
 ```
+
+---
+
+## 🤖 Herramientas de Agente (Skills)
+
+El proyecto cuenta con "Skills" estandarizados para agentes, ubicados en `.agent/skills/`. **Debes usarlos obligatoriamente**.
+
+| Skill | Ubicación | Propósito |
+|-------|-----------|-----------|
+| **TestMaster** | `.agent/skills/TestMaster/SKILL.md` | Ejecución de tests, debugging inteligente y cobertura. |
+| **DeployOps** | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros a Cloud Run y gestión de secretos. |
+| **DocuGuard** | `.agent/skills/DocuGuard/SKILL.md` | Mantenimiento de documentación y reglas del proyecto. |
+| **CodeCraft** | `.agent/skills/CodeCraft/SKILL.md` | Estandarización de Features (Scaffold, Tests, Patterns). |
 
 ---
 
