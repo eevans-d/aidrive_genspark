@@ -5,7 +5,7 @@
 ### URL Base
 ```
 # Producción (Supabase Cloud)
-https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket
+https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 
 # Desarrollo local (supabase start)
 http://127.0.0.1:54321/functions/v1/api-minimarket
@@ -74,7 +74,7 @@ x-request-id: <uuid>
 Para validar que el gateway está configurado correctamente:
 
 ```bash
-BASE_URL='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket'
+BASE_URL='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket'
 
 # 1. GET con Origin permitido (debe responder 200 con CORS headers)
 curl -i "$BASE_URL/categorias" \
@@ -212,7 +212,7 @@ cd minimarket-system && VITE_USE_MOCKS=true pnpm dev
 
 ### Obtener Token JWT
 ```bash
-curl -X POST https://htvlwhisjpdagqkqnpxg.supabase.co/auth/v1/token?grant_type=password \
+curl -X POST https://dqaygmjpzoqjjrywdsxi.supabase.co/auth/v1/token?grant_type=password \
   -H "Content-Type: application/json" \
   -H "apikey: YOUR_ANON_KEY" \
   -d '{"email":"admin@minimarket.com","password":"password123"}'
@@ -330,14 +330,12 @@ Usar este ID para debugging y correlación de logs.
 
 ---
 
----
-
 ## 🔗 API Proveedor (api-proveedor)
 
 ### URL Base
 ```
 # Producción
-https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-proveedor
+https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-proveedor
 
 # Desarrollo local
 http://127.0.0.1:54321/functions/v1/api-proveedor
@@ -434,4 +432,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-01-11*
+*Última actualización: 2026-01-26*

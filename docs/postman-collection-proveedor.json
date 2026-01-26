@@ -853,10 +853,10 @@
         "exec": [
           "// Configurar variables de entorno si no están configuradas",
           "if (!pm.collectionVariables.get('baseUrl')) {",
-          "    pm.collectionVariables.set('baseUrl', 'https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-proveedor');",
+          "    pm.collectionVariables.set('baseUrl', 'https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-proveedor');",
           "}",
           "if (!pm.collectionVariables.get('scraperUrl')) {",
-          "    pm.collectionVariables.set('scraperUrl', 'https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/scraper-maxiconsumo');",
+          "    pm.collectionVariables.set('scraperUrl', 'https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/scraper-maxiconsumo');",
           "}",
           "if (!pm.collectionVariables.get('bearerToken')) {",
           "    console.log('⚠️ bearerToken no configurado - algunos endpoints fallarán');",
@@ -868,12 +868,12 @@
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-proveedor",
+      "value": "https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-proveedor",
       "type": "string"
     },
     {
       "key": "scraperUrl",
-      "value": "https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/scraper-maxiconsumo",
+      "value": "https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/scraper-maxiconsumo",
       "type": "string"
     },
     {

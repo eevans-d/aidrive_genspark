@@ -6,7 +6,7 @@ description: Standardized procedures for executing, analyzing, and maintaining t
 # TestMaster Skill (Universal Standard)
 
 ## 1. Objetivo
-Centralizar y verificiar la calidad del código mediante la ejecución controlada de pruebas (Unit, Integration, E2E, Security), asegurando que ningún cambio rompa la funcionalidad existente.
+Centralizar y verificar la calidad del código mediante la ejecución controlada de pruebas (Unit, Integration, E2E, Security), asegurando que ningún cambio rompa la funcionalidad existente.
 
 ## 2. Configuración del Proyecto
 **⚠️ OBLIGATORIO:** Antes de ejecutar, lee `.agent/skills/project_config.yaml` para obtener las rutas exactas.

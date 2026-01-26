@@ -26,7 +26,7 @@ info:
     name: Propietario
 
 servers:
-  - url: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket
+  - url: https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
     description: Servidor de Producción
 
 security:

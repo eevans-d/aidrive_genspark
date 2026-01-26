@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-24  
+**Última actualización:** 2026-01-26  
 
 ---
 
@@ -9,19 +9,19 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 95% (pendientes WS7.5 + rollback probado + M10 parcial + sync TEST_PASSWORD) |
+| **Avance Global** | 95% (pendientes rollback probado + M10 parcial + sync TEST_PASSWORD) |
 | **Build** | ✅ Passing |
-| **Tests** | 668 passing (646 unit incl frontend + 15 security + 7 e2e auth real) |
+| **Tests** | Ver `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (26 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
-| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard activos |
+| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft activos |
 
 ---
 
 ## 🎯 Próximos Pasos
 
-Plan definitivo **completado con pendientes P1** (WS7.5 y rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
+Plan definitivo **completado con pendientes P1** (rollback probado, sync `TEST_PASSWORD`, M10). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
 Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
@@ -93,7 +93,6 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Completar WS7.5 roles server-side (tabla/claims; eliminar fallback a `user_metadata`).
 - Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
 - Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real.
 - Completar inventario/validacion de secretos (M10) y registrar owners/rotacion.
@@ -147,7 +146,7 @@ El proyecto cuenta con "Skills" estandarizados para agentes, ubicados en `.agent
 | Skill | Ubicación | Propósito |
 |-------|-----------|-----------|
 | **TestMaster** | `.agent/skills/TestMaster/SKILL.md` | Ejecución de tests, debugging inteligente y cobertura. |
-| **DeployOps** | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros a Cloud Run y gestión de secretos. |
+| **DeployOps** | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros en Supabase (Edge Functions/DB) y gestión de secretos. |
 | **DocuGuard** | `.agent/skills/DocuGuard/SKILL.md` | Mantenimiento de documentación y reglas del proyecto. |
 | **CodeCraft** | `.agent/skills/CodeCraft/SKILL.md` | Estandarización de Features (Scaffold, Tests, Patterns). |
 

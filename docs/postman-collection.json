@@ -1,13 +1,13 @@
 {
   "info": {
     "name": "Mini Market API - Colección Completa",
-    "description": "Colección de Postman para testing de los 19 endpoints de la API Mini Market.\n\n**Configuración Inicial:**\n1. Configurar variable `baseUrl`: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket\n2. Configurar variable `token`: Tu JWT token de Supabase Auth\n3. Los endpoints públicos no requieren token\n4. Los endpoints protegidos requieren token con rol adecuado\n\n**Roles:**\n- admin: Acceso completo\n- deposito: Gestión de inventario\n- ventas: Solo lectura",
+    "description": "Colección de Postman para testing de los 19 endpoints de la API Mini Market.\n\n**Configuración Inicial:**\n1. Configurar variable `baseUrl`: https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket\n2. Configurar variable `token`: Tu JWT token de Supabase Auth\n3. Los endpoints públicos no requieren token\n4. Los endpoints protegidos requieren token con rol adecuado\n\n**Roles:**\n- admin: Acceso completo\n- deposito: Gestión de inventario\n- ventas: Solo lectura",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
     {
       "key": "baseUrl",
-      "value": "https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-minimarket",
+      "value": "https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket",
       "type": "string"
     },
     {

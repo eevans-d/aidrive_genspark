@@ -52,9 +52,9 @@ info:
     name: Propietario - Mini Market
 
 servers:
-  - url: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/api-proveedor
+  - url: https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-proveedor
     description: Servidor de Producción - API Proveedor
-  - url: https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/scraper-maxiconsumo
+  - url: https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/scraper-maxiconsumo
     description: Servidor de Producción - Web Scraper
 
 security:

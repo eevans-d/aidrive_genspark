@@ -1,6 +1,6 @@
 project:
   name: "aidrive_genspark"
-  environment: "hybrid (local/cloud-run)"
+  environment: "hybrid (local/supabase)"
 
 paths:
   # Base roots
@@ -14,7 +14,7 @@ paths:
   
   # Configuration files
   env_example: ".env.example"
-  agents_guide: "IA_USAGE_GUIDE.md"
+  agents_guide: "docs/IA_USAGE_GUIDE.md"
 
 scripts:
   # Primary execution scripts
@@ -29,6 +29,9 @@ policies:
   # Universal Agent Policies
   retry_max: 2
   timeout_seconds: 300
+  allowed_branches:
+    - "main"
+    - "staging"
   
   # Testing Thresholds
   coverage_min: 80

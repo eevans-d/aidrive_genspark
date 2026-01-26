@@ -28,28 +28,28 @@ Actuar como "Guardián de la Verdad", asegurando que la documentación (`docs/`,
 ## 5. Inputs Requeridos
 1.  **Trigger Type:** `code_change`, `architecture_change`, `audit`.
 2.  **Files Changed:** Lista de archivos modificados (para saber qué doc tocar).
-3.  **New Secret:** Si se agregó algún secreto (para actualizar `.env.example`).
+3.  **New Secret:** Si se agregó algún secreto (para actualizar `{{paths.env_example}}`).
 
 ## 6. Protocolo de Ejecución
 1.  **Code Pattern Scan (Pre-Commit):**
     *   Itera sobre `{{policies.forbidden_patterns}}`:
         ```bash
-        grep -r "PATTERN" {{paths.backend_src}}
+        rg -n "PATTERN" {{paths.backend_src}}
         ```
     *   *Acción:* Si encuentra matches, **BLOCK**.
 2.  **Doc Sync Check:**
     *   Si `package.json` cambió -> Revisa `README.md`.
-    *   Si `{{paths.backend_src}}` cambió -> Revisa `docs/API_README.md`.
-    *   Si arquitectura cambió -> Revisa `docs/DECISION_LOG.md`.
+    *   Si `{{paths.backend_src}}` cambió -> Revisa `{{paths.docs}}/API_README.md`.
+    *   Si arquitectura cambió -> Revisa `{{paths.docs}}/DECISION_LOG.md`.
 3.  **Golden Rule:**
-    *   Lee `docs/ESTADO_ACTUAL.md`. ¿Tu cambio contradice el estado? -> Actualízalo.
+    *   Lee `{{paths.docs}}/ESTADO_ACTUAL.md`. ¿Tu cambio contradice el estado? -> Actualízalo.
 4.  **Fix & Commit:** Aplica cambios a los .md afectados.
 
 ## 7. Quality Gates (DONE Verificable)
 *   [ ] **Clean Scan:** No hay `console.log` ni secretos hardcodedos.
 *   [ ] **Docs Updated:** Todos los archivos relevantes (`README`, `API_README`) fecha/versión actualizada.
 *   [ ] **Links Valid:** No hay enlaces rotos en la documentación tocada.
-*   [ ] **Guide Compliant:** Cumple con `IA_USAGE_GUIDE.md`.
+*   [ ] **Guide Compliant:** Cumple con `{{paths.agents_guide}}`.
 
 ## 8. Anti-Loop / Stop-Conditions
 *   **Retry Max:** 1 (Documentar no debería fallar técnicamente).

@@ -12,7 +12,7 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
 **⚠️ OBLIGATORIO:** Antes de ejecutar, lee `.agent/skills/project_config.yaml` para obtener las rutas exactas.
 *   **Script de Deploy:** Ver clave `scripts.deploy_script` (Default: `./deploy.sh`)
 *   **Logs:** Ver clave `outputs.deploy_log` (Default: `logs/deployment-*.json`)
-*   **Políticas:** Ver clave `policies` para ramas permitidas.
+*   **Políticas:** Ver clave `policies.allowed_branches` para ramas permitidas.
 
 ## 3. Criterios de Activación (Usar cuando...)
 *   Has completado una feature y necesitas subirla a `staging`.
@@ -22,7 +22,7 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
 
 ## 4. Criterios de NO uso (No usar cuando...)
 *   Tests fallan (ejecuta `TestMaster` primero).
-*   No estás en una rama permitida (ver `config.policies.allowed_branches`).
+*   No estás en una rama permitida (ver `policies.allowed_branches`).
 *   No hay cambios que desplegar (repo limpio sin commits nuevos).
 
 ## 5. Inputs Requeridos
@@ -32,7 +32,7 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
 4.  **Confirmación:** Explícita para producción.
 
 ## 6. Protocolo de Ejecución
-1.  **Check Branch:** Valida que estés en la rama correcta (`main` o `staging`).
+1.  **Check Branch:** Valida que estés en una rama permitida (`{{policies.allowed_branches}}`).
 2.  **Pre-Flight Check (TestMaster):** Ejecuta `TestMaster` en modo "Green Check".
 3.  **Dry Run (OBLIGATORIO en Prod):**
     ```bash
@@ -44,7 +44,7 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
     ```bash
     {{scripts.deploy_script}} <ENV>
     ```
-6.  **Verify:** Revisa `gcloud run services list` y haz un smoke test con curl.
+6.  **Verify:** Revisa health check `/functions/v1/api-minimarket/health` (base `SUPABASE_URL`) y haz un smoke test con curl.
 
 ## 7. Quality Gates (DONE Verificable)
 *   [ ] **Tests Passed:** `TestMaster` pasó 100% antes del deploy.
@@ -56,7 +56,7 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
 *   **Retry Max:** `{{policies.retry_max}}` intentos.
 *   **Error Handling:**
     *   Si falla el build -> **STOP**, revisa logs de npm.
-    *   Si falla el deploy (Cloud Run) -> **STOP**, ejecuta Rollback manual.
+    *   Si falla el deploy (Supabase CLI/Edge Functions) -> **STOP**, ejecuta Rollback manual.
     *   Si el script pide input y no puedes dárselo -> **STOP**.
 
 ### Plantilla REPORTE DE BLOQUEO
@@ -69,13 +69,16 @@ Gestionar el ciclo de vida de despliegue (dev, staging, prod) asegurando que **c
 
 ## 9. Salida Requerida (Artefactos)
 *   Log de despliegue: `{{outputs.deploy_log}}`
-*   URL del servicio activo.
+*   URL base (`SUPABASE_URL`) y health check activo.
 *   Confirmación de Health Check exitoso.
 
 ## 10. Emergency Rollback (Nivel 3)
 En caso de desastre, ejecuta **INMEDIATAMENTE**:
-1.  **Git Revert:** `git revert HEAD` + `git push`.
-2.  **Cloud Run Rollback:**
+1.  **Git:** Volver a un tag/commit previo y preparar re-deploy.
+2.  **Rollback DB (Supabase Dashboard):** PITR/snapshot con timestamp previo.
+3.  **Edge Functions:** Re-deploy desde tag/commit previo:
     ```bash
-    gcloud run services update-traffic <SERVICE> --to-revisions=<PREV>=100
+    supabase functions deploy api-minimarket
+    supabase functions deploy api-proveedor
     ```
+4.  **Frontend:** Re-deploy del build anterior (artifact/tag previo).

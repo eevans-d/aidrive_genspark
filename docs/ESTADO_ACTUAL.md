@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-25 04:12 UTC  
+**Última actualización:** 2026-01-26 05:47 UTC  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (revalidación E2E pendiente por sync `TEST_PASSWORD`)
 
 ## 🎯 Proyecto Supabase
@@ -55,7 +55,7 @@
 - **Tests E2E Auth Real:** 7 (revalidación pendiente)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado
-- **Agent Skills:** 3 activos (TestMaster V2, DeployOps V2, DocuGuard V2)
+- **Agent Skills:** 4 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft)
 
 ---
 

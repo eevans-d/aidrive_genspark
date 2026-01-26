@@ -1,7 +1,7 @@
 # 🤖 Guía de Uso de IA para Sistema Mini Market
 
-**Versión:** 1.0.0  
-**Fecha:** 2026-01-23  
+**Versión:** 1.0.1  
+**Fecha:** 2026-01-26  
 **Basado en:** AGENTS.md y patrones reales del proyecto
 
 ---
@@ -36,19 +36,12 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 
 ## Estado del Proyecto
 
-### Métricas Actuales (Actualizado: 2026-01-18)
-
-| Métrica | Valor | Estado |
-|---------|-------|--------|
-| **Avance Global** | 78% | 🟡 En progreso |
-| **Build** | ✅ Passing | 🟢 Estable |
-| **Tests** | 646 passing | 🟢 100% pass rate |
-| **Frontend** | 90% | 🟢 Casi completo |
-| **Gateway** | 85% | 🟢 Hardened |
+### Estado Actual (fuente de verdad)
+Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.
 
 ### Contexto Importante
 - Proyecto en fase de **pre-cierre**
-- RLS audit **pendiente** (bloqueado por credenciales)
+- RLS audit **completada** (2026-01-23)
 - Integration/E2E tests **gated** en CI
 - Documentación técnica **completa y actualizada**
 
@@ -60,7 +53,7 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 aidrive_genspark/
 ├── minimarket-system/              # Frontend React + Vite + TypeScript
 │   ├── src/
-│   │   ├── pages/                  # 11 páginas (todas con React Query)
+│   │   ├── pages/                  # 9 páginas (data via React Query)
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── Login.tsx
 │   │   │   ├── Deposito.tsx
@@ -69,16 +62,18 @@ aidrive_genspark/
 │   │   │   ├── Proveedores.tsx
 │   │   │   ├── Kardex.tsx
 │   │   │   ├── Tareas.tsx
-│   │   │   ├── Reportes.tsx
-│   │   │   ├── Personal.tsx
-│   │   │   └── Configuracion.tsx
+│   │   │   └── Rentabilidad.tsx
 │   │   ├── hooks/
-│   │   │   └── queries/            # 9 custom hooks React Query
+│   │   │   └── queries/            # 8 custom hooks React Query
 │   │   │       ├── useDashboardStats.ts
+│   │   │       ├── useDeposito.ts
+│   │   │       ├── useKardex.ts
 │   │   │       ├── useProductos.ts
+│   │   │       ├── useProveedores.ts
+│   │   │       ├── useStock.ts
 │   │   │       ├── useTareas.ts
-│   │   │       └── ...
-│   │   ├── components/             # 5 componentes compartidos
+│   │   │       └── useRentabilidad.ts
+│   │   ├── components/             # 3 componentes compartidos
 │   │   │   ├── Layout.tsx
 │   │   │   ├── ErrorBoundary.tsx
 │   │   │   └── ErrorMessage.tsx
@@ -143,7 +138,7 @@ aidrive_genspark/
 │       └── ...
 │
 ├── tests/
-│   ├── unit/                       # 646 tests (100% passing)
+│   ├── unit/                       # Tests unitarios (ver docs/ESTADO_ACTUAL.md)
 │   │   ├── api-proveedor-routing.test.ts
 │   │   ├── scraper-parsing.test.ts
 │   │   ├── scraper-matching.test.ts
