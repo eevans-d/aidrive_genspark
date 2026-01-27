@@ -1,179 +1,190 @@
-# Guía para obtener secretos (Mini Market)
+# Guia para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-26  
-**Estado:** ✅ secretos alineados en Supabase/GitHub; TEST_PASSWORD sincronizado en Auth  
-**Proyecto:** minimarket-system (dqaygmjpzoqjjrywdsxi)
+**Fecha:** 2026-01-27  
+**Estado:** Guia autosuficiente (no requiere leer otros archivos)  
+**Proyecto Supabase:** minimarket-system (ref: dqaygmjpzoqjjrywdsxi)
+
+---
+
+## Objetivo
+Esta guia explica, paso a paso y en lenguaje simple, como obtener y configurar **todos los secretos/credenciales** necesarios para desbloquear pruebas, despliegues y tareas pendientes. No requiere conocimientos avanzados.
+
+## Requisitos previos
+- Acceso al proyecto en **Supabase Dashboard** (staging y/o prod).
+- Acceso a **GitHub** con permisos para editar *Secrets* del repo.
+- Acceso local para crear/editar `.env.test` (en tu maquina).
+
+Si no tienes alguno de estos accesos, solicita permisos al responsable del proyecto.
 
 ---
 
-## 🎯 CREDENCIALES ACTUALES (Producción)
+## 1) Lista completa de secretos que debes obtener
 
-```bash
-# Supabase URLs
-SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
-VITE_SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
-
-# API Keys
-SUPABASE_ANON_KEY=<REDACTED>
-VITE_SUPABASE_ANON_KEY=<REDACTED>
-SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
-
-# Gateway (producción)
-VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
-# Gateway (local, proxy)
-VITE_API_GATEWAY_URL=/api-minimarket
-```
-
-> Valores sensibles redactados. Usar `.env.test` local o el dashboard de Supabase para obtener claves reales.
-
-**Nota de estado:** secretos alineados en Supabase/GitHub y `.env.test` actualizado (sin exponer valores). `TEST_PASSWORD` sincronizado con Supabase Auth (2026-01-26).
-
-## 👥 Usuarios de Prueba (Staging)
-
-```bash
-# Archivo: .env.test (raíz del repo)
-TEST_USER_ADMIN=<definido_en_env_test>
-TEST_USER_DEPOSITO=<definido_en_env_test>
-TEST_USER_VENTAS=<definido_en_env_test>
-TEST_PASSWORD=<definido_en_env_test>
-```
-
-> Estos usuarios deben existir en Supabase Auth y en la tabla `personal`. Si se regenera `TEST_PASSWORD`, resetear en Auth.
-
-### Links útiles
-- **Dashboard:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi
-- **Functions:** https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/functions
-- **API Gateway:** https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
-
----
-> Anexo operativo: ver `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`.
-
-## 1) Lista mínima de secretos requeridos
-
-| Secreto | Entorno | Uso principal | Dónde se usa |
-|---|---|---|---|
-| `SUPABASE_URL` | Staging/Prod | Endpoint Supabase | Edge Functions, CI | 
-| `SUPABASE_ANON_KEY` | Staging/Prod | Lecturas seguras (anon/JWT) | Edge Functions, CI | 
-| `SUPABASE_SERVICE_ROLE_KEY` | Staging/Prod | Escrituras/admin | Edge Functions, CI (nunca frontend) |
-| `DATABASE_URL` | Staging/Prod | Auditoría RLS / migraciones | Operación/CI |
-| `ALLOWED_ORIGINS` | Staging/Prod | CORS restrictivo | Edge Functions |
-| `API_PROVEEDOR_SECRET` | Staging/Prod | Auth API proveedor | Edge Functions |
-
-### Entorno Supabase (staging/prod)
+### 1.1 Supabase (staging/prod)
 - `SUPABASE_URL`
 - `SUPABASE_ANON_KEY`
 - `SUPABASE_SERVICE_ROLE_KEY`
-- `DATABASE_URL` (o `SUPABASE_DB_URL` si aplica)
+- `DATABASE_URL` (o `SUPABASE_DB_URL` si tu equipo usa alias)
 
-### Seguridad/operación
-- `ALLOWED_ORIGINS`
-- `API_PROVEEDOR_SECRET`
+### 1.2 Frontend (build/deploy)
+- `VITE_SUPABASE_URL` (igual a `SUPABASE_URL`)
+- `VITE_SUPABASE_ANON_KEY` (igual a `SUPABASE_ANON_KEY`)
 
-> Nota: Si existe `API_PROVEEDOR_READ_MODE` / `SCRAPER_READ_MODE`, definirlos según política de seguridad (normalmente `anon`).
+### 1.3 API Proveedor (backend interno)
+- `API_PROVEEDOR_SECRET` (minimo 32 caracteres, ideal 64+)
+
+### 1.4 Usuarios de prueba (E2E auth real)
+- `TEST_USER_ADMIN`
+- `TEST_USER_DEPOSITO`
+- `TEST_USER_VENTAS`
+- `TEST_PASSWORD` (misma para los 3 usuarios)
+
+### 1.5 Opcionales (solo si se usan modulos especificos)
+- `SENDGRID_API_KEY` (emails)
+- `TWILIO_AUTH_TOKEN` o `SUPABASE_AUTH_SMS_TWILIO_AUTH_TOKEN` (SMS)
+- `CAPTCHA_PROVIDER` y `CAPTCHA_API_KEY` (scraper si se habilita)
+- `SEMGREP_APP_TOKEN` (Semgrep Cloud)
+- `OPENAI_API_KEY` (si se activa integracion)
 
 ---
 
-## 2) Cómo obtener secretos desde Supabase (paso a paso)
+## 2) Paso a paso para obtener credenciales en Supabase
 
-### 2.1 Acceder al proyecto correcto
-1. Entra a https://app.supabase.com
-2. Selecciona el proyecto **staging** o **prod**.
+### 2.1 Entrar al proyecto correcto
+1. Abre el dashboard: https://supabase.com/dashboard
+2. Selecciona el proyecto **minimarket-system** (ref `dqaygmjpzoqjjrywdsxi`).
+3. Verifica que estas en **staging** si vas a probar.
 
-### 2.2 Obtener URL del proyecto
-1. Ir a **Project Settings → API**.
-2. Copiar **Project URL** → usar como `SUPABASE_URL`.
-
-### 2.3 Obtener API keys
-1. En **Project Settings → API**.
-2. Copiar:
+### 2.2 Obtener URL y keys del proyecto
+1. Ve a **Project Settings → API**.
+2. Copia y guarda:
+   - **Project URL** → `SUPABASE_URL`
    - **anon public** → `SUPABASE_ANON_KEY`
    - **service_role** → `SUPABASE_SERVICE_ROLE_KEY`
 
-### 2.4 Obtener DATABASE_URL
-1. Ir a **Project Settings → Database**.
-2. En **Connection string** copiar la URL de conexión.
-3. Usar como `DATABASE_URL`.
-> Nota: si tu equipo usa `SUPABASE_DB_URL`, usar ese nombre en CI.
+### 2.3 Obtener DATABASE_URL
+1. Ve a **Project Settings → Database**.
+2. Busca **Connection string** y copia la URL completa.
+3. Guarda el valor como `DATABASE_URL`.
 
 ---
 
-## 3) Secrets específicos del proyecto
+## 3) Crear usuarios de prueba (Auth)
 
-### 3.1 ALLOWED_ORIGINS
-1. Lista vigente (sin wildcard): `http://localhost:5173,http://127.0.0.1:5173`
-2. Guardar en `ALLOWED_ORIGINS`.
-3. Si se agrega dominio publico, registrar el cambio en `docs/DECISION_LOG.md`.
+1. Ve a **Authentication → Users**.
+2. Crea estos usuarios (o verifica que existan):
+   - `admin@staging.minimarket.test`
+   - `deposito@staging.minimarket.test`
+   - `ventas@staging.minimarket.test`
+3. Asigna **la misma contraseña** a los tres. Guardala como `TEST_PASSWORD`.
 
-### 3.2 API_PROVEEDOR_SECRET
-1. Generar un secreto fuerte (mínimo 32 caracteres, ideal 64+).
-2. Guardarlo como `API_PROVEEDOR_SECRET` en el entorno Supabase.
-3. Rotarlo si se sospecha exposición.
+> Consejo: si el panel lo permite, marca el email como confirmado.
 
 ---
 
-## 4) Dónde registrar los secretos
+## 4) Generar API_PROVEEDOR_SECRET (seguro y facil)
 
-### 4.1 Supabase (Edge Functions)
-1. Ir a **Project Settings → Edge Functions → Secrets**.
-2. Agregar:
+Opcion simple (recomendada):
+- Usa el generador de contraseñas de tu navegador/gestor de contraseñas y crea una cadena de 64 caracteres.
+
+Opcion tecnica (si tienes terminal):
+```bash
+python - <<'PY'
+import secrets
+print(secrets.token_urlsafe(48))
+PY
+```
+Guarda el resultado como `API_PROVEEDOR_SECRET`.
+
+---
+
+## 5) Cargar secretos en Supabase (Edge Functions)
+
+1. Ve a **Project Settings → Edge Functions → Secrets**.
+2. Crea o actualiza estos secretos:
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `DATABASE_URL`
-   - `ALLOWED_ORIGINS`
+   - `ALLOWED_ORIGINS` (recomendado: `http://localhost:5173,http://127.0.0.1:5173`)
    - `API_PROVEEDOR_SECRET`
 
-### 4.2 CI/CD (GitHub Actions)
-1. Ir a **Settings → Secrets and variables → Actions**.
-2. Guardar en **Secrets**:
+---
+
+## 6) Cargar secretos en GitHub (CI/CD)
+
+1. En GitHub, entra al repo → **Settings → Secrets and variables → Actions**.
+2. En **Repository secrets**, agrega o actualiza:
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `DATABASE_URL`
-   - `ALLOWED_ORIGINS`
    - `API_PROVEEDOR_SECRET`
-
-3. Guardar en **Variables** (no secretos) si aplica:
-   - `RUN_INTEGRATION_TESTS=true`
-   - `RUN_E2E=true`
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_ANON_KEY`
 
 ---
 
-## 5) Validación mínima (sin exponer secretos)
+## 7) Crear/actualizar `.env.test` local
 
-1. Ejecutar en local un dry-run de integración:
-   - `scripts/run-integration-tests.sh --dry-run`
-2. Verificar que no falten variables requeridas.
-3. No imprimir secretos en logs.
-4. Confirmar que el frontend **no** recibe `SUPABASE_SERVICE_ROLE_KEY`.
+En la raiz del repo, crea un archivo llamado `.env.test` con este contenido (sin comillas):
 
----
+```bash
+SUPABASE_URL=...
+SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+DATABASE_URL=...
 
-## 6) Seguridad y buenas prácticas
+TEST_USER_ADMIN=admin@staging.minimarket.test
+TEST_USER_DEPOSITO=deposito@staging.minimarket.test
+TEST_USER_VENTAS=ventas@staging.minimarket.test
+TEST_PASSWORD=...
 
-- No compartir secretos por chat.
-- Rotar `API_PROVEEDOR_SECRET` si se expone.
-- Mantener `ALLOWED_ORIGINS` en la lista vigente (local-only) y registrar cambios en `docs/DECISION_LOG.md`.
-- Mantener `SERVICE_ROLE_KEY` solo en backend/CI.
-- No subir `.env` al repositorio.
+API_PROVEEDOR_SECRET=...
+```
 
----
-
-## 7) Rotación de secretos (recomendado)
-
-1. Rotar `SUPABASE_ANON_KEY` y `SUPABASE_SERVICE_ROLE_KEY` en el dashboard de Supabase.
-2. Actualizar variables en:
-   - `.env.test` local (no versionar)
-   - Secrets de Supabase (Edge Functions)
-   - Secrets de CI/CD
-3. Invalidar credenciales anteriores y verificar acceso con tests.
+**Importante:** no subas `.env.test` al repo.
 
 ---
 
-## 8) Qué puedo hacer yo automáticamente
+## 8) Verificacion minima (sin riesgo)
 
-- Verificar en el repo qué variables faltan.
-- Preparar scripts de validación sin exponer secretos.
-- Ajustar documentación y checklist de cierre.
+Ejecuta estos comandos desde la raiz del repo:
 
-> Si me confirmas que ya cargaste los secretos, ejecuto las validaciones y actualizo evidencias.
+```bash
+bash migrate.sh status staging
+bash scripts/run-integration-tests.sh --dry-run
+cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real
+```
+
+- Si falla algo, revisa que las variables esten bien copiadas.
+- No deberias ver secretos impresos en consola.
+
+---
+
+## 9) Checklist rapido (para saber que quedo listo)
+
+- [ ] Tengo `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, `DATABASE_URL`.
+- [ ] Cree/valide `TEST_USER_ADMIN`, `TEST_USER_DEPOSITO`, `TEST_USER_VENTAS`.
+- [ ] Guarde `TEST_PASSWORD` y lo puse en `.env.test`.
+- [ ] Configure `API_PROVEEDOR_SECRET` (64 caracteres ideal).
+- [ ] Cargue secretos en Supabase (Edge Functions).
+- [ ] Cargue secretos en GitHub (Actions).
+- [ ] `.env.test` existe en mi maquina y no esta versionado.
+- [ ] Corri las verificaciones minimas.
+
+---
+
+## Reglas de seguridad (muy importantes)
+- Nunca pegues secretos en chats o issues.
+- No hagas commits con `.env` o `.env.test`.
+- El `SUPABASE_SERVICE_ROLE_KEY` **nunca** debe ir al frontend.
+- Si sospechas exposicion, rota el secreto y actualiza Supabase + GitHub + `.env.test`.
+
+---
+
+## Datos de referencia (no sensibles)
+- Supabase URL (staging/prod): `https://dqaygmjpzoqjjrywdsxi.supabase.co`
+- Gateway API (prod): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket`
+- Dashboard: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi
+

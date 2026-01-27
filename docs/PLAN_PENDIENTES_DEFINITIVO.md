@@ -151,7 +151,7 @@ activo          BOOLEAN DEFAULT true
 
 -- ============================================================================
 -- USUARIOS DE PRUEBA PARA STAGING
--- Contraseña para todos: <DEFINIR_EN_AUTH>
+-- Contraseña para todos: <definido_en_env_test>
 -- ============================================================================
 
 -- 1. Crear usuarios en auth.users (Supabase Auth)
@@ -210,7 +210,7 @@ VALUES (
    URL: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi/auth/users
    Acción: Add User → Create New User
    - Email: admin@staging.minimarket.test
-   - Password: <DEFINIR_EN_AUTH>
+  - Password: <definido_en_env_test>
    - (Repetir para deposito@ y ventas@)
    ```
 
