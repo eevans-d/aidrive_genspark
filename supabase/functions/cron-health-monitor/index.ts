@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
                 response = await getMonitoringMetrics(corsHeaders);
                 break;
             case 'recovery':
-                response = await executeRecoveryAction(req, supabaseUrl, serviceRoleKey, corsHeaders);
+                response = await handleRecoveryRequest(req, supabaseUrl, serviceRoleKey, corsHeaders);
                 break;
             case 'status':
                 response = await getSystemStatus(supabaseUrl, serviceRoleKey, corsHeaders);
@@ -125,13 +125,14 @@ Deno.serve(async (req) => {
         return response;
 
     } catch (error) {
-        logger.error('ERROR', { error: (error as Error).message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('ERROR', { error: errorMessage });
         
         return new Response(JSON.stringify({
             success: false,
             error: {
                 code: 'HEALTH_MONITOR_ERROR',
-                message: error.message,
+                message: errorMessage,
                 timestamp: new Date().toISOString()
             }
         }), {
@@ -268,12 +269,13 @@ async function checkDatabaseHealth(
         };
 
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
             component: 'database',
             status: 'critical',
             responseTime: Date.now() - startTime,
             details: {
-                error: error.message,
+                error: errorMessage,
                 connectionFailed: true
             },
             timestamp: new Date().toISOString()
@@ -286,10 +288,13 @@ async function checkDatabaseHealth(
  */
 async function checkMemoryHealth(): Promise<HealthCheckResult> {
     const startTime = Date.now();
-    const memoryUsage = performance.memory ? {
-        used: performance.memory.usedJSHeapSize,
-        total: performance.memory.totalJSHeapSize,
-        percentage: (performance.memory.usedJSHeapSize / performance.memory.totalJSHeapSize) * 100
+    const perf = performance as Performance & {
+        memory?: { usedJSHeapSize: number; totalJSHeapSize: number };
+    };
+    const memoryUsage = perf.memory ? {
+        used: perf.memory.usedJSHeapSize,
+        total: perf.memory.totalJSHeapSize,
+        percentage: (perf.memory.usedJSHeapSize / perf.memory.totalJSHeapSize) * 100
     } : { used: 0, total: 0, percentage: 50 };
 
     const status = memoryUsage.percentage < 70 ? 'healthy' :
@@ -327,7 +332,7 @@ async function checkJobsHealth(
             }
         });
 
-        const jobs = jobsResponse.ok ? await jobsResponse.json() : [];
+        const jobs = (jobsResponse.ok ? await jobsResponse.json() : []) as Array<{ estado_job?: string; ultima_ejecucion?: string }>;
 
         // Obtener ejecuciones recientes
         const executionsResponse = await fetch(
@@ -340,8 +345,8 @@ async function checkJobsHealth(
             }
         );
 
-        const executions = executionsResponse.ok ? await executionsResponse.json() : [];
-        const recentFailures = executions.filter(e => e.estado === 'fallido').length;
+        const executions = (executionsResponse.ok ? await executionsResponse.json() : []) as Array<{ estado?: string }>;
+        const recentFailures = executions.filter((e) => e.estado === 'fallido').length;
         const successRate = executions.length > 0 ? 
             ((executions.length - recentFailures) / executions.length) * 100 : 100;
 
@@ -365,12 +370,13 @@ async function checkJobsHealth(
         };
 
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
             component: 'jobs',
             status: 'critical',
             responseTime: Date.now() - startTime,
             details: {
-                error: error.message,
+                error: errorMessage,
                 unableToConnect: true
             },
             timestamp: new Date().toISOString()
@@ -424,12 +430,13 @@ async function checkAlertsHealth(
         };
 
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
             component: 'alerts',
             status: 'critical',
             responseTime: Date.now() - startTime,
             details: {
-                error: error.message,
+                error: errorMessage,
                 unableToCheck: true
             },
             timestamp: new Date().toISOString()
@@ -493,12 +500,13 @@ async function checkPerformanceMetrics(
         };
 
     } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
         return {
             component: 'performance',
             status: 'critical',
             responseTime: Date.now() - startTime,
             details: {
-                error: error.message,
+                error: errorMessage,
                 unableToGetMetrics: true
             },
             timestamp: new Date().toISOString()
@@ -717,6 +725,58 @@ async function executeAutoRecovery(
     } catch (error) {
         logger.error('AUTO_RECOVERY_ERROR', { error: (error as Error).message });
         throw error;
+    }
+}
+
+/**
+ * MANEJAR RECOVERY MANUAL VIA REQUEST
+ */
+async function handleRecoveryRequest(
+    req: Request,
+    supabaseUrl: string,
+    serviceRoleKey: string,
+    corsHeaders: Record<string, string>
+): Promise<Response> {
+    try {
+        const body = await req.json().catch(() => null);
+        if (!body || typeof body.type !== 'string' || typeof body.target !== 'string') {
+            return new Response(JSON.stringify({
+                success: false,
+                error: { code: 'INVALID_REQUEST', message: 'type y target son requeridos' }
+            }), {
+                status: 400,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
+
+        const action: RecoveryAction = {
+            type: body.type,
+            target: body.target,
+            parameters: body.parameters ?? {},
+            timestamp: new Date().toISOString(),
+            status: 'pending'
+        };
+
+        const result = await executeRecoveryAction(action, supabaseUrl, serviceRoleKey);
+        const status = result.success ? 200 : 500;
+
+        return new Response(JSON.stringify({
+            success: result.success,
+            data: result,
+            timestamp: new Date().toISOString()
+        }), {
+            status,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        return new Response(JSON.stringify({
+            success: false,
+            error: { code: 'RECOVERY_ERROR', message: errorMessage }
+        }), {
+            status: 500,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
     }
 }
 

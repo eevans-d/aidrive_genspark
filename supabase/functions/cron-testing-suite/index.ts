@@ -1211,7 +1211,7 @@ class CronJobsTestSuite {
             .map(r => ({
                 suite: r.suite,
                 test: r.test,
-                error: r.error,
+                error: r.error || 'Unknown error',
                 duration: r.duration
             }));
 

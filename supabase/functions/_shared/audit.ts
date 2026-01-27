@@ -25,7 +25,7 @@
  */
 
 import { createLogger } from './logger.ts'
-import type { SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
 
 const logger = createLogger('audit');
 
@@ -114,7 +114,7 @@ export async function auditLog(
       .single()
 
     if (error) {
-      logger.error('Error inserting audit log', error)
+      logger.error('Error inserting audit log', { error })
       return { success: false, error: error.message }
     }
 
@@ -180,7 +180,7 @@ export async function queryAuditLogs(
     const { data, error } = await query
 
     if (error) {
-      logger.error('Error querying audit logs', error)
+      logger.error('Error querying audit logs', { error })
       return { success: false, error: error.message, data: [] }
     }
 

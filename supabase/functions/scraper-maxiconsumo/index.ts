@@ -98,7 +98,7 @@ function jsonResponse(
   corsHeaders: Record<string, string> = DEFAULT_CORS_HEADERS,
   requestId?: string
 ): Response {
-  const headers = { ...corsHeaders, 'Content-Type': 'application/json' };
+  const headers: Record<string, string> = { ...corsHeaders, 'Content-Type': 'application/json' };
   if (requestId) headers['x-request-id'] = requestId;
   const body =
     requestId && typeof data === 'object' && data !== null && !Array.isArray(data) && !(data as Record<string, unknown>).requestId
@@ -183,8 +183,8 @@ async function handleAlertas(
   ]);
 
   const comparaciones = comparacionesRes.ok ? await comparacionesRes.json() : [];
-  const existentes = existentesRes.ok ? await existentesRes.json() : [];
-  const existingIds = new Set((existentes || []).map((a: any) => a.producto_id).filter(Boolean));
+  const existentes = (existentesRes.ok ? await existentesRes.json() : []) as Array<{ producto_id?: string }>;
+  const existingIds = new Set<string>(existentes.map((a) => a.producto_id).filter(Boolean) as string[]);
 
   const alertas = buildAlertasDesdeComparaciones(comparaciones, existingIds);
 
@@ -293,8 +293,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   PERFORMANCE_METRICS.requestMetrics.total++;
 
   // Rate limiting
-  const clientId = request.headers.get('x-client-id') || 'anonymous';
-  if (!rateLimiter.tryAcquire(clientId)) {
+  if (!rateLimiter.tryAcquire()) {
     return jsonResponse({ error: 'Rate limit exceeded' }, 429, corsHeaders, requestId);
   }
 

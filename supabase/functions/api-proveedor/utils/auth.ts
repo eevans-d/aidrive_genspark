@@ -97,7 +97,7 @@ export function validateInternalOrigin(request: Request): { valid: boolean; warn
     return { valid: true };
 }
 
-export function parseReadAuthMode(value: string | null): ReadAuthMode {
+export function parseReadAuthMode(value: string | null | undefined): ReadAuthMode {
     const normalized = value?.trim().toLowerCase();
     return normalized === 'service' ? 'service' : 'anon';
 }

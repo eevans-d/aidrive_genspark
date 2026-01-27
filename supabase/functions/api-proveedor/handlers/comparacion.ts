@@ -45,15 +45,15 @@ export async function getComparacionConSistemaOptimizado(
 
         const oportunidades = await response.json();
 
-        const analisisPromise = incluirAnalisis
-            ? Promise.allSettled([
+        const analisisResults = incluirAnalisis
+            ? await Promise.allSettled([
                   calculateMarketTrends(oportunidades),
                   identifyProductPatterns(oportunidades),
                   generateRecommendations(oportunidades)
               ])
-            : Promise.resolve(null);
+            : ([null, null, null] as const);
 
-        const [marketTrends, productPatterns, recommendations] = await analisisPromise;
+        const [marketTrends, productPatterns, recommendations] = analisisResults;
 
         const estadisticas = calcularEstadisticasComparacionOptimizado(oportunidades);
 

@@ -658,10 +658,11 @@ async function sendNotificationHandler(
             else results.totalFailed++;
 
         } catch (error) {
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
             results.channels.push({
                 channelId,
                 status: 'failed',
-                error: error.message,
+                error: errorMessage,
                 timestamp: new Date().toISOString()
             });
             results.totalFailed++;
@@ -752,11 +753,12 @@ async function sendToChannel(
         };
 
     } catch (error) {
-        logger.error('SEND_CHANNEL_ERROR', { channelId: channel.id, error: (error as Error).message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('SEND_CHANNEL_ERROR', { channelId: channel.id, error: errorMessage });
         return {
             channelId: channel.id,
             status: 'failed',
-            error: error.message,
+            error: errorMessage,
             timestamp
         };
     }

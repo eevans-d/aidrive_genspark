@@ -323,12 +323,14 @@ export function safeValidate<T>(
 /**
  * Wrapper para ejecutar un job con validación de entrada y salida
  */
-export function withValidation<T extends (...args: Parameters<T>) => Promise<JobResult>>(
+export function withValidation<T extends (...args: any[]) => Promise<JobResult>>(
   jobFn: T,
   jobName: string
 ): T {
-  return (async (...args: Parameters<T>): Promise<JobResult> => {
-    const [ctx, supabaseUrl, serviceRoleKey] = args as [unknown, unknown, unknown, unknown];
+  return (async (...args: any[]): Promise<JobResult> => {
+    const ctx = args[0] as unknown;
+    const supabaseUrl = args[1] as unknown;
+    const serviceRoleKey = args[2] as unknown;
 
     // Validar entradas
     validateJobContext(ctx);

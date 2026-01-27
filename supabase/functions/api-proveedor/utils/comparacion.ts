@@ -130,7 +130,8 @@ export async function identifyProductPatterns(oportunidades: any[]): Promise<any
         return acc;
     }, {} as Record<string, number>);
 
-    patterns.high_opportunity_categories = Object.entries(categoryOpp)
+    const categoryEntries = Object.entries(categoryOpp) as Array<[string, number]>;
+    patterns.high_opportunity_categories = categoryEntries
         .sort(([, a], [, b]) => b - a)
         .slice(0, 3)
         .map(([cat, count]) => ({ categoria: cat, oportunidades: count }));
@@ -168,7 +169,8 @@ export function analyzeOpportunityTrends(oportunidades: any[]): any {
         return acc;
     }, {} as Record<string, number>);
 
-    trends.top_categories = Object.entries(categories)
+    const categoryTotals = Object.entries(categories) as Array<[string, number]>;
+    trends.top_categories = categoryTotals
         .sort(([, a], [, b]) => b - a)
         .slice(0, 5)
         .map(([cat, value]) => ({ categoria: cat, valor_total: value }));

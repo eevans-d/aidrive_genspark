@@ -161,13 +161,14 @@ Deno.serve(async (req) => {
         return response;
 
     } catch (error) {
-        logger.error('ERROR', { error: (error as Error).message });
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        logger.error('ERROR', { error: errorMessage });
         
         return new Response(JSON.stringify({
             success: false,
             error: {
                 code: 'DASHBOARD_ERROR',
-                message: error.message,
+                message: errorMessage,
                 timestamp: new Date().toISOString()
             }
         }), {

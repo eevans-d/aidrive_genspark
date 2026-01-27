@@ -89,12 +89,13 @@ export function aggregateTemporalMetrics(estadisticas: any[], granularidad: stri
         return acc;
     }, {} as Record<string, any[]>);
 
-    return Object.entries(grouped).map(([period, stats]) => ({
+    const groupedEntries = Object.entries(grouped) as Array<[string, any[]]>;
+    return groupedEntries.map(([period, stats]) => ({
         period,
         ejecuciones: stats.length,
-        productos_totales: stats.reduce((sum, s) => sum + (s.productos_encontrados || 0), 0),
-        tasa_exito_promedio: (stats.filter((s) => s.status === 'exitoso').length / stats.length) * 100,
-        tiempo_promedio: stats.reduce((sum, s) => sum + (s.tiempo_ejecucion_ms || 0), 0) / stats.length
+        productos_totales: stats.reduce((sum: number, s: any) => sum + (s.productos_encontrados || 0), 0),
+        tasa_exito_promedio: (stats.filter((s: any) => s.status === 'exitoso').length / stats.length) * 100,
+        tiempo_promedio: stats.reduce((sum: number, s: any) => sum + (s.tiempo_ejecucion_ms || 0), 0) / stats.length
     }));
 }
 
@@ -156,7 +157,8 @@ export function getPeakPerformanceDay(estadisticas: any[]): string {
         return acc;
     }, {} as Record<string, { products: number; count: number }>);
 
-    const bestDay = Object.entries(dailyPerf)
+    const dailyEntries = Object.entries(dailyPerf) as Array<[string, { products: number; count: number }]>;
+    const bestDay = dailyEntries
         .map(([date, perf]) => ({ date, avgProducts: perf.products / perf.count }))
         .sort((a, b) => b.avgProducts - a.avgProducts)[0];
 

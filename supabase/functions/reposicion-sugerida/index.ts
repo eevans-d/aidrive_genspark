@@ -28,8 +28,10 @@
 
 import { getCorsHeaders, handleCors } from '../_shared/cors.ts'
 import { ok, fail } from '../_shared/response.ts'
-import { logger } from '../_shared/logger.ts'
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.39.3'
+import { createLogger } from '../_shared/logger.ts'
+import { createClient } from 'jsr:@supabase/supabase-js@2'
+
+const logger = createLogger('reposicion-sugerida');
 
 interface SugerenciaReposicion {
   producto_id: string
@@ -95,7 +97,7 @@ Deno.serve(async (req: Request) => {
       .order('cantidad_actual', { ascending: true })
 
     if (stockError) {
-      logger.error('Error fetching stock', stockError)
+      logger.error('Error fetching stock', { error: stockError })
       throw stockError
     }
 
@@ -112,7 +114,7 @@ Deno.serve(async (req: Request) => {
       .in('tipo_movimiento', ['salida', 'venta'])
 
     if (movError) {
-      logger.warn('Error fetching movimientos, using zero rotation', movError)
+      logger.warn('Error fetching movimientos, using zero rotation', { error: movError })
     }
 
     // Aggregate rotation by product
@@ -223,7 +225,8 @@ Deno.serve(async (req: Request) => {
     return ok({ sugerencias, metadata }, 200, corsHeaders)
 
   } catch (error) {
-    logger.error('Error in reposicion-sugerida', error)
+    const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+    logger.error('Error in reposicion-sugerida', { error: errorMessage })
     return fail(
       'REPOSICION_SUGERIDA_ERROR',
       error instanceof Error ? error.message : 'Error interno del servidor',
