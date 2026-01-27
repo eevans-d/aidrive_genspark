@@ -16,12 +16,13 @@
 - Scraper: `supabase/functions/scraper-maxiconsumo`.
 - Cron jobs: `supabase/functions/cron-*`.
 
-## 3) Operacion basica
+## 3) Operación básica
 - Tests unitarios: `npx vitest run`.
-- Integration/E2E: requieren `.env.test` y/o Supabase local.
+- Integración/E2E: requieren `.env.test` y/o Supabase local.
+- E2E auth real: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`.
 
 ## 4) Bloqueos activos
-- Rollback probado en staging (doc disponible en `docs/DEPLOYMENT_GUIDE.md`).
+- Pendiente: probar rollback en staging (ver `docs/DEPLOYMENT_GUIDE.md`).
 
 ## 5) Contactos
 - PO/Tech Lead/Ops: **TBD**.

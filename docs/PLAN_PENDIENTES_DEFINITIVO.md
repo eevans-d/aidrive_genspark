@@ -264,7 +264,7 @@ SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=<DEFINIR_EN_AUTH>
+TEST_PASSWORD=<definido_en_env_test>
 ```
 
 #### 3.2 Modificar playwright.config.ts

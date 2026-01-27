@@ -18,20 +18,20 @@ SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_ANON_KEY=<REDACTED>
 SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
-# Usuarios de prueba (crear según PLAN_PENDIENTES_DEFINITIVO.md)
+# Usuarios de prueba (ver PLAN_PENDIENTES_DEFINITIVO.md)
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test
-TEST_PASSWORD=<DEFINIR_EN_AUTH>
+TEST_PASSWORD=<definido_en_env_test>
 ```
 
 ## Usuarios de Prueba
 
 | Email | Rol | Contraseña |
 |-------|-----|------------|
-| admin@staging.minimarket.test | admin | <DEFINIR_EN_AUTH> |
-| deposito@staging.minimarket.test | deposito | <DEFINIR_EN_AUTH> |
-| ventas@staging.minimarket.test | ventas | <DEFINIR_EN_AUTH> |
+| admin@staging.minimarket.test | admin | <definido_en_env_test> |
+| deposito@staging.minimarket.test | deposito | <definido_en_env_test> |
+| ventas@staging.minimarket.test | ventas | <definido_en_env_test> |
 
 > **IMPORTANTE:** Crear usuarios en Dashboard > Authentication > Users antes de ejecutar tests.
 
