@@ -460,6 +460,7 @@ main() {
         "unit")
             show_banner
             setup_test_environment
+            check_testing_dependencies
             run_unit_tests
             ;;
         "integration")
