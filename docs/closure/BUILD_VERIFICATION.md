@@ -1,18 +1,18 @@
 # Build Verification Report
 
 **Template Version:** 1.0.0  
-**Base Commit:** f414687ea0b90be302d01de00d13b3bd93406dfc  
-**Última actualización:** [PENDIENTE - llenar al ejecutar]
+**Base Commit:** 1bfde276427925a0caced1b7d6d01611a34fb19f  
+**Última actualización:** 2026-01-27 04:19 UTC
 
 ---
 
 ## Información del Build
 
-- **Fecha de ejecución:** [PENDIENTE - llenar al ejecutar]
-- **Commit SHA:** f414687ea0b90be302d01de00d13b3bd93406dfc
+- **Fecha de ejecución:** 2026-01-27 04:19 UTC
+- **Commit SHA:** 1bfde276427925a0caced1b7d6d01611a34fb19f
 - **Branch:** main
-- **Ejecutor:** [Usuario que ejecute]
-- **Entorno:** [local/CI/staging]
+- **Ejecutor:** Codex CLI
+- **Entorno:** local
 
 ---
 
@@ -22,10 +22,10 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Install | `pnpm install --frozen-lockfile` | ⏳ Pendiente | - | - |
-| Lint | `pnpm lint` | ⏳ Pendiente | - | - |
-| Build Producción | `pnpm build:prod` | ⏳ Pendiente | - | Build sin VITE_* env vars |
-| Type Check | `npx tsc --noEmit` | ⏳ Pendiente | - | - |
+| Install | `pnpm install --prefer-offline` | ✅ OK | - | Lockfile al dia |
+| Lint | `pnpm lint` | ⚠️ Warnings | - | 13 warnings (sin errores) |
+| Build Producción | `pnpm build:prod` | ✅ OK | - | Build sin VITE_* env vars |
+| Type Check | `npx tsc --noEmit` | ✅ OK | - | Warnings de npm config |
 
 **Notas importantes:**
 - El build de producción puede funcionar sin `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (usa placeholders)
@@ -38,9 +38,9 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Install | `npm ci` | ⏳ Pendiente | - | Instala dependencias de tests |
-| Unit Tests | `npm run test:unit` | ⏳ Pendiente | - | Debe pasar todos los tests |
-| Coverage | `npm run test:coverage` | ⏳ Pendiente | - | Genera reporte en `coverage/` |
+| Install | `npm install` | ✅ OK | - | Se uso npm install (no ci) |
+| Unit Tests | `./test.sh unit` | ✅ OK | - | 649/649 passing |
+| Coverage | `npm run test:coverage` | ⚠️ Bajo | - | 54.88% lines global |
 
 **Tests esperados:**
 - **Total de tests:** ~649 (Backend 609 + Frontend 40)
@@ -57,7 +57,7 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Syntax Check | `deno check --no-lock supabase/functions/**/index.ts` | ⏳ Pendiente | - | Verifica todas las Edge Functions |
+| Syntax Check | `deno check --no-lock --node-modules-dir=auto supabase/functions/**/index.ts` | ❌ Error | - | 46 errores de tipos |
 
 **Funciones a verificar:**
 - api-minimarket (Gateway principal)
@@ -73,10 +73,10 @@
 
 ## Artefactos Generados
 
-- [ ] `minimarket-system/dist/` - Build de producción del frontend
-- [ ] `coverage/` - Reporte de cobertura de tests
-- [ ] `minimarket-system/dist/index.html` - Punto de entrada del SPA
-- [ ] `minimarket-system/dist/assets/` - Assets compilados (JS, CSS)
+- [x] `minimarket-system/dist/` - Build de producción del frontend
+- [x] `coverage/` - Reporte de cobertura de tests
+- [x] `minimarket-system/dist/index.html` - Punto de entrada del SPA
+- [x] `minimarket-system/dist/assets/` - Assets compilados (JS, CSS)
 
 ---
 
