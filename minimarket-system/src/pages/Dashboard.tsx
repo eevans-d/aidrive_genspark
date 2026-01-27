@@ -1,5 +1,6 @@
 import { AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { useDashboardStats } from '../hooks/queries'
 
 export default function Dashboard() {

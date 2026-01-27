@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { Phone, Mail, Package } from 'lucide-react'
 import { useProveedores, ProveedorConProductos } from '../hooks/queries'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Proveedores() {
   const [page, setPage] = useState(1)

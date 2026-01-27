@@ -1,7 +1,8 @@
 import { useState, useMemo } from 'react'
 import { Package, AlertTriangle, Download } from 'lucide-react'
 import { useStock, StockConProducto } from '../hooks/queries'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 type FiltroStock = 'todos' | 'bajo' | 'critico'
 
@@ -10,8 +11,11 @@ export default function Stock() {
 
   const { data, isLoading, isError, error, refetch, isFetching } = useStock()
 
-  const items = data?.items ?? []
-  const alertas = data?.alertas ?? { stockBajo: 0, sinStock: 0 }
+  const items = useMemo(() => data?.items ?? [], [data?.items])
+  const alertas = useMemo(
+    () => data?.alertas ?? { stockBajo: 0, sinStock: 0 },
+    [data?.alertas]
+  )
 
   // Filtrar stock según selección
   const stockFiltrado = useMemo(() => {

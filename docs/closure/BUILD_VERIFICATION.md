@@ -1,15 +1,15 @@
 # Build Verification Report
 
 **Template Version:** 1.0.0  
-**Base Commit:** 56f9ee40c893788f4339c9f869a3925f160443b4  
-**Última actualización:** 2026-01-27 05:20 UTC
+**Base Commit:** 3f4141dc5273186a063add13a56fe5becc0b1ffa  
+**Última actualización:** 2026-01-27 05:48 UTC
 
 ---
 
 ## Información del Build
 
-- **Fecha de ejecución:** 2026-01-27 05:20 UTC
-- **Commit SHA:** 56f9ee40c893788f4339c9f869a3925f160443b4
+- **Fecha de ejecución:** 2026-01-27 05:48 UTC
+- **Commit SHA:** 3f4141dc5273186a063add13a56fe5becc0b1ffa
 - **Branch:** main
 - **Ejecutor:** Codex CLI
 - **Entorno:** local
@@ -23,7 +23,7 @@
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
 | Install | `pnpm install --prefer-offline` | ✅ OK | - | Lockfile al dia (previo) |
-| Lint | `pnpm lint` | ⚠️ Warnings | - | 13 warnings (sin errores, previo) |
+| Lint | `pnpm lint` | ✅ OK | - | Sin warnings |
 | Build Producción | `pnpm build:prod` | ✅ OK | - | Build completado sin VITE_* env vars (previo) |
 | Type Check | `npx tsc --noEmit` | ✅ OK | - | Warnings de npm config |
 
@@ -39,12 +39,15 @@
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
 | Install | `npm install` | ✅ OK | - | Previos en esta sesion |
-| Unit Tests | `npm run test:unit` | ✅ OK | - | 649/649 passing (previo) |
+| Unit Tests | `npm run test:unit` | ✅ OK | - | 657/657 passing |
 | Integration Tests | `npx vitest run --config vitest.integration.config.ts` | ✅ OK | 402ms | 38/38 passing |
-| Coverage | `npm run test:coverage` | ⚠️ Bajo | - | 55.93% lines global |
+| Security Tests (real) | `RUN_REAL_TESTS=true npm run test:security` | ✅ OK | - | 15/15 passing |
+| Performance Tests (real) | `RUN_REAL_TESTS=true npm run test:performance` | ✅ OK | - | 6/6 passing |
+| Contract Tests (real) | `RUN_REAL_TESTS=true npm run test:contracts` | ✅ OK | - | 11/11 passing |
+| Coverage | `npm run test:coverage` | ⚠️ Bajo | - | 56.73% lines global |
 
 **Tests esperados:**
-- **Total de tests:** ~649 (Backend 609 + Frontend 40)
+- **Total de tests:** ~657 (Backend 617 + Frontend 40)
 - **Estado esperado:** 100% passing
 - **Cobertura mínima:** Backend 100%, Frontend lógica crítica
 
@@ -172,15 +175,18 @@ time deno check --no-lock supabase/functions/**/index.ts
 
 ### Frontend
 - **Install:** ✅ OK (auto via scripts) [-]
-- **Lint:** ⚠️ Warnings [-] [13 warnings]
+- **Lint:** ✅ OK [-] [0 warnings]
 - **Build Prod:** ✅ OK [5.47s] [dist/ generado]
 - **Type Check:** ✅ OK [warnings npm config]
 
 ### Tests
 - **Install:** [No ejecutado]
-- **Unit Tests:** ✅ OK [Tests: 649 passing] [15.78s]
+- **Unit Tests:** ✅ OK [Tests: 657 passing] [15.78s]
 - **Integration Tests:** ✅ OK [Tests: 38 passing] [550ms]
-- **Coverage:** ⚠️ Bajo [55.93% lines]
+- **Security Tests (real):** ✅ OK [Tests: 15 passing]
+- **Performance Tests (real):** ✅ OK [Tests: 6 passing]
+- **Contract Tests (real):** ✅ OK [Tests: 11 passing]
+- **Coverage:** ⚠️ Bajo [56.73% lines]
 
 ### Edge Functions
 - **Deno Check:** ✅ OK
@@ -189,9 +195,10 @@ time deno check --no-lock supabase/functions/**/index.ts
 
 ## Problemas Encontrados
 
-- `pnpm lint` reportó 13 warnings (sin errores). Incluye warnings en `minimarket-system/coverage/` y hooks con dependencias faltantes.
-- `npm run test:coverage` quedó por debajo del objetivo global (55.93% lines).
+- `npm run test:coverage` quedó por debajo del objetivo global (56.73% lines).
 - `npx tsc --noEmit` mostró warnings de configuración de npm (no bloqueantes).
+ 
+**Notas:** Para contratos reales (`npm run test:contracts` con `RUN_REAL_TESTS=true`) se requiere header `origin` permitido por `ALLOWED_ORIGINS` o `TEST_ORIGIN`.
 
 ---
 

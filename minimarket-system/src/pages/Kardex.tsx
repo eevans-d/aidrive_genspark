@@ -3,7 +3,8 @@ import { Download, Filter } from 'lucide-react'
 import { useKardex, KardexMovimiento } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Kardex() {
   const [productoFiltro, setProductoFiltro] = useState('')
@@ -21,8 +22,11 @@ export default function Kardex() {
   })
 
   const productos = productosData ?? []
-  const movimientos = data?.movimientos ?? []
-  const resumen = data?.resumen ?? { entradas: 0, salidas: 0, ajustes: 0 }
+  const movimientos = useMemo(() => data?.movimientos ?? [], [data?.movimientos])
+  const resumen = useMemo(
+    () => data?.resumen ?? { entradas: 0, salidas: 0, ajustes: 0 },
+    [data?.resumen]
+  )
 
   const movimientosFiltrados = useMemo(() => {
     return movimientos.filter((mov) => {

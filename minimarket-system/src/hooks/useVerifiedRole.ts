@@ -5,7 +5,7 @@
  * NO desde `user_metadata` que es manipulable por el cliente.
  */
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from './useAuth';
 import { UserRole } from '../lib/roles';
@@ -40,7 +40,7 @@ export function useVerifiedRole(): VerifiedRoleResult {
         const [loading, setLoading] = useState(true);
         const [error, setError] = useState<string | null>(null);
 
-        const fetchRole = async () => {
+        const fetchRole = useCallback(async () => {
                 if (!user) {
                         setRole('usuario');
                         setLoading(false);
@@ -79,13 +79,13 @@ export function useVerifiedRole(): VerifiedRoleResult {
                 } finally {
                         setLoading(false);
                 }
-        };
+        }, [user]);
 
         useEffect(() => {
                 if (!authLoading) {
                         fetchRole();
                 }
-        }, [user, authLoading]);
+        }, [authLoading, fetchRole]);
 
         return {
                 role,

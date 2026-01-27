@@ -3,7 +3,8 @@ import { TrendingDown, TrendingUp, Percent, Search, Filter, Banknote } from 'luc
 import { useRentabilidad } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 type SortKey = 'margen' | 'utilidad' | 'nombre'
 
@@ -27,7 +28,7 @@ export default function Rentabilidad() {
     staleTime: 1000 * 60 * 10,
   })
 
-  const productos = data?.productos ?? []
+  const productos = useMemo(() => data?.productos ?? [], [data?.productos])
   const promedios = data?.promedios ?? { margenPromedio: 0, precioPromedioVenta: 0, precioPromedioCosto: 0 }
   const proveedoresDropdown = proveedoresData ?? []
 

@@ -1,7 +1,8 @@
 import { useState } from 'react'
 import { TrendingUp, TrendingDown } from 'lucide-react'
 import { useProductos, ProductoConHistorial } from '../hooks/queries'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Productos() {
   const [page, setPage] = useState(1)

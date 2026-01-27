@@ -3,7 +3,8 @@ import { CheckCircle, X, Plus } from 'lucide-react'
 import { useTareas, TareaPendiente } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tareasApi, ApiError } from '../lib/apiClient'
-import { ErrorMessage, parseErrorMessage, detectErrorType } from '../components/ErrorMessage'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Tareas() {
   const queryClient = useQueryClient()

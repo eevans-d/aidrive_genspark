@@ -17,32 +17,31 @@ interface LayoutProps {
   children: ReactNode
 }
 
+const NAV_ITEMS: NavItem[] = [
+  { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
+  { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
+  { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
+  { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
+  { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] }, // Todos
+  { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
+  { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
+  { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
+]
+
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, signOut } = useAuth()
-  const { role, canAccess } = useUserRole()
-
-  // Configuración de navegación con roles
-  const allNavItems: NavItem[] = [
-    { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
-    { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
-    { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
-    { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
-    { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] }, // Todos
-    { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
-    { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
-    { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
-  ]
+  const { canAccess } = useUserRole()
 
   // Filtrar items según el rol del usuario
   const navItems = useMemo(() => {
-    return allNavItems.filter(item => {
+    return NAV_ITEMS.filter(item => {
       // Si no hay roles especificados, todos pueden ver
       if (item.allowedRoles.length === 0) return true
       // Verificar si el usuario tiene acceso
       return canAccess(item.path)
     })
-  }, [role])
+  }, [canAccess])
 
   async function handleSignOut() {
     try {

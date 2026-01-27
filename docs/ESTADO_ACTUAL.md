@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-27 05:20 UTC  
+**Última actualización:** 2026-01-27 05:48 UTC  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (E2E auth real revalidado)
 
 ## 🎯 Proyecto Supabase
@@ -39,7 +39,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **609** | 33 archivos |
+| **Tests Backend** | **617** | 34 archivos |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -50,9 +50,11 @@
 | **Tests Frontend** | **40** | 12 archivos |
 
 ### Totales
-- **Tests Unitarios:** 649 (Backend 609 + Frontend 40)
+- **Tests Unitarios:** 657 (Backend 617 + Frontend 40)
 - **Tests Integración (local):** 38 (revalidado 2026-01-27)
-- **Tests Seguridad:** 15 (100% pasando con credenciales reales)
+- **Tests Seguridad:** 15 (real, revalidado 2026-01-27)
+- **Tests Performance:** 6 (real, revalidado 2026-01-27)
+- **Tests Contratos API:** 11 (real, revalidado 2026-01-27)
 - **Tests E2E Auth Real:** 7 (revalidado 2026-01-27)
 - **Migraciones:** 10/10 aplicadas
 - **Build Frontend:** ✅ Compilado

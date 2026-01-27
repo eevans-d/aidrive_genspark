@@ -24,6 +24,11 @@ import * as path from 'path';
 // ============================================================================
 const RUN_REAL_TESTS = process.env.RUN_REAL_TESTS === 'true';
 const SKIP_REAL = RUN_REAL_TESTS ? it : it.skip;
+const DEFAULT_TEST_ORIGIN = (process.env.ALLOWED_ORIGINS || '')
+  .split(',')
+  .map((value) => value.trim())
+  .filter(Boolean)[0] || 'http://localhost:5173';
+const REAL_TEST_ORIGIN = process.env.TEST_ORIGIN || DEFAULT_TEST_ORIGIN;
 
 // Mock fetch
 const mockFetch = vi.fn();
@@ -351,7 +356,8 @@ describe('📋 API CONTRACT TESTS - Vitest', () => {
       const response = await fetch(`${url}/functions/v1/api-proveedor/status`, {
         headers: {
           'Authorization': `Bearer ${key}`,
-          'x-api-secret': process.env.API_PROVEEDOR_SECRET || ''
+          'x-api-secret': process.env.API_PROVEEDOR_SECRET || '',
+          'origin': REAL_TEST_ORIGIN
         }
       });
       
