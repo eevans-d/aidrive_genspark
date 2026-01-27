@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-26  
+**Fecha:** 2026-01-27  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA  
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
@@ -169,7 +169,7 @@ Pendientes:
 ### WS2: Runner de integración (Supabase local)
 - [x] WS2.1.1 Script: `scripts/run-integration-tests.sh` ejecuta `supabase start` + `supabase db reset`.
 - [x] WS2.1.2 Config: `vitest.integration.config.ts` + tests/integration en Vitest; comando `npm run test:integration`.
-- [x] WS2.1 Evidencia: `npm run test:integration` OK (31/31).
+- [x] WS2.1 Evidencia: `npx vitest run --config vitest.integration.config.ts` OK (38/38) — 2026-01-27.
   - Evidencia: `scripts/run-integration-tests.sh --dry-run` valida prerequisitos sin ejecutar.
 
 ### WS2: Smoke tests E2E mínimos

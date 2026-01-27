@@ -2,14 +2,14 @@
 
 **Template Version:** 1.0.0  
 **Base Commit:** 1bfde276427925a0caced1b7d6d01611a34fb19f  
-**Última actualización:** 2026-01-27 04:19 UTC
+**Última actualización:** 2026-01-27 05:13 UTC
 
 ---
 
 ## Información del Build
 
-- **Fecha de ejecución:** 2026-01-27 04:19 UTC
-- **Commit SHA:** 1bfde276427925a0caced1b7d6d01611a34fb19f
+- **Fecha de ejecución:** 2026-01-27 05:13 UTC
+- **Commit SHA:** fe40cc8c42868691727994527c053e1cdc13971a
 - **Branch:** main
 - **Ejecutor:** Codex CLI
 - **Entorno:** local
@@ -24,8 +24,8 @@
 |------|---------|--------|--------|-------|
 | Install | `pnpm install --prefer-offline` | ✅ OK | - | Lockfile al dia |
 | Lint | `pnpm lint` | ⚠️ Warnings | - | 13 warnings (sin errores) |
-| Build Producción | `pnpm build:prod` | ✅ OK | - | Build sin VITE_* env vars |
-| Type Check | `npx tsc --noEmit` | ✅ OK | - | Warnings de npm config |
+| Build Producción | `pnpm build` | ✅ OK | - | Build completado sin VITE_* env vars |
+| Type Check | `npx tsc --noEmit` | — No ejecutado | - | |
 
 **Notas importantes:**
 - El build de producción puede funcionar sin `VITE_SUPABASE_URL` y `VITE_SUPABASE_ANON_KEY` (usa placeholders)
@@ -38,9 +38,10 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Install | `npm install` | ✅ OK | - | Se uso npm install (no ci) |
-| Unit Tests | `./test.sh unit` | ✅ OK | - | 649/649 passing |
-| Coverage | `npm run test:coverage` | ⚠️ Bajo | - | 54.88% lines global |
+| Install | `npm install` | — No ejecutado | - | |
+| Unit Tests | `npm run test:unit` | ✅ OK | - | 649/649 passing |
+| Integration Tests | `npx vitest run --config vitest.integration.config.ts` | ✅ OK | 550ms | 38/38 passing |
+| Coverage | `npm run test:coverage` | — No ejecutado | - | |
 
 **Tests esperados:**
 - **Total de tests:** ~649 (Backend 609 + Frontend 40)
@@ -57,7 +58,7 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Syntax Check | `deno check --no-lock --node-modules-dir=auto supabase/functions/**/index.ts` | ❌ Error | - | 46 errores de tipos |
+| Syntax Check | `deno check --no-lock --node-modules-dir=auto supabase/functions/**/index.ts` | ⚠️ Warning | - | No matching files found |
 
 **Funciones a verificar:**
 - api-minimarket (Gateway principal)
@@ -170,24 +171,27 @@ time deno check --no-lock supabase/functions/**/index.ts
 ## Registro de Ejecución
 
 ### Frontend
-- **Install:** [Status] [Tiempo]
-- **Lint:** [Status] [Tiempo] [Warnings/Errores]
-- **Build Prod:** [Status] [Tiempo] [Tamaño dist/]
-- **Type Check:** [Status] [Tiempo] [Errores]
+- **Install:** ✅ OK (auto via scripts) [-]
+- **Lint:** ⚠️ Warnings [-] [13 warnings]
+- **Build Prod:** ✅ OK [5.47s] [dist/ generado]
+- **Type Check:** [No ejecutado]
 
 ### Tests
-- **Install:** [Status] [Tiempo]
-- **Unit Tests:** [Status] [Tests: X passing] [Tiempo]
-- **Coverage:** [Status] [Coverage %] [Tiempo]
+- **Install:** [No ejecutado]
+- **Unit Tests:** ✅ OK [Tests: 649 passing] [15.78s]
+- **Integration Tests:** ✅ OK [Tests: 38 passing] [550ms]
+- **Coverage:** [No ejecutado]
 
 ### Edge Functions
-- **Deno Check:** [Status] [Funciones verificadas: X] [Tiempo]
+- **Deno Check:** ⚠️ Warning [No matching files found]
 
 ---
 
 ## Problemas Encontrados
 
-[Registrar aquí cualquier problema, warning o error encontrado durante la ejecución]
+- `pnpm lint` reportó 13 warnings (sin errores). Incluye warnings en `minimarket-system/coverage/` y hooks con dependencias faltantes.
+- `scripts/run-integration-tests.sh` falló con `Error status 502: An invalid response was received from the upstream server` durante el reset; los tests de integración se reejecutaron con Vitest y pasaron.
+- `deno check` no ejecutó el chequeo por patrón sin coincidencias (`supabase/functions/**/index.ts`).
 
 ---
 
