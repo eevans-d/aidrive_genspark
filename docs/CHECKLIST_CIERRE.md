@@ -73,7 +73,7 @@ Pendientes:
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
   - Evidencia: 7/7 PASS (2026-01-23)
-  - Revalidación completada tras reset de `TEST_PASSWORD` (2026-01-26: 7/7 PASS).
+- Revalidación completada tras reset de `TEST_PASSWORD` (2026-01-27: 7/7 PASS).
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
