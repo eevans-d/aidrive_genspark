@@ -1,6 +1,6 @@
 # ROADMAP VIGENTE (Rolling 90 días)
 
-**Última actualización:** 2026-01-27  
+**Última actualización:** 2026-01-28  
 **Estado:** vigente  
 **Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`  
 **Plan pendientes:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
@@ -53,6 +53,10 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
   **Aceptación:** benchmark mínimo y valores base registrados.  
   **Evidencia:** `tests/performance/load-testing.vitest.test.ts` - 5 tests passing, avg 24.7ms, 40k productos en 116ms.  
   **Dependencias:** dataset/fixture definido.
+
+- **WS2.4 Limpieza de stubs legacy** ✅ **COMPLETADO 2026-01-28**  
+  **Scope:** `tests/api-contracts`, `tests/helpers`, `tests/scripts`, `tests/setup-edge.js`, `tests/performance-benchmark.ts`  
+  **Aceptación:** stubs legacy removidos y documentación actualizada.
 
 ### WS3 — Base de Datos y Migraciones (P0)
 **Objetivo:** migraciones validadas en entornos reales y rollback claro.

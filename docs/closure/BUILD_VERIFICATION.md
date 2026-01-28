@@ -2,7 +2,7 @@
 
 **Template Version:** 1.0.0  
 **Base Commit:** 3f4141dc5273186a063add13a56fe5becc0b1ffa  
-**Última actualización:** 2026-01-27 05:48 UTC
+**Última actualización:** 2026-01-28 00:20 UTC (incluye reporte externo pendiente de verificación)
 
 ---
 
@@ -189,7 +189,7 @@ time deno check --no-lock supabase/functions/**/index.ts
 - **Coverage:** ⚠️ Bajo [56.73% lines]
 
 ### Edge Functions
-- **Deno Check:** ✅ OK
+- **Deno Check:** ✅ OK (verificado localmente 2026-01-27)
 
 ---
 
@@ -199,6 +199,23 @@ time deno check --no-lock supabase/functions/**/index.ts
 - `npx tsc --noEmit` mostró warnings de configuración de npm (no bloqueantes).
  
 **Notas:** Para contratos reales (`npm run test:contracts` con `RUN_REAL_TESTS=true`) se requiere header `origin` permitido por `ALLOWED_ORIGINS` o `TEST_ORIGIN`.
+
+---
+
+## Reporte externo (Copilot, no verificado localmente)
+**Fecha:** 2026-01-28  
+**Nota:** Este bloque es informativo; requiere re-ejecución local para confirmación.
+
+- Unit tests: 657/657 ✅
+- Coverage: 56.73% lines ⚠️
+- Integration: 38/38 ✅
+- Security real: 15/15 ✅
+- Performance real: 6/6 ✅
+- Contracts real: 11/11 ✅
+- E2E backend smoke: 4/4 ✅
+- E2E frontend mocks: 6 passed / 9 skipped ⚠️
+- E2E frontend auth real: 7/7 ✅
+- Deno check: ❌ BLOQUEADO (deno no instalado)
 
 ---
 

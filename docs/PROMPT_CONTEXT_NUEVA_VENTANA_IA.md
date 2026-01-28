@@ -18,12 +18,15 @@ REGLAS ESTRICTAS (NO negociables):
 - Si un paso falla: NO marques DONE; registra bloqueo y detén o retrocede.
 - Acciones destructivas (rollback staging / reset DB) requieren confirmación explícita y evidencia.
 - No inventes resultados: reporta solo ejecuciones reales con salida verificable.
+- Si se elimina/limpia archivos, actualizar `docs/CHECKLIST_CIERRE.md` y dejar nota en `docs/ROADMAP.md`.
+- Si falta tooling (ej: `deno`, `supabase`, `docker`), marcar **BLOCKED** y no continuar sin aprobación.
 
 EJECUCIÓN (modo planning):
 - Sigue `docs/HOJA_RUTA_30_PASOS.md` en orden, marcando DONE solo con evidencia mínima.
 - Para pruebas reales usa `RUN_REAL_TESTS=true` y `.env.test` válido.
 - Si `test:contracts` falla por CORS, valida `ALLOWED_ORIGINS` o usa `TEST_ORIGIN`.
 - No ejecutes deploys si fallan tests críticos.
+- No borrar archivos históricos si están referenciados sin ajustar la documentación.
 
 FORMATO DE SALIDA (obligatorio):
 1) **Resumen breve** (qué se hizo y qué quedó pendiente).
