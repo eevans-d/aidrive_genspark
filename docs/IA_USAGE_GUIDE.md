@@ -37,7 +37,8 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 ## Estado del Proyecto
 
 ### Estado Actual (fuente de verdad)
-Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.
+Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.  
+Para ejecución operativa paso a paso, ver `docs/HOJA_RUTA_30_PASOS.md`.
 
 ### Contexto Importante
 - Proyecto en fase de **pre-cierre**
@@ -149,8 +150,9 @@ aidrive_genspark/
 │   ├── security/                   # 14 tests + 1 skipped
 │   └── performance/                # Baseline
 │
-├── docs/                           # 21 archivos de documentación
+├── docs/                           # 22 archivos de documentación
 │   ├── ESTADO_ACTUAL.md            # ⭐ FUENTE DE VERDAD - Estado y avance
+│   ├── HOJA_RUTA_30_PASOS.md        # Checklist operativo paso a paso (planning)
 │   ├── ROADMAP.md                  # Plan rolling 90 días
 │   ├── ARCHITECTURE_DOCUMENTATION.md # Arquitectura técnica
 │   ├── API_README.md               # Documentación de endpoints
@@ -820,11 +822,13 @@ En **GitHub Settings → Secrets and variables → Actions**:
 ### Documentación Técnica Esencial
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
-2. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
-3. **API_README.md** - Todos los endpoints disponibles
-4. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
-5. **DECISION_LOG.md** - Decisiones técnicas registradas
-6. **ROADMAP.md** - Plan rolling 90 días
+2. **HOJA_RUTA_30_PASOS.md** - Checklist operativo paso a paso (planning/ejecución)
+3. **PROMPT_CONTEXT_NUEVA_VENTANA_IA.md** - Prompt base para nueva ventana IA
+4. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
+5. **API_README.md** - Todos los endpoints disponibles
+6. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
+7. **DECISION_LOG.md** - Decisiones técnicas registradas
+8. **ROADMAP.md** - Plan rolling 90 días
 
 ### APIs y Esquemas
 
