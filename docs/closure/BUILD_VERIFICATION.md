@@ -220,14 +220,6 @@ time deno check --no-lock supabase/functions/**/index.ts
 | Build frontend | ✅ OK | 5.52s |
 | Healthcheck staging | ✅ HTTP 200 | - |
 | Migraciones staging | 10/10 alineadas | - |
-- Integration: 38/38 ✅
-- Security real: 15/15 ✅
-- Performance real: 6/6 ✅
-- Contracts real: 11/11 ✅
-- E2E backend smoke: 4/4 ✅
-- E2E frontend mocks: 6 passed / 9 skipped ⚠️
-- E2E frontend auth real: 7/7 ✅
-- Deno check: ❌ BLOQUEADO (deno no instalado)
 
 ---
 

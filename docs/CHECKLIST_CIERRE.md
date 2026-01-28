@@ -1,7 +1,7 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-27  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA  
+**Fecha:** 2026-01-28  
+**Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa)  
 **Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
 
 ---
@@ -27,7 +27,7 @@
 El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **649 tests unitarios pasando** (Backend 609 + Frontend 40) ✅
+- **657 tests unitarios pasando** (Backend 617 + Frontend 40) ✅
 - **15 tests de seguridad con credenciales reales** ✅
 - **Migraciones aplicadas en producción** ✅
 - **13 Edge Functions desplegadas** ✅
@@ -48,7 +48,7 @@ Pendientes:
 - [x] Inventario actualizado (`docs/INVENTARIO_ACTUAL.md`)
 - [x] Baseline técnico documentado (`docs/BASELINE_TECNICO.md`)
 - [x] Risk/Stakeholders/Comms refrescados (2026-01-15) → `docs/C0_RISK_REGISTER_MINIMARKET_TEC.md`, `docs/C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `docs/C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`
-- [x] Retiro Jest legacy verificado y limpieza final de stubs: removidos `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts`, `tests/api-contracts/openapi-compliance.test.js`
+- [x] Retiro Jest legacy verificado y limpieza final de stubs: removidos `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts`, `tests/api-contracts/openapi-compliance.test.js`, `tests/scripts/generate-test-report.js`
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
