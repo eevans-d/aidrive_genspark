@@ -2,7 +2,8 @@
 
 **Propósito:** documento **autosuficiente** para ejecutar en modo planning (Antigravity) o por un agente (GitHub Copilot).  
 **Contexto:** repo `aidrive_genspark`, entorno híbrido (local + Supabase).  
-**Fecha de creación:** 2026-01-27.
+**Fecha de creación:** 2026-01-27.  
+**Última actualización:** 2026-01-28.
 
 ---
 
@@ -126,13 +127,13 @@
    - Comando: `bash migrate.sh status staging`  
    - DONE: local/remote alineados.
 
-22. [ ] **Planificar rollback staging** (PITR).  
+22. [x] **Planificar rollback staging** (PITR).  
    - Acción: obtener timestamp exacto del snapshot.  
    - DONE: PITR no disponible (plan Free). WALG=true, PITR=false.
 
-23. [x] **Ejecutar rollback staging (manual en Supabase Dashboard)**.  
+23. [ ] **Ejecutar rollback staging (manual en Supabase Dashboard)**.  
    - Acción: Settings → Database → Point in Time Recovery.  
-   - DONE: N/A - Plan Free no tiene PITR, solo backups diarios.  
+   - Estado: N/A — Plan Free no tiene PITR, solo backups diarios.  
    - Advertencia: **destructivo**; requiere confirmación explícita del owner.
 
 24. [x] **Revalidar healthcheck** (staging).  
@@ -150,19 +151,19 @@
 
 27. [ ] **Verificar hooks frontend clave**.  
    - Acción: testear `useDashboardStats`, `useKardex`, `useProductos`.  
-   - DONE: cobertura sube y tests pasan.
+   - PENDIENTE: no hay evidencia específica de ejecución en esta sesión.
 
 28. [x] **Actualizar documentación de build verification**.  
    - Archivo: `docs/closure/BUILD_VERIFICATION.md`  
-   - DONE: Actualizado con 689 tests, 63.38% coverage, commit 3b53a760.
+   - DONE: Actualizado con 689 tests, 63.38% coverage, commit 311ae8c.
 
 29. [x] **Actualizar estado actual**.  
    - Archivo: `docs/ESTADO_ACTUAL.md`  
-   - DONE: 689 tests, 63.38% coverage, fechas 2026-01-28.
+   - DONE: 689 tests, 63.38% coverage, fechas 2026-01-28 (commit e0d5ddf).
 
 30. [x] **Commit + push**.  
    - Comandos: `git add -A && git commit -m \"docs: refresh roadmap checklist\" && git push`  
-   - DONE: Commit 3b53a760 pushed a origin/main (2026-01-28 03:36 UTC).
+   - DONE: Commits `3b53a76`, `311ae8c`, `2ad643c` pushed a `origin/main` (2026-01-28).
 
 ---
 

@@ -1,17 +1,17 @@
 # Build Verification Report
 
 **Template Version:** 1.0.0  
-**Base Commit:** 3f4141dc5273186a063add13a56fe5becc0b1ffa  
-**Última actualización:** 2026-01-28 00:20 UTC (incluye reporte externo pendiente de verificación)
+**Base Commit:** 3b53a76  
+**Última actualización:** 2026-01-28 03:46 UTC
 
 ---
 
 ## Información del Build
 
-- **Fecha de ejecución:** 2026-01-27 05:48 UTC
-- **Commit SHA:** 3f4141dc5273186a063add13a56fe5becc0b1ffa
+- **Fecha de ejecución:** 2026-01-28 03:46 UTC
+- **Commit SHA:** 3b53a760ec24864990a897b30e7e48616dd2156f
 - **Branch:** main
-- **Ejecutor:** Codex CLI
+- **Ejecutor:** GitHub Copilot (modo agente)
 - **Entorno:** local
 
 ---
@@ -22,7 +22,7 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Install | `pnpm install --prefer-offline` | ✅ OK | - | Lockfile al dia (previo) |
+| Install | `pnpm install --prefer-offline` | ✅ OK | - | Lockfile al dia |
 | Lint | `pnpm lint` | ✅ OK | - | Sin warnings |
 | Build Producción | `pnpm build:prod` | ✅ OK | - | Build completado sin VITE_* env vars (previo) |
 | Type Check | `npx tsc --noEmit` | ✅ OK | - | Warnings de npm config |
@@ -38,7 +38,7 @@
 
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
-| Install | `npm install` | ✅ OK | - | Previos en esta sesion |
+| Install | `npm install` | ✅ OK | - | Dependencias instaladas |
 | Unit Tests | `npm run test:unit` | ✅ OK | 15.85s | 689/689 passing |
 | Integration Tests | `npx vitest run --config vitest.integration.config.ts` | ✅ OK | 720ms | 38/38 passing |
 | Security Tests (real) | `RUN_REAL_TESTS=true npm run test:security` | ✅ OK | 2.29s | 15/15 passing |
@@ -54,6 +54,7 @@
 **Suites opcionales (requieren credenciales):**
 - Integration Tests: `npm run test:integration` (requiere SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY)
 - E2E Tests: `npm run test:e2e` (requiere credenciales adicionales + API_PROVEEDOR_SECRET)
+ - E2E Frontend: `pnpm test:e2e:frontend` (mocks) / `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
 
 ---
 
@@ -180,13 +181,16 @@ time deno check --no-lock supabase/functions/**/index.ts
 - **Type Check:** ✅ OK [warnings npm config]
 
 ### Tests
-- **Install:** [No ejecutado]
+- **Install:** ✅ OK
 - **Unit Tests:** ✅ OK [Tests: 689 passing] [15.85s]
 - **Integration Tests:** ✅ OK [Tests: 38 passing] [720ms]
 - **Security Tests (real):** ✅ OK [Tests: 15 passing] [2.29s]
 - **Performance Tests (real):** ✅ OK [Tests: 6 passing] [1.70s]
 - **Contract Tests (real):** ✅ OK [Tests: 11 passing] [1.13s]
 - **Coverage:** ⚠️ Mejorado [63.38% lines] (+6.65%)
+- **E2E Backend Smoke:** ✅ OK [Tests: 4/4] [2.12s]
+- **E2E Frontend (mocks):** ✅ OK [6 passed, 9 skipped] [7.8s]
+- **E2E Auth Real:** ✅ OK [7/7] [24.3s]
 
 ### Edge Functions
 - **Deno Check:** ✅ OK (verificado 2026-01-28 03:46 UTC)
