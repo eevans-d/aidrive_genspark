@@ -39,7 +39,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **617** | 34 archivos |
+| **Tests Backend** | **649** | 36 archivos |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -50,7 +50,7 @@
 | **Tests Frontend** | **40** | 12 archivos |
 
 ### Totales
-- **Tests Unitarios:** 657 (Backend 617 + Frontend 40) — revalidado 2026-01-28
+- **Tests Unitarios:** 689 (Backend 649 + Frontend 40) — revalidado 2026-01-28
 - **Tests Integración (local):** 38/38 — revalidado 2026-01-28
 - **Tests Seguridad:** 15/15 (real) — revalidado 2026-01-28
 - **Tests Performance:** 6/6 (real) — revalidado 2026-01-28
@@ -61,7 +61,7 @@
 - **Deno Check:** ✅ Sin errores — revalidado 2026-01-28
 - **Migraciones:** 10/10 aplicadas y alineadas local/staging
 - **Build Frontend:** ✅ Compilado (5.52s)
-- **Coverage:** 56.73% lines
+- **Coverage:** 63.38% lines (↑6.65%)
 - **Agent Skills:** 4 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft)
 
 ---

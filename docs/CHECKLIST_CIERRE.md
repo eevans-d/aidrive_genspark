@@ -27,7 +27,7 @@
 El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **657 tests unitarios pasando** (Backend 617 + Frontend 40) ✅
+- **689 tests unitarios pasando** (Backend 649 + Frontend 40) ✅
 - **15 tests de seguridad con credenciales reales** ✅
 - **Migraciones aplicadas en producción** ✅
 - **13 Edge Functions desplegadas** ✅
@@ -217,7 +217,7 @@ Pendientes:
 | Métrica | Antes | Después (2026-01-12) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios pasando | ~10 | **649** (Backend 609 + Frontend 40) ✅ |
+| Tests unitarios pasando | ~10 | **689** (Backend 649 + Frontend 40) ✅ |
 | Tests archivos | 5 | **45** (backend 33 + frontend 12) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
