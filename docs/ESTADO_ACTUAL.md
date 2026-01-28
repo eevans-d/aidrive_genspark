@@ -39,7 +39,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **649** | 36 archivos |
+| **Tests Backend** | **609** | 36 archivos |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -87,4 +87,4 @@
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** pendiente rollback probado (OPS-SMART-1).
+> **Nota:** rollback PITR no disponible (plan Free Supabase). Backups diarios disponibles.

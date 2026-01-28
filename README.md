@@ -37,7 +37,7 @@ npm run test:unit # Tests unitarios (Vitest)
 │   │   ├── contexts/      # AuthContext
 │   │   ├── hooks/queries/ # 8 hooks React Query
 │   │   ├── lib/           # Supabase + apiClient
-│   │   └── pages/         # 8 páginas
+│   │   └── pages/         # 9 páginas
 │   └── .env.example
 │
 ├── supabase/
