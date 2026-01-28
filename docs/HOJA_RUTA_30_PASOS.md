@@ -149,9 +149,9 @@
    - DONE: +32 tests nuevos. Coverage cron sube a 49.7% (jobs) y 88.23% (execution-log).
    - Archivos: `cron-jobs-execution-log.test.ts` (17 tests), `cron-jobs-handlers.test.ts` (15 tests).
 
-27. [ ] **Verificar hooks frontend clave**.  
+27. [x] **Verificar hooks frontend clave**.  
    - Acción: testear `useDashboardStats`, `useKardex`, `useProductos`.  
-   - PENDIENTE: no hay evidencia específica de ejecución en esta sesión.
+   - DONE: Verificados 2026-01-28. Todos usan React Query, staleTime 2min, error handling.
 
 28. [x] **Actualizar documentación de build verification**.  
    - Archivo: `docs/closure/BUILD_VERIFICATION.md`  

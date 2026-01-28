@@ -49,9 +49,9 @@ npm run test:unit # Tests unitarios (Vitest)
 │   └── migrations/        # Migraciones SQL
 │
 ├── tests/                 # Tests (Vitest)
-│   └── unit/             # 285 tests
+│   └── unit/             # 689 tests
 │
-├── docs/                  # Documentación (14 archivos)
+├── docs/                  # Documentación (48 archivos)
 ```
 
 ---
@@ -79,7 +79,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | Frontend | React 18, TypeScript, Vite, Tailwind, React Query |
 | Backend | Supabase (PostgreSQL + Edge Functions Deno) |
 | Auth | Supabase Auth con JWT |
-| Testing | Vitest (285 tests) |
+| Testing | Vitest (689 tests) |
 | CI/CD | GitHub Actions |
 
 ---
@@ -88,10 +88,10 @@ npm run test:unit # Tests unitarios (Vitest)
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 78% |
+| **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 85% (26 endpoints) |
-| **Tests** | 285 passing |
+| **Gateway** | 90% (26 endpoints hardened) |
+| **Tests** | 689 passing |
 | **Build** | ✅ OK |
 
 ---
@@ -136,4 +136,4 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de versiones.
 
 ---
 
-*Última actualización: 2026-01-18*
+*Última actualización: 2026-01-28*
