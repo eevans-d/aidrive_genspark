@@ -128,45 +128,45 @@
 
 22. [ ] **Planificar rollback staging** (PITR).  
    - Acción: obtener timestamp exacto del snapshot.  
-   - DONE: timestamp documentado con fecha/hora UTC.
+   - DONE: PITR no disponible (plan Free). WALG=true, PITR=false.
 
-23. [ ] **Ejecutar rollback staging (manual en Supabase Dashboard)**.  
+23. [x] **Ejecutar rollback staging (manual en Supabase Dashboard)**.  
    - Acción: Settings → Database → Point in Time Recovery.  
-   - DONE: rollback confirmado y registrado (captura o nota).  
+   - DONE: N/A - Plan Free no tiene PITR, solo backups diarios.  
    - Advertencia: **destructivo**; requiere confirmación explícita del owner.
 
-24. [ ] **Revalidar healthcheck** (staging).  
+24. [x] **Revalidar healthcheck** (staging).  
    - Comando: `curl -s \"$SUPABASE_URL/functions/v1/api-minimarket/health\"`  
-   - DONE: HTTP 200.
+   - DONE: HTTP 200, status=healthy, circuitBreaker=closed (2026-01-28 03:46 UTC).
 
-25. [ ] **Revisar cobertura baja** (cron jobs).  
+25. [x] **Revisar cobertura baja** (cron jobs).  
    - Acción: listar archivos con <10% y crear plan de tests.  
-   - DONE: backlog con prioridades y archivos listados.
+   - DONE: Identificados jobs/* ~2%, execution-log 4%. Plan ejecutado.
 
-26. [ ] **Crear tests para cron-jobs-maxiconsumo**.  
+26. [x] **Crear tests para cron-jobs-maxiconsumo**.  
    - Acción: agregar unit tests para `jobs/*` + `execution-log`.  
-   - DONE: cobertura de cron sube >40% y tests pasan.
+   - DONE: +32 tests nuevos. Coverage cron sube a 49.7% (jobs) y 88.23% (execution-log).
+   - Archivos: `cron-jobs-execution-log.test.ts` (17 tests), `cron-jobs-handlers.test.ts` (15 tests).
 
 27. [ ] **Verificar hooks frontend clave**.  
    - Acción: testear `useDashboardStats`, `useKardex`, `useProductos`.  
    - DONE: cobertura sube y tests pasan.
 
-28. [ ] **Actualizar documentación de build verification**.  
+28. [x] **Actualizar documentación de build verification**.  
    - Archivo: `docs/closure/BUILD_VERIFICATION.md`  
-   - DONE: fechas, comandos y resultados correctos.
+   - DONE: Actualizado con 689 tests, 63.38% coverage, commit 3b53a760.
 
-29. [ ] **Actualizar estado actual**.  
+29. [x] **Actualizar estado actual**.  
    - Archivo: `docs/ESTADO_ACTUAL.md`  
-   - DONE: métricas y fechas actuales.
+   - DONE: 689 tests, 63.38% coverage, fechas 2026-01-28.
 
-30. [ ] **Commit + push**.  
+30. [x] **Commit + push**.  
    - Comandos: `git add -A && git commit -m \"docs: refresh roadmap checklist\" && git push`  
-   - DONE: remoto actualizado con el commit correcto.  
-   - Nota: si no hay cambios, **NO** commitear.
+   - DONE: Commit 3b53a760 pushed a origin/main (2026-01-28 03:36 UTC).
 
 ---
 
 ## Notas operativas
 - Si un paso falla, registrar el error y volver al paso anterior.  
 - No continuar con despliegues si los tests críticos fallan.  
-- Prioridad inmediata: **rollback staging** + **subir cobertura**.
+- Prioridad inmediata: ~~rollback staging~~ (N/A plan Free) + **subir cobertura** (63.38% → 70%).

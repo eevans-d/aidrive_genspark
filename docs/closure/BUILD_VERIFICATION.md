@@ -39,15 +39,15 @@
 | Gate | Comando | Estado | Tiempo | Notas |
 |------|---------|--------|--------|-------|
 | Install | `npm install` | ✅ OK | - | Previos en esta sesion |
-| Unit Tests | `npm run test:unit` | ✅ OK | - | 657/657 passing |
-| Integration Tests | `npx vitest run --config vitest.integration.config.ts` | ✅ OK | 402ms | 38/38 passing |
-| Security Tests (real) | `RUN_REAL_TESTS=true npm run test:security` | ✅ OK | - | 15/15 passing |
-| Performance Tests (real) | `RUN_REAL_TESTS=true npm run test:performance` | ✅ OK | - | 6/6 passing |
-| Contract Tests (real) | `RUN_REAL_TESTS=true npm run test:contracts` | ✅ OK | - | 11/11 passing |
-| Coverage | `npm run test:coverage` | ⚠️ Bajo | - | 56.73% lines global |
+| Unit Tests | `npm run test:unit` | ✅ OK | 15.85s | 689/689 passing |
+| Integration Tests | `npx vitest run --config vitest.integration.config.ts` | ✅ OK | 720ms | 38/38 passing |
+| Security Tests (real) | `RUN_REAL_TESTS=true npm run test:security` | ✅ OK | 2.29s | 15/15 passing |
+| Performance Tests (real) | `RUN_REAL_TESTS=true npm run test:performance` | ✅ OK | 1.70s | 6/6 passing |
+| Contract Tests (real) | `RUN_REAL_TESTS=true npm run test:contracts` | ✅ OK | 1.13s | 11/11 passing |
+| Coverage | `npm run test:coverage` | ⚠️ Mejorado | - | 63.38% lines global |
 
 **Tests esperados:**
-- **Total de tests:** ~657 (Backend 617 + Frontend 40)
+- **Total de tests:** ~689 (Backend 649 + Frontend 40)
 - **Estado esperado:** 100% passing
 - **Cobertura mínima:** Backend 100%, Frontend lógica crítica
 
@@ -181,45 +181,49 @@ time deno check --no-lock supabase/functions/**/index.ts
 
 ### Tests
 - **Install:** [No ejecutado]
-- **Unit Tests:** ✅ OK [Tests: 657 passing] [15.78s]
-- **Integration Tests:** ✅ OK [Tests: 38 passing] [550ms]
-- **Security Tests (real):** ✅ OK [Tests: 15 passing]
-- **Performance Tests (real):** ✅ OK [Tests: 6 passing]
-- **Contract Tests (real):** ✅ OK [Tests: 11 passing]
-- **Coverage:** ⚠️ Bajo [56.73% lines]
+- **Unit Tests:** ✅ OK [Tests: 689 passing] [15.85s]
+- **Integration Tests:** ✅ OK [Tests: 38 passing] [720ms]
+- **Security Tests (real):** ✅ OK [Tests: 15 passing] [2.29s]
+- **Performance Tests (real):** ✅ OK [Tests: 6 passing] [1.70s]
+- **Contract Tests (real):** ✅ OK [Tests: 11 passing] [1.13s]
+- **Coverage:** ⚠️ Mejorado [63.38% lines] (+6.65%)
 
 ### Edge Functions
-- **Deno Check:** ✅ OK (verificado localmente 2026-01-28)
+- **Deno Check:** ✅ OK (verificado 2026-01-28 03:46 UTC)
+- **Deno Version:** 2.6.6 (stable)
 
 ---
 
 ## Problemas Encontrados
 
-- `npm run test:coverage` quedó por debajo del objetivo global (56.73% lines).
+- `npm run test:coverage` mejoró de 56.73% a 63.38% pero sigue bajo objetivo global (70%).
 - `npx tsc --noEmit` mostró warnings de configuración de npm (no bloqueantes).
+- PITR no disponible en plan Free (solo backups diarios WALG).
  
 **Notas:** Para contratos reales (`npm run test:contracts` con `RUN_REAL_TESTS=true`) se requiere header `origin` permitido por `ALLOWED_ORIGINS` o `TEST_ORIGIN`.
 
 ---
 
 ## Última Verificación Completa
-**Fecha:** 2026-01-28 03:25 UTC  
-**Ejecutor:** GitHub Copilot (modo agente)
+**Fecha:** 2026-01-28 03:46 UTC  
+**Ejecutor:** GitHub Copilot (modo agente)  
+**Commit:** 3b53a760ec24864990a897b30e7e48616dd2156f
 
 | Suite | Resultado | Tiempo |
 |-------|-----------|--------|
-| Unit tests | 657/657 ✅ | 17.83s |
-| Integration | 38/38 ✅ | 637ms |
-| Security (real) | 15/15 ✅ | 2.92s |
-| Performance (real) | 6/6 ✅ | 1.83s |
-| Contracts (real) | 11/11 ✅ | 1.46s |
-| E2E backend smoke | 4/4 ✅ | 2.44s |
-| E2E frontend mocks | 6/6 ✅ (9 skipped) | 7.9s |
-| E2E frontend auth real | 7/7 ✅ | 28.3s |
+| Unit tests | 689/689 ✅ | 15.85s |
+| Integration | 38/38 ✅ | 720ms |
+| Security (real) | 15/15 ✅ | 2.29s |
+| Performance (real) | 6/6 ✅ | 1.70s |
+| Contracts (real) | 11/11 ✅ | 1.13s |
+| E2E backend smoke | 4/4 ✅ | 2.12s |
+| E2E frontend mocks | 6/6 ✅ (9 skipped) | 7.8s |
+| E2E frontend auth real | 7/7 ✅ | 24.3s |
 | Deno check | ✅ Sin errores | - |
-| Build frontend | ✅ OK | 5.52s |
+| Build frontend | ✅ OK | 5.47s |
 | Healthcheck staging | ✅ HTTP 200 | - |
 | Migraciones staging | 10/10 alineadas | - |
+| PITR | ❌ No disponible (plan Free) | - |
 
 ---
 

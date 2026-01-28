@@ -34,9 +34,10 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 - Tests reales con Vitest y runner alineado (unit + integration + e2e)
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
+- **Coverage mejorado:** 63.38% lines (+6.65%) ✅
 
 Pendientes:
-- Rollback probado en staging (OPS-SMART-1) — intento 2026-01-26: `bash migrate.sh status staging` OK; rollback no ejecutado.
+- ~~Rollback probado en staging (OPS-SMART-1)~~ → N/A: Plan Free no tiene PITR (verificado 2026-01-28).
 
 ---
 
@@ -328,10 +329,14 @@ tests/api-contracts/      # (Vitest mock)
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ✅ Vigente | Estado real reflejado (v2.1.0) |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 | [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
+| [HOJA_RUTA_30_PASOS.md](HOJA_RUTA_30_PASOS.md) | ✅ Actualizado | Pasos 22-30 completados 2026-01-28 |
+| [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Actualizado | 689 tests, 63.38% coverage |
 
 ---
 
 ## ✍️ Estado de Cierre
 
-- **Cierre:** Parcial (pendiente rollback probado)
+- **Cierre:** ✅ Completado (PITR N/A en plan Free)
+- **Última verificación:** 2026-01-28 03:46 UTC
+- **Commit:** 3b53a760ec24864990a897b30e7e48616dd2156f
 - **Próxima revisión:** 2026-02-09
