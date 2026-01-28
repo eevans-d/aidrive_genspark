@@ -59,8 +59,6 @@ Los payloads de ataque están definidos como constantes en el archivo de test:
 - **Fecha:** 2026-01-23
 - **Tests:** 14 passing + 1 skipped
 - **Runner:** Vitest 4.0.16
-3. Mantener `security-tests.test.js` como stub desactivado (sin ejecución).
-3. Agregar suite de integración separada para seguridad real (fuera de CI) cuando haya credenciales.
 
 ## Alternativas Recomendadas
 

@@ -5,15 +5,13 @@
 ## Descripción
 
 Esta carpeta contiene tests de contratos OpenAPI migrados a Vitest (mocks locales).  
-Los archivos legacy están desactivados y no se ejecutan en CI.
+Los archivos legacy fueron eliminados para evitar confusión.
 
 ## Archivos
 
 | Archivo | Propósito | Estado |
 |---------|-----------|--------|
 | `openapi-compliance.vitest.test.ts` | Validación de contratos (mock, sin red) | Activo |
-| `openapi-compliance.legacy.js` | Validación Legacy | Legacy |
-| `openapi-compliance.test.js` | Stub desactivado (no-op) | Inactivo |
 
 ## Dependencias (tests/package.json)
 
@@ -42,9 +40,7 @@ RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... API_PROVEEDOR_SECRET=
 ## Plan de Migración
 
 1. Vitest con mocks locales (completado en `openapi-compliance.vitest.test.ts`).
-2. Mantener archivo legacy (`openapi-compliance.legacy.js`) como referencia.
-3. Mantener `openapi-compliance.test.js` como stub desactivado (sin ejecución).
-3. Agregar validación real vs endpoints cuando haya credenciales.
+2. Agregar validación real vs endpoints cuando haya credenciales.
 
 ## Alternativas Recomendadas
 

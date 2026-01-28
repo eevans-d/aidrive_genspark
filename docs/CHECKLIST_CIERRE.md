@@ -48,7 +48,7 @@ Pendientes:
 - [x] Inventario actualizado (`docs/INVENTARIO_ACTUAL.md`)
 - [x] Baseline técnico documentado (`docs/BASELINE_TECNICO.md`)
 - [x] Risk/Stakeholders/Comms refrescados (2026-01-15) → `docs/C0_RISK_REGISTER_MINIMARKET_TEC.md`, `docs/C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `docs/C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`
-- [x] Retiro Jest legacy verificado (rg "jest" solo en legacy/helpers): `tests/security/*.legacy.js`, `tests/api-contracts/*.legacy.js`, `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts` (referencias históricas)
+- [x] Retiro Jest legacy verificado y limpieza final de stubs: removidos `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts`, `tests/api-contracts/openapi-compliance.test.js`
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
@@ -276,17 +276,13 @@ tests/performance/        # (Vitest mock)
 ├── README.md             # Nota de estado
 └── load-testing.vitest.test.ts
 
-tests/security/           # (Vitest mock + legacy)
+tests/security/           # (Vitest mock)
 ├── README.md             # Nota de estado
-├── security.vitest.test.ts
-└── security-tests.legacy.js
-└── security-tests.test.js # Stub desactivado (no-op)
+└── security.vitest.test.ts
 
-tests/api-contracts/      # (Vitest mock + legacy)
+tests/api-contracts/      # (Vitest mock)
 ├── README.md             # Nota de estado
-├── openapi-compliance.vitest.test.ts
-└── openapi-compliance.legacy.js
-└── openapi-compliance.test.js # Stub desactivado (no-op)
+└── openapi-compliance.vitest.test.ts
 
 .github/workflows/
 └── ci.yml                # Pipeline con jobs gated
@@ -300,7 +296,7 @@ tests/api-contracts/      # (Vitest mock + legacy)
 1. **Aumentar coverage**: Objetivo 80% en módulos críticos (actual ~70%)
 2. ~~**CI**: integrar `test:integration` y `test:e2e` en pipeline (WS6.1)~~ ✅ COMPLETADO
 3. ~~**Observabilidad**: cerrar validación runtime de alertas/comparaciones (WS4.1)~~ ✅ COMPLETADO
-4. **Retiro de stubs legacy** si se desea limpieza total (opcional)
+4. **Retiro de stubs legacy** ✅ COMPLETADO
 
 ### Mediano plazo (1-2 meses)
 1. **Refactor cron auxiliares**: Consolidar si hay duplicación
