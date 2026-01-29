@@ -52,6 +52,8 @@ npm run build
 
 ## 4) Rollback (procedimiento)
 
+> Checklist operativo: ver `docs/ROLLBACK_DRILL_STAGING.md` (OPS-SMART-1).
+
 ### 4.1 Rollback DB (produccion/staging)
 **Opcion preferida:** Point-in-Time Recovery (PITR) o restore desde backup.
 
@@ -64,6 +66,8 @@ Pasos recomendados:
 1. Crear script de rollback para la migracion aplicada.
 2. Ejecutar SQL en el Dashboard (SQL Editor).
 3. Validar consistencia y RLS.
+
+> Template recomendado: `docs/ROLLBACK_SQL_TEMPLATE.md`.
 
 ### 4.2 Rollback Edge Functions
 1. Volver a un tag anterior en git.

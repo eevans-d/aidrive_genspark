@@ -1,7 +1,11 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-28 03:25 UTC  
+**Última actualización:** 2026-01-29  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa 2026-01-28)
+
+**Actualización 2026-01-29 (COMET):**
+- Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
+- Validaciones mínimas OK: `migrate.sh status staging` y `run-integration-tests --dry-run`.
 
 ## 🎯 Proyecto Supabase
 

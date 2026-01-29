@@ -1,6 +1,6 @@
 # Guia para obtener secretos (Mini Market)
 
-**Fecha:** 2026-01-27  
+**Fecha:** 2026-01-29  
 **Estado:** Guia autosuficiente (no requiere leer otros archivos)  
 **Proyecto Supabase:** minimarket-system (ref: dqaygmjpzoqjjrywdsxi)
 
@@ -8,6 +8,8 @@
 
 ## Objetivo
 Esta guia explica, paso a paso y en lenguaje simple, como obtener y configurar **todos los secretos/credenciales** necesarios para desbloquear pruebas, despliegues y tareas pendientes. No requiere conocimientos avanzados.
+
+> Si delegas la obtención en un asistente, usa: `docs/COMET_PROMPT_SUPABASE_SECRETOS.md`.
 
 ## Requisitos previos
 - Acceso al proyecto en **Supabase Dashboard** (staging y/o prod).
@@ -59,8 +61,8 @@ Si no tienes alguno de estos accesos, solicita permisos al responsable del proye
 1. Ve a **Project Settings → API**.
 2. Copia y guarda:
    - **Project URL** → `SUPABASE_URL`
-   - **anon public** → `SUPABASE_ANON_KEY`
-   - **service_role** → `SUPABASE_SERVICE_ROLE_KEY`
+   - **anon public** → `SUPABASE_ANON_KEY` (puede figurar en “Claves API” o “Claves API heredadas”)
+   - **service_role** → `SUPABASE_SERVICE_ROLE_KEY` (normalmente en “Legacy API Keys / Claves API heredadas”)
 
 ### 2.3 Obtener DATABASE_URL
 1. Ve a **Project Settings → Database**.
@@ -101,7 +103,7 @@ Guarda el resultado como `API_PROVEEDOR_SECRET`.
 ## 5) Cargar secretos en Supabase (Edge Functions)
 
 1. Ve a **Project Settings → Edge Functions → Secrets**.
-2. Crea o actualiza estos secretos:
+2. Crea o actualiza estos secretos (si no existen, crearlos manualmente con el nombre exacto):
    - `SUPABASE_URL`
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
@@ -187,4 +189,3 @@ cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real
 - Supabase URL (staging/prod): `https://dqaygmjpzoqjjrywdsxi.supabase.co`
 - Gateway API (prod): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket`
 - Dashboard: https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi
-

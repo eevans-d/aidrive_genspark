@@ -99,7 +99,7 @@ aidrive_genspark/
 │   │   │   └── circuit-breaker.ts  # ✅ Circuit breaker pattern
 │   │   │
 │   │   ├── api-minimarket/         # ⚠️ CRÍTICO - Gateway principal
-│   │   │   ├── index.ts            # 26 endpoints, 1357 líneas
+│   │   │   ├── index.ts            # 29 endpoints, 1357 líneas
 │   │   │   └── helpers/            # Helpers modularizados
 │   │   │       ├── auth.ts         # JWT validation, roles
 │   │   │       ├── validation.ts   # UUID, dates, required fields

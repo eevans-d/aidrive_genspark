@@ -142,7 +142,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 ### P0 - Crítico (Requiere Revisión Inmediata)
 
 #### 1. `supabase/functions/api-minimarket/index.ts`
-**Función:** Gateway principal del sistema (26 endpoints)  
+**Función:** Gateway principal del sistema (29 endpoints)  
 **Riesgo:** Alto - Punto único de entrada para todas las operaciones  
 **Áreas de Revisión:**
 - ✅ Autenticación JWT implementada
@@ -414,7 +414,7 @@ aidrive_genspark/
 ├── supabase/
 │   ├── functions/            # 13 Edge Functions
 │   │   ├── _shared/          # 7 módulos compartidos
-│   │   ├── api-minimarket/   # Gateway (26 endpoints)
+│   │   ├── api-minimarket/   # Gateway (29 endpoints)
 │   │   ├── api-proveedor/    # API modular (9 endpoints)
 │   │   ├── scraper-maxiconsumo/  # 9 módulos
 │   │   └── cron-*/           # 4 principales + 4 auxiliares

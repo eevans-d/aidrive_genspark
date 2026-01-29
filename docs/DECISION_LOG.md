@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-26  
+**Última actualización:** 2026-01-29  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -36,6 +36,18 @@
 | D-029 | **Roles server-side**: usar solo `app_metadata.role` (sin fallback a `user_metadata`) | Aprobada | 2026-01-25 | WS7.5 aplicado en `api-minimarket` auth helper. |
 | D-030 | **TEST_PASSWORD re-sincronizado** para usuarios E2E (staging) | Completada | 2026-01-26 | Password actualizado en Auth + `.env.test`; E2E auth real revalidado. |
 | D-031 | **Owners + rotación de secretos** documentados (M10) | Completada | 2026-01-26 | Owners y ventana de rotación definidos en `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`. |
+| D-032 | **Secretos obtenidos desde Supabase** y validados sin exponer valores | Completada | 2026-01-29 | `SUPABASE_*`, `DATABASE_URL`, `API_PROVEEDOR_SECRET`, `ALLOWED_ORIGINS` obtenidos/cargados; validación mínima OK (status + dry-run). |
+
+---
+
+## Siguientes Pasos (2026-01-29)
+
+### Pendientes actuales
+
+| Prioridad | Tarea | Referencia | Estado |
+|-----------|-------|------------|--------|
+| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente |
+| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
 

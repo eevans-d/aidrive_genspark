@@ -10,7 +10,7 @@
 ## 0) Contexto base y reglas
 
 - **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`, `docs/DECISION_LOG.md`.
-- **Pendientes P1 activos:** rollback probado (OPS-SMART-1) y M8 (rotación de secretos/scan controlado).
+- **Pendientes P1 activos:** rollback probado (OPS-SMART-1). M8 (rotación de secretos/scan controlado) figura como completado en `docs/mpc/C2_SUBPLAN_E9_v1.1.0.md`.
 - **Reglas clave:** frontend escribe via gateway; evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
 
 
@@ -60,7 +60,7 @@
 | M5 Frontend & UX/Data | React Query estable y UX coherente | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E5_v1.1.0.md` |
 | M6 Testing & QA | Suites unit/integration/e2e + evidencia | Parcial | P1 | Credenciales | `C2_SUBPLAN_E2_v1.1.0.md` |
 | M7 Ops/Deployment | Rollback probado y runbooks operativos | Parcial | P1 | Staging | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
-| M8 Seguridad & Compliance | Rotación de secretos y scanning controlado | Pendiente | P1 | Accesos | `C2_SUBPLAN_E4_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md` |
+| M8 Seguridad & Compliance | Rotación de secretos y scanning controlado | Completado/Mantenimiento | P1 | Accesos | `C2_SUBPLAN_E4_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md`, `C2_SUBPLAN_E9_v1.1.0.md` |
 | M9 Ingesta & Automatizaciones | Scraper/cron resilientes con métricas | Mantenimiento | P2 | Datos reales | `C2_SUBPLAN_E8_v1.1.0.md` |
 | M10 Gestion de secretos y accesos | Inventario, validacion y rotacion de secretos | Completado/Mantenimiento | P1 | Accesos | `C2_SUBPLAN_E9_v1.1.0.md` |
 
@@ -70,7 +70,7 @@
 
 1. **M1 (Docs) + M6 (QA)** en paralelo para asegurar coherencia y evidencia.
 2. **M7 (Rollback)** como pendiente P1 crítico.
-3. **M8 (Seguridad/Secrets)** inmediatamente después de M2/M7.
+3. **M8 (Seguridad/Secrets)** solo si hay rotación pendiente o auditoría adicional requerida.
 4. **M3/M4/M5/M9** como mantenimiento periódico o cuando haya cambios.
 
 ---
@@ -85,7 +85,7 @@
 | M4 | Errores/timeouts revisados + docs endpoint | `docs/API_README.md` |
 | M5 | Hooks estables + UX de roles coherente | Tests frontend + revisión visual |
 | M6 | Suites con evidencia (unit/integration/e2e) | `test-reports/*` |
-| M7 | Rollback probado con evidencia | `docs/DEPLOYMENT_GUIDE.md` |
+| M7 | Rollback probado con evidencia | `docs/DEPLOYMENT_GUIDE.md`, `docs/ROLLBACK_DRILL_STAGING.md` |
 | M8 | Secrets rotados + decision log | `docs/DECISION_LOG.md` |
 | M9 | Cron y scraper con métricas estables | `cron_jobs_execution_log` |
 | M10 | Inventario/validacion de secretos + owners | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |

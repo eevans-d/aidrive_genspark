@@ -25,7 +25,7 @@
 | **Cron Jobs** | 5 funciones `cron-*` |
 | **Frontend** | 9 páginas + 8 hooks query + 4 hooks auth |
 | **Tests Unitarios** | 36 archivos |
-| **Documentación** | 53 archivos `.md` en `docs/` |
+| **Documentación** | 56 archivos `.md` en `docs/` |
 | **Shared Helpers** | 7 módulos `_shared/` |
 
 ---
@@ -60,7 +60,7 @@ aidrive_genspark/
 │   ├── performance/             # 2 suites
 │   └── api-contracts/           # 2 contratos
 │
-└── 📁 docs/                     # DOCUMENTACIÓN (53 archivos .md)
+└── 📁 docs/                     # DOCUMENTACIÓN (56 archivos .md)
 ```
 
 ---
@@ -303,7 +303,7 @@ aidrive_genspark/
 
 ---
 
-## 📚 DOCUMENTACIÓN (53 archivos `.md`)
+## 📚 DOCUMENTACIÓN (56 archivos `.md`)
 
 ### Documentos Críticos
 

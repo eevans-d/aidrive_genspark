@@ -11,7 +11,7 @@
 - [x] FR-SMART-1 verificado (smoke tests con evidencia, condicionado a credenciales).
 - [x] NFR-SMART-1 verificado (logs estructurados, 0 `console.log`).
 - [x] SEC-SMART-1 verificado (RLS audit con evidencia).
-- [ ] OPS-SMART-1 verificado (rollback probado en staging).
+- [ ] OPS-SMART-1 verificado (rollback probado en staging). Ver `docs/ROLLBACK_DRILL_STAGING.md`.
 
 ---
 

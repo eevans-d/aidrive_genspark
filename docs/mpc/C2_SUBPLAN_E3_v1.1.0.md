@@ -17,7 +17,7 @@
 
 - Migraciones verificadas: 10/10 aplicadas.
 - Rollback documentado en `docs/DEPLOYMENT_GUIDE.md`.
-- **Pendiente:** prueba real de rollback en staging (OPS-SMART-1).
+- **Pendiente:** prueba real de rollback en staging (OPS-SMART-1). Checklist: `docs/ROLLBACK_DRILL_STAGING.md`. Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
 ---
 

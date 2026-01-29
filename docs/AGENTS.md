@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-26  
+**Última actualización:** 2026-01-29  
 
 ---
 
@@ -13,7 +13,7 @@
 | **Build** | ✅ Passing |
 | **Tests** | Ver `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 100% (26 endpoints desplegados) |
+| **Gateway** | 100% (29 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
@@ -45,19 +45,19 @@ Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 ```
 aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
-│   ├── src/pages/            # 11 páginas (Rentabilidad, Kardex, etc.)
-│   ├── src/hooks/queries/    # 17 custom hooks
+│   ├── src/pages/            # 9 páginas (Rentabilidad, Kardex, etc.)
+│   ├── src/hooks/queries/    # 8 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
 │   ├── functions/            # 13 Edge Functions desplegadas
-│   │   ├── api-minimarket/   # Gateway principal (26 endpoints)
+│   │   ├── api-minimarket/   # Gateway principal (29 endpoints)
 │   │   ├── api-proveedor/    # API proveedor (9 endpoints)
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
 │   └── migrations/           # 10 migraciones aplicadas
 ├── tests/                    # Unit, E2E, Performance, Security
-└── docs/                     # Documentación (21+ archivos)
+└── docs/                     # Documentación (56 archivos .md)
 ```
 
 ---

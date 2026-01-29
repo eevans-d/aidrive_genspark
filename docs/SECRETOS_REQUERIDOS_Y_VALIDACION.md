@@ -1,6 +1,6 @@
 # Secretos Requeridos y Validacion (Mini Market)
 
-**Fecha:** 2026-01-26  
+**Fecha:** 2026-01-29  
 **Estado:** Checklist operativo (sin claves; solo valores no sensibles)  
 
 ---
@@ -11,11 +11,12 @@ Este documento lista **que secretos obtener**, **donde obtenerlos** y **como val
 
 **Estado actual confirmado (repo):**
 - URLs de Supabase y gateway ya definidas (no sensibles).
-- `ALLOWED_ORIGINS` configurado en Supabase/GitHub (local-only, sin wildcard).
-- `API_PROVEEDOR_SECRET` regenerado y alineado en Supabase/GitHub/.env.test.
-- `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
+- `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` y `DATABASE_URL` obtenidos desde Supabase (2026-01-29, sin exponer valores).
+- `API_PROVEEDOR_SECRET` y `ALLOWED_ORIGINS` creados/cargados en Edge Functions (2026-01-29).
+- `SUPABASE_*` claves cargadas en `.env`/CI (según reporte COMET, sin exponer valores).
 - `TEST_PASSWORD` sincronizado en Supabase Auth (usuarios E2E).
-- Validacion local ejecutada (2026-01-26): prerequisitos OK; E2E auth real OK (7/7).
+- Validaciones mínimas ejecutadas (2026-01-29): `migrate.sh status staging` OK; `run-integration-tests --dry-run` OK.
+- Validación previa (2026-01-26): prerequisitos OK; E2E auth real OK (7/7).
 - Claves reales siguen fuera de documentación y repositorio.
 
 ---
@@ -122,7 +123,11 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 3) `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` (auth real).  
 4) No imprimir valores en consola ni logs.
 
-### 5.1 Registro de validacion (2026-01-26)
+### 5.1 Registro de validacion (2026-01-29)
+- `./migrate.sh status staging` → OK (sin errores de conexión ni migraciones bloqueantes).
+- `scripts/run-integration-tests.sh --dry-run` → OK (variables reconocidas).
+
+### 5.2 Registro de validacion (2026-01-26)
 - `scripts/run-integration-tests.sh --dry-run` → OK (prerequisitos verificados).
 - `bash migrate.sh status staging` → OK (migraciones listadas; README movido a `docs/db/`).
 - `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` → OK (7/7 PASS).
@@ -133,17 +138,18 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 
 - Codex **no** puede acceder a dashboards ni obtener secretos reales.  
 - Codex puede verificar consistencia en docs y preparar validaciones sin exponer valores.  
+ - Para delegar obtención en Supabase, usar `docs/COMET_PROMPT_SUPABASE_SECRETOS.md`.
 
 ---
 
 ## 7) Checklist de cierre (secrets)
 
-**Estado operativo (2026-01-26):**
-- Supabase/GitHub secrets alineados.
+**Estado operativo (2026-01-29):**
+- Secretos Supabase obtenidos y cargados en Edge Functions (según reporte COMET).
 - `TEST_PASSWORD` sincronizado en Supabase Auth (2026-01-26).
 
-- [ ] Secretos cargados en Supabase (Edge Functions).  
-- [ ] Secretos cargados en GitHub Actions.  
+- [x] Secretos cargados en Supabase (Edge Functions) — 2026-01-29.  
+- [x] Secretos cargados en CI (GitHub Actions o equivalente) — 2026-01-29 (según COMET).  
 - [x] `.env.test` local actualizado y NO versionado (verificado 2026-01-26).  
 - [x] Rotacion documentada en `docs/DECISION_LOG.md`.  
 - [x] Owners definidos y responsables asignados.  
