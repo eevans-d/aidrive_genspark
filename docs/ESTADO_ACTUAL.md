@@ -62,7 +62,7 @@
 - **Migraciones:** 10/10 aplicadas y alineadas local/staging
 - **Build Frontend:** ✅ Compilado (5.52s)
 - **Coverage:** 69.91% lines (↑13.28%)
-- **Agent Skills:** 4 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft)
+- **Agent Skills:** 5 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft, RealityCheck)
 
 ---
 

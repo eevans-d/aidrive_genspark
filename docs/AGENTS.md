@@ -15,7 +15,7 @@
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (26 endpoints desplegados) |
 | **Supabase** | ✅ Producción configurada |
-| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft activos |
+| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
 ---
 
@@ -147,6 +147,7 @@ El proyecto cuenta con "Skills" estandarizados para agentes, ubicados en `.agent
 | **DeployOps** | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros en Supabase (Edge Functions/DB) y gestión de secretos. |
 | **DocuGuard** | `.agent/skills/DocuGuard/SKILL.md` | Mantenimiento de documentación y reglas del proyecto. |
 | **CodeCraft** | `.agent/skills/CodeCraft/SKILL.md` | Estandarización de Features (Scaffold, Tests, Patterns). |
+| **RealityCheck** | `.agent/skills/RealityCheck/SKILL.md` | Mentor ultra-realista: valida flujos UX, detecta gaps doc↔código, audita pre-release. |
 
 ---
 
