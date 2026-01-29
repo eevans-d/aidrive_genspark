@@ -45,7 +45,7 @@ description: Mentor ultra-realista que analiza el proyecto desde producción rea
 | Dashboard | `Dashboard.tsx` | Ver estado general, tareas urgentes | `useDashboardStats` |
 | Depósito | `Deposito.tsx` | Registrar entradas/salidas | `useDeposito` |
 | Kardex | `Kardex.tsx` | Ver historial de movimientos | `useKardex` |
-| Login | `Login.tsx` | Autenticarse | *(sin hook)* |
+| Login | `Login.tsx` | Autenticarse | `useAuth` |
 | Productos | `Productos.tsx` | CRUD de productos | `useProductos` |
 | Proveedores | `Proveedores.tsx` | Gestionar proveedores | `useProveedores` |
 | Rentabilidad | `Rentabilidad.tsx` | Ver análisis de rentabilidad | `useRentabilidad` |
@@ -234,18 +234,18 @@ rg "{{policies.forbidden_patterns[0]}}" {{paths.frontend_src}}/ -g "*.tsx"
 
 ### FASE D: Validación Técnica Backend ⚙️
 
-**D.1 - Contratos Frontend ↔ Backend**
+**D.1 - Contratos Frontend ↔ Backend (realidad actual)**
 
-| Página | Hook | Endpoint Gateway | Estado |
-|--------|------|------------------|--------|
-| Dashboard | `useDashboardStats` | `/api-minimarket/dashboard` | ✅/❌ |
-| Depósito | `useDeposito` | `/api-minimarket/deposito` | ✅/❌ |
-| Kardex | `useKardex` | `/api-minimarket/kardex` | ✅/❌ |
-| Productos | `useProductos` | `/api-minimarket/productos` | ✅/❌ |
-| Proveedores | `useProveedores` | `/api-minimarket/proveedores` | ✅/❌ |
-| Rentabilidad | `useRentabilidad` | `/api-minimarket/rentabilidad` | ✅/❌ |
-| Stock | `useStock` | `/api-minimarket/stock` | ✅/❌ |
-| Tareas | `useTareas` | `/api-minimarket/tareas` | ✅/❌ |
+| Página | Hook | Fuente de datos principal | Gateway (si aplica) | Estado |
+|--------|------|---------------------------|---------------------|--------|
+| Dashboard | `useDashboardStats` | Supabase directo (`tareas_pendientes`, `stock_deposito`, `productos`) | — | ✅/❌ |
+| Depósito | `useDeposito` | Supabase directo (`stock_deposito`, `movimientos_deposito`) | GET `/productos/dropdown`, GET `/proveedores/dropdown`, POST `/deposito/movimiento` | ✅/❌ |
+| Kardex | `useKardex` | Supabase directo (`movimientos_deposito`) | GET `/productos/dropdown` | ✅/❌ |
+| Productos | `useProductos` | Supabase directo (`productos`, `proveedores`, `precios_historicos`) | — | ✅/❌ |
+| Proveedores | `useProveedores` | Supabase directo (`proveedores`, `productos`) | — | ✅/❌ |
+| Rentabilidad | `useRentabilidad` | Supabase directo (`productos`) | GET `/proveedores/dropdown` | ✅/❌ |
+| Stock | `useStock` | Supabase directo (`stock_deposito`) | — | ✅/❌ |
+| Tareas | `useTareas` | Supabase directo (`tareas_pendientes`) | POST `/tareas`, PUT `/tareas/:id/completar`, PUT `/tareas/:id/cancelar` | ✅/❌ |
 
 **D.2 - Production Killers (Solo los que afectan UX)**
 
