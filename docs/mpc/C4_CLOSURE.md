@@ -1,8 +1,8 @@
 # C4 — Cierre y consolidación (MPC v2.0)
 
 **Proyecto:** Mini Market System
-**Fecha:** 2026-01-26
-**Estado:** Parcial (pendiente rollback probado)
+**Fecha:** 2026-01-30
+**Estado:** ✅ Completado (rollback probado y evidenciado)
 
 ---
 
@@ -11,7 +11,7 @@
 - [x] FR-SMART-1 verificado (smoke tests con evidencia, condicionado a credenciales).
 - [x] NFR-SMART-1 verificado (logs estructurados, 0 `console.log`).
 - [x] SEC-SMART-1 verificado (RLS audit con evidencia).
-- [ ] OPS-SMART-1 verificado (rollback probado en staging). Ver `docs/ROLLBACK_DRILL_STAGING.md`.
+- [x] OPS-SMART-1 verificado (rollback probado en staging, 2026-01-30). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
 ---
 
@@ -30,9 +30,9 @@
 
 ## 3) Post-mortem (lecciones aprendidas)
 
-- **Qué salió bien:**
-- **Qué salió mal:**
-- **Acciones preventivas:**
+- **Qué salió bien:** documentación sincronizada, rollback ejecutado en staging con evidencia.
+- **Qué salió mal:** el rollback se postergó por falta de runbook y acceso operativo.
+- **Acciones preventivas:** runbooks y plantillas de rollback creados; checklist obligatorio antes de cierre.
 
 ---
 
@@ -48,12 +48,12 @@
 
 ## 5) Transferencia de conocimiento
 
-- [ ] Handoff a Ops/QA.
-- [ ] Documentación técnica consolidada.
-- [ ] Evidencias archivadas.
+- [x] Handoff a Ops/QA.  
+- [x] Documentación técnica consolidada.  
+- [x] Evidencias archivadas (rollback + cierre).  
 
 ---
 
 ## 6) Reconocimientos
 
-- [ ] Registro de contribuciones clave.
+- [x] Registro de contribuciones clave en `docs/DECISION_LOG.md`.

@@ -3,7 +3,7 @@
 **Etapa:** E3  
 **Fecha:** 2026-01-23  
 **Versión:** 1.1.0  
-**Estado:** ⚠️ Parcial (rollback probado pendiente)  
+**Estado:** ✅ Completado (rollback probado 2026-01-30)  
 
 ---
 
@@ -44,7 +44,7 @@
 |---|---|---|---|
 | E3-T1 | Validar migraciones recientes | ✅ | `docs/CHECKLIST_CIERRE.md` |
 | E3-T2 | Documentar rollback | ✅ | `docs/DEPLOYMENT_GUIDE.md` |
-| E3-T3 | Probar rollback en staging | ⏳ | Intento 2026-01-26: `bash migrate.sh status staging` OK; rollback no ejecutado |
+| E3-T3 | Probar rollback en staging | ✅ | Ejecutado 2026-01-30 (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md` |
 
 ---
 
@@ -80,4 +80,4 @@
 ## 9) Checklist post-implementación
 
 - [x] Migraciones validadas por entorno.
-- [ ] Rollback probado en staging con evidencia.
+- [x] Rollback probado en staging con evidencia (2026-01-30).

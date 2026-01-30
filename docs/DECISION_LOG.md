@@ -37,6 +37,18 @@
 | D-030 | **TEST_PASSWORD re-sincronizado** para usuarios E2E (staging) | Completada | 2026-01-26 | Password actualizado en Auth + `.env.test`; E2E auth real revalidado. |
 | D-031 | **Owners + rotación de secretos** documentados (M10) | Completada | 2026-01-26 | Owners y ventana de rotación definidos en `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`. |
 | D-032 | **Secretos obtenidos desde Supabase** y validados sin exponer valores | Completada | 2026-01-29 | `SUPABASE_*`, `DATABASE_URL`, `API_PROVEEDOR_SECRET`, `ALLOWED_ORIGINS` obtenidos/cargados; validación mínima OK (status + dry-run). |
+| D-033 | Ejecutar rollback de `create_stock_aggregations` en STAGING | Completada | 2026-01-30 | Rollback SQL manual ejecutado; evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`. |
+
+---
+
+## Siguientes Pasos (2026-01-30)
+
+### Pendientes actuales
+
+| Prioridad | Tarea | Referencia | Estado |
+|-----------|-------|------------|--------|
+| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
+| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
 
@@ -46,7 +58,6 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente |
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
@@ -57,7 +68,7 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | Pendiente (intento 2026-01-26: status OK; rollback no ejecutado) |
+| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | ✅ Completado (2026-01-30) |
 | P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
 | P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | ✅ Completado (2026-01-26) |
 | P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | ✅ Completado (2026-01-26) |

@@ -1,7 +1,7 @@
 # 🔁 Rollback Drill en Staging (OPS-SMART-1)
 
 **Fecha:** 2026-01-29  
-**Estado:** Listo para ejecución (pendiente evidencia)  
+**Estado:** ✅ Ejecutado en staging (evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`)  
 **Objetivo:** Probar rollback end-to-end en staging con evidencia verificable.
 
 ---
