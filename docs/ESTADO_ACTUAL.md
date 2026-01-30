@@ -6,7 +6,7 @@
 **Actualización 2026-01-29 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
 - Validaciones mínimas OK: `migrate.sh status staging` y `run-integration-tests --dry-run`.
-
+- Rollback drill (OPS-SMART-1) ejecutado exitosamente en STAGING: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 ## 🎯 Proyecto Supabase
 
 | Propiedad | Valor |
