@@ -38,6 +38,7 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 
 Pendientes:
 - Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+- Revisión Security Advisor (RLS/tabla pública) → **Crítico**: remediación aplicada en STAGING. Auditoría lite detectó gaps en `productos`, `proveedores`, `categorias` (sin policies + grants anon). Remediación pendiente (2026-01-30).
 
 ---
 
@@ -59,7 +60,7 @@ Pendientes:
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
   - URL: https://dqaygmjpzoqjjrywdsxi.supabase.co
   - ANON_KEY y SERVICE_ROLE_KEY documentadas (redactadas) en `docs/OBTENER_SECRETOS.md` (valores reales en Dashboard/.env.test)
-- [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23
+- [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23 (revalidación requerida 2026-01-30)
   - **Resultado:** Todas las tablas P0 protegidas
   - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
   - Script: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
@@ -81,7 +82,7 @@ Pendientes:
   - 10 migraciones aplicadas en producción
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
-- [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23
+- [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidación requerida 2026-01-30)
   - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` - todas las tablas protegidas
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
   - `npm audit` documentado en `docs/DECISION_LOG.md` (D-026)

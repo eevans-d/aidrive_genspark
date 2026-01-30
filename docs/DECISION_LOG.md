@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-29  
+**Última actualización:** 2026-01-30  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -38,6 +38,8 @@
 | D-031 | **Owners + rotación de secretos** documentados (M10) | Completada | 2026-01-26 | Owners y ventana de rotación definidos en `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`. |
 | D-032 | **Secretos obtenidos desde Supabase** y validados sin exponer valores | Completada | 2026-01-29 | `SUPABASE_*`, `DATABASE_URL`, `API_PROVEEDOR_SECRET`, `ALLOWED_ORIGINS` obtenidos/cargados; validación mínima OK (status + dry-run). |
 | D-033 | Ejecutar rollback de `create_stock_aggregations` en STAGING | Completada | 2026-01-30 | Rollback SQL manual ejecutado; evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`. |
+| D-034 | **Remediación Security Advisor (RLS)** en STAGING | Completada (verificada) | 2026-01-30 | Snapshot DESPUÉS capturado (JSON traducido por UI): RLS 6/6 + 6 policies + sin grants `anon` en esas tablas. |
+| D-035 | **Auditoría RLS Lite** detecta gaps P0 | Abierta | 2026-01-30 | `productos`, `proveedores`, `categorias` sin policies; grants `anon` reportados. Requiere remediación inmediata. |
 
 ---
 
@@ -47,7 +49,9 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
+| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
+| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
+| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---

@@ -8,6 +8,15 @@
 - Validaciones mínimas OK: `migrate.sh status staging` y `run-integration-tests --dry-run`.
 - Rollback de `create_stock_aggregations` ejecutado en STAGING (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
+**Actualización 2026-01-30 (local):**
+- Revisión Security Advisor pendiente; ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
+
+**Actualización 2026-01-30 (COMET):**
+- Snapshot ANTES confirmó RLS deshabilitado en `notificaciones_tareas` y `productos_faltantes`, y 0 policies para 6 tablas críticas.
+- Remediación aplicada en STAGING: RLS habilitado en 6/6, revocado `anon`, políticas creadas para `personal`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`.
+- Snapshot DESPUÉS literal capturado (JSON traducido por UI).
+- Auditoría RLS Lite detectó gaps P0: `productos`, `proveedores`, `categorias` sin policies y con grants `anon` reportados. Remediación pendiente. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
+
 ## 🎯 Proyecto Supabase
 
 | Propiedad | Valor |
@@ -84,7 +93,7 @@
 - ✅ **Tests de seguridad con credenciales reales**
 
 ## ✅ Estado de Pendientes
-- Auditoría RLS completa: ✅
+- Auditoría RLS completa: ✅ (2026-01-23) — revalidación requerida tras remediación 2026-01-30
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
 - E2E con auth real (Playwright): ✅ revalidado 2026-01-27 (7/7 PASS)
 
