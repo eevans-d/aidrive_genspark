@@ -127,6 +127,6 @@ WHERE routine_name LIKE 'fn_%stock%';
 
 - [x] Rollback ejecutado en STAGING
 - [x] Evidencia registrada en este documento
-- [ ] Pendiente: Actualizar `docs/CHECKLIST_CIERRE.md`
-- [ ] Pendiente: Actualizar `docs/DECISION_LOG.md`  
-- [ ] Pendiente: Actualizar `docs/ESTADO_ACTUAL.md`
+- [x] Pendiente: Actualizar `docs/CHECKLIST_CIERRE.md`
+- [x] Pendiente: Actualizar `docs/DECISION_LOG.md`  
+- [x] Pendiente: Actualizar `docs/ESTADO_ACTUAL.md`
