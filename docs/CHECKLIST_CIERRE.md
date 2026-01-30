@@ -209,8 +209,7 @@ Pendientes:
 - [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-22).
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
-- [ ] Cierre final pendiente por rollback probado. Ver `docs/ROLLBACK_DRILL_STAGING.md` y registrar evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
-
+- [x] Cierre final pendiente por rollback probado. Ver `docs/ROLLBACK_DRILL_STAGING.md` y registrar evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 ---
 
 ## 📊 Métricas Finales
