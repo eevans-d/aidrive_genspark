@@ -11,12 +11,37 @@ export type QueryOptions = {
   order?: string;
   limit?: number;
   offset?: number;
+  timeout?: number; // Timeout in ms (default: 10000)
 };
 
 export type QueryResult<T> = {
   data: T[];
   count: number | null;
 };
+
+const DEFAULT_TIMEOUT = 10_000;
+
+/**
+ * Helper to fetch with timeout
+ */
+async function fetchWithTimeout(
+  url: string,
+  options: RequestInit,
+  timeout = DEFAULT_TIMEOUT
+): Promise<Response> {
+  const controller = new AbortController();
+  const id = setTimeout(() => controller.abort(), timeout);
+
+  try {
+    const response = await fetch(url, {
+      ...options,
+      signal: controller.signal,
+    });
+    return response;
+  } finally {
+    clearTimeout(id);
+  }
+}
 
 /**
  * Parse Content-Range header to extract total count.
@@ -71,10 +96,12 @@ export async function queryTable<T = Record<string, unknown>>(
 ): Promise<T[]> {
   const queryUrl = buildQueryUrl(supabaseUrl, table, filters, select, options);
 
-  const response = await fetch(queryUrl, {
+  const response = await fetchWithTimeout(queryUrl, {
     method: 'GET',
     headers,
-  });
+  },
+    options.timeout
+  );
 
   if (!response.ok) {
     throw await fromFetchResponse(response, `Error query ${table}`);
@@ -97,10 +124,12 @@ export async function queryTableWithCount<T = Record<string, unknown>>(
 ): Promise<QueryResult<T>> {
   const queryUrl = buildQueryUrl(supabaseUrl, table, filters, select, options);
 
-  const response = await fetch(queryUrl, {
+  const response = await fetchWithTimeout(queryUrl, {
     method: 'GET',
     headers: { ...headers, Prefer: 'count=exact' },
-  });
+  },
+    options.timeout
+  );
 
   if (!response.ok) {
     throw await fromFetchResponse(response, `Error query ${table}`);
@@ -119,12 +148,15 @@ export async function insertTable<T = Record<string, unknown>>(
   table: string,
   headers: Record<string, string>,
   data: unknown,
+  timeout = DEFAULT_TIMEOUT,
 ): Promise<T[]> {
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}`, {
     method: 'POST',
     headers: { ...headers, Prefer: 'return=representation' },
     body: JSON.stringify(data),
-  });
+  },
+    timeout
+  );
 
   if (!response.ok) {
     throw await fromFetchResponse(response, `Error insertando en ${table}`);
@@ -142,12 +174,15 @@ export async function updateTable<T = Record<string, unknown>>(
   id: string,
   headers: Record<string, string>,
   data: unknown,
+  timeout = DEFAULT_TIMEOUT,
 ): Promise<T[]> {
-  const response = await fetch(`${supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
     method: 'PATCH',
     headers: { ...headers, Prefer: 'return=representation' },
     body: JSON.stringify(data),
-  });
+  },
+    timeout
+  );
 
   if (!response.ok) {
     throw await fromFetchResponse(response, `Error actualizando ${table}`);
@@ -164,12 +199,15 @@ export async function callFunction<T = unknown>(
   functionName: string,
   headers: Record<string, string>,
   params: Record<string, unknown> = {},
+  timeout = DEFAULT_TIMEOUT,
 ): Promise<T> {
-  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${functionName}`, {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/rpc/${functionName}`, {
     method: 'POST',
     headers,
     body: JSON.stringify(params),
-  });
+  },
+    timeout
+  );
 
   if (!response.ok) {
     throw await fromFetchResponse(response, `Error llamando ${functionName}`);
@@ -186,13 +224,15 @@ export async function fetchWithParams(
   table: string,
   params: URLSearchParams,
   headers: Record<string, string>,
+  timeout = DEFAULT_TIMEOUT,
 ): Promise<{ data: unknown[]; count: number | null }> {
-  const response = await fetch(
+  const response = await fetchWithTimeout(
     `${supabaseUrl}/rest/v1/${table}?${params.toString()}`,
     {
       method: 'GET',
       headers: { ...headers, Prefer: 'count=exact' },
     },
+    timeout
   );
 
   if (!response.ok) {

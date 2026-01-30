@@ -37,7 +37,7 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 - **Coverage mejorado:** 63.38% lines (+6.65%) ✅
 
 Pendientes:
-- ~~Rollback probado en staging (OPS-SMART-1)~~ → N/A: Plan Free no tiene PITR (verificado 2026-01-28).
+- Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
 ---
 
