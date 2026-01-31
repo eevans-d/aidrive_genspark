@@ -318,13 +318,9 @@ tests/api-contracts/      # (Vitest mock)
 
 | Documento | Estado | Notas |
 |-----------|--------|-------|
-| [PLAN_EJECUCION.md](PLAN_EJECUCION.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
-| [ROADMAP.md](ROADMAP.md) | ⚠️ Histórico | No es fuente de verdad |
-| [PLAN_WS_DETALLADO.md](PLAN_WS_DETALLADO.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
+| [ROADMAP.md](archive/ROADMAP.md) | 📦 Archivado | Histórico, movido a archive/ |
 | [DECISION_LOG.md](DECISION_LOG.md) | ✅ Vigente | Decisiones confirmadas |
 | [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md) | ✅ Vigente | Progreso aproximado hacia producción |
-| [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
-| [BASELINE_TECNICO.md](BASELINE_TECNICO.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |
 | [API_README.md](API_README.md) | ✅ Vigente | Endpoints documentados |
 | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | ✅ Vigente | Operacion diaria y tests |
@@ -337,7 +333,10 @@ tests/api-contracts/      # (Vitest mock)
 
 ---
 
-**Nota:** planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`) fueron retirados en favor de la Hoja de Ruta MADRE.
+**Nota:** 
+- Planes antiguos consolidados en Hoja de Ruta MADRE.
+- Archivos obsoletos movidos a `docs/archive/`: ROADMAP.md, ROLLBACK_DRILL_STAGING.md, COMET_*.md
+- Referencias legacy eliminadas: PLAN_EJECUCION.md, PLAN_WS_DETALLADO.md, INVENTARIO_ACTUAL.md, BASELINE_TECNICO.md
 
 ## ✍️ Estado de Cierre
 

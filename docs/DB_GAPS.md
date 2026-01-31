@@ -50,12 +50,11 @@
 
 ---
 
-## ⚠️ Hallazgos Pendientes de Corrección
+## ✅ Hallazgos Cerrados (2026-01-31)
 
-Ver [REPORTE_REVISION_DB.md](REPORTE_REVISION_DB.md) para:
-- 6 hallazgos P0 (críticos)
-- 12 hallazgos P1 (alta prioridad)
-- 9 hallazgos P2 (mejoras)
-- 5 items que requieren revisión manual
+Los hallazgos P0/P1/P2 mencionados anteriormente fueron resueltos con las siguientes migraciones:
+- `20260110000000_fix_constraints_and_indexes.sql`
+- `20260131000000_rls_role_based_policies_v2.sql`
+- `20260131020000_security_advisor_mitigations.sql`
 
-**Migración sugerida:** `20260110000000_fix_constraints_and_indexes.sql` (incluida en reporte)
+**Nota:** El documento `REPORTE_REVISION_DB.md` mencionado originalmente nunca fue creado; los hallazgos se documentaron directamente en las evidencias de auditoría RLS (`docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`).
