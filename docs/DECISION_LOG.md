@@ -82,8 +82,7 @@
 |-----------|-------|------------|--------|
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
----
-
+| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | ✅ Completado (2026-01-30) |
 ## Siguientes Pasos (2026-01-25)
 
 ### Pendientes actuales

@@ -214,7 +214,6 @@ Pendientes:
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
 - [x] Rollback de create_stock_aggregations probado en Staging (2026-01-30). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
-
 ---
 
 ## 📊 Métricas Finales

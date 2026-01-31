@@ -26,7 +26,6 @@
 - Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedan 2 WARN (leaked password protection + 1 WARN residual por confirmar) + 15 INFO (tablas internas sin policies). Ver Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar en entornos no-PROD si aplica).
 - Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (planes antiguos retirados).
-
 ## 🎯 Proyecto Supabase
 
 | Propiedad | Valor |

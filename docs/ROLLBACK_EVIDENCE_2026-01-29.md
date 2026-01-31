@@ -22,3 +22,10 @@
 ## 3) Observaciones
 - Rollback ejecutado sobre la migración `20260116000000_create_stock_aggregations.sql`.
 - Script validado y listo para producción si se requiere.
+
+---
+
+## 4) Registro documental
+- [x] Actualizado `docs/CHECKLIST_CIERRE.md`
+- [x] Actualizado `docs/DECISION_LOG.md`
+- [x] Actualizado `docs/ESTADO_ACTUAL.md`
