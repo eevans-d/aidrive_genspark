@@ -1,8 +1,7 @@
 # DB GAPS (objetos sin migracion versionada)
 
 **Estado:** ✅ RESUELTO - Todos los gaps cubiertos en migraciones  
-**Última revisión:** 2026-01-21  
-**Pendiente:** `REPORTE_REVISION_DB.md` no existe (registrado en `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
+**Última revisión:** 2026-01-31
 
 ---
 
