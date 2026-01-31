@@ -38,12 +38,14 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 
 ### Estado Actual (fuente de verdad)
 Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.  
-Para ejecución operativa paso a paso, ver `docs/HOJA_RUTA_30_PASOS.md`.
+Plan vigente y checklist único: `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
+Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 
 ### Contexto Importante
-- Proyecto en fase de **pre-cierre**
-- RLS audit **completada** (2026-01-23)
-- Integration/E2E tests **gated** en CI
+- Proyecto en fase de **cierre avanzado** (RLS + Advisor mitigado en PROD)
+- RLS audit **completada y revalidada** (2026-01-31)
+- Security Advisor mitigado (ERROR=0, WARN=2, INFO=15; pendiente leaked password protection)
+- Integration/E2E tests **gated** en CI (pendiente secrets en GitHub)
 - Documentación técnica **completa y actualizada**
 
 ---
@@ -152,7 +154,7 @@ aidrive_genspark/
 │
 ├── docs/                           # 22 archivos de documentación
 │   ├── ESTADO_ACTUAL.md            # ⭐ FUENTE DE VERDAD - Estado y avance
-│   ├── HOJA_RUTA_30_PASOS.md        # Checklist operativo paso a paso (planning)
+│   ├── HOJA_RUTA_MADRE_2026-01-31.md # Checklist único vigente
 │   ├── ROADMAP.md                  # Plan rolling 90 días
 │   ├── ARCHITECTURE_DOCUMENTATION.md # Arquitectura técnica
 │   ├── API_README.md               # Documentación de endpoints
@@ -497,7 +499,9 @@ npm run test:unit           # En raíz
 ### Principios Fundamentales
 
 1. **SIEMPRE leer documentación existente primero**
-   - `docs/ESTADO_ACTUAL.md` - Estado del proyecto
+   - `docs/ESTADO_ACTUAL.md` - Estado del proyecto (fuente de verdad)
+   - `docs/HOJA_RUTA_MADRE_2026-01-31.md` - Plan vigente y checklist único
+   - `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` - Evidencia RLS + Advisor
    - `docs/ARCHITECTURE_DOCUMENTATION.md` - Arquitectura
    - `docs/API_README.md` - Endpoints disponibles
 
@@ -526,8 +530,8 @@ npm run test:unit           # En raíz
 1. **Entender el contexto**
    ```
    - Leer docs/ESTADO_ACTUAL.md
-   - Revisar docs/ROADMAP.md
-   - Verificar en docs/DECISION_LOG.md si hay decisiones relevantes
+   - Revisar docs/HOJA_RUTA_MADRE_2026-01-31.md
+   - Verificar docs/DECISION_LOG.md y docs/CHECKLIST_CIERRE.md
    ```
 
 2. **Buscar código similar**
@@ -556,6 +560,8 @@ npm run test:unit           # En raíz
 
 6. **Documentar decisiones importantes**
    - Actualizar `docs/DECISION_LOG.md` si aplica
+
+> **Nota sobre skills:** si el entorno soporta skills, usarlas solo cuando la tarea lo requiera. Si no, seguir el plan y documentos base.
 
 ---
 
@@ -822,7 +828,7 @@ En **GitHub Settings → Secrets and variables → Actions**:
 ### Documentación Técnica Esencial
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
-2. **HOJA_RUTA_30_PASOS.md** - Checklist operativo paso a paso (planning/ejecución)
+2. **HOJA_RUTA_MADRE_2026-01-31.md** - Checklist único vigente (plan maestro)
 3. **PROMPT_CONTEXT_NUEVA_VENTANA_IA.md** - Prompt base para nueva ventana IA
 4. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
 5. **API_README.md** - Todos los endpoints disponibles

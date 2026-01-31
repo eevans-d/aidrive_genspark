@@ -2,7 +2,7 @@
 
 **Última actualización:** 2026-01-27 05:13 UTC  
 **Estado:** ✅ Revalidado (auth.real 7/7 PASS, 22.7s)  
-**Plan detallado:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
+**Plan detallado:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`
 
 ---
 
@@ -18,7 +18,7 @@ SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_ANON_KEY=<REDACTED>
 SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
-# Usuarios de prueba (ver PLAN_PENDIENTES_DEFINITIVO.md)
+# Usuarios de prueba (ver HOJA_RUTA_MADRE_2026-01-31.md)
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test

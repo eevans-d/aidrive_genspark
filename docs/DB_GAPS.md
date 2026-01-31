@@ -2,7 +2,7 @@
 
 **Estado:** ✅ RESUELTO - Todos los gaps cubiertos en migraciones  
 **Última revisión:** 2026-01-21  
-**Ver:** [REPORTE_REVISION_DB.md](REPORTE_REVISION_DB.md) para hallazgos pendientes
+**Pendiente:** `REPORTE_REVISION_DB.md` no existe (registrado en `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
 
 ---
 

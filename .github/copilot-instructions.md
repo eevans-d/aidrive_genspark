@@ -54,11 +54,11 @@ docs/                  # 21 archivos de documentación + OpenAPI/Postman
 ├── CHECKLIST_CIERRE.md         # Estado del proyecto
 ├── ESTADO_ACTUAL.md            # Progreso aproximado hacia producción
 ├── ROADMAP.md                  # Plan vigente (rolling 90 días)
-├── PLAN_WS_DETALLADO.md         # Plan operativo por workstreams
+├── PLAN_WS_DETALLADO.md         # (pendiente crear o retirar referencia)
 ├── DECISION_LOG.md             # Decisiones vigentes
 ├── OBJETIVOS_Y_KPIS.md
-├── INVENTARIO_ACTUAL.md
-├── BASELINE_TECNICO.md
+├── INVENTARIO_ACTUAL.md         # (pendiente crear o retirar referencia)
+├── BASELINE_TECNICO.md          # (pendiente crear o retirar referencia)
 ├── DB_GAPS.md
 ├── API_README.md
 ├── ARCHITECTURE_DOCUMENTATION.md
@@ -113,9 +113,9 @@ npx vitest --coverage       # Unit tests con coverage
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
-| Plan vigente | `docs/ROADMAP.md` |
-| **Plan pendientes** | `docs/PLAN_PENDIENTES_DEFINITIVO.md` |
-| Plan operativo | `docs/PLAN_WS_DETALLADO.md` |
+| Plan vigente | `docs/HOJA_RUTA_MADRE_2026-01-31.md` |
+| Plan histórico | `docs/ROADMAP.md` |
+| Plan operativo | `docs/PLAN_WS_DETALLADO.md` (histórico) |
 | Decisiones | `docs/DECISION_LOG.md` |
 | Estado actual | `docs/ESTADO_ACTUAL.md` |
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
@@ -128,7 +128,7 @@ npx vitest --coverage       # Unit tests con coverage
 - **Ref:** dqaygmjpzoqjjrywdsxi
 - **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
 - **Edge Functions:** 13 desplegadas y funcionando
-- **Migraciones:** 10/10 aplicadas
+- **Migraciones:** 12 versionadas (incluye 2 de 2026-01-31)
 
 ### Funciones Modularizadas
 1. **api-proveedor**: Router + handlers + schemas + validators + utils
@@ -147,7 +147,8 @@ npx vitest --coverage       # Unit tests con coverage
 - Jobs: lint → test → build → typecheck → edge-functions-check
 - Nota: workflow activo en `main` y edge-check estricto
 
-### Pendientes (ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`)
-1. Auditoría RLS (30 min)
-2. Usuarios de prueba staging (45 min)
-3. E2E con auth real (60 min)
+### Pendientes (ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`)
+1. Habilitar leaked password protection (Auth settings)
+2. Confirmar WARN residual en Security Advisor
+3. Configurar secrets en GitHub (desbloquear CI integration/E2E)
+4. Revisión humana P0 de módulos críticos

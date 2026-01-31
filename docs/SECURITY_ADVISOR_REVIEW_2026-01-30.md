@@ -136,6 +136,69 @@ Resultado esperado:
 **Implicancia crítica:** las tablas P0 `productos`, `proveedores`, `categorias` no tienen policies para `authenticated` y mantienen grants para `anon`.  
 Esto puede bloquear al frontend/gateway y/o dejar permisos abiertos si RLS cambia. Requiere remediación inmediata.
 
+### Ejecución GitHub Copilot (MCP Supabase) — Auditoría completa + remediación
+**Fecha/hora:** 2026-01-31 03:33 UTC  
+**Fuente:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (SQL con output crudo)
+
+**Diagnóstico inicial (resumen):**
+- RLS habilitado en 10/10 tablas críticas.
+- 5 tablas sin policies: `categorias`, `productos`, `proveedores`, `productos_faltantes`, `notificaciones_tareas`.
+- Grants `anon` detectados en: `categorias`, `ordenes_compra`, `productos`, `proveedores`, `tareas_pendientes`.
+
+**Remediación aplicada (resumen):**
+- Función helper `public.has_personal_role(roles text[])`.
+- `REVOKE ALL` a `anon` en 10 tablas críticas.
+- 30 policies RLS basadas en roles (`admin`, `deposito`, `ventas`, `usuario` + sinónimos).
+- Grants mínimos a `authenticated` por tabla (sin `anon`).
+
+**Post-check final (resumen):**
+- RLS habilitado 10/10.
+- 30 policies activas.
+- `anon` sin grants.
+
+**Estado:** gaps P0 de `categorias`, `productos`, `proveedores` **resueltos** (post-check OK).
+
+### Verificación en PROD (post-migración)
+**Fecha/hora:** 2026-01-31 04:06–04:15 UTC  
+**Fuente:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (Partes 4 y 5)
+
+**Resultado en PROD:**
+- RLS 10/10 ✅
+- Policies 30/30 ✅
+- `anon` grants 0 ✅
+- Función `has_personal_role` STABLE ✅
+
+**Estado:** migración aplicada y verificada en PROD.
+
+### Security Advisor (PROD) — Parte 7
+**Fecha/hora:** 2026-01-31 ~12:00 UTC  
+**Fuente:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (Parte 7)
+
+**Resumen Advisor:**
+- **ERROR:** 5 (vistas `SECURITY DEFINER`)
+- **WARN:** 7 (5 funciones sin `search_path` fijo + 1 vista materializada con grants + Auth leaked password protection deshabilitado)
+- **INFO:** 15 (tablas internas con RLS y sin políticas)
+
+**Conclusión:** Advisor **con alertas**, pero **tablas core protegidas** (RLS + 30 policies + 0 grants `anon`).  
+Acciones recomendadas (no bloqueantes): ajustar `search_path`, revocar `anon` en tablas internas, habilitar leaked password protection, documentar vistas `SECURITY DEFINER`.
+
+### Security Advisor (PROD) — Mitigación aplicada (Parte 8)
+**Fecha/hora:** 2026-01-31 04:33–04:40 UTC  
+**Fuente:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (Parte 8)
+
+**Cambios aplicados:**
+- `search_path=public` en 5 funciones (WARN eliminadas).
+- Vistas internas cambiadas a `security_invoker` (ERROR eliminados).
+- `REVOKE` de `anon` en 21 objetos (tablas/vistas/mat view).
+
+**Post-mitigación (Advisor):**
+- **ERROR:** 0 (antes 5).
+- **WARN:** 2 (antes 7) — pendiente manual: leaked password protection; 1 WARN residual a confirmar en panel.
+- **INFO:** 15 (tablas internas con RLS sin policies; aceptable por uso `service_role`).
+
+**Pendiente manual:** habilitar leaked password protection en Dashboard → Auth → Settings.
+**Migración recomendada:** versionar mitigaciones en `supabase/migrations/20260131020000_security_advisor_mitigations.sql`.
+
 ---
 
 ## 3) Acciones si hay problemas
@@ -169,10 +232,12 @@ Definir políticas mínimas **solo si se confirma ausencia**, según uso real (f
 - [x] Verificación SQL realizada (COMET, STAGING, 2026-01-30)
 - [x] Remediación aplicada en STAGING (RLS + policies + revoke anon)
 - [x] Snapshot DESPUÉS literal capturado (JSON traducido por UI)
-- [ ] Auditoría RLS completa sin gaps (P0 con policies + grants correctos)
-- [ ] Advisor sin alertas críticas (requiere verificación en panel)
+- [x] Auditoría RLS completa sin gaps (P0 con policies + grants correctos) — ver `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
+- [x] Migración aplicada y verificada en PROD (2026-01-31)
+- [x] Mitigación de alertas no críticas aplicada (Parte 8)
+- [ ] Advisor sin alertas críticas (aún quedan WARN/INFO; ver Parte 8)
 
-**Bloqueador actual:** faltan policies en `productos`, `proveedores`, `categorias` y persisten grants para `anon` según auditoría lite. Remediación requerida.
+**Bloqueador actual:** ninguno en RLS; pendiente confirmar panel de Security Advisor.
 
 ---
 

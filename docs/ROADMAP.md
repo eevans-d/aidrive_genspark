@@ -1,9 +1,8 @@
-# ROADMAP VIGENTE (Rolling 90 días)
+# ROADMAP HISTÓRICO (Rolling 90 días)
 
 **Última actualización:** 2026-01-28  
-**Estado:** vigente  
-**Fuente de verdad:** este documento + `docs/DECISION_LOG.md` + `docs/ESTADO_ACTUAL.md` + `docs/CHECKLIST_CIERRE.md`  
-**Plan pendientes:** ver `docs/PLAN_PENDIENTES_DEFINITIVO.md`
+**Estado:** histórico (no fuente de verdad)  
+**Fuente de verdad actual:** `docs/HOJA_RUTA_MADRE_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`
 
 ---
 
@@ -14,8 +13,8 @@ Definir un plan de ejecución **claro, medible y sin ambigüedades** para estabi
 - Si una tarea no está aquí, **no está planificada**.
 - Cada item incluye **criterio de aceptación**, **dependencias** y **prioridad**.
 - Al cerrar un item, actualizar `docs/CHECKLIST_CIERRE.md` y dejar evidencia (test, log, captura o link).
-- Para detalle operativo por tarea, ver `docs/PLAN_WS_DETALLADO.md`.
-- Para ejecución paso a paso (operativo), ver `docs/HOJA_RUTA_30_PASOS.md`.
+- Para detalle operativo por tarea, ver `docs/PLAN_WS_DETALLADO.md` (histórico).
+- Para ejecución paso a paso (operativo), ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`.
 
 ## Workstreams (por módulos/subsistemas)
 

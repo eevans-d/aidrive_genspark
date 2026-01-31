@@ -1,5 +1,7 @@
 # Project Closure Report - Sistema Mini Market
 
+> **Nota (2026-01-31):** documento histórico. La fuente de verdad actual es `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/ESTADO_ACTUAL.md`.
+
 **Versión:** 1.0.0  
 **Fecha:** 2026-01-26  
 **Base Commit:** f414687ea0b90be302d01de00d13b3bd93406dfc  

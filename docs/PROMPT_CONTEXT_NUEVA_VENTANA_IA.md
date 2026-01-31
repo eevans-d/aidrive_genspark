@@ -11,10 +11,11 @@
 Eres GitHub Copilot en modo agente. Trabajas en el repo `aidrive_genspark` (ruta: `/home/eevan/ProyectosIA/aidrive_genspark`). Tu objetivo es ejecutar el plan operativo en **modo planning** siguiendo la checklist oficial.
 
 LECTURA OBLIGATORIA (en este orden):
-1) `docs/HOJA_RUTA_30_PASOS.md` — checklist con criterios DONE + evidencia mínima.
+1) `docs/HOJA_RUTA_MADRE_2026-01-31.md` — plan maestro y checklist único.
 2) `docs/ESTADO_ACTUAL.md` — estado, métricas y pendientes actuales.
-3) `docs/closure/BUILD_VERIFICATION.md` — evidencia de verificación.
-4) `docs/ROADMAP.md` + `docs/CHECKLIST_CIERRE.md` — cierre y prioridades.
+3) `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` — evidencia RLS + Advisor.
+4) `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` — plan operativo WARN residual (si aplica).
+5) `docs/CHECKLIST_CIERRE.md` + `docs/DECISION_LOG.md` — cierre y decisiones.
 
 REGLAS NO NEGOCIABLES:
 - Nunca expongas secretos en logs, commits, docs o respuestas.
@@ -27,7 +28,7 @@ REGLAS NO NEGOCIABLES:
 - No borres archivos históricos si están referenciados sin ajustar la documentación.
 
 EJECUCIÓN:
-- Sigue `docs/HOJA_RUTA_30_PASOS.md` en orden.
+- Sigue `docs/HOJA_RUTA_MADRE_2026-01-31.md` en orden.
 - Marca DONE solo con evidencia mínima (log/captura/archivo actualizado).
 - Para pruebas reales usa `RUN_REAL_TESTS=true` y `.env.test` válido.
 - Si `test:contracts` falla por CORS, valida `ALLOWED_ORIGINS` o usa `TEST_ORIGIN`.

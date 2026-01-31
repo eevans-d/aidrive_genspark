@@ -1,8 +1,8 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-28  
+**Fecha:** 2026-01-31  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa)  
-**Plan vigente:** ver `docs/ROADMAP.md` y `docs/DECISION_LOG.md`
+**Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
 ---
 
@@ -38,7 +38,10 @@ El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se lo
 
 Pendientes:
 - Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
-- Revisión Security Advisor (RLS/tabla pública) → **Crítico**: remediación aplicada en STAGING. Auditoría lite detectó gaps en `productos`, `proveedores`, `categorias` (sin policies + grants anon). Remediación pendiente (2026-01-30).
+- Revisión Security Advisor (RLS/tabla pública) → ✅ Remediación role-based aplicada y verificada (2026-01-31). Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. Pendiente solo confirmación en panel.
+- Migración RLS role-based v2 aplicada en PROD ✅ (archivo: `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`).
+- Security Advisor en PROD mitigado (Parte 8): ERROR=0, WARN=2, INFO=15. Pendiente manual: leaked password protection.
+- Migración mitigaciones Advisor creada: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar en entornos no-PROD si aplica).
 
 ---
 
@@ -60,9 +63,9 @@ Pendientes:
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
   - URL: https://dqaygmjpzoqjjrywdsxi.supabase.co
   - ANON_KEY y SERVICE_ROLE_KEY documentadas (redactadas) en `docs/OBTENER_SECRETOS.md` (valores reales en Dashboard/.env.test)
-- [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23 (revalidación requerida 2026-01-30)
+- [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
   - **Resultado:** Todas las tablas P0 protegidas
-  - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md)
+  - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md) + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
   - Script: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
   - Tablas P0 verificadas: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`, `categorias`
 - [x] **Usuarios de prueba** ✅ COMPLETADO 2026-01-23
@@ -82,8 +85,8 @@ Pendientes:
   - 10 migraciones aplicadas en producción
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
-- [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidación requerida 2026-01-30)
-  - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` - todas las tablas protegidas
+- [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
+  - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
   - `npm audit` documentado en `docs/DECISION_LOG.md` (D-026)
   - Vulnerabilidades conocidas en dependencias dev (rollup, vite)
@@ -316,13 +319,13 @@ tests/api-contracts/      # (Vitest mock)
 
 | Documento | Estado | Notas |
 |-----------|--------|-------|
-| [PLAN_EJECUCION.md](PLAN_EJECUCION.md) | ⚠️ Actualizado | Plan no completado |
-| [ROADMAP.md](ROADMAP.md) | ✅ Vigente | Plan rolling 90 días |
-| [PLAN_WS_DETALLADO.md](PLAN_WS_DETALLADO.md) | ✅ Vigente | Plan operativo por workstreams |
+| [PLAN_EJECUCION.md](PLAN_EJECUCION.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
+| [ROADMAP.md](ROADMAP.md) | ⚠️ Histórico | No es fuente de verdad |
+| [PLAN_WS_DETALLADO.md](PLAN_WS_DETALLADO.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
 | [DECISION_LOG.md](DECISION_LOG.md) | ✅ Vigente | Decisiones confirmadas |
 | [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md) | ✅ Vigente | Progreso aproximado hacia producción |
-| [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) | ✅ Vigente | Refleja estructura modular |
-| [BASELINE_TECNICO.md](BASELINE_TECNICO.md) | ✅ Vigente | Punto de partida documentado |
+| [INVENTARIO_ACTUAL.md](INVENTARIO_ACTUAL.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
+| [BASELINE_TECNICO.md](BASELINE_TECNICO.md) | ❌ Missing | Referenciado pero no existe (pendiente crear) |
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |
 | [API_README.md](API_README.md) | ✅ Vigente | Endpoints documentados |
 | [OPERATIONS_RUNBOOK.md](OPERATIONS_RUNBOOK.md) | ✅ Vigente | Operacion diaria y tests |
@@ -330,10 +333,12 @@ tests/api-contracts/      # (Vitest mock)
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ✅ Vigente | Estado real reflejado (v2.1.0) |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 | [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
-| [HOJA_RUTA_30_PASOS.md](HOJA_RUTA_30_PASOS.md) | ✅ Actualizado | Pasos 22-30 completados 2026-01-28 |
+| [HOJA_RUTA_MADRE_2026-01-31.md](HOJA_RUTA_MADRE_2026-01-31.md) | ✅ Vigente | Checklist único y ruta a 100% |
 | [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Actualizado | 689 tests, 63.38% coverage |
 
 ---
+
+**Nota:** planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`) fueron retirados en favor de la Hoja de Ruta MADRE.
 
 ## ✍️ Estado de Cierre
 

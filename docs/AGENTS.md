@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-29  
+**Última actualización:** 2026-01-31  
 
 ---
 
@@ -9,20 +9,32 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 95% (pendiente rollback probado) |
+| **Avance Global** | 98% (pendiente leaked password protection + revisión humana P0 + secrets CI) |
 | **Build** | ✅ Passing |
 | **Tests** | Ver `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 100% (29 endpoints desplegados) |
-| **Supabase** | ✅ Producción configurada |
+| **Supabase** | ✅ RLS role-based + Advisor mitigado en PROD |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
 ---
 
 ## 🎯 Próximos Pasos
 
-Plan definitivo **completado con pendiente P1** (rollback probado). Ver estado consolidado en `docs/ESTADO_ACTUAL.md`.
-Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
+Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
+Estado consolidado: `docs/ESTADO_ACTUAL.md`.  
+Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).
+
+---
+
+## 🚀 Inicio Rápido (futuras sesiones)
+
+1) **Leer estado actual:** `docs/ESTADO_ACTUAL.md`  
+2) **Leer plan vigente:** `docs/HOJA_RUTA_MADRE_2026-01-31.md`  
+3) **Auditoría RLS/Advisor:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`  
+4) **Decisiones vigentes:** `docs/DECISION_LOG.md`  
+5) **Checklist de cierre:** `docs/CHECKLIST_CIERRE.md`  
+6) **Si toca Security Advisor WARN:** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`  
 
 ---
 
@@ -40,6 +52,12 @@ Plan modular vigente: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`.
 
 ---
 
+## 🧩 Habilidades/Skills (contexto agentes)
+
+- Usar skills **solo si el agente lo soporta** y **solo cuando la tarea lo requiere**.  
+- Si se requiere crear/instalar skills, documentar en `docs/DECISION_LOG.md` y actualizar `docs/ESTADO_ACTUAL.md`.  
+- Si el entorno no soporta skills, proceder con los documentos base (Hoja de Ruta MADRE).
+
 ## 📂 Estructura del Proyecto
 
 ```
@@ -55,9 +73,9 @@ aidrive_genspark/
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # 10 migraciones aplicadas
+│   └── migrations/           # 12 migraciones versionadas
 ├── tests/                    # Unit, E2E, Performance, Security
-└── docs/                     # Documentación (56 archivos .md)
+└── docs/                     # Documentación (ver HOJA_RUTA_MADRE)
 ```
 
 ---
@@ -67,8 +85,11 @@ aidrive_genspark/
 | Archivo | Propósito |
 |---------|-----------|
 | `docs/ESTADO_ACTUAL.md` | **FUENTE DE VERDAD** - Estado y avance |
-| `docs/PLAN_PENDIENTES_DEFINITIVO.md` | **PLAN ACTUAL** - ✅ completado |
-| `docs/ROADMAP.md` | Plan rolling 90 días |
+| `docs/HOJA_RUTA_MADRE_2026-01-31.md` | **PLAN ACTUAL** - checklist único y ruta a 100% |
+| `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` | Evidencia RLS + Advisor (Partes 1-8) |
+| `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Resumen Advisor + mitigación |
+| `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` | Plan operativo para WARN residual |
+| `docs/ROADMAP.md` | Plan histórico (no fuente de verdad) |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
 | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Inventario y validación de secretos |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
@@ -93,21 +114,25 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Probar rollback en staging (OPS-SMART-1) y guardar evidencia.
-- Mantener mantenimiento y observabilidad.
+- Habilitar leaked password protection (Auth → Settings).
+- Confirmar WARN residual en Security Advisor (panel).
+- Configurar secrets en GitHub para desbloquear CI integration/E2E.
+- Revisión humana P0 (módulos críticos).
 
 ---
 
 ## 🧭 Cómo obtener contexto en una nueva sesión
 
 1. Leer `docs/ESTADO_ACTUAL.md` (fuente de verdad).
-2. Confirmar checklist final en `docs/CHECKLIST_CIERRE.md`.
-3. Revisar decisiones vigentes en `docs/DECISION_LOG.md`.
-4. Validar credenciales y usuarios staging en `docs/OBTENER_SECRETOS.md`.
-5. Verificar estado del repo:
+2. Leer `docs/HOJA_RUTA_MADRE_2026-01-31.md` (plan vigente).
+3. Leer `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (RLS + Advisor).
+4. Confirmar checklist final en `docs/CHECKLIST_CIERRE.md`.
+5. Revisar decisiones vigentes en `docs/DECISION_LOG.md`.
+6. Validar credenciales y usuarios staging en `docs/OBTENER_SECRETOS.md`.
+7. Verificar estado del repo:
   - `git status --short`
   - `git log -1 --oneline`
-6. Si se tocan E2E:
+8. Si se tocan E2E:
   - `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
 
 ---

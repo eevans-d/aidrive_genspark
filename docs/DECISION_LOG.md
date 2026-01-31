@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-01-30  
+**Última actualización:** 2026-01-31  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -39,7 +39,25 @@
 | D-032 | **Secretos obtenidos desde Supabase** y validados sin exponer valores | Completada | 2026-01-29 | `SUPABASE_*`, `DATABASE_URL`, `API_PROVEEDOR_SECRET`, `ALLOWED_ORIGINS` obtenidos/cargados; validación mínima OK (status + dry-run). |
 | D-033 | Ejecutar rollback de `create_stock_aggregations` en STAGING | Completada | 2026-01-30 | Rollback SQL manual ejecutado; evidencia en `docs/ROLLBACK_EVIDENCE_2026-01-29.md`. |
 | D-034 | **Remediación Security Advisor (RLS)** en STAGING | Completada (verificada) | 2026-01-30 | Snapshot DESPUÉS capturado (JSON traducido por UI): RLS 6/6 + 6 policies + sin grants `anon` en esas tablas. |
-| D-035 | **Auditoría RLS Lite** detecta gaps P0 | Abierta | 2026-01-30 | `productos`, `proveedores`, `categorias` sin policies; grants `anon` reportados. Requiere remediación inmediata. |
+| D-035 | **Auditoría RLS Lite** detecta gaps P0 | Completada | 2026-01-30 | Gaps cerrados por remediación role-based (ver D-036). |
+| D-036 | **RLS role-based v2 aplicada y verificada** | Completada | 2026-01-31 | `anon` revocado en tablas críticas, 30 policies activas, post-check OK. Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
+| D-037 | **Migración versionada RLS role-based v2** | Completada | 2026-01-31 | Aplicada en PROD y verificada (04:06–04:15 UTC). Archivo: `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`. |
+| D-038 | **Security Advisor en PROD con alertas no críticas** | Aprobada | 2026-01-31 | 5 ERROR (vistas SECURITY DEFINER), 7 WARN (funciones + Auth), 15 INFO (tablas internas sin policies). Acciones recomendadas sin bloqueo. Evidencia: Parte 7 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
+| D-039 | **Mitigación de alertas no críticas (Advisor)** | Completada | 2026-01-31 | search_path fijado, security_invoker en vistas, anon grants revocados; ERROR=0, WARN=2, INFO=15. Pendiente manual: leaked password protection. Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
+| D-040 | **Migración para mitigaciones Advisor** | Aprobada | 2026-01-31 | Archivo creado: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar). |
+| D-041 | **Consolidación de planificación en Hoja de Ruta MADRE** | Completada | 2026-01-31 | Se creó `docs/HOJA_RUTA_MADRE_2026-01-31.md` y se retiraron planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`). |
+
+---
+
+## Siguientes Pasos (2026-01-31)
+
+### Pendientes actuales
+
+| Prioridad | Tarea | Referencia | Estado |
+|-----------|-------|------------|--------|
+| P1 | Habilitar leaked password protection (Auth) | Supabase Dashboard | Pendiente |
+| P1 | Aplicar/validar migración mitigaciones Advisor | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` | Pendiente |
+| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
 
