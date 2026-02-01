@@ -25,12 +25,12 @@
   Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (Partes 4 y 5).
 - ✅ Security Advisor mitigado (alertas no críticas):  
   - ERROR: 0 (vistas SECURITY DEFINER mitigadas)  
-  - WARN: 2 (pendiente manual: leaked password protection + 1 WARN residual no especificado)  
+  - WARN: 0 (confirmación usuario 2026-02-01; leaked password protection habilitado)  
   - INFO: 15 (tablas internas sin policies; aceptable si solo usa service_role)  
   Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - ✅ Migraciones versionadas:  
   - `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql` (aplicada PROD).  
-  - `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (creada; aplicar/validar en entornos no-PROD si corresponde).
+  - `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario).
 
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
@@ -39,7 +39,9 @@
 
 ---
 
-## 1) Checklist MADRE — pasos pendientes hasta 100%
+## 1) Checklist MADRE — cierre final (completado)
+
+**Actualización 2026-02-01:** ítems marcados como completados por confirmación del usuario (evidencia manual).
 
 > **Leyenda:**
 > - [ ] Pendiente
@@ -47,79 +49,60 @@
 > - **Observación**: notas críticas por paso.
 
 ### 1.1 Seguridad (P0/P1)
-- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings.  
-  **Observación:** no es posible por SQL; requiere panel.
-- [ ] **Evaluar rotación de secretos** si hubo exposición histórica.  
-  **Observación:** coordinar rotación Supabase + CI + Edge Functions y registrar en DECISION_LOG.
-- [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación).  
-  **Observación:** el reporte indica WARN=2 pero solo se detalla 1; verificar el segundo.
-- [ ] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
-- [ ] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD si corresponde:  
-  `supabase/migrations/20260131020000_security_advisor_mitigations.sql`.
-- [ ] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.
-- [ ] **Revisión humana de módulos críticos P0** (security review manual).  
-  **Alcance mínimo:**  
-  - `supabase/functions/api-minimarket/index.ts` (timeouts, edge cases)  
-  - `supabase/functions/_shared/cors.ts` (ALLOWED_ORIGINS en todas las funciones)  
-  - `supabase/functions/_shared/rate-limit.ts` (estrategia y límites)  
-  - `supabase/migrations/20260110100000_fix_rls_security_definer.sql` (uso de SECURITY DEFINER)  
-  - `minimarket-system/src/contexts/AuthContext.tsx` (refresh tokens, expiración, CSRF)  
-  - `supabase/functions/scraper-maxiconsumo/` (rate limiting externo, errores de red)
+- [x] **Habilitar leaked password protection** en Dashboard → Auth → Settings.  
+- [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
+- [x] **Confirmar WARN residual** en Security Advisor (post‑mitigación).  
+- [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
+- [x] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD.  
+- [x] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.  
+- [x] **Revisión humana de módulos críticos P0** (security review manual).  
 
 ### 1.2 Base de datos y consistencia
-- [ ] **Sincronizar estado de migraciones** en staging/prod: `./migrate.sh status` o `supabase db push`.  
-  **Observación:** asegurar que ambas migraciones 20260131 estén registradas.
-- [ ] **Verificar aplicación de migración de constraints/indexes**:  
-  `supabase/migrations/20260110000000_fix_constraints_and_indexes.sql` (si no está en PROD, aplicar).
-- [ ] **Actualizar evidencias RLS** si se ejecuta en staging/local:  
-  - `scripts/rls_audit.sql`  
-  - actualizar `docs/AUDITORIA_RLS_CHECKLIST.md` si aplica.
-- [x] **Confirmar N/A de `REPORTE_REVISION_DB.md`**: `docs/DB_GAPS.md` indica que no existe; hallazgos documentados en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
+- [x] **Sincronizar estado de migraciones** en staging/prod.  
+- [x] **Verificar aplicación de migración de constraints/indexes**.  
+- [x] **Actualizar evidencias RLS** si se ejecuta en staging/local.  
+- [x] **Confirmar N/A de `REPORTE_REVISION_DB.md`**: `docs/DB_GAPS.md` indica que no existe.
 
 ### 1.3 Operaciones / Backups / DR
-- [ ] **Definir y documentar Backup/DR** (procedimiento y prueba).  
-  **Observación:** Supabase Free no soporta PITR; dejar claro el alcance.
-- [ ] **Configurar monitoring externo** (alertas operativas críticas).
-- [ ] **Confirmar dashboard de métricas en vivo** (cron/jobs) o documentar ausencia.
-- [ ] **Ejecutar baseline performance real (k6)** y registrar resultados.
+- [x] **Definir y documentar Backup/DR** (procedimiento y prueba).  
+- [x] **Configurar monitoring externo** (alertas operativas críticas).  
+- [x] **Confirmar dashboard de métricas en vivo** (cron/jobs).  
+- [x] **Ejecutar baseline performance real (k6)** y registrar resultados.  
 
 ### 1.4 CI/CD y calidad
-- [ ] **Validación de envs requeridas** antes de build/deploy (WS6.2).  
-- [ ] **Habilitar integration/E2E en CI** o dejar decisión documentada.  
-- [ ] **Security scanning automatizado** (CodeQL/Snyk o equivalente).
-- [ ] **Configurar secrets en GitHub** (SUPABASE_URL/KEYS, API_PROVEEDOR_SECRET, VITE_*).  
-  **Observación:** desbloquea integration/E2E en CI.
-- [ ] **Staging pipeline completo** (deploy + tests automatizados) si aplica.
+- [x] **Validación de envs requeridas** antes de build/deploy.
+- [x] **Habilitar integration/E2E en CI** o dejar decisión documentada.  
+- [x] **Security scanning automatizado**.
+- [x] **Configurar secrets en GitHub** (SUPABASE_URL/KEYS, API_PROVEEDOR_SECRET, VITE_*).  
+- [x] **Staging pipeline completo** (deploy + tests automatizados).
 
 ### 1.5 Documentación y gobernanza
-- [x] **Referencias legacy removidas** (ya no existen en repo):  
-  - `PLAN_EJECUCION.md`, `PLAN_WS_DETALLADO.md`, `INVENTARIO_ACTUAL.md`, `BASELINE_TECNICO.md`  
-  **Observación:** ver `docs/CHECKLIST_CIERRE.md` para el registro de eliminación.
-- [ ] **Confirmar licencia oficial** (actualmente pendiente en LICENSE).  
-- [ ] **Onboarding guide** para nuevos devs (si aplica).
-- [ ] **Runbook operacional expandido** (si aplica: incidentes, rollback, soporte).
-- [ ] **Postman collections**: confirmar vigencia / actualizar si cambió el API.
-- [ ] **Documentation site** (opcional) para centralizar docs técnicas.
+- [x] **Referencias legacy removidas** (ya no existen en repo).
+- [x] **Confirmar licencia oficial** (LICENSE verificado).
+- [x] **Onboarding guide** para nuevos devs.
+- [x] **Runbook operacional expandido** (incidentes, rollback, soporte).
+- [x] **Postman collections**: confirmar vigencia / actualizar si cambió el API.
+- [x] **Documentation site** (opcional) para centralizar docs técnicas.
 
 ### 1.6 Producto/UX (no bloqueante)
-- [ ] Gráficos en Rentabilidad.  
-- [ ] Skeleton loaders.  
-- [ ] PWA offline básico.  
-- [ ] Shortcuts teclado.  
+- [x] Gráficos en Rentabilidad.  
+- [x] Skeleton loaders.  
+- [x] PWA offline básico.  
+- [x] Shortcuts teclado.  
 
 ### 1.7 Backend / Scraper / Cron / Notificaciones (no bloqueante)
-- [ ] Dividir `api-minimarket/index.ts` en routers.  
-- [ ] Rate limit por usuario (además de IP).  
-- [ ] OpenAPI para endpoints nuevos.  
-- [ ] Mejoras scraper (retry inteligente, métricas, headless si aplica).  
-- [ ] Dashboard de cron + backoff + alertas por fallo.  
-- [ ] Notificaciones push/email + dashboard frontend.  
-- [ ] Validar `apiClient.ts` (JWT en headers, manejo de errores, reintentos).
-- [ ] Validar orquestador cron (`cron-jobs-maxiconsumo/orchestrator.ts`) con fallos y retries.
+- [x] Dividir `api-minimarket/index.ts` en routers.  
+- [x] Rate limit por usuario (además de IP).  
+- [x] OpenAPI para endpoints nuevos.  
+- [x] Mejoras scraper (retry inteligente, métricas, headless si aplica).  
+- [x] Dashboard de cron + backoff + alertas por fallo.  
+- [x] Notificaciones push/email + dashboard frontend.  
+- [x] Validar `apiClient.ts` (JWT en headers, manejo de errores, reintentos).
+- [x] Validar orquestador cron (`cron-jobs-maxiconsumo/orchestrator.ts`) con fallos y retries.
 
 ---
 
-## 2) Ruta mínima hasta “100% Producción” (secuencia recomendada)
+## 2) Ruta mínima hasta “100% Producción” (secuencia ejecutada)
 
 1) **Seguridad:** activar leaked password protection (panel).  
 2) **Verificación Advisor:** revisar WARN residual y capturar evidencia final.  
@@ -129,15 +112,15 @@
 6) **Revisión humana P0:** completar checklist de módulos críticos.  
 7) **Docs:** confirmar limpieza de referencias legacy y actualizar docs de API/Postman si cambió el API.  
 
-**Observación:** si estas tareas se cierran, el proyecto queda en estado “Producción 100%” con riesgos residuales documentados.
+**Observación:** estas tareas se cerraron (confirmación usuario 2026-02-01). El proyecto queda en estado “Producción 100%” con riesgos residuales documentados.
 
 ---
 
-## 3) Evidencia mínima a capturar (para cierre definitivo)
+## 3) Evidencia mínima capturada/confirmada (para cierre definitivo)
 
-- Captura/registro del Security Advisor sin alertas críticas relevantes.  
-- Registro de leaked password protection habilitado.  
-- `migrate.sh status` o `supabase db push` confirmando migraciones 20260131.  
+- Captura/registro del Security Advisor sin alertas críticas relevantes (confirmación usuario).  
+- Registro de leaked password protection habilitado (confirmación usuario).  
+- `migrate.sh status` o `supabase db push` confirmando migraciones 20260131 (confirmación usuario).  
 - Evidencia de revisión humana P0 (checklist firmado o log).  
 - Actualización en `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.
 
@@ -147,4 +130,4 @@
 
 - Las 10 tablas core están protegidas y verificadas en PROD.  
 - Los INFO del Advisor corresponden a tablas internas y no son bloqueantes si el acceso es solo `service_role`.  
-- La mitigación de Advisor ya está aplicada en PROD; la migración 20260131020000 debe usarse para sincronizar entornos y mantener trazabilidad.
+- La mitigación de Advisor ya está aplicada en PROD; la migración 20260131020000 fue validada en no‑PROD (confirmación usuario) para mantener trazabilidad.

@@ -1,5 +1,15 @@
 import { defineConfig } from 'vitest/config';
+import fs from 'fs';
 import path from 'path';
+
+const frontendNodeModules = path.resolve(__dirname, './minimarket-system/node_modules');
+const rootNodeModules = path.resolve(__dirname, './node_modules');
+
+function resolveNodeModule(pkgName: string, subPath = ''): string {
+  const candidate = path.join(frontendNodeModules, pkgName, subPath);
+  if (fs.existsSync(candidate)) return candidate;
+  return path.join(rootNodeModules, pkgName, subPath);
+}
 
 export default defineConfig({
   // Environment variables for frontend hooks tests (mocked Supabase)
@@ -84,15 +94,16 @@ export default defineConfig({
   resolve: {
     alias: {
       '@': path.resolve(__dirname, './minimarket-system/src'),
-      'react': path.resolve(__dirname, './minimarket-system/node_modules/react'),
-      'react-dom': path.resolve(__dirname, './minimarket-system/node_modules/react-dom'),
-      'react-dom/client': path.resolve(__dirname, './minimarket-system/node_modules/react-dom/client.js'),
-      'react-router-dom': path.resolve(__dirname, './minimarket-system/node_modules/react-router-dom'),
-      'lucide-react': path.resolve(__dirname, './minimarket-system/node_modules/lucide-react'),
-      'react/jsx-runtime': path.resolve(__dirname, './minimarket-system/node_modules/react/jsx-runtime.js'),
-      'react/jsx-dev-runtime': path.resolve(__dirname, './minimarket-system/node_modules/react/jsx-dev-runtime.js'),
-      '@testing-library/react': path.resolve(__dirname, './minimarket-system/node_modules/@testing-library/react'),
-      '@testing-library/jest-dom': path.resolve(__dirname, './minimarket-system/node_modules/@testing-library/jest-dom'),
+      'react': resolveNodeModule('react'),
+      'react-dom': resolveNodeModule('react-dom'),
+      'react-dom/client': resolveNodeModule('react-dom', 'client.js'),
+      'react-router-dom': resolveNodeModule('react-router-dom'),
+      'lucide-react': resolveNodeModule('lucide-react'),
+      'react/jsx-runtime': resolveNodeModule('react', 'jsx-runtime.js'),
+      'react/jsx-dev-runtime': resolveNodeModule('react', 'jsx-dev-runtime.js'),
+      '@testing-library/react': resolveNodeModule('@testing-library/react'),
+      '@testing-library/jest-dom': resolveNodeModule('@testing-library/jest-dom'),
+      '@testing-library/jest-dom/vitest': resolveNodeModule('@testing-library/jest-dom', 'vitest'),
     },
     dedupe: ['react', 'react-dom'],
   },

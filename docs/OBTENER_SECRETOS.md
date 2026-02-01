@@ -108,7 +108,7 @@ Guarda el resultado como `API_PROVEEDOR_SECRET`.
    - `SUPABASE_ANON_KEY`
    - `SUPABASE_SERVICE_ROLE_KEY`
    - `DATABASE_URL`
-   - `ALLOWED_ORIGINS` (recomendado: `http://localhost:5173,http://127.0.0.1:5173`)
+   - `ALLOWED_ORIGINS` (ejemplo local: `http://localhost:5173,http://127.0.0.1:5173`; producción con dominio real confirmado por usuario 2026-02-01)
    - `API_PROVEEDOR_SECRET`
 
 ---

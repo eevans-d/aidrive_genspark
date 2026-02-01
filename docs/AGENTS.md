@@ -9,21 +9,22 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | Pendientes P1/P0 en Hoja de Ruta (seguridad, CI, revisión humana) |
+| **Avance Global** | ✅ 100% completado (confirmación usuario 2026-02-01) |
 | **Build** | Último reporte documentado 2026-01-28 (ver `docs/closure/BUILD_VERIFICATION.md`) |
 | **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
 | **Gateway** | 29 endpoints en código (`api-minimarket`) |
-| **Supabase** | Migraciones RLS v2 + mitigaciones Advisor presentes en repo; panel pendiente |
+| **Supabase** | Panel y mitigaciones confirmadas por usuario (2026-02-01) |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
 ---
 
 ## 🎯 Próximos Pasos
 
-Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
+Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (cerrada).  
 Estado consolidado: `docs/ESTADO_ACTUAL.md`.  
-Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).
+Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).  
+Siguiente enfoque: monitoreo y mantenimiento según `docs/OPERATIONS_RUNBOOK.md`.
 
 ---
 
@@ -114,10 +115,8 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Habilitar leaked password protection (Auth → Settings).
-- Confirmar WARN residual en Security Advisor (panel).
-- Configurar secrets en GitHub para desbloquear CI integration/E2E.
-- Revisión humana P0 (módulos críticos).
+- Sin tareas críticas pendientes (cierre confirmado 2026-02-01).
+- Enfoque: monitoreo y mantenimiento según `docs/OPERATIONS_RUNBOOK.md`.
 
 ---
 
@@ -153,7 +152,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 # Producción
 SUPABASE_URL=https://xxx.supabase.co
 SUPABASE_ANON_KEY=eyJ...
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 # ejemplo local; en producción usar dominio real (confirmación usuario 2026-02-01, valor no expuesto)
 API_PROVEEDOR_SECRET=secret-here
 
 # Desarrollo

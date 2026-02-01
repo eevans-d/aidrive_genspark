@@ -13,9 +13,9 @@
 |---------|-------|--------|--------|
 | **Score General** | 9.2/10 | ≥8 | ✅ |
 | **Flujos Funcionales** | 8/8 | 8/8 | ✅ |
-| **Loading States** | 100% (7/7 páginas) | 100% | ✅ |
-| **Error Handling** | 100% (7/7 páginas) | 100% | ✅ |
-| **Mobile Ready** | ⚠️ | ✅ | Pendiente verificar |
+| **Loading States** | 87.5% (7/8 páginas con data) | 100% | ⚠️ |
+| **Error Handling** | 87.5% (7/8 páginas con data) | 100% | ⚠️ |
+| **Mobile Ready** | ⚠️ | ✅ | No verificado en esta revisión |
 
 ### 🟢 Veredicto: **LISTO PARA PRODUCCIÓN** (con observaciones menores)
 
@@ -80,10 +80,16 @@
 | Contracts | 10 |
 | E2E Backend Smoke | 4 |
 | Playwright E2E | 18 (4 skipped) |
-| Playwright Auth Real | 10 (2 skipped) |
-| **TOTAL** | **821** |
+| Playwright Auth Real | 10 (2 skipped) — incluidos en Playwright E2E |
+| **TOTAL** | **811** |
 
-> **Nota:** Ejecución de tests requiere entorno local con Supabase. Estado verificado por documentación.
+> **Nota:** Ejecución de tests requiere entorno local con Supabase. Estado verificado por documentación; se solicitó correr todos los tests en una ventana separada.
+
+**Ejecución 2026-02-01 (local):**
+- ✅ `npm run test:all` (unit + auxiliary).
+- ❌ `npm run test:integration` y `npm run test:e2e` bloqueados por Docker daemon apagado.
+- ✅ `pnpm run test:components`.
+- ✅ `pnpm run test:e2e:frontend` con mocks (auth real + gateway skipped).
 
 ---
 
@@ -106,12 +112,12 @@
 | Políticas activas | 30 | ✅ |
 | Grants `anon` | 0 | ✅ |
 | Security Advisor ERROR | 0 | ✅ |
-| Security Advisor WARN | 2 | ⚠️ |
+| Security Advisor WARN | 0 | ✅ (confirmación usuario 2026-02-01) |
 | Security Advisor INFO | 15 | ✅ (esperado) |
 
 ### Pendientes de Seguridad
-- [ ] **P0:** Habilitar Leaked Password Protection (Dashboard manual)
-- [ ] **P1:** Confirmar segundo WARN residual en panel
+- [x] **P0:** Habilitar Leaked Password Protection (confirmación usuario 2026-02-01)
+- [x] **P1:** Confirmar segundo WARN residual en panel (confirmación usuario 2026-02-01)
 
 ---
 
@@ -142,7 +148,7 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 | Página | Hook | isLoading | isError | Mutation | Estado |
 |--------|------|-----------|---------|----------|--------|
 | Dashboard | useDashboardStats | ✅ | ✅ | — | ✅ |
-| Deposito | useQuery + useMutation | ✅ | ✅ | ✅ | ✅ |
+| Deposito | useQuery + useMutation | ⚠️ (no manejado) | ⚠️ (no manejado) | ✅ | ⚠️ |
 | Kardex | useKardex | ✅ | ✅ | — | ✅ |
 | Productos | useProductos | ✅ | ✅ | — | ✅ |
 | Proveedores | useProveedores | ✅ | ✅ | — | ✅ |
@@ -186,19 +192,19 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 | Documento | Última Actualización | Estado |
 |-----------|---------------------|--------|
 | ESTADO_ACTUAL.md | 2026-02-01 | ✅ Actualizado |
-| DECISION_LOG.md | 2026-02-01 | ✅ D-042 agregada |
-| CHECKLIST_CIERRE.md | 2026-01-31 | ⚠️ Revisar |
+| DECISION_LOG.md | 2026-02-01 | ✅ D-044 agregada |
+| CHECKLIST_CIERRE.md | 2026-02-01 | ✅ Actualizado |
 | AUDITORIA_RLS_EJECUTADA_2026-01-31.md | 2026-01-31 | ✅ Completa |
 | HOJA_RUTA_MADRE_2026-01-31.md | 2026-01-31 | ✅ Vigente |
 
 ### Decisiones Documentadas (últimas 5)
 | ID | Decisión | Estado |
 |----|----------|--------|
-| D-038 | Security Advisor con alertas no críticas | Aprobada |
 | D-039 | Mitigación de alertas Advisor | Completada |
-| D-040 | Migración para mitigaciones | Aprobada |
 | D-041 | Consolidación planificación | Completada |
-| D-042 | Revisión humana P0 módulos críticos | Completada |
+| D-042 | Producción 100% completada (confirmación usuario) | Aprobada |
+| D-043 | Revisión humana P0 módulos críticos | Completada |
+| D-044 | ALLOWED_ORIGINS actualizado en producción | Aprobada |
 
 ---
 
@@ -208,19 +214,20 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 
 *No se encontraron blockers que impidan uso en producción.*
 
-### 🟡 Observaciones Menores (3)
+### 🟡 Observaciones Menores (4)
 
 | # | Componente | Observación | Impacto | Acción |
 |---|------------|-------------|---------|--------|
-| 1 | AuthContext.tsx | `console.error` en línea 17 (debería usar logger) | Muy Bajo | Mejora cosmética |
-| 2 | Coverage | 69.91% (target 70%) | Bajo | Agregar 1-2 tests |
-| 3 | TODO | 1 TODO en auth.ts sobre lista blanca de orígenes | Bajo | Documentar o implementar |
+| 1 | Deposito.tsx | No maneja `isLoading/isError` en queries (UX) | Bajo | Agregar estados de carga/error |
+| 2 | AuthContext.tsx / Layout.tsx / ErrorBoundary.tsx | `console.error` en 3 puntos (debería usar logger/telemetría) | Muy Bajo | Mejora cosmética |
+| 3 | Coverage | 69.91% (target 70%) | Bajo | Agregar 1-2 tests |
+| 4 | TODO | 1 TODO en auth.ts sobre lista blanca de orígenes | Bajo | Documentar o implementar |
 
 ### 🟢 Aspectos Positivos
 
 1. **Arquitectura completa**: 13 Edge Functions, 29 endpoints, 8 hooks
 2. **Seguridad sólida**: RLS 10/10, 30 políticas, 0 grants anon
-3. **UX consistente**: Loading/Error states en todas las páginas
+3. **UX consistente**: Loading/Error states en páginas con data (7/8)
 4. **Sin console.log**: Código limpio para producción
 5. **Documentación actualizada**: DECISION_LOG, ESTADO_ACTUAL sincronizados
 6. **Revisión P0 completada**: 6 módulos críticos aprobados
@@ -237,27 +244,24 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 - [x] RLS: 10/10 tablas protegidas
 - [x] Políticas: 30 activas
 - [x] console.log: 0 en producción
-- [x] Loading/Error states: 100%
+- [ ] Loading/Error states: 7/8 (Deposito pendiente)
 - [x] Revisión humana P0: Completada
 
-### Manuales Pendientes ⏳
-- [ ] **Leaked Password Protection** — Dashboard → Auth → Settings
-- [ ] **Confirmar WARN residual** — Security Advisor panel
-- [ ] **GitHub Secrets** — `SUPABASE_*`, `API_PROVEEDOR_SECRET`, `VITE_*`
-- [ ] **ALLOWED_ORIGINS** — Configurar dominio de producción
+### Manuales (confirmación usuario 2026-02-01) ✅
+- [x] **Leaked Password Protection** — Dashboard → Auth → Settings
+- [x] **Confirmar WARN residual** — Security Advisor panel
+- [x] **GitHub Secrets** — `SUPABASE_*`, `API_PROVEEDOR_SECRET`, `VITE_*`
+- [x] **ALLOWED_ORIGINS** — Configurar dominio de producción (valor no expuesto)
 
 ---
 
-## 📋 Plan de Acción Final
+## 📋 Plan de Acción Final (post-cierre)
 
 1. **Inmediato (Usuario):**
-   - Habilitar Leaked Password Protection en Supabase Dashboard
-   - Capturar screenshot de Security Advisor final
+   - Sin acciones críticas pendientes (cierre confirmado)
 
 2. **Pre-Deploy (Usuario):**
-   - Configurar GitHub Secrets
-   - Actualizar ALLOWED_ORIGINS con dominio real
-   - Ejecutar `npm run build` para verificar producción
+   - Repetir build/health checks si se actualiza infraestructura
 
 3. **Post-Deploy:**
    - Verificar logs en Edge Functions
@@ -271,7 +275,7 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 |--------|-----------|---------------|
 | PITR no disponible (plan Free) | Media | Backups diarios automáticos de Supabase |
 | E2E en CI no activos | Baja | Gated por `RUN_E2E_TESTS=true` |
-| Coverage 0.09% bajo target | Muy Baja | Diferencia marginal, 821 tests existentes |
+| Coverage 0.09% bajo target | Muy Baja | Diferencia marginal, 811 tests existentes |
 
 ---
 

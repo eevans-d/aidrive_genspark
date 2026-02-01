@@ -14,8 +14,8 @@
 import { expect, test } from '@playwright/test'
 import { loginAs, logout, expectRole } from './helpers/auth'
 
-// Saltar si estamos en modo mocks
-const isRealAuth = process.env.VITE_USE_MOCKS !== 'true' && !!process.env.SUPABASE_URL
+// Saltar si no se habilita explícitamente auth real
+const isRealAuth = process.env.VITE_USE_MOCKS === 'false' && !!process.env.SUPABASE_URL
 test.skip(!isRealAuth, 'Skipping - requires real Supabase auth (set VITE_USE_MOCKS=false)')
 
 test.describe('Autenticación Real - Supabase', () => {

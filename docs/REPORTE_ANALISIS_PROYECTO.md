@@ -9,7 +9,7 @@
 
 ## 1) Resumen ejecutivo
 
-- El proyecto reporta **720 tests pasando** y cobertura completa de funcionalidades críticas.
+- El repo define **722 tests unitarios** (Backend 682 + Frontend 40); la ejecución real se documenta en `docs/ESTADO_ACTUAL.md`.
 - La **arquitectura real** incluye lecturas directas desde el frontend a Supabase en varios hooks, con escrituras vía gateway (excepción actual: alta inicial en `personal` durante `signUp`).
 - Credenciales disponibles y auditoria RLS completada (revalidada 2026-01-31).
 - **Rollback probado exitosamente** en staging (OPS-SMART-1, 2026-01-30).
@@ -28,7 +28,7 @@
 ## 3) Riesgos y bloqueos
 
 - **Rollback:** ✅ Probado exitosamente en staging (2026-01-30).
-- **Security Advisor:** ✅ Mitigado (ERROR=0, WARN=2, INFO=15). Pendiente manual: leaked password protection.
+- **Security Advisor:** ✅ Mitigado (ERROR=0, WARN=0, INFO=15) — confirmación usuario 2026-02-01 (leaked password protection habilitado).
 
 ---
 
@@ -41,7 +41,7 @@
 
 ## 5) Próximos pasos recomendados
 
-1. Probar rollback en staging y registrar evidencia.
+1. Monitoreo post‑release y mantenimiento según `docs/OPERATIONS_RUNBOOK.md`.
 
 ---
 

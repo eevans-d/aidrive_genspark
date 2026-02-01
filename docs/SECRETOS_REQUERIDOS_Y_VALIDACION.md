@@ -41,7 +41,7 @@ VITE_SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 VITE_API_GATEWAY_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 # Local (proxy)
 VITE_API_GATEWAY_URL=/api-minimarket
-ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
+ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 # ejemplo local; en producción usar dominio real (confirmación usuario 2026-02-01, valor no expuesto)
 ```
 
 | Secreto | Entorno | Origen exacto | Se usa en | Donde guardar | Validacion | Owner | Rotacion |
@@ -50,7 +50,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 | `SUPABASE_ANON_KEY` | Staging/Prod | Supabase → Project Settings → API → anon public | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | eevans-d | 180d |
 | `SUPABASE_SERVICE_ROLE_KEY` | Staging/Prod | Supabase → Project Settings → API → service_role | Backend/CI | Supabase Secrets + GitHub Actions | `npm run test:integration` (con `.env.test`) | eevans-d | 90d |
 | `DATABASE_URL` | Staging/Prod | Supabase → Project Settings → Database → Connection string (alias `SUPABASE_DB_URL`) | Ops/CI | GitHub Actions | `./migrate.sh status staging` | eevans-d | 90d |
-| `ALLOWED_ORIGINS` | Staging/Prod | Lista definida (local dev) | Edge Functions | Supabase Secrets | Curl con Origin bloqueado/permitido | eevans-d | N/A (cambio controlado) |
+| `ALLOWED_ORIGINS` | Staging/Prod | Lista definida por entorno (prod confirmado 2026-02-01) | Edge Functions | Supabase Secrets | Curl con Origin bloqueado/permitido | eevans-d | N/A (cambio controlado) |
 | `API_PROVEEDOR_SECRET` | Staging/Prod | Generado por equipo | Edge Functions | Supabase Secrets | Tests de api-proveedor | eevans-d | 90d |
 | `VITE_SUPABASE_URL` | Frontend | Igual a `SUPABASE_URL` | Frontend | `.env`/Vercel | `pnpm build` | eevans-d | N/A (cambia con proyecto) |
 | `VITE_SUPABASE_ANON_KEY` | Frontend | Igual a `SUPABASE_ANON_KEY` | Frontend | `.env`/Vercel | `pnpm build` | eevans-d | 180d |
@@ -88,9 +88,11 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 4) Si en Supabase Secrets figura como `SUPABASE_DB_URL`, usar ese nombre (alias aceptado).
 
 ### 4.5 `ALLOWED_ORIGINS`
-1) Valor vigente (lista exacta, sin wildcard): `http://localhost:5173,http://127.0.0.1:5173`.
-2) Guardar la lista exacta en Edge Functions y GitHub Actions.
-3) Si se agrega dominio publico, registrar el cambio en `docs/DECISION_LOG.md` y actualizar en Supabase/CI.
+1) Valor vigente por entorno (lista exacta, sin wildcard).  
+   - Ejemplo local: `http://localhost:5173,http://127.0.0.1:5173`.  
+   - Producción: **dominio real confirmado por usuario 2026-02-01** (valor no expuesto).  
+2) Guardar la lista exacta en Edge Functions y GitHub Actions.  
+3) Registrar cambios en `docs/DECISION_LOG.md` y actualizar en Supabase/CI.
 
 ### 4.6 `API_PROVEEDOR_SECRET`
 1) Generar un secreto fuerte: `openssl rand -hex 32`.

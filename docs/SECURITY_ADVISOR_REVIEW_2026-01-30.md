@@ -193,10 +193,10 @@ Acciones recomendadas (no bloqueantes): ajustar `search_path`, revocar `anon` en
 
 **Post-mitigación (Advisor):**
 - **ERROR:** 0 (antes 5).
-- **WARN:** 2 (antes 7) — pendiente manual: leaked password protection; 1 WARN residual a confirmar en panel.
+- **WARN:** 2 (antes 7) — **resuelto 2026-02-01** (confirmación usuario: leaked password protection habilitado y WARN residual confirmado).
 - **INFO:** 15 (tablas internas con RLS sin policies; aceptable por uso `service_role`).
 
-**Pendiente manual:** habilitar leaked password protection en Dashboard → Auth → Settings.
+**Pendiente manual:** **resuelto 2026-02-01** — leaked password protection habilitado en Dashboard → Auth → Settings (confirmación usuario).
 **Migración recomendada:** versionar mitigaciones en `supabase/migrations/20260131020000_security_advisor_mitigations.sql`.
 
 ---

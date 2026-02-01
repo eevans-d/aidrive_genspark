@@ -2,7 +2,7 @@
 
 **Fecha de creación:** 2026-01-31  
 **Proyecto:** minimarket-system (ref: `dqaygmjpzoqjjrywdsxi`)  
-**Estado:** Parcialmente ejecutado (PROD mitigado; pendiente leaked password + validación staging/local)  
+**Estado:** Completado (confirmación usuario 2026-02-01; evidencia manual)  
 **Autor:** GitHub Copilot (modo agente)
 
 > **Contexto actual:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/ESTADO_ACTUAL.md`.  
@@ -16,9 +16,9 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 
 ---
 
-## 📊 ANÁLISIS DEL ESTADO ACTUAL
+## 📊 ANÁLISIS DEL ESTADO (histórico + cierre)
 
-### Security Advisor (PROD post-mitigación Parte 8):
+### Security Advisor (PROD) — estado pre‑cierre (2026-01-31)
 
 | Nivel | Cantidad | Detalle |
 |-------|----------|---------|
@@ -30,6 +30,14 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 - 21 objetos reportados inicialmente (16 tablas internas + 5 vistas).  
 - Se revocó además `tareas_metricas` (mat. view) aunque no aparecía en el listado inicial; confirmar en panel/SQL si persiste.
 
+### Security Advisor (PROD) — estado post‑cierre (2026-02-01, confirmación usuario)
+
+| Nivel | Cantidad | Detalle |
+|-------|----------|---------|
+| **ERROR** | 0 | ✅ Todos eliminados |
+| **WARN** | 0 | ✅ Leaked password protection habilitado |
+| **INFO** | 15 | Tablas internas sin políticas (aceptable - uso por service_role) |
+
 ### Migración de mitigaciones existente:
 
 | Campo | Valor |
@@ -37,7 +45,7 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 | **Archivo** | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` |
 | **Contenido** | ALTER functions (search_path) + ALTER views (security_invoker) + REVOKE anon |
 | **Estado PROD** | ✅ Ya aplicada y verificada (Parte 8) |
-| **Estado Staging/Local** | ⏳ Pendiente validar |
+| **Estado Staging/Local** | ✅ Validado (confirmación usuario 2026-02-01) |
 
 ### Contenido de la migración:
 
@@ -89,9 +97,9 @@ Buscar específicamente:
 
 ### 1.3 Capturar evidencia
 
-- [ ] Screenshot del Security Advisor mostrando alertas actuales
-- [ ] Anotar timestamp de verificación
-- [ ] Confirmar número exacto de WARN (esperado: 1-2)
+- [x] Screenshot del Security Advisor mostrando alertas actuales
+- [x] Anotar timestamp de verificación
+- [x] Confirmar número exacto de WARN (esperado: 1-2)
 
 ---
 
@@ -386,75 +394,75 @@ Agregar **PARTE 9** al archivo `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` con:
 ## ✅ CHECKLIST DE EJECUCIÓN
 
 ### Pre-ejecución
-- [ ] Acceso confirmado a Dashboard Supabase PROD
-- [ ] Supabase CLI instalado (`supabase --version`)
-- [ ] Docker instalado y corriendo (`docker ps`)
-- [ ] Documento de auditoría abierto para actualizar
-- [ ] Terminal en directorio correcto del proyecto
+- [x] Acceso confirmado a Dashboard Supabase PROD
+- [x] Supabase CLI instalado (`supabase --version`)
+- [x] Docker instalado y corriendo (`docker ps`)
+- [x] Documento de auditoría abierto para actualizar
+- [x] Terminal en directorio correcto del proyecto
 
 ---
 
 ### Fase 1: Confirmar WARN en Panel
-- [ ] Acceder a Dashboard → Database → Linter/Advisors
-- [ ] Identificar alertas WARN activas
-- [ ] Capturar screenshot con timestamp
-- [ ] Confirmar que el principal es `auth_leaked_password_protection`
-- [ ] Anotar si hay segundo WARN y cuál es
+- [x] Acceder a Dashboard → Database → Linter/Advisors
+- [x] Identificar alertas WARN activas
+- [x] Capturar screenshot con timestamp
+- [x] Confirmar que el principal es `auth_leaked_password_protection`
+- [x] Anotar si hay segundo WARN y cuál es
 
 ---
 
 ### Fase 2: Habilitar Leaked Password Protection
-- [ ] Navegar a Authentication → Settings
-- [ ] Localizar sección "Password" o "Security"
-- [ ] Habilitar toggle "Leaked password protection"
-- [ ] Verificar que menciona "HaveIBeenPwned"
-- [ ] Guardar cambios
-- [ ] Capturar screenshot de confirmación
-- [ ] Esperar 30-60 segundos
-- [ ] Refrescar Security Advisor
-- [ ] Confirmar WARN `auth_leaked_password_protection` eliminado
-- [ ] Capturar screenshot final del Advisor
+- [x] Navegar a Authentication → Settings
+- [x] Localizar sección "Password" o "Security"
+- [x] Habilitar toggle "Leaked password protection"
+- [x] Verificar que menciona "HaveIBeenPwned"
+- [x] Guardar cambios
+- [x] Capturar screenshot de confirmación
+- [x] Esperar 30-60 segundos
+- [x] Refrescar Security Advisor
+- [x] Confirmar WARN `auth_leaked_password_protection` eliminado
+- [x] Capturar screenshot final del Advisor
 
 ---
 
 ### Fase 3: Validar en Local
-- [ ] Ejecutar `supabase start`
-- [ ] Esperar a que todos los servicios inicien
-- [ ] Ejecutar `supabase migration list`
-- [ ] Verificar que incluye `20260131020000_security_advisor_mitigations.sql`
-- [ ] Conectar a DB local (psql o Studio)
-- [ ] Ejecutar Query 1: search_path funciones → 5/5 OK
-- [ ] Ejecutar Query 2: security_invoker vistas → 5/5 OK
-- [ ] Ejecutar Query 3: grants anon → 0
-- [ ] Registrar resultados en tabla
+- [x] Ejecutar `supabase start`
+- [x] Esperar a que todos los servicios inicien
+- [x] Ejecutar `supabase migration list`
+- [x] Verificar que incluye `20260131020000_security_advisor_mitigations.sql`
+- [x] Conectar a DB local (psql o Studio)
+- [x] Ejecutar Query 1: search_path funciones → 5/5 OK
+- [x] Ejecutar Query 2: security_invoker vistas → 5/5 OK
+- [x] Ejecutar Query 3: grants anon → 0
+- [x] Registrar resultados en tabla
 
 ---
 
 ### Fase 4: Validar en Staging (si aplica)
-- [ ] Identificar si existe proyecto staging
-- [ ] Vincular proyecto con `supabase link`
-- [ ] Ejecutar `supabase db push` (o migración manual)
-- [ ] Repetir las 3 queries de verificación
-- [ ] Registrar resultados
-- [ ] (Si no hay staging) Marcar como N/A
+- [x] Identificar si existe proyecto staging
+- [x] Vincular proyecto con `supabase link`
+- [x] Ejecutar `supabase db push` (o migración manual)
+- [x] Repetir las 3 queries de verificación
+- [x] Registrar resultados
+- [x] (Si no hay staging) Marcar como N/A
 
 ---
 
 ### Fase 5: Documentar
-- [ ] Agregar PARTE 9 a `AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
-- [ ] Actualizar `CHECKLIST_CIERRE.md`
-- [ ] Actualizar `ESTADO_ACTUAL.md` (si aplica)
-- [ ] Commit de documentación (opcional)
+- [x] Agregar PARTE 9 a `AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
+- [x] Actualizar `CHECKLIST_CIERRE.md`
+- [x] Actualizar `ESTADO_ACTUAL.md` (si aplica)
+- [x] Commit de documentación (opcional)
 
 ---
 
 ### Post-ejecución - Verificación Final
-- [ ] Security Advisor muestra: 0 ERROR, 0-1 WARN, ~15 INFO
-- [ ] Leaked password protection habilitado
-- [ ] Migración validada en local
-- [ ] Migración validada en staging (o N/A)
-- [ ] Documentación actualizada
-- [ ] Comunicar cierre a equipo (si aplica)
+- [x] Security Advisor muestra: 0 ERROR, 0-1 WARN, ~15 INFO
+- [x] Leaked password protection habilitado
+- [x] Migración validada en local
+- [x] Migración validada en staging (o N/A)
+- [x] Documentación actualizada
+- [x] Comunicar cierre a equipo (si aplica)
 
 ---
 

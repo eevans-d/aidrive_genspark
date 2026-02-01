@@ -1,21 +1,22 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
+ 
+**Última actualización:** 2026-02-01  
+**Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación de usuario; evidencia manual)
 
-**Última actualización:** 2026-02-01 04:35 UTC  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (revisión humana P0 completada 2026-02-01)
-
-**Actualización 2026-02-01 (Antigravity Agent — revisión humana P0):**
-- **Revisión humana P0 completada**: 6 módulos críticos analizados y aprobados.
-  - `api-minimarket/index.ts` ✅ — JWT auth, CORS, rate limit 60/min, circuit breaker OK
-  - `_shared/cors.ts` ✅ — validateOrigin, Vary: Origin, ALLOWED_ORIGINS
-  - `_shared/rate-limit.ts` ✅ — FixedWindow + Adaptive, headers IETF
-  - `20260110100000_fix_rls_security_definer.sql` ✅ — search_path=public, validaciones
-  - `AuthContext.tsx` ⚠️ — OK (console.error menor; insert directo documentado D-025)
-  - `scraper-maxiconsumo/` ✅ — SCRAPER_READ_MODE, circuit breaker, anti-detection
-- Conteos recalculados desde repo (funciones, migraciones y tests).
-- API gateway: 29 endpoints en `supabase/functions/api-minimarket/index.ts`.
-- Frontend: 9 páginas, 8 hooks React Query, 3 componentes.
-- Coverage en repo: 69.91% lines (coverage/index.html).
-- **Pendiente manual:** Leaked Password Protection (Dashboard → Auth → Settings).
+**Cierre 2026-02-01 (confirmación usuario):**
+- Leaked password protection habilitado en panel.
+- WARN residual del Security Advisor confirmado/resuelto.
+- Migración `20260131020000_security_advisor_mitigations.sql` validada en entornos no‑PROD.
+- Secrets de CI (GitHub Actions) configurados.
+- Revisión humana P0 completada.
+- Backup/DR documentado y baseline performance k6 ejecutado.
+- Documentación sincronizada y cerrada.
+- **Ejecución de tests (2026-02-01):**
+  - ✅ `npm run test:all` (unit + auxiliary) — reportes en `test-reports/junit.xml` y `test-reports/junit.auxiliary.xml`.
+  - ❌ `npm run test:integration` — falla por Docker daemon apagado (Supabase local).
+  - ❌ `npm run test:e2e` — falla por Docker daemon apagado (Supabase local).
+  - ✅ `pnpm run test:components` (frontend) — PASS.
+  - ✅ `pnpm run test:e2e:frontend` — PASS con mocks (6 passed, 9 skipped: auth real + gateway).
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
@@ -23,7 +24,7 @@
 - Rollback de `create_stock_aggregations` ejecutado en STAGING (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
 **Actualización 2026-01-30 (local):**
-- Revisión Security Advisor pendiente; ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
+- Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
 
 **Actualización 2026-01-30 (COMET):**
 - Snapshot ANTES confirmó RLS deshabilitado en `notificaciones_tareas` y `productos_faltantes`, y 0 policies para 6 tablas críticas.
@@ -37,8 +38,8 @@
 - Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Gaps P0 de `productos`, `proveedores`, `categorias` cerrados.
 - Migración versionada aplicada en PROD y verificada (04:06–04:15 UTC): `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`.
-- Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedan 2 WARN (leaked password protection + 1 WARN residual por confirmar) + 15 INFO (tablas internas sin policies). Ver Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
-- Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar en entornos no-PROD si aplica).
+- Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedaban 2 WARN (leaked password protection + 1 WARN residual) y 15 INFO (tablas internas sin policies) — **resuelto 2026-02-01 por confirmación usuario**. Ver Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
+- Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario 2026-02-01).
 - Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (planes antiguos retirados).
 
 ## 🎯 Proyecto Supabase
@@ -51,7 +52,7 @@
 | **URL** | https://dqaygmjpzoqjjrywdsxi.supabase.co |
 | **Dashboard** | https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi |
 
-> Nota: ref/URL provienen de `.env.*` y `supabase/.temp/project-ref`; el estado del panel requiere verificación manual.
+> Nota: ref/URL provienen de `.env.*` y `supabase/.temp/project-ref`; estado del panel confirmado por usuario (2026-02-01).
 
 ### Edge Functions en repo (13)
 | Función | En repo |
@@ -70,7 +71,7 @@
 | reposicion-sugerida | ✅ |
 | scraper-maxiconsumo | ✅ |
 
-> Nota: estado de despliegue y tamaños requieren validación en Dashboard.
+> Nota: estado de despliegue y tamaños confirmados por usuario en panel (2026-02-01).
 
 ---
 
@@ -99,7 +100,7 @@
 - **Tests seguridad:** 14 (tests/security)
 - **Tests performance:** 5 (tests/performance)
 - **Tests contratos API:** 10 (tests/api-contracts)
-- **Tests E2E backend smoke:** 4 (tests/e2e)
+- **Tests E2E backend smoke:** 4 (solo `tests/e2e/*.smoke.test.ts`; `edge-functions.test.js` es legacy/no ejecuta)
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)

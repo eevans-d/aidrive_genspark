@@ -1,7 +1,7 @@
 # Checklist de Cierre - Plan de Ejecución
 
 **Fecha:** 2026-02-01  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa)  
+**Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación usuario)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
 ---
@@ -10,7 +10,7 @@
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
 2. **12 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
-3. **13 Edge Functions en repo** (despliegue requiere verificación en panel)
+3. **13 Edge Functions en repo** (despliegue confirmado por usuario en panel, 2026-02-01)
 4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
 
@@ -26,24 +26,24 @@
 
 ## Resumen Ejecutivo
 
-El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
+El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
 - **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
 - **Suite de seguridad: 14 tests definidos** ✅
 - **Migraciones versionadas en repo (12 archivos)** ✅
 - **13 Edge Functions en repo** ✅
-- Tests reales con Vitest y runner alineado (unit + integration + e2e)
+- Tests reales con Vitest y runner alineado (unit + integration + e2e) — últimas ejecuciones reales documentadas 2026-01-27; re‑ejecución 2026-02-01 de integration/e2e bloqueada por Docker (ver `docs/ESTADO_ACTUAL.md`).
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes:
-- Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
-- Revisión Security Advisor (RLS/tabla pública) → ✅ Remediación role-based aplicada y verificada (2026-01-31). Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. Pendiente solo confirmación en panel.
+- Ninguno crítico. Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+- Revisión Security Advisor (RLS/tabla pública) → ✅ Remediación role-based aplicada y confirmación en panel por usuario (2026-02-01). Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Migración RLS role-based v2 aplicada en PROD ✅ (archivo: `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`).
-- Security Advisor en PROD mitigado (Parte 8): ERROR=0, WARN=2, INFO=15. Pendiente manual: leaked password protection.
-- Migración mitigaciones Advisor creada: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar en entornos no-PROD si aplica).
+- Security Advisor en PROD mitigado: ERROR=0, WARN=0 (confirmación usuario), INFO=15.
+- Migración mitigaciones Advisor creada: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario).
 
 ---
 
@@ -79,6 +79,7 @@ Pendientes:
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
   - Última ejecución documentada: 2026-01-27 (7/7 PASS; histórico)
+  - 2026-02-01: Playwright con mocks OK; auth real skipped sin `VITE_USE_MOCKS=false`.
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
@@ -340,7 +341,7 @@ tests/api-contracts/      # (Vitest mock)
 
 ## ✍️ Estado de Cierre
 
-- **Cierre:** ✅ Completado (PITR N/A en plan Free)
-- **Última verificación:** 2026-01-28 03:46 UTC
-- **Commit:** 3b53a760ec24864990a897b30e7e48616dd2156f
+- **Cierre:** ✅ Completado (confirmación usuario; PITR N/A en plan Free)
+- **Última verificación:** 2026-02-01 (evidencia manual)
+- **Commit:** 3b53a760ec24864990a897b30e7e48616dd2156f (histórico; verificar si hay commit final adicional)
 - **Próxima revisión:** 2026-02-09
