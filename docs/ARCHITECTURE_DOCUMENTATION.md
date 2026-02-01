@@ -7,7 +7,7 @@
 **Target:** Arquitectos, DevOps, Senior Engineers  
 
 > **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
-> Para el estado real y plan vigente, ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
+> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/CHECKLIST_CIERRE.md`.
 
 ### Estado real (2026-01-25)
 - **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).
@@ -22,7 +22,7 @@
 >
 > **1. Frontend Data Access Pattern:**
 > - El frontend realiza lecturas directas desde Supabase en varios hooks.
-> - Las escrituras se esperan vía `api-minimarket` (decisión pendiente de migración de lecturas).
+> - Las escrituras se esperan vía `api-minimarket` (excepción actual: alta inicial en `personal` durante `signUp`).
 > - Ver sección 3.4 para decisión arquitectónica pendiente.
 >
 > **2. React Query (P1-05) - Completado:**

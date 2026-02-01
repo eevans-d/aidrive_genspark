@@ -18,6 +18,10 @@ info:
     - 2345 → 2350
     - 8627 → 8650
     - 12384 → 12400
+
+    ## Nota de cobertura
+    Este spec cubre los endpoints principales del gateway. Los endpoints de dropdowns, tareas,
+    reservas/cancelar y health están documentados en `docs/API_README.md` pero aún no se incluyen aquí.
     
   contact:
     name: Soporte Mini Market

@@ -27,8 +27,8 @@
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
 | D-021 | **WS5.6 caching diferido**: no implementar React Query/SWR hasta tener métricas reales | Aprobada | 2026-01-15 | Priorizar paginación (WS5.5) primero. |
 | D-024 | **React Query consolidado** en páginas críticas (8/8 con data; Login no aplica) | Aprobada | 2026-01-22 | Se revierte la postergación inicial de D-021. |
-| D-025 | **Patrón de acceso a datos frontend**: lecturas directas a Supabase vía RLS; escrituras SIEMPRE vía Gateway | Aprobada | 2026-01-23 | Balance entre performance (lecturas) y control (escrituras). Ver detalle abajo. |
-| D-026 | **`npm audit` documentado** (vulnerabilidades dev en rollup/vite aceptadas) | Aprobada | 2026-01-23 | Evidencia referenciada en `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`. |
+| D-025 | **Patrón de acceso a datos frontend**: lecturas directas a Supabase vía RLS; escrituras vía Gateway (excepción: alta inicial en `personal` durante signUp) | Aprobada | 2026-01-23 | Balance entre performance (lecturas) y control (escrituras). Ver detalle abajo. |
+| D-026 | **`npm audit` documentado** (vulnerabilidades dev en rollup/vite aceptadas) | Aprobada | 2026-01-23 | Evidencia referenciada en `docs/archive/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`. |
 | D-022 | **console.* en cron-testing-suite**: permitidos permanentemente para debugging de suite | Aprobada | 2026-01-15 | Excepción controlada para testing-suite. **Actualizado:** se migró a `_shared/logger` (2026-01-22). |
 | D-023 | **--dry-run en scripts**: integration/E2E soportan `--dry-run` que valida prereqs sin ejecutar | Aprobada | 2026-01-15 | Permite verificar configuración sin Supabase real. |
 | D-027 | **ALLOWED_ORIGINS local-only**: lista exacta `http://localhost:5173,http://127.0.0.1:5173` | Aprobada | 2026-01-23 | Si se agrega dominio publico, registrar cambio y actualizar Supabase/CI. |
@@ -164,7 +164,7 @@ El frontend necesita decidir cómo acceder a los datos:
 | Operación | Canal | Justificación |
 |-----------|-------|---------------|
 | **Lecturas (SELECT)** | Supabase directo | RLS protege datos; menor latencia; menos carga en gateway |
-| **Escrituras (INSERT/UPDATE/DELETE)** | Gateway obligatorio | Audit log, validación centralizada, control de negocio |
+| **Escrituras (INSERT/UPDATE/DELETE)** | Gateway obligatorio *(excepción: alta inicial en `personal` durante signUp)* | Audit log, validación centralizada, control de negocio |
 | **RPCs complejas** | Gateway | Centraliza lógica, evita exponer RPCs a frontend |
 
 ### Implementación Actual
@@ -178,6 +178,8 @@ minimarket-system/src/
 ├── lib/
 │   ├── supabase.ts        # Cliente Supabase (anon key)
 │   └── apiClient.ts       # Gateway (escrituras)
+├── contexts/
+│   └── AuthContext.tsx    # Excepción: insert a `personal` en signUp
 ```
 
 ### Razones
@@ -208,4 +210,5 @@ Entonces migrar lecturas al gateway.
 
 ✅ 8 hooks de lectura usan Supabase directo
 ✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
+⚠️ Excepción actual: `AuthContext.tsx` crea registro en `personal` al signUp (write directo)
 ✅ RLS verificada para tablas críticas (auditoría completa D-019)

@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-01-31  
+**Última actualización:** 2026-02-01  
 
 ---
 
@@ -9,12 +9,12 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | 98% (pendiente leaked password protection + revisión humana P0 + secrets CI) |
-| **Build** | ✅ Passing |
-| **Tests** | Ver `docs/ESTADO_ACTUAL.md` |
-| **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 100% (29 endpoints desplegados) |
-| **Supabase** | ✅ RLS role-based + Advisor mitigado en PROD |
+| **Avance Global** | Pendientes P1/P0 en Hoja de Ruta (seguridad, CI, revisión humana) |
+| **Build** | Último reporte documentado 2026-01-28 (ver `docs/closure/BUILD_VERIFICATION.md`) |
+| **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
+| **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
+| **Gateway** | 29 endpoints en código (`api-minimarket`) |
+| **Supabase** | Migraciones RLS v2 + mitigaciones Advisor presentes en repo; panel pendiente |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
 ---
@@ -67,7 +67,7 @@ aidrive_genspark/
 │   ├── src/hooks/queries/    # 8 custom hooks
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
-│   ├── functions/            # 13 Edge Functions desplegadas
+│   ├── functions/            # 13 Edge Functions en repo
 │   │   ├── api-minimarket/   # Gateway principal (29 endpoints)
 │   │   ├── api-proveedor/    # API proveedor (9 endpoints)
 │   │   ├── scraper-maxiconsumo/
@@ -89,7 +89,7 @@ aidrive_genspark/
 | `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` | Evidencia RLS + Advisor (Partes 1-8) |
 | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Resumen Advisor + mitigación |
 | `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` | Plan operativo para WARN residual |
-| `docs/ROADMAP.md` | Plan histórico (no fuente de verdad) |
+| `docs/archive/ROADMAP.md` | Plan histórico (archivado) |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
 | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Inventario y validación de secretos |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
@@ -141,7 +141,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 1. **NO crear archivos duplicados** - Verificar si ya existe
 2. **NO usar console.log en supabase/functions** - Usar `createLogger()` de `_shared/logger.ts`
-3. **Writes via Gateway** - Frontend NO escribe directo a Supabase
+3. **Writes via Gateway** - Frontend NO escribe directo a Supabase, **excepto** alta inicial en `personal` durante `signUp` (AuthContext)
 4. **Verificar build** - Siempre ejecutar `npm run build` después de cambios
 5. **Documentar decisiones** - Actualizar `DECISION_LOG.md`
 

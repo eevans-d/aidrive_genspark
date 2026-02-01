@@ -11,6 +11,8 @@ https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket
 http://127.0.0.1:54321/functions/v1/api-minimarket
 ```
 
+> Nota: este README cubre el gateway `api-minimarket`. Otras Edge Functions tienen su propia URL base (ver sección “Edge Functions independientes”).
+
 ### Headers Requeridos
 ```bash
 # Todos los requests deben incluir:
@@ -227,18 +229,25 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 📋 Endpoints Principales
 
-### Reposición y Alertas
+### Edge Functions independientes (no pertenecen a `api-minimarket`)
+Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
 ```bash
-GET /reposicion-sugerida           # Sugerencias de reposición
+GET /reposicion-sugerida           # Edge Function: reposicion-sugerida
   # Query params:
   #   - dias_analisis: Días para calcular rotación (default: 30)
   #   - umbral_reposicion: % de stock mínimo (default: 100)
   #   - incluir_proximo: Incluir próximos al umbral (default: true)
   
-GET /alertas-vencimientos          # Alertas de vencimientos
+GET /alertas-vencimientos          # Edge Function: alertas-vencimientos
   # Query params:
   #   - warning_days: Días de advertencia (default: 30)
   #   - urgent_days: Días urgentes (default: 7)
+```
+
+### Dropdowns (Gateway)
+```bash
+GET /productos/dropdown            # Lista mínima para select (id, nombre, codigo_barras)
+GET /proveedores/dropdown          # Lista mínima para select (id, nombre)
 ```
 
 ### Categorías
@@ -264,6 +273,8 @@ GET /proveedores/{id}              # Detalle
 
 ### Precios
 ```bash
+GET /precios/producto/{id}         # Historial/estado de precios del producto
+GET /precios/margen-sugerido/{id}  # Margen sugerido por producto
 POST /precios/aplicar              # Aplicar precio (requiere admin)
 POST /precios/redondear            # Redondear precio
 ```
@@ -282,15 +293,28 @@ GET /deposito/movimientos          # Historial
 POST /deposito/ingreso             # Ingreso de mercadería
 ```
 
+### Tareas (requiere autenticación)
+```bash
+POST /tareas                       # Crear tarea
+PUT /tareas/{id}/completar         # Completar tarea
+PUT /tareas/{id}/cancelar          # Cancelar tarea
+```
+
 ### Reservas y Compras
 ```bash
 POST /reservas                     # Crear reserva
+POST /reservas/{id}/cancelar       # Cancelar reserva
 POST /compras/recepcion            # Registrar recepción de OC
 ```
 
 ### Reportes
 ```bash
 GET /reportes/efectividad-tareas   # Métricas de tareas
+```
+
+### Health
+```bash
+GET /health                        # Healthcheck del gateway
 ```
 
 ---

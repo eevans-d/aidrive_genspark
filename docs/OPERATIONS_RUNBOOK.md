@@ -1,6 +1,6 @@
 # OPERATIONS RUNBOOK - MINI MARKET SYSTEM
 
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-02-01  
 **Estado:** Documento operativo
 
 ---
@@ -10,7 +10,8 @@ Runbook operativo para soporte diario, validaciones basicas y ejecucion de tests
 
 Fuentes de verdad:
 - `docs/ESTADO_ACTUAL.md`
-- `docs/ROADMAP.md`
+- `docs/HOJA_RUTA_MADRE_2026-01-31.md`
+- `docs/archive/ROADMAP.md` (histórico)
 - `docs/DEPLOYMENT_GUIDE.md`
 - `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`
 

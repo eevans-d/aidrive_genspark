@@ -282,7 +282,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 ### D-PENDING-004: Migración de Lecturas Frontend a Gateway
 **Estado:** ✅ Decision tomada (D-025)  
 **Contexto:**
-- Actualmente: Frontend lee directo desde Supabase, escribe via Gateway
+- Actualmente: Frontend lee directo desde Supabase, escribe via Gateway (excepción: alta inicial en `personal` durante `signUp`)
 - Propuesto: Todas las operaciones via Gateway para consistencia
 
 **Trade-offs:**
@@ -341,7 +341,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 |-----------|---------|--------|
 | **Estado** | `ESTADO_ACTUAL.md` | ✅ Actualizado 2026-01-23 |
 | **Estado** | `CHECKLIST_CIERRE.md` | ✅ Actualizado 2026-01-23 |
-| **Planificación** | `ROADMAP.md` | ✅ Vigente |
+| **Planificación** | `archive/ROADMAP.md` | ✅ Histórica |
 | **Planificación** | `BACKLOG_PRIORIZADO.md` | ✅ Vigente |
 | **Decisiones** | `DECISION_LOG.md` | ✅ Vigente |
 | **Arquitectura** | `ARCHITECTURE_DOCUMENTATION.md` | ✅ Actualizado 2026-01-23 |

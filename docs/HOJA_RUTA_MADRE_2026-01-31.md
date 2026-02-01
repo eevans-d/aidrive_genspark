@@ -1,6 +1,6 @@
 # Hoja de Ruta MADRE — Producción 100% (2026-01-31)
 
-**Última actualización:** 2026-01-31  
+**Última actualización:** 2026-02-01  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
 **Fuente primaria:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`.
 
@@ -74,7 +74,7 @@
 - [ ] **Actualizar evidencias RLS** si se ejecuta en staging/local:  
   - `scripts/rls_audit.sql`  
   - actualizar `docs/AUDITORIA_RLS_CHECKLIST.md` si aplica.
-- [ ] **Recuperar/crear `REPORTE_REVISION_DB.md`** y resolver hallazgos (P0/P1/P2) referenciados en `docs/DB_GAPS.md`.
+- [x] **Confirmar N/A de `REPORTE_REVISION_DB.md`**: `docs/DB_GAPS.md` indica que no existe; hallazgos documentados en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 
 ### 1.3 Operaciones / Backups / DR
 - [ ] **Definir y documentar Backup/DR** (procedimiento y prueba).  
@@ -92,14 +92,9 @@
 - [ ] **Staging pipeline completo** (deploy + tests automatizados) si aplica.
 
 ### 1.5 Documentación y gobernanza
-- [ ] **Resolver referencias faltantes**:  
-  - `PLAN_EJECUCION.md` (referenciado en CHECKLIST)  
-  - `REPORTE_REVISION_DB.md` (referenciado en DB_GAPS)
-- [ ] **Resolver documentos base faltantes**:  
-  - `INVENTARIO_ACTUAL.md`  
-  - `BASELINE_TECNICO.md`  
-  - `PLAN_WS_DETALLADO.md`  
-  **Observación:** crear o eliminar referencias según decisión.
+- [x] **Referencias legacy removidas** (ya no existen en repo):  
+  - `PLAN_EJECUCION.md`, `PLAN_WS_DETALLADO.md`, `INVENTARIO_ACTUAL.md`, `BASELINE_TECNICO.md`  
+  **Observación:** ver `docs/CHECKLIST_CIERRE.md` para el registro de eliminación.
 - [ ] **Confirmar licencia oficial** (actualmente pendiente en LICENSE).  
 - [ ] **Onboarding guide** para nuevos devs (si aplica).
 - [ ] **Runbook operacional expandido** (si aplica: incidentes, rollback, soporte).
@@ -132,7 +127,7 @@
 4) **CI/CD:** configurar secrets en GitHub y decidir integración/E2E en CI.  
 5) **Backups/DR:** documentar y probar procedimiento mínimo.  
 6) **Revisión humana P0:** completar checklist de módulos críticos.  
-7) **Docs:** cerrar referencias faltantes (PLAN_EJECUCION / REPORTE_REVISION_DB) y registrar decisiones.  
+7) **Docs:** confirmar limpieza de referencias legacy y actualizar docs de API/Postman si cambió el API.  
 
 **Observación:** si estas tareas se cierran, el proyecto queda en estado “Producción 100%” con riesgos residuales documentados.
 

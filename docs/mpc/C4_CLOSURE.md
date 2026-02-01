@@ -17,7 +17,7 @@
 
 ## 2) Documentación actualizada
 
-- [x] `docs/ROADMAP.md`
+- [x] `docs/archive/ROADMAP.md`
 - [x] `docs/CHECKLIST_CIERRE.md`
 - [x] `docs/DECISION_LOG.md`
 - [x] `docs/ARCHITECTURE_DOCUMENTATION.md`
@@ -40,7 +40,7 @@
 
 | Métrica | Objetivo | Resultado | Estado |
 |---|---|---|---|
-| Tests | 100% passing | 649 passing (según `docs/ESTADO_ACTUAL.md`) | ✓ |
+| Tests | 100% passing | 722 definidos (conteo repo; ver `docs/ESTADO_ACTUAL.md`) | ✓ |
 | RLS audit | Ejecutado | 2026-01-23 | ✓ |
 | Logs estructurados | 100% handlers | Completo (logger _shared) | ✓ |
 

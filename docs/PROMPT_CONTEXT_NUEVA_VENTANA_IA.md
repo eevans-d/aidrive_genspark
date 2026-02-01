@@ -52,7 +52,7 @@ ARCHIVOS CLAVE:
 - `docs/ESTADO_ACTUAL.md`
 - `docs/closure/BUILD_VERIFICATION.md`
 - `docs/CHECKLIST_CIERRE.md`
-- `docs/ROADMAP.md`
+- `docs/archive/ROADMAP.md`
 
 REGLAS:
 - No cambies métricas ni fechas sin evidencia real.

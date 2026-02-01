@@ -147,15 +147,15 @@ aidrive_genspark/
 │   │   ├── scraper-matching.test.ts
 │   │   ├── cron-jobs.test.ts
 │   │   └── api-minimarket-gateway.test.ts
-│   ├── integration/                # 31 tests (gated - requiere DB local)
+│   ├── integration/                # 38 tests (gated - requiere DB local)
 │   ├── e2e/                        # 4 smoke tests (manual)
-│   ├── security/                   # 14 tests + 1 skipped
-│   └── performance/                # Baseline
+│   ├── security/                   # 14 tests
+│   └── performance/                # 5 tests (baseline)
 │
-├── docs/                           # 22 archivos de documentación
+├── docs/                           # Documentación del proyecto
 │   ├── ESTADO_ACTUAL.md            # ⭐ FUENTE DE VERDAD - Estado y avance
 │   ├── HOJA_RUTA_MADRE_2026-01-31.md # Checklist único vigente
-│   ├── ROADMAP.md                  # Plan rolling 90 días
+│   ├── archive/ROADMAP.md          # Plan rolling 90 días (histórico)
 │   ├── ARCHITECTURE_DOCUMENTATION.md # Arquitectura técnica
 │   ├── API_README.md               # Documentación de endpoints
 │   ├── CHECKLIST_CIERRE.md         # Estado de cierre
@@ -230,7 +230,7 @@ export function ProductosPage() {
 
 ### Frontend - Mutación via Gateway (Escritura)
 
-**⚠️ IMPORTANTE:** Las escrituras **SIEMPRE** deben ir via Gateway (`api-minimarket`)
+**⚠️ IMPORTANTE:** Las escrituras deben ir via Gateway (`api-minimarket`), **excepto** alta inicial en `personal` durante `signUp` (AuthContext)
 
 ```typescript
 import { useMutation, useQueryClient } from '@tanstack/react-query'
@@ -517,9 +517,9 @@ npm run test:unit           # En raíz
    - Usar `createLogger()` de `_shared/logger.ts`
    - Ver ejemplos en edge functions existentes
 
-5. **Writes SIEMPRE via Gateway**
-   - Frontend NO escribe directo a Supabase
-   - Todas las mutaciones via `api-minimarket`
+5. **Writes via Gateway (con excepción controlada)**
+   - Frontend NO escribe directo a Supabase, **salvo** alta inicial en `personal` durante `signUp`
+   - Todas las mutaciones via `api-minimarket` (excepto la excepción anterior)
 
 ---
 
@@ -621,10 +621,10 @@ A: NO. Usa `logger.debug()` que puede deshabilitarse en producción.
 A: `tests/unit/`. Nombrar archivo como `mi-modulo.test.ts`.
 
 **Q: ¿El frontend puede escribir directo a Supabase?**  
-A: NO. Las escrituras DEBEN ir via Gateway (`api-minimarket`).
+A: NO. Las escrituras van via Gateway (`api-minimarket`), **excepto** alta inicial en `personal` durante `signUp`.
 
 **Q: ¿Cómo sé qué está pendiente?**  
-A: Ver `docs/ROADMAP.md` y `docs/CHECKLIST_CIERRE.md`.
+A: Ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/CHECKLIST_CIERRE.md`. (El roadmap histórico está en `docs/archive/ROADMAP.md`).
 
 **Q: ¿Hay alguna decisión técnica que deba conocer?**  
 A: Revisar `docs/DECISION_LOG.md` antes de proponer cambios arquitectónicos.
@@ -644,7 +644,7 @@ A: Revisar `docs/DECISION_LOG.md` antes de proponer cambios arquitectónicos.
    - Único lugar donde está permitido: `_shared/logger.ts` internamente
 
 3. **NO escribir directo a Supabase desde frontend**
-   - Writes SIEMPRE via Gateway
+   - Writes via Gateway (excepción: alta inicial en `personal` durante `signUp`)
    - Solo lecturas directas están permitidas (por ahora)
 
 4. **NO exponer secretos**
@@ -785,7 +785,7 @@ describe('miFuncion', () => {
 
 #### Jobs Obligatorios (siempre corren)
 1. **lint** - ESLint en frontend
-2. **test** - Unit tests (646 tests)
+2. **test** - Unit tests (conteo repo: 722)
 3. **build** - Build de producción
 4. **typecheck** - TypeScript check
 5. **edge-functions-check** - Deno syntax check
@@ -800,13 +800,13 @@ describe('miFuncion', () => {
 ```
 Push a main → CI starts
   ├─ lint ✅
-  ├─ test ✅ (646 tests)
+  ├─ test ✅ (conteo repo: 722)
   ├─ build ✅
   ├─ typecheck ✅
   └─ edge-functions-check ✅
 
 Manual dispatch con secrets:
-  ├─ integration ✅ (31 tests)
+  ├─ integration ✅ (38 tests)
   └─ e2e ✅ (4 tests)
 ```
 
@@ -834,7 +834,7 @@ En **GitHub Settings → Secrets and variables → Actions**:
 5. **API_README.md** - Todos los endpoints disponibles
 6. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
 7. **DECISION_LOG.md** - Decisiones técnicas registradas
-8. **ROADMAP.md** - Plan rolling 90 días
+8. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
 
 ### APIs y Esquemas
 

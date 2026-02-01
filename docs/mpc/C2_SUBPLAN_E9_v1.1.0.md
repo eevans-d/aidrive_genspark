@@ -20,7 +20,7 @@
 - `ALLOWED_ORIGINS` alineado en Supabase/GitHub (local-only).
 - `API_PROVEEDOR_SECRET` regenerado y alineado (Supabase/GitHub/.env.test).
 - `SUPABASE_*` claves copiadas a `.env.test` (sin exponer valores).
-- Validacion completa: `migrate.sh status staging` OK; `auth.real` PASS (7/7, 2026-01-26).
+- Validacion completa: `migrate.sh status staging` OK; `auth.real` PASS (7/7, 2026-01-26; spec actual 10 tests, 2 skip).
 
 ---
 
@@ -48,7 +48,7 @@
 | E9-T1 | Validar inventario completo de secretos | ✅ | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |
 | E9-T2 | Comprobar ausencia de secretos en repo | ✅ | `git ls-files | rg -n "\\.env\\.test$"` |
 | E9-T3 | Registrar rotacion y owners | ✅ | `docs/DECISION_LOG.md` |
-| E9-T4 | Validaciones minimas sin exponer valores | ✅ | `migrate.sh status staging` OK; `auth.real` PASS (2026-01-26) |
+| E9-T4 | Validaciones minimas sin exponer valores | ✅ | `migrate.sh status staging` OK; `auth.real` PASS (2026-01-26; spec actual 10 tests, 2 skip) |
 
 ---
 

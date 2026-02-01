@@ -71,7 +71,7 @@
 ## 5) Restricciones y políticas
 
 - **Credenciales de staging/prod faltantes** → bloquea RLS/migraciones en entorno real.
-- **Frontend no debe escribir directo a DB** (writes via gateway).
+- **Frontend no debe escribir directo a DB** (writes via gateway; excepción: alta inicial en `personal` durante `signUp`).
 - **Prohibido `console.log`** en Edge Functions; usar `createLogger()`.
 - **CORS** debe restringirse por `ALLOWED_ORIGINS`.
 - **Variables de entorno críticas** deben estar definidas antes de deploy.
@@ -82,9 +82,9 @@
 
 - ~~**Auditoría RLS pendiente por credenciales.**~~ ✅ Completada (2026-01-23).
 - ~~**Logging parcial en cron auxiliares / propagación de `requestId`** (roadmap WS1.1/WS4.2).~~ ✅ Completado.
-- ~~**E2E real bloqueado por credenciales** (WS2.2).~~ ✅ Completado (auth real 7/7).
+- ~~**E2E real bloqueado por credenciales** (WS2.2).~~ ✅ Completado (auth real 7/7; histórico, spec actual 10 tests con 2 skip).
 - ~~**Validación runtime de payloads de cron** aún parcial (WS1.2/WS4.1).~~ ✅ Completado.
-- **Frontend lee directo de Supabase (confirmado)**: lecturas en hooks; writes deben ir por gateway. Evidencia: `minimarket-system/src/hooks/queries/useProveedores.ts` (consultas a `supabase.from(...)`).
+- **Frontend lee directo de Supabase (confirmado)**: lecturas en hooks; writes deben ir por gateway (excepción: alta inicial en `personal` durante `signUp`). Evidencia: `minimarket-system/src/hooks/queries/useProveedores.ts` (consultas a `supabase.from(...)`).
 
 ---
 

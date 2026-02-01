@@ -10,7 +10,7 @@
 ## 1) Resumen ejecutivo
 
 - El proyecto reporta **720 tests pasando** y cobertura completa de funcionalidades críticas.
-- La **arquitectura real** incluye lecturas directas desde el frontend a Supabase en varios hooks, con escrituras esperadas vía gateway.
+- La **arquitectura real** incluye lecturas directas desde el frontend a Supabase en varios hooks, con escrituras vía gateway (excepción actual: alta inicial en `personal` durante `signUp`).
 - Credenciales disponibles y auditoria RLS completada (revalidada 2026-01-31).
 - **Rollback probado exitosamente** en staging (OPS-SMART-1, 2026-01-30).
 
@@ -48,5 +48,5 @@
 ## 6) Fuentes de verdad
 
 - `docs/ESTADO_ACTUAL.md`
-- `docs/ROADMAP.md`
+- `docs/archive/ROADMAP.md`
 - `docs/BACKLOG_PRIORIZADO.md`

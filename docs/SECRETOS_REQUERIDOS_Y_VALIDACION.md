@@ -1,6 +1,6 @@
 # Secretos Requeridos y Validacion (Mini Market)
 
-**Fecha:** 2026-01-29  
+**Fecha:** 2026-02-01  
 **Estado:** Checklist operativo (sin claves; solo valores no sensibles)  
 
 ---
@@ -16,7 +16,7 @@ Este documento lista **que secretos obtener**, **donde obtenerlos** y **como val
 - `SUPABASE_*` claves cargadas en `.env`/CI (según reporte COMET, sin exponer valores).
 - `TEST_PASSWORD` sincronizado en Supabase Auth (usuarios E2E).
 - Validaciones mínimas ejecutadas (2026-01-29): `migrate.sh status staging` OK; `run-integration-tests --dry-run` OK.
-- Validación previa (2026-01-26): prerequisitos OK; E2E auth real OK (7/7).
+- Validación previa (2026-01-26): prerequisitos OK; E2E auth real OK (7/7; spec actual 10 tests, 2 skip).
 - Claves reales siguen fuera de documentación y repositorio.
 
 ---
@@ -130,7 +130,8 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 ### 5.2 Registro de validacion (2026-01-26)
 - `scripts/run-integration-tests.sh --dry-run` → OK (prerequisitos verificados).
 - `bash migrate.sh status staging` → OK (migraciones listadas; README movido a `docs/db/`).
-- `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` → OK (7/7 PASS).
+- `cd minimarket-system && VITE_USE_MOCKS=false pnpm exec playwright test auth.real` → OK (7/7 PASS; histórico).  
+  **Nota:** el spec actual define 10 tests (2 skip).
 
 ---
 

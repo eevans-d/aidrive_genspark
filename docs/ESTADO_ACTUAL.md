@@ -1,7 +1,13 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-01-31  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa 2026-01-28)
+**Última actualización:** 2026-02-01  
+**Estado:** ✅ PRODUCCIÓN CONFIGURADA (última verificación documentada 2026-01-28; panel/CI por revalidar)
+
+**Actualización 2026-02-01 (verificación contra código):**
+- Conteos recalculados desde repo (funciones, migraciones y tests).
+- API gateway: 29 endpoints en `supabase/functions/api-minimarket/index.ts`.
+- Frontend: 9 páginas, 8 hooks React Query, 3 componentes.
+- Coverage en repo: 69.91% lines (coverage/index.html).
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
@@ -26,6 +32,7 @@
 - Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedan 2 WARN (leaked password protection + 1 WARN residual por confirmar) + 15 INFO (tablas internas sin policies). Ver Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar en entornos no-PROD si aplica).
 - Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (planes antiguos retirados).
+
 ## 🎯 Proyecto Supabase
 
 | Propiedad | Valor |
@@ -36,33 +43,39 @@
 | **URL** | https://dqaygmjpzoqjjrywdsxi.supabase.co |
 | **Dashboard** | https://supabase.com/dashboard/project/dqaygmjpzoqjjrywdsxi |
 
-### Edge Functions Desplegadas
-| Función | Estado | Tamaño |
-|---------|--------|--------|
-| api-minimarket | ✅ Funcionando | 897 KB |
-| api-proveedor | ✅ Funcionando | 62 KB |
-| alertas-stock | ✅ Funcionando | 8 KB |
-| alertas-vencimientos | ✅ | 9 KB |
-| cron-dashboard | ✅ | 18 KB |
-| cron-health-monitor | ✅ | 16 KB |
-| cron-jobs-maxiconsumo | ✅ | 22 KB |
-| cron-notifications | ✅ | 23 KB |
-| cron-testing-suite | ✅ | 19 KB |
-| notificaciones-tareas | ✅ | 9 KB |
-| reportes-automaticos | ✅ | 8 KB |
-| reposicion-sugerida | ✅ | 115 KB |
-| scraper-maxiconsumo | ✅ | 47 KB |
+> Nota: ref/URL provienen de `.env.*` y `supabase/.temp/project-ref`; el estado del panel requiere verificación manual.
+
+### Edge Functions en repo (13)
+| Función | En repo |
+|---------|--------|
+| api-minimarket | ✅ |
+| api-proveedor | ✅ |
+| alertas-stock | ✅ |
+| alertas-vencimientos | ✅ |
+| cron-dashboard | ✅ |
+| cron-health-monitor | ✅ |
+| cron-jobs-maxiconsumo | ✅ |
+| cron-notifications | ✅ |
+| cron-testing-suite | ✅ |
+| notificaciones-tareas | ✅ |
+| reportes-automaticos | ✅ |
+| reposicion-sugerida | ✅ |
+| scraper-maxiconsumo | ✅ |
+
+> Nota: estado de despliegue y tamaños requieren validación en Dashboard.
 
 ---
 
-## 📊 Métricas de Código (Verificadas)
+## 📊 Métricas de Código (Verificadas en repo)
+
+> Conteos calculados por ocurrencias de `it/test` en archivos de tests. No implican ejecución.
 
 ### Backend (Supabase Edge Functions)
 | Categoría | Cantidad | Detalle |
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend** | **640** | 36 archivos |
+| **Tests Backend (unit)** | **682** | 35 archivos en `tests/unit` |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -70,22 +83,20 @@
 | Páginas | 9 | Dashboard, Login, Deposito, Kardex, Productos, etc. |
 | Hooks Query | 8 | useDashboardStats, useProductos, useTareas, etc. |
 | Componentes | 3 | Layout, ErrorBoundary, ErrorMessage |
-| **Tests Frontend** | **40** | 12 archivos |
+| **Tests Frontend (unit)** | **40** | 12 archivos en `minimarket-system/src` |
 
-### Totales
-- **Tests Unitarios:** 720 (Backend 680 + Frontend 40) — revalidado 2026-01-28
-- **Tests Integración (local):** 38/38 — revalidado 2026-01-28
-- **Tests Seguridad:** 15/15 (real) — revalidado 2026-01-28
-- **Tests Performance:** 6/6 (real) — revalidado 2026-01-28
-- **Tests Contratos API:** 11/11 (real) — revalidado 2026-01-28
-- **Tests E2E Backend Smoke:** 4/4 — revalidado 2026-01-28
-- **Tests E2E Frontend Mocks:** 6/6 passed (9 skipped) — revalidado 2026-01-28
-- **Tests E2E Auth Real:** 7/7 — revalidado 2026-01-28
-- **Deno Check:** ✅ Sin errores — revalidado 2026-01-28
-- **Migraciones:** 10/10 aplicadas y alineadas local/staging
-- **Build Frontend:** ✅ Compilado (5.52s)
-- **Coverage:** 69.91% lines (↑13.28%)
-- **Agent Skills:** 5 activos (TestMaster V2, DeployOps V2, DocuGuard V2, CodeCraft, RealityCheck)
+### Totales (repo)
+- **Tests unitarios:** 722 (Backend 682 + Frontend 40)
+- **Tests integración:** 38 (tests/integration)
+- **Tests seguridad:** 14 (tests/security)
+- **Tests performance:** 5 (tests/performance)
+- **Tests contratos API:** 10 (tests/api-contracts)
+- **Tests E2E backend smoke:** 4 (tests/e2e)
+- **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
+- **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
+- **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)
+- **Migraciones en repo:** 12 archivos en `supabase/migrations`
+- **Build frontend:** `minimarket-system/dist/` presente (artefacto, no revalidado)
 
 ---
 
@@ -94,17 +105,17 @@
 - ✅ API Gateway con rate limiting + circuit breaker
 - ✅ Alertas de stock bajo y vencimientos
 - ✅ Roles validados server-side via `app_metadata` (sin fallback a `user_metadata`); frontend verifica rol en tabla `personal`
-- ✅ React Query con caching en páginas con data (8/8); Login sin hook
+- ✅ React Query: 7 páginas usan hooks (`Dashboard`, `Kardex`, `Productos`, `Proveedores`, `Rentabilidad`, `Stock`, `Tareas`); `Deposito` usa `useQuery` inline; `Login` sin hook
 - ✅ Exportación CSV de productos/stock
 - ✅ **Proyecto Supabase configurado**
-- ✅ **Migraciones aplicadas**
-- ✅ **Edge Functions desplegadas**
-- ✅ **Tests de seguridad con credenciales reales**
+- ✅ **Migraciones versionadas en repo**
+- ✅ **Edge Functions presentes en repo**
+- ✅ **Suite de seguridad disponible en `tests/security/`**
 
 ## ✅ Estado de Pendientes
 - Auditoría RLS completa: ✅ (2026-01-31) — revalidación final con output crudo
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
-- E2E con auth real (Playwright): ✅ revalidado 2026-01-27 (7/7 PASS)
+- E2E con auth real (Playwright): spec define 10 tests (2 skip); última revalidación documentada 2026-01-27 (7/7 PASS; histórico)
 
 > **Hoja de ruta madre (vigente):** `docs/HOJA_RUTA_MADRE_2026-01-31.md`
 

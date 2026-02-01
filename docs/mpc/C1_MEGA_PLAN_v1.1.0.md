@@ -11,7 +11,7 @@
 
 - **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/CHECKLIST_CIERRE.md`, `docs/DECISION_LOG.md`.
 - **Pendientes P1 activos:** ninguno. OPS-SMART-1 completado (rollback probado 2026-01-30). M8 (rotación de secretos/scan controlado) figura como completado en `docs/mpc/C2_SUBPLAN_E9_v1.1.0.md`.
-- **Reglas clave:** frontend escribe via gateway; evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
+- **Reglas clave:** frontend escribe via gateway (excepción: alta inicial en `personal` durante `signUp`); evitar `console.*` en `supabase/functions`; documentar decisiones en `docs/DECISION_LOG.md`.
 
 
 ---
@@ -43,7 +43,7 @@
 
 - No cambiar el orden ni el metodo indicado en cada tarea.
 - No usar `console.*` en `supabase/functions` (usar `_shared/logger.ts`).
-- Frontend **solo** escribe via gateway; no escribir directo a Supabase.
+- Frontend **solo** escribe via gateway; no escribir directo a Supabase (excepción: alta inicial en `personal` durante `signUp`).
 - Registrar evidencia con comando, salida, fecha y commit.
 - Si falta acceso/credenciales, detener y reportar bloqueador.
 
@@ -99,7 +99,7 @@
 
 
 **Comandos exactos (M1)**
-- `rg -n "Tests Unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 649/609/40).
+- `rg -n "Tests unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 682/40; conteo repo).
 - `find tests/unit -maxdepth 1 -type f -name '*.test.*' | wc -l` (esperado: 33).
 - `find minimarket-system/src -type f -name '*.test.tsx' | wc -l` (esperado: 12).
 - `rg -n "aidrive_genspark" docs` (no debe haber referencias a nombres antiguos).
@@ -159,7 +159,7 @@
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
 | M3-T1 | Auditoría RLS periódica | ✅ | `docs/AUDITORIA_RLS_CHECKLIST.md` |
-| M3-T2 | Migraciones 10/10 verificadas | ✅ | `docs/CHECKLIST_CIERRE.md` |
+| M3-T2 | Migraciones verificadas (conteo repo 12) | ✅ | `docs/CHECKLIST_CIERRE.md` |
 | M3-T3 | Consistencia `user_auth_id` | ✅ | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 
 **DoD / Validación**
@@ -192,7 +192,7 @@
 |---|---|---|---|
 | M5-T1 | Error boundaries y fallback UI | ✅ | `minimarket-system/src/components/ErrorBoundary.tsx` |
 | M5-T2 | Paginación + select mínimo | ✅ | `minimarket-system/src/pages/*` |
-| M5-T3 | React Query consistente (8/8 con data) | ✅ | `minimarket-system/src/hooks/queries/*` |
+| M5-T3 | React Query en páginas con data (7 hooks + Depósito inline) | ✅ | `minimarket-system/src/hooks/queries/*` |
 
 **DoD / Validación**
 - Tests frontend pasan y UX sin estados rotos.
@@ -205,10 +205,10 @@
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| M6-T1 | Unit tests 649/649 | ✅ | `test-reports/junit.xml` |
-| M6-T2 | Integration 31/31 (gated) | ✅ | `tests/integration` |
+| M6-T1 | Unit tests (conteo repo) 722 | ✅ | `test-reports/junit.xml` |
+| M6-T2 | Integration 38 definidos (gated) | ✅ | `tests/integration` |
 | M6-T3 | E2E backend smoke 4/4 | ✅ | `tests/e2e/*.smoke.test.ts` |
-| M6-T4 | E2E auth real 7/7 | ✅ | `minimarket-system/e2e/auth.real.spec.ts` |
+| M6-T4 | E2E auth real 10 definidos (2 skip) | ✅ | `minimarket-system/e2e/auth.real.spec.ts` |
 | M6-T5 | Performance baseline documentado | ✅ | `tests/performance/load-testing.vitest.test.ts` |
 
 **DoD / Validación**

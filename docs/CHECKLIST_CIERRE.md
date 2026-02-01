@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-01-31  
+**Fecha:** 2026-02-01  
 **Estado:** ✅ PRODUCCIÓN CONFIGURADA (verificación completa)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
@@ -9,10 +9,12 @@
 ## 🎉 Hitos Completados (2026-01-23)
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
-2. **10 migraciones aplicadas** correctamente
-3. **13 Edge Functions desplegadas** y funcionando
-4. **Tests de seguridad con credenciales reales:** 15/15 pasando
+2. **12 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
+3. **13 Edge Functions en repo** (despliegue requiere verificación en panel)
+4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
+
+**Nota:** métricas de ejecución son históricas; el conteo actual por código está en `docs/ESTADO_ACTUAL.md`.
 
 ---
 
@@ -27,14 +29,14 @@
 El plan de ejecución de 6 semanas está **completado con pendientes P1**. Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **689 tests unitarios pasando** (Backend 649 + Frontend 40) ✅
-- **15 tests de seguridad con credenciales reales** ✅
-- **Migraciones aplicadas en producción** ✅
-- **13 Edge Functions desplegadas** ✅
+- **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
+- **Suite de seguridad: 14 tests definidos** ✅
+- **Migraciones versionadas en repo (12 archivos)** ✅
+- **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e)
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
-- **Coverage mejorado:** 63.38% lines (+6.65%) ✅
+- **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes:
 - Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
@@ -50,14 +52,13 @@ Pendientes:
 
 ### F0: Gobierno y Baseline
 - [x] Objetivos y KPIs definidos (`docs/OBJETIVOS_Y_KPIS.md`)
-- [x] Inventario actualizado (`docs/INVENTARIO_ACTUAL.md`)
-- [x] Baseline técnico documentado (`docs/BASELINE_TECNICO.md`)
 - [x] Risk/Stakeholders/Comms refrescados (2026-01-15) → `docs/C0_RISK_REGISTER_MINIMARKET_TEC.md`, `docs/C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `docs/C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`
+- [x] Referencias legacy eliminadas: `PLAN_EJECUCION.md`, `PLAN_WS_DETALLADO.md`, `INVENTARIO_ACTUAL.md`, `BASELINE_TECNICO.md`
 - [x] Retiro Jest legacy verificado y limpieza final de stubs: removidos `tests/helpers/setup.js`, `tests/setup-edge.js`, `tests/performance-benchmark.ts`, `tests/api-contracts/openapi-compliance.test.js`, `tests/scripts/generate-test-report.js`
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
-- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (10/10 en producción)
+- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 12 archivos)
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
@@ -74,15 +75,14 @@ Pendientes:
   - Archivos: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
   - Nota: si se regenera `TEST_PASSWORD`, se debe resetear en Auth y revalidar.
 - [x] **E2E con auth real** ✅ COMPLETADO 2026-01-23
-  - 7 tests E2E con auth real pasando
+  - Spec `minimarket-system/e2e/auth.real.spec.ts`: 10 tests definidos (2 skip)
   - Tests: login, logout, permisos por rol, redirección sin auth
   - Comando: `VITE_USE_MOCKS=false pnpm exec playwright test auth.real`
-  - Evidencia: 7/7 PASS (2026-01-23)
-- Revalidación completada tras reset de `TEST_PASSWORD` (2026-01-27: 7/7 PASS).
+  - Última ejecución documentada: 2026-01-27 (7/7 PASS; histórico)
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
-  - 10 migraciones aplicadas en producción
+  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 12 archivos)
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
@@ -136,7 +136,7 @@ Pendientes:
 - [x] Integration: `tests/integration` en Vitest; comando `npm run test:integration`
 - [x] E2E smoke: `tests/e2e/*.smoke.test.ts`; comando `npm run test:e2e`
 - [x] Seguridad: migrada a Vitest ✅ 2026-01-23
-  - **15 tests passing con credenciales reales**
+  - **14 tests definidos en repo (ejecución real requiere credenciales)**
   - Fixtures: SQL injection, XSS, path traversal, SSRF, JWT, rate limit
   - Archivo: `tests/security/security.vitest.test.ts`
   - Test auth real: verifica `api-minimarket/health` con ANON_KEY
@@ -187,7 +187,7 @@ Pendientes:
 ### F6: CI/CD
 - [x] GitHub Actions workflow: `.github/workflows/ci.yml` (activo en `main`)
   - Job: lint (ESLint)
-  - Job: test (Vitest) - **649 tests pasando** (Backend 609 + Frontend 40) ✅
+  - Job: test (Vitest) - ejecuta suites unitarias (conteo actual en `docs/ESTADO_ACTUAL.md`) ✅
   - Job: build (Vite)
   - Job: typecheck (tsc)
   - Job: edge-functions-check (Deno, estricto)
@@ -218,11 +218,11 @@ Pendientes:
 
 ## 📊 Métricas Finales
 
-| Métrica | Antes | Después (2026-01-12) |
+| Métrica | Antes | Después (2026-02-01, conteo repo) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios pasando | ~10 | **689** (Backend 649 + Frontend 40) ✅ |
-| Tests archivos | 5 | **45** (backend 33 + frontend 12) ✅ |
+| Tests unitarios definidos | ~10 | **722** (Backend 682 + Frontend 40) ✅ |
+| Tests archivos (unit) | 5 | **47** (backend 35 + frontend 12) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 7 módulos `_shared/` (adopción parcial) |
@@ -329,7 +329,7 @@ tests/api-contracts/      # (Vitest mock)
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 | [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
 | [HOJA_RUTA_MADRE_2026-01-31.md](HOJA_RUTA_MADRE_2026-01-31.md) | ✅ Vigente | Checklist único y ruta a 100% |
-| [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Actualizado | 689 tests, 63.38% coverage |
+| [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Histórico | Ejecución 2026-01-28 (ver detalles en el reporte) |
 
 ---
 

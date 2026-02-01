@@ -6,6 +6,8 @@
 
 ---
 
+> Nota: reporte histórico (2026-01-28). Los conteos actuales por código están en `docs/ESTADO_ACTUAL.md`.
+
 ## Información del Build
 
 - **Fecha de ejecución:** 2026-01-28 03:46 UTC
