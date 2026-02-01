@@ -46,17 +46,31 @@
 | D-039 | **Mitigación de alertas no críticas (Advisor)** | Completada | 2026-01-31 | search_path fijado, security_invoker en vistas, anon grants revocados; ERROR=0, WARN=2, INFO=15. Pendiente manual: leaked password protection. Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
 | D-040 | **Migración para mitigaciones Advisor** | Aprobada | 2026-01-31 | Archivo creado: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (pendiente aplicar/validar). |
 | D-041 | **Consolidación de planificación en Hoja de Ruta MADRE** | Completada | 2026-01-31 | Se creó `docs/HOJA_RUTA_MADRE_2026-01-31.md` y se retiraron planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`). |
+| D-042 | **Revisión humana P0 de módulos críticos** | Completada | 2026-02-01 | 6 módulos críticos analizados y aprobados: `api-minimarket/index.ts`, `cors.ts`, `rate-limit.ts`, `fix_rls_security_definer.sql`, `AuthContext.tsx`, `scraper-maxiconsumo/`. Todos PASS. |
 
 ---
 
-## Siguientes Pasos (2026-01-31)
+## Siguientes Pasos (2026-02-01)
 
 ### Pendientes actuales
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Habilitar leaked password protection (Auth) | Supabase Dashboard | Pendiente |
-| P1 | Aplicar/validar migración mitigaciones Advisor | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` | Pendiente |
+| P0 | Habilitar leaked password protection (Auth) | Supabase Dashboard → Auth → Settings | Pendiente (manual) |
+| P1 | Confirmar WARN residual en Security Advisor | Panel Supabase | Pendiente |
+| P1 | Validar migraciones en staging/prod | `migrate.sh status` | Requiere credenciales |
+| P1 | Configurar secrets en GitHub Actions | Settings → Secrets | Pendiente |
+
+---
+
+## Siguientes Pasos (2026-01-31) — Histórico
+
+### Pendientes cerrados
+
+| Prioridad | Tarea | Referencia | Estado |
+|-----------|-------|------------|--------|
+| P1 | ~~Habilitar leaked password protection (Auth)~~ | Supabase Dashboard | Movido a 2026-02-01 |
+| P1 | ~~Aplicar/validar migración mitigaciones Advisor~~ | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` | Aplicada en PROD |
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---

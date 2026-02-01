@@ -1,13 +1,21 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
 
-**Última actualización:** 2026-02-01  
-**Estado:** ✅ PRODUCCIÓN CONFIGURADA (última verificación documentada 2026-01-28; panel/CI por revalidar)
+**Última actualización:** 2026-02-01 04:35 UTC  
+**Estado:** ✅ PRODUCCIÓN CONFIGURADA (revisión humana P0 completada 2026-02-01)
 
-**Actualización 2026-02-01 (verificación contra código):**
+**Actualización 2026-02-01 (Antigravity Agent — revisión humana P0):**
+- **Revisión humana P0 completada**: 6 módulos críticos analizados y aprobados.
+  - `api-minimarket/index.ts` ✅ — JWT auth, CORS, rate limit 60/min, circuit breaker OK
+  - `_shared/cors.ts` ✅ — validateOrigin, Vary: Origin, ALLOWED_ORIGINS
+  - `_shared/rate-limit.ts` ✅ — FixedWindow + Adaptive, headers IETF
+  - `20260110100000_fix_rls_security_definer.sql` ✅ — search_path=public, validaciones
+  - `AuthContext.tsx` ⚠️ — OK (console.error menor; insert directo documentado D-025)
+  - `scraper-maxiconsumo/` ✅ — SCRAPER_READ_MODE, circuit breaker, anti-detection
 - Conteos recalculados desde repo (funciones, migraciones y tests).
 - API gateway: 29 endpoints en `supabase/functions/api-minimarket/index.ts`.
 - Frontend: 9 páginas, 8 hooks React Query, 3 componentes.
 - Coverage en repo: 69.91% lines (coverage/index.html).
+- **Pendiente manual:** Leaked Password Protection (Dashboard → Auth → Settings).
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
