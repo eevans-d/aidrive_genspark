@@ -40,7 +40,7 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
-- Habilitar leaked password protection (Auth) y configurar SMTP.
+- Habilitar leaked password protection (Auth) **requiere SMTP personalizado**.
 - Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
 - Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).

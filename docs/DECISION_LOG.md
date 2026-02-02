@@ -43,7 +43,7 @@
 | D-036 | **RLS role-based v2 aplicada y verificada** | Completada | 2026-01-31 | `anon` revocado en tablas críticas, 30 policies activas, post-check OK. Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
 | D-037 | **Migración versionada RLS role-based v2** | Completada | 2026-01-31 | Aplicada en PROD y verificada (04:06–04:15 UTC). Archivo: `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`. |
 | D-038 | **Security Advisor en PROD con alertas no críticas** | Aprobada | 2026-01-31 | 5 ERROR (vistas SECURITY DEFINER), 7 WARN (funciones + Auth), 15 INFO (tablas internas sin policies). Acciones recomendadas sin bloqueo. Evidencia: Parte 7 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
-| D-039 | **Mitigación de alertas no críticas (Advisor)** | Completada | 2026-01-31 | search_path fijado, security_invoker en vistas, anon grants revocados; ERROR=0, WARN=2, INFO=15. **Leaked password protection resuelto 2026-02-01** (confirmación usuario). Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
+| D-039 | **Mitigación de alertas no críticas (Advisor)** | Completada | 2026-01-31 | search_path fijado, security_invoker en vistas, anon grants revocados; ERROR=0, WARN=2, INFO=15. **Leaked password protection reportado como resuelto 2026-02-01** (confirmación usuario) — **re‑abierto 2026-02-02** por bloqueo SMTP (ver D-051). Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`. |
 | D-040 | **Migración para mitigaciones Advisor** | Aprobada | 2026-01-31 | Archivo creado: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario 2026-02-01). |
 | D-041 | **Consolidación de planificación en Hoja de Ruta MADRE** | Completada | 2026-01-31 | Se creó `docs/HOJA_RUTA_MADRE_2026-01-31.md` y se retiraron planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`). |
 | D-042 | **Proyecto marcado como Producción 100% completada** | Aprobada (confirmación usuario) | 2026-02-01 | Acciones manuales en panel/CI confirmadas por usuario; evidencia en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` Parte 9. |
@@ -55,6 +55,7 @@
 | D-048 | **Migración sp_aplicar_precio renombrada** | Completada | 2026-02-02 | `20260202000000_version_sp_aplicar_precio.sql` evita conflicto con `schema_migrations` preexistente. |
 | D-049 | **Estandarizar errores en api-proveedor** | Completada | 2026-02-02 | Handlers/router/index usan `AppError` (`fromFetchResponse`/`toAppError`) para respuestas JSON consistentes. |
 | D-050 | **Reconciliar historial de migraciones PROD** | Completada | 2026-02-02 | Se añadieron placeholders locales para 20250101000000/20260131034034/20260131034328 y se aplicó `20260202000000` en PROD. |
+| D-051 | **Leaked password protection bloqueado por SMTP** | Bloqueada | 2026-02-02 | El toggle no aparece sin SMTP personalizado; requiere credenciales externas. |
 
 ---
 
@@ -64,7 +65,7 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P0 | Habilitar leaked password protection (Auth) | Supabase Dashboard → Auth → Settings | ✅ Completado (confirmación usuario) |
+| P0 | Habilitar leaked password protection (Auth) | Supabase Dashboard → Auth → Settings | ⚠️ Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado; ver D-051) |
 | P1 | Confirmar WARN residual en Security Advisor | Panel Supabase | ✅ Completado (confirmación usuario) |
 | P1 | Validar migraciones en staging/prod | `migrate.sh status` | ✅ Completado (confirmación usuario) |
 | P1 | Configurar secrets en GitHub Actions | Settings → Secrets | ✅ Completado (confirmación usuario) |

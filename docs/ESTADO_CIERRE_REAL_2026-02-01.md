@@ -7,7 +7,7 @@
 
 ## ✅ Confirmaciones manuales (usuario)
 - Security Advisor en PROD verificado y sin WARN críticos (confirmación usuario).
-- Leaked password protection habilitado (confirmación usuario).
+- Leaked password protection habilitado (confirmación usuario). **Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado)**.
 - Migración `20260131020000_security_advisor_mitigations.sql` validada en no‑PROD (confirmación usuario).
 - Secrets de CI (GitHub Actions) configurados (confirmación usuario).
 - Configuraciones manuales en paneles (Supabase/GitHub) confirmadas por usuario.
@@ -18,7 +18,7 @@
 
 ## 🔎 Addendum 2026-02-02 (COMET / Supabase)
 **Resultado:** ⚠️ **Cierre bloqueado** hasta resolver pendientes críticos.
-- ❌ Leaked password protection: **DESACTIVADO** (Auth requiere SMTP).
+- ❌ Leaked password protection: **DESACTIVADO**. **Bloqueado**: el toggle no aparece sin **SMTP personalizado**.
 - ⚠️ Security Advisor: **WARN=2** (vista materializada pública `tareas_metricas` + leaked password protection).
 - ❌ Migración `20260202000000` **NO aplicada** en PROD (historial remoto incluye `20250101000000` y 20260131034xxx no presentes localmente).
 - ⚠️ Políticas RLS: COMET reporta **18** activas en tablas críticas (esperado 30 según auditoría 2026-01-31).
@@ -28,7 +28,7 @@
 - ✅ `20260202000000_version_sp_aplicar_precio.sql` aplicada en PROD (ver `supabase migration list --linked`).
 
 **Acciones requeridas:**
-1) Configurar SMTP y habilitar leaked password protection.
+1) Configurar **SMTP personalizado** y habilitar leaked password protection.
 2) ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` (resuelto 2026-02-02).
 3) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
 

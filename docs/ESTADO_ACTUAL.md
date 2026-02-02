@@ -21,7 +21,7 @@
   - **Local Docker:** `supabase start` falla por `schema_migrations` duplicado en migraciones preexistentes del DB template; ver detalle en `docs/ESTADO_CIERRE_REAL_2026-02-01.md`.
 
 **Revisión COMET (Supabase, 2026-02-02):**
-- ❌ **Leaked Password Protection**: DESACTIVADO (requiere configurar proveedor de correo).
+- ❌ **Leaked Password Protection**: DESACTIVADO. **Bloqueado**: el toggle no aparece sin **SMTP personalizado** (no basta el SMTP por defecto de Supabase).
 - ⚠️ **Security Advisor**: WARN=2 (vista materializada pública `tareas_metricas` + leaked password protection).
 - ❌ **Migración pendiente en PROD**: `20260202000000` no aplicada (historial remoto contiene `20250101000000` y dos versiones 20260131034xxx no presentes localmente).
 - ⚠️ **Políticas RLS**: COMET reporta **18** activas en tablas críticas (esperado 30 según docs previas) — requiere verificación.
@@ -33,7 +33,7 @@
 - ✅ `supabase migration list --linked` confirma `20260202000000` en remoto.
 
 **Pendientes críticos (bloquean cierre):**
-1) Habilitar leaked password protection en Auth (requiere SMTP).
+1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado**).
 2) Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
 3) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
 

@@ -25,7 +25,7 @@
 - ⚠️ COMET reporta **18 políticas** en tablas críticas (esperado 30 según auditoría 2026-01-31) — requiere verificación.
 - ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=2**, INFO=15.  
   - WARN: leaked password protection desactivado + vista materializada pública `tareas_metricas`.
-- ❌ Leaked password protection **DESACTIVADO** (requiere SMTP).
+- ❌ Leaked password protection **DESACTIVADO** (requiere **SMTP personalizado**; el toggle no aparece sin esto).
 - ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
 
 ### ✅ Tareas ya cerradas (no repetir)
@@ -45,7 +45,7 @@
 > - **Observación**: notas críticas por paso.
 
 ### 1.1 Seguridad (P0/P1)
-- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings. *(Re‑abierto 2026-02-02)*  
+- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere SMTP personalizado**). *(Re‑abierto 2026-02-02)*  
 - [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
 - [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación). *(Re‑abierto 2026-02-02)*  
 - [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
