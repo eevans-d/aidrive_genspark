@@ -1,6 +1,6 @@
 # Hoja de Ruta MADRE — Producción 100% (2026-01-31)
 
-**Última actualización:** 2026-02-01  
+**Última actualización:** 2026-02-02  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
 **Fuente primaria:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`.
 
@@ -21,16 +21,11 @@
 
 ## 0) Estado actual verificado (resumen)
 
-- ✅ RLS role-based v2 aplicada y verificada en PROD (10/10 tablas core, 30 policies, 0 anon grants).  
-  Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (Partes 4 y 5).
-- ✅ Security Advisor mitigado (alertas no críticas):  
-  - ERROR: 0 (vistas SECURITY DEFINER mitigadas)  
-  - WARN: 0 (confirmación usuario 2026-02-01; leaked password protection habilitado)  
-  - INFO: 15 (tablas internas sin policies; aceptable si solo usa service_role)  
-  Evidencia: Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
-- ✅ Migraciones versionadas:  
-  - `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql` (aplicada PROD).  
-  - `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario).
+- ✅ RLS role-based v2 aplicada y verificada en PROD (10/10 tablas core).  
+- ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=2**, INFO=15.  
+  - WARN: leaked password protection desactivado + vista materializada pública `tareas_metricas`.
+- ❌ Leaked password protection **DESACTIVADO** (requiere SMTP).
+- ❌ Migración `20260202000000` **pendiente** en PROD (historial remoto con 20250101000000 + 20260131034xxx no presentes localmente).
 
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
@@ -39,9 +34,9 @@
 
 ---
 
-## 1) Checklist MADRE — cierre final (completado)
+## 1) Checklist MADRE — cierre final (re‑abierto por COMET 2026-02-02)
 
-**Actualización 2026-02-01:** ítems marcados como completados por confirmación del usuario (evidencia manual).
+**Actualización 2026-02-02:** se re‑abren tareas críticas por hallazgos en panel.
 
 > **Leyenda:**
 > - [ ] Pendiente
@@ -49,16 +44,16 @@
 > - **Observación**: notas críticas por paso.
 
 ### 1.1 Seguridad (P0/P1)
-- [x] **Habilitar leaked password protection** en Dashboard → Auth → Settings.  
+- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings. *(Re‑abierto 2026-02-02)*  
 - [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
-- [x] **Confirmar WARN residual** en Security Advisor (post‑mitigación).  
+- [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación). *(Re‑abierto 2026-02-02)*  
 - [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 - [x] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD.  
 - [x] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.  
 - [x] **Revisión humana de módulos críticos P0** (security review manual).  
 
 ### 1.2 Base de datos y consistencia
-- [x] **Sincronizar estado de migraciones** en staging/prod.  
+- [ ] **Sincronizar historial de migraciones** en prod (alinear versiones remotas y aplicar/registrar `20260202000000`). *(Re‑abierto 2026-02-02)*  
 - [x] **Verificar aplicación de migración de constraints/indexes**.  
 - [x] **Actualizar evidencias RLS** si se ejecuta en staging/local.  
 - [x] **Confirmar N/A de `REPORTE_REVISION_DB.md`**: `docs/DB_GAPS.md` indica que no existe.
@@ -112,7 +107,7 @@
 6) **Revisión humana P0:** completar checklist de módulos críticos.  
 7) **Docs:** confirmar limpieza de referencias legacy y actualizar docs de API/Postman si cambió el API.  
 
-**Observación:** estas tareas se cerraron (confirmación usuario 2026-02-01). El proyecto queda en estado “Producción 100%” con riesgos residuales documentados.
+**Observación:** el cierre de 2026-02-01 queda **condicionado** por hallazgos COMET del 2026-02-02.
 
 ---
 

@@ -1,7 +1,7 @@
 # Checklist de Cierre - Plan de Ejecución
 
 **Fecha:** 2026-02-02  
-**Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación usuario)  
+**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-02)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
 ---
@@ -34,16 +34,15 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Migraciones versionadas en repo (12 archivos)** ✅
 - **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
+- COMET 2026-02-02: leaked password protection DESACTIVADO; Security Advisor WARN=2; migración `20260202000000` pendiente en PROD.
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
-Pendientes:
-- Ninguno crítico. Rollback probado en staging (OPS-SMART-1) → ✅ Verificado (Estático/Code Review). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
-- Revisión Security Advisor (RLS/tabla pública) → ✅ Remediación role-based aplicada y confirmación en panel por usuario (2026-02-01). Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
-- Migración RLS role-based v2 aplicada en PROD ✅ (archivo: `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`).
-- Security Advisor en PROD mitigado: ERROR=0, WARN=0 (confirmación usuario), INFO=15.
-- Migración mitigaciones Advisor creada: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario).
+Pendientes críticos (re‑abiertos por COMET 2026-02-02):
+- Habilitar leaked password protection (Auth) y configurar SMTP.
+- Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
+- Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD.
 
 ---
 

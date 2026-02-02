@@ -1,7 +1,7 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
 **Última actualización:** 2026-02-02  
-**Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación de usuario; evidencia manual)
+**Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
 **Cierre 2026-02-01 (confirmación usuario):**
 - Leaked password protection habilitado en panel.
@@ -19,6 +19,16 @@
   - ✅ `pnpm run test:e2e:frontend` — PASS con mocks (6 passed, 9 skipped: auth real + gateway).
   - **Nota:** `npm run test:integration`/`npm run test:e2e` se ejecutaron con `SUPABASE_URL` remoto desde `.env.test` (scripts ahora omiten `supabase start` en ese modo).
   - **Local Docker:** `supabase start` falla por `schema_migrations` duplicado en migraciones preexistentes del DB template; ver detalle en `docs/ESTADO_CIERRE_REAL_2026-02-01.md`.
+
+**Revisión COMET (Supabase, 2026-02-02):**
+- ❌ **Leaked Password Protection**: DESACTIVADO (requiere configurar proveedor de correo).
+- ⚠️ **Security Advisor**: WARN=2 (vista materializada pública `tareas_metricas` + leaked password protection).
+- ❌ **Migración pendiente en PROD**: `20260202000000` no aplicada (historial remoto contiene `20250101000000` y dos versiones 20260131034xxx no presentes localmente).
+- ✅ RLS en tablas críticas PASS; ✅ 13 Edge Functions; ✅ secretos críticos presentes.
+
+**Pendientes críticos (bloquean cierre):**
+1) Habilitar leaked password protection en Auth (requiere SMTP).
+2) Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD (ver plan en `docs/ESTADO_CIERRE_REAL_2026-02-01.md`).
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).

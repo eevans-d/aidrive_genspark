@@ -53,6 +53,7 @@
 | D-046 | **Vitest alias fallback a root node_modules** | Completada | 2026-02-01 | Evita fallos de resolución cuando `minimarket-system/node_modules` no existe (ej. `@testing-library/jest-dom/vitest`). |
 | D-047 | **Scripts de tests soportan Supabase remoto** | Aprobada | 2026-02-02 | Si `SUPABASE_URL` es remoto, omiten `supabase start`/`db reset`. Para forzar local: `SUPABASE_FORCE_LOCAL=1`. |
 | D-048 | **Migración sp_aplicar_precio renombrada** | Completada | 2026-02-02 | `20260202000000_version_sp_aplicar_precio.sql` evita conflicto con `schema_migrations` preexistente. |
+| D-049 | **Estandarizar errores en api-proveedor** | Completada | 2026-02-02 | Handlers/router/index usan `AppError` (`fromFetchResponse`/`toAppError`) para respuestas JSON consistentes. |
 
 ---
 

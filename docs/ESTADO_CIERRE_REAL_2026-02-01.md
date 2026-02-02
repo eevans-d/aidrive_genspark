@@ -1,7 +1,7 @@
 # 📋 ESTADO REAL DE CIERRE — 2026-02-01
 
 **Propósito:** Documentación honesta del cierre y evidencias.  
-**Conclusión:** ✅ **LISTO PARA PRODUCCIÓN** — **confirmación de usuario** (evidencia manual).
+**Conclusión:** ⚠️ **LISTO PARA PRODUCCIÓN (confirmación usuario 2026-02-01) — CIERRE CONDICIONADO** por hallazgos COMET 2026-02-02.
 
 ---
 
@@ -13,6 +13,18 @@
 - Configuraciones manuales en paneles (Supabase/GitHub) confirmadas por usuario.
 
 > **Nota:** Este agente no accede a paneles externos; la validación es por confirmación manual.
+
+---
+
+## 🔎 Addendum 2026-02-02 (COMET / Supabase)
+**Resultado:** ⚠️ **Cierre bloqueado** hasta resolver pendientes críticos.
+- ❌ Leaked password protection: **DESACTIVADO** (Auth requiere SMTP).
+- ⚠️ Security Advisor: **WARN=2** (vista materializada pública `tareas_metricas` + leaked password protection).
+- ❌ Migración `20260202000000` **NO aplicada** en PROD (historial remoto incluye `20250101000000` y 20260131034xxx no presentes localmente).
+
+**Acciones requeridas:**
+1) Configurar SMTP y habilitar leaked password protection.
+2) Reconciliar historial de migraciones (ver plan sugerido en `docs/ESTADO_ACTUAL.md`) y aplicar/registrar `20260202000000`.
 
 ---
 
