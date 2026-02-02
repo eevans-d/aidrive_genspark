@@ -2,6 +2,7 @@ import { validateProductosParams } from '../validators.ts';
 import { calculateCompetitivenessScore, calculateRelevanceScore, formatPrecio, generateSearchTags, generateSlug } from '../utils/format.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchError, fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:productos');
 
@@ -35,7 +36,11 @@ export async function getProductosDisponiblesOptimizado(
         ]);
 
         if (productosResponse.status === 'rejected') {
-            throw new Error(`Error en consulta de productos: ${productosResponse.reason}`);
+            throw fromFetchError(productosResponse.reason);
+        }
+
+        if (!productosResponse.value.ok) {
+            throw await fromFetchResponse(productosResponse.value, 'Error en consulta de productos');
         }
 
         const productos = await productosResponse.value.json();
@@ -107,7 +112,7 @@ export async function getProductosDisponiblesOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo productos optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'PRODUCTOS_ERROR', 500);
     }
 }
 
@@ -154,7 +159,7 @@ async function obtenerEstadisticasCategoriasOptimizado(
     });
 
     if (!response.ok) {
-        throw new Error('Error obteniendo estadísticas de categorías');
+        throw await fromFetchResponse(response, 'Error obteniendo estadísticas de categorías');
     }
 
     const data = await response.json();
@@ -183,7 +188,7 @@ async function obtenerFacetasProductos(
     });
 
     if (!response.ok) {
-        throw new Error('Error obteniendo facetas de productos');
+        throw await fromFetchResponse(response, 'Error obteniendo facetas de productos');
     }
 
     const data = await response.json();
