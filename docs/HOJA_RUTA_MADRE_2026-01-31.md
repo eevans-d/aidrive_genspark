@@ -23,10 +23,12 @@
 
 - ✅ RLS role-based v2 aplicada y verificada en PROD (10/10 tablas core).  
 - ⚠️ COMET reporta **18 políticas** en tablas críticas (esperado 30 según auditoría 2026-01-31) — requiere verificación.
-- ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=2**, INFO=15.  
-  - WARN: leaked password protection desactivado + vista materializada pública `tareas_metricas`.
+- ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=3**, INFO=15.  
+  - WARN: search_path mutable en `public.sp_aplicar_precio` + vista materializada pública `tareas_metricas` + leaked password protection.
+  - Mitigación aplicada en PROD (Antigravity 2026-02-02). **Pendiente verificación visual** (WARN debería bajar a 1).
 - ❌ Leaked password protection **DESACTIVADO** (requiere **SMTP personalizado**; el toggle no aparece sin esto).
 - ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
+- ✅ Mitigación Advisor (WARN search_path + tareas_metricas) ejecutada en PROD (2026-02-02).
 
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
@@ -47,7 +49,10 @@
 ### 1.1 Seguridad (P0/P1)
 - [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere SMTP personalizado**). *(Re‑abierto 2026-02-02)*  
 - [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
-- [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación). *(Re‑abierto 2026-02-02)*  
+- [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación; debería quedar WARN=1). *(Pendiente evidencia visual)*  
+- ✅ **Mitigar WARN search_path** en `public.sp_aplicar_precio` (migración aplicada 2026-02-02).
+- ✅ **Mitigar WARN de vista materializada** `public.tareas_metricas` (endpoint migrado a `service_role` + REVOKE aplicado 2026-02-02).  
+- [ ] **Validar endpoint** `/reportes/efectividad-tareas` con JWT real (200 OK).
 - [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 - [x] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD.  
 - [x] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.  

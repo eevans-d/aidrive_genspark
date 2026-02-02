@@ -44,7 +44,7 @@ Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_S
 ### Contexto Importante
 - Proyecto en fase de **cierre avanzado** (RLS + Advisor mitigado en PROD)
 - RLS audit **completada y revalidada** (2026-01-31)
-- Security Advisor mitigado (ERROR=0, WARN=2, INFO=15; pendiente leaked password protection)
+- Security Advisor mitigado (ERROR=0, WARN=3, INFO=15; mitigaciones aplicadas 2026-02-02; pendiente verificación visual + leaked password protection)
 - Integration/E2E tests **gated** en CI (pendiente secrets en GitHub)
 - Documentación técnica **completa y actualizada**
 

@@ -22,7 +22,7 @@
 
 **Revisión COMET (Supabase, 2026-02-02):**
 - ❌ **Leaked Password Protection**: DESACTIVADO. **Bloqueado**: el toggle no aparece sin **SMTP personalizado** (no basta el SMTP por defecto de Supabase).
-- ⚠️ **Security Advisor**: WARN=2 (vista materializada pública `tareas_metricas` + leaked password protection).
+- ⚠️ **Security Advisor**: WARN=3 (search_path mutable en `public.sp_aplicar_precio` + vista materializada pública `tareas_metricas` + leaked password protection).
 - ❌ **Migración pendiente en PROD**: `20260202000000` no aplicada (historial remoto contiene `20250101000000` y dos versiones 20260131034xxx no presentes localmente).
 - ⚠️ **Políticas RLS**: COMET reporta **18** activas en tablas críticas (esperado 30 según docs previas) — requiere verificación.
 - ✅ RLS en tablas críticas PASS; ✅ 13 Edge Functions; ✅ secretos críticos presentes.
@@ -31,16 +31,15 @@
 - ✅ Historial de migraciones reconciliado (placeholders locales para `20250101000000`, `20260131034034`, `20260131034328`).
 - ✅ `20260202000000_version_sp_aplicar_precio.sql` aplicada en PROD (`supabase db push`).
 - ✅ `supabase migration list --linked` confirma `20260202000000` en remoto.
+- ✅ Mitigación aplicada en PROD (Antigravity 2026-02-02): `20260202083000_security_advisor_followup.sql`.
+- ✅ API desplegada (Antigravity 2026-02-02): endpoint `/reportes/efectividad-tareas` actualizado y función `api-minimarket` desplegada.
+- ⚠️ Evidencia pendiente (limitaciones de entorno Antigravity): verificación visual del Security Advisor y test real del endpoint con JWT.
 
 **Pendientes críticos (bloquean cierre):**
 1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado**).
-2) Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
-3) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
-
-**Actualización 2026-01-30 (COMET):**
-- Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
-- Validaciones mínimas OK: `migrate.sh status staging` y `run-integration-tests --dry-run`.
-- Rollback de `create_stock_aggregations` ejecutado en STAGING (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+2) Confirmar visualmente el Security Advisor post‑mitigación (WARN debería bajar a 1).
+3) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK).
+4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
@@ -123,7 +122,7 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)
-- **Migraciones en repo:** 15 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
+- **Migraciones en repo:** 16 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
 - **Build frontend:** `minimarket-system/dist/` presente (artefacto, no revalidado)
 
 ---

@@ -1,64 +1,67 @@
 ---
 name: TestMaster
-description: Standardized procedures for executing, analyzing, and maintaining tests in the aidrive_genspark project.
+description: Procedimientos estandarizados para ejecución, análisis y mantenimiento de tests en aidrive_genspark.
 ---
 
-# TestMaster Skill (Universal Standard)
+# TestMaster Skill (Estándar Universal)
 
-## 1. Objetivo
-Centralizar y verificar la calidad del código mediante la ejecución controlada de pruebas (Unit, Integration, E2E, Security), asegurando que ningún cambio rompa la funcionalidad existente.
+<objective>
+  Centralizar la calidad del código mediante la ejecución férrea de pruebas.
+  **Objetivo:** "0 Regresiones".
+</objective>
 
-## 2. Configuración del Proyecto
-**⚠️ OBLIGATORIO:** Antes de ejecutar, lee `.agent/skills/project_config.yaml` para obtener las rutas exactas.
-*   **Script de Test:** Ver clave `scripts.test_script` (Default: `./test.sh`)
-*   **Reporte de Salida:** Ver clave `outputs.test_report` (Default: `test-reports/test-summary.json`)
-*   **Políticas:** Ver clave `policies.retry_max` (Default: 2)
+## 1. Configuración
+**⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
 
-## 3. Criterios de Activación (Usar cuando...)
-*   Has modificado código fuente (`src/`, `supabase/functions/`).
-*   Necesitas verificar si una funcionalidad sigue funcionando (Regression Testing).
-*   Antes de cualquier operación de `DeployOps`.
-*   Necesitas depurar un error reportado.
+## 2. Criterios de Activación
+<activation_rules>
+  <enable_if>
+    - Código modificado.
+    - Antes de Deploy (Pre-Flight).
+    - Debugging de errores reportados.
+  </enable_if>
+  <disable_if>
+    - Solo cambios de documentación.
+    - Entorno caído (Docker no disponible).
+  </disable_if>
+</activation_rules>
 
-## 4. Criterios de NO uso (No usar cuando...)
-*   Solo has modificado documentación (`docs/`, `*.md`).
-*   Necesitas validar sintaxis simple (usa `npm run lint` o el linter del IDE).
-*   No tienes entorno de ejecución (ej: Docker caído) -> Primero repara el entorno.
+## 3. Protocolo de Ejecución
 
-## 5. Inputs Requeridos
-1.  **Scope/Type:** ¿Qué vas a probar? (`unit`, `integration`, `all`, `security`, `ui`).
-2.  **Target File (Opcional):** Ruta absoluta si es una prueba enfocada.
-3.  **Flags:** `coverage` (bool), `verbose` (bool).
+### FASE A: Environment Check
+<step>
+  1. Verifica que Docker esté corriendo si vas a correr tests de integración:
+     ```bash
+     docker ps
+     ```
+  2. Asegura que el directorio de logs exista:
+     ```bash
+     mkdir -p logs
+     ```
+</step>
 
-## 6. Protocolo de Ejecución
-1.  **Check Environment:** Verifica que el entorno esté listo (ej: Docker para tests de integración).
-2.  **Select Command:**
-    *   *Standard:* `{{scripts.test_script}} unit false false true` (Unitarios rápidos)
-    *   *Green Check:* `{{scripts.test_script}} unit && {{scripts.test_script}} integration`
-    *   *Debug Single File:* `npx vitest run <Target File>`
-3.  **Execute:** Corre el comando seleccionado.
-4.  **Analyze Report:** Lee `test-reports/test-summary.json` o la salida estándar.
+### FASE B: Execution Selector
+<step>
+  Selecciona el comando según la necesidad:
+  - **Unit Quick:** `{{scripts.test_script}} unit false false true`
+  - **Green Check (Full):** `{{scripts.test_script}} unit && {{scripts.test_script}} integration`
+  - **Single File:** `npx vitest run <File>`
+</step>
 
-## 7. Quality Gates (DONE Verificable)
-*   [ ] **Exit Code 0:** El comando terminó exitosamente.
-*   [ ] **Pass Rate:** 100% de los tests ejecutados pasaron.
-*   [ ] **Coverage (si aplica):** > `{{policies.coverage_min}}%` en código nuevo.
-*   [ ] **No Regressions:** Funcionalidades no relacionadas no se vieron afectadas.
+### FASE C: Analysis
+<step>
+  Lee el reporte en `{{outputs.test_report}}`.
+  - **Si Pass:** Fin.
+  - **Si Fail:** Analiza el stack trace. ¿Es el código o el test lo que está mal?
+</step>
 
-## 8. Anti-Loop / Stop-Conditions
-*   **Retry Max:** `{{policies.retry_max}}` intentos.
-*   **Error Handling:**
-    *   Si fallo es "Command not found" -> Instala deps (`npm install`).
-    *   Si fallo es "Connection refused" -> Levanta Docker.
-    *   Si falla 2 veces -> **STOP** y genera REPORTE DE BLOQUEO.
+## 4. Quality Gates
+<checklist>
+  <item>Exit Code 0.</item>
+  <item>100% Tests Passed.</item>
+  <item>Coverage > {{policies.coverage_min}}% (Nuevo código).</item>
+</checklist>
 
-### Plantilla REPORTE DE BLOQUEO
-> **BLOQUEO TESTMASTER**
-> * **Intenté:** Ejecutar [COMANDO]
-> * **Error:** [PEGA EL ERROR AQUÍ]
-> * **Causa:** [TU ANÁLISIS]
-> * **Fix Sugerido:** [TU SUGERENCIA]
-
-## 9. Salida Requerida (Artefactos)
-*   Archivo JSON de reporte: `{{outputs.test_report}}`
-*   Logs en terminal confirmando "PASS".
+## 5. Anti-Loop
+- Si falla por "Connection Refused", levanta Supabase/Docker.
+- Si falla >2 veces, genera reporte y DETENTE.

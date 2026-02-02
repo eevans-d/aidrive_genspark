@@ -1036,3 +1036,24 @@ REVOKE ALL ON TABLE public.tareas_metricas FROM anon;
 ### 9.5 RESULTADO FINAL
 > ✅ PARTE 9 COMPLETADA POR CONFIRMACIÓN DE USUARIO.  
 > Estado final: **Producción 100% completada**, con configuración manual validada por el usuario.
+
+---
+
+## PARTE 10: ADDENDUM POST‑CIERRE (2026-02-02)
+
+**Fuente:** COMET + Antigravity (panel Supabase + ejecución remota).
+
+**Hallazgos re‑abiertos (COMET 2026-02-02):**
+- Security Advisor en PROD reportó **WARN=3**: search_path mutable en `public.sp_aplicar_precio`, vista materializada `public.tareas_metricas` accesible por API, y leaked password protection deshabilitada.
+- Leaked password protection **bloqueado** por falta de SMTP personalizado (toggle no disponible).
+
+**Mitigación aplicada (Antigravity 2026-02-02):**
+- ✅ Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD (SET search_path + REVOKE `tareas_metricas` para `authenticated`).
+- ✅ Deploy `api-minimarket` con `/reportes/efectividad-tareas` usando `service_role`.
+
+**Pendientes de evidencia manual:**
+- Verificación visual del Security Advisor (WARN debería bajar a 1).
+- Prueba real del endpoint `/reportes/efectividad-tareas` con JWT válido.
+- Habilitar leaked password protection (requiere SMTP personalizado).
+
+> **Estado:** cierre **condicionado** hasta completar evidencias y SMTP.

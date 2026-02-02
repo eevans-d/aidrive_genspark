@@ -2,7 +2,7 @@
 
 **Fecha de creación:** 2026-01-31  
 **Proyecto:** minimarket-system (ref: `dqaygmjpzoqjjrywdsxi`)  
-**Estado:** Completado (confirmación usuario 2026-02-01; evidencia manual)  
+**Estado:** ⚠️ Re‑abierto (COMET 2026-02-02; WARN=3 y leaked password bloqueado)  
 **Autor:** GitHub Copilot (modo agente)
 
 > **Contexto actual:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/ESTADO_ACTUAL.md`.  
@@ -12,7 +12,28 @@
 
 ## 🎯 OBJETIVO
 
-Confirmar el WARN residual del Security Advisor en PROD, habilitar la protección de contraseñas filtradas (leaked password protection) y validar que las migraciones de seguridad estén correctamente aplicadas en entornos staging/local.
+Confirmar el WARN residual del Security Advisor en PROD, habilitar la protección de contraseñas filtradas (leaked password protection) y validar que las migraciones de seguridad estén correctamente aplicadas en entornos staging/local.  
+**Estado actual (COMET 2026-02-02):** Security Advisor reporta **WARN=3**, y leaked password protection permanece bloqueado por **SMTP personalizado**.
+
+---
+
+## 🆕 Addendum 2026-02-02 (COMET)
+
+**WARN actuales (3):**
+1) `public.sp_aplicar_precio` con **search_path mutable**.  
+2) **Vista materializada** `public.tareas_metricas` accesible por API (anon/authenticated).  
+3) **Leaked password protection** deshabilitada (bloqueada por falta de SMTP personalizado).
+
+**Acciones técnicas preparadas en repo (EJECUTADAS EN PROD 2026-02-02):**
+- ✅ Migración `20260202083000_security_advisor_followup.sql`: `SET search_path` en `sp_aplicar_precio` + `REVOKE` `tareas_metricas` para `authenticated`.
+- ✅ Endpoint `/reportes/efectividad-tareas`: usa `service_role` para leer `tareas_metricas` (evita acceso vía data API).
+
+**Bloqueo pendiente (panel):**
+- Leaked password protection **no se puede habilitar** sin **SMTP personalizado** (credenciales externas).
+
+**Pendientes por limitación de entorno (Antigravity):**
+- Verificación visual del Security Advisor (confirmar WARN=1).
+- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido.
 
 ---
 
@@ -37,6 +58,8 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 | **ERROR** | 0 | ✅ Todos eliminados |
 | **WARN** | 0 | ✅ Leaked password protection habilitado |
 | **INFO** | 15 | Tablas internas sin políticas (aceptable - uso por service_role) |
+
+> **Nota (2026-02-02):** esta confirmación quedó **desactualizada**. COMET verificó en PROD **WARN=3** y leaked password protection **deshabilitada** por falta de SMTP personalizado.
 
 ### Migración de mitigaciones existente:
 

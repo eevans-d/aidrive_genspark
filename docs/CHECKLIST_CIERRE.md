@@ -9,7 +9,7 @@
 ## 🎉 Hitos Completados (2026-01-23)
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
-2. **12 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
+2. **16 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
 3. **13 Edge Functions en repo** (despliegue confirmado por usuario en panel, 2026-02-01)
 4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
@@ -31,23 +31,22 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
 - **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
 - **Suite de seguridad: 14 tests definidos** ✅
-- **Migraciones versionadas en repo (12 archivos)** ✅
+- **Migraciones versionadas en repo (16 archivos)** ✅
 - **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
-- COMET 2026-02-02: leaked password protection DESACTIVADO; Security Advisor WARN=2; migración `20260202000000` pendiente en PROD.
+- COMET 2026-02-02: leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD.
+- **CI con jobs gated** para integration/E2E ✅
+- **Frontend testing completo** con React Testing Library + MSW ✅
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - Habilitar leaked password protection (Auth) **requiere SMTP personalizado**.
-- Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
+- ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
+- ⚠️ Verificación manual pendiente: Security Advisor (WARN debería bajar a 1) + test real de `/reportes/efectividad-tareas` con JWT.
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
 - Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
-
----
-
-## Estado por fase (verificado)
 **Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).
 
 ### F0: Gobierno y Baseline
@@ -58,7 +57,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
-- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 12 archivos)
+- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 16 archivos)
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
@@ -83,7 +82,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
-  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 12 archivos)
+  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 16 archivos)
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)

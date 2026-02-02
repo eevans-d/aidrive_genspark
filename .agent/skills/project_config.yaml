@@ -36,6 +36,9 @@ policies:
   # Testing Thresholds
   coverage_min: 80
   
+  # Testing Thresholds
+  coverage_min: 80
+  
   # Security
   forbidden_patterns:
     - "console.log"
@@ -45,3 +48,8 @@ outputs:
   # Expected artifacts
   test_report: "test-reports/test-summary.json"
   deploy_log: "logs/deployment-*.json"
+  
+  # Auto-creation triggers
+  required_dirs:
+    - "logs"
+    - "test-reports"

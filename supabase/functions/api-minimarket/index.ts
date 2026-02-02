@@ -1009,6 +1009,13 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'fecha_desde debe ser <= fecha_hasta', 400);
       }
 
+      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+      if (!serviceRoleKey) {
+        return respondFail('CONFIG_ERROR', 'SUPABASE_SERVICE_ROLE_KEY faltante', 500);
+      }
+
+      const serviceHeaders = createRequestHeaders(null, serviceRoleKey, requestId);
+
       const queryParams = new URLSearchParams();
       queryParams.set(
         'select',
@@ -1029,7 +1036,7 @@ Deno.serve(async (req) => {
         supabaseUrl,
         'tareas_metricas',
         queryParams,
-        requestHeaders(),
+        serviceHeaders,
       );
 
       const agregados: Record<string, Record<string, unknown>> = {};
