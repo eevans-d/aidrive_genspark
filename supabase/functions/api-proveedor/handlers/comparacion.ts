@@ -12,6 +12,7 @@ import {
 } from '../utils/comparacion.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:comparacion');
 
@@ -40,7 +41,7 @@ export async function getComparacionConSistemaOptimizado(
         });
 
         if (!response.ok) {
-            throw new Error(`Error obteniendo comparación: ${response.statusText}`);
+            throw await fromFetchResponse(response, 'Error obteniendo comparación');
         }
 
         const oportunidades = await response.json();
@@ -108,6 +109,6 @@ export async function getComparacionConSistemaOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo comparación optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'COMPARACION_ERROR', 500);
     }
 }

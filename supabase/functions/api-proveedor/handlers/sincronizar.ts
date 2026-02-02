@@ -8,6 +8,7 @@ import { getProductosDisponiblesOptimizado } from './productos.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:sincronizar');
 
@@ -40,13 +41,17 @@ export async function triggerSincronizacionOptimizado(
     try {
         const secret = apiSecret || Deno.env.get('API_PROVEEDOR_SECRET');
         if (!secret) {
-            throw new Error('API_PROVEEDOR_SECRET no configurado en servidor');
+            throw toAppError(new Error('API_PROVEEDOR_SECRET no configurado en servidor'), 'CONFIG_MISSING', 500);
         }
         const circuitKey = 'scraper-maxiconsumo';
         const circuitBreaker = getCircuitBreaker(circuitKey, CIRCUIT_BREAKER_OPTIONS);
 
         if (!circuitBreaker.allowRequest()) {
-            throw new Error('Servicio de scraping temporalmente no disponible (circuit breaker abierto)');
+            throw toAppError(
+                new Error('Servicio de scraping temporalmente no disponible (circuit breaker abierto)'),
+                'CIRCUIT_OPEN',
+                503
+            );
         }
 
         const scrapingUrl = `${supabaseUrl}/functions/v1/scraper-maxiconsumo/scrape`;
@@ -77,7 +82,7 @@ export async function triggerSincronizacionOptimizado(
 
         if (!scrapingResponse.ok) {
             circuitBreaker.recordFailure();
-            throw new Error(`Error en sincronización: ${scrapingResponse.statusText}`);
+            throw await fromFetchResponse(scrapingResponse, 'Error en sincronización');
         }
 
         circuitBreaker.recordSuccess();
@@ -159,7 +164,7 @@ export async function triggerSincronizacionOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error en sincronización optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'SINCRONIZACION_ERROR', 500);
     }
 }
 

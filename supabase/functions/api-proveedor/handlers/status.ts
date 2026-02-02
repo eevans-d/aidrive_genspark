@@ -8,6 +8,7 @@ import {
 } from '../utils/metrics.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
+import { toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:status');
 
@@ -145,7 +146,7 @@ export async function getEstadoSistemaOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo estado del sistema optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'STATUS_ERROR', 500);
     }
 }
 

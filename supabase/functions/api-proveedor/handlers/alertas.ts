@@ -14,6 +14,7 @@ import {
 } from '../utils/alertas.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:alertas');
 
@@ -42,7 +43,7 @@ export async function getAlertasActivasOptimizado(
         });
 
         if (!response.ok) {
-            throw new Error(`Error obteniendo alertas: ${response.statusText}`);
+            throw await fromFetchResponse(response, 'Error obteniendo alertas');
         }
 
         const alertas = await response.json();
@@ -120,6 +121,6 @@ export async function getAlertasActivasOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo alertas optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'ALERTAS_ERROR', 500);
     }
 }

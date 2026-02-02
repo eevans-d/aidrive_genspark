@@ -2,6 +2,7 @@ import { validatePreciosParams } from '../validators.ts';
 import { formatTiempoTranscurrido, getMemoryUsage } from '../utils/format.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchError, fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:precios');
 
@@ -27,7 +28,11 @@ export async function getPreciosActualesOptimizado(
         const [preciosResult, countResult, statsResult] = queries;
 
         if (preciosResult.status === 'rejected') {
-            throw new Error(`Error en consulta principal: ${preciosResult.reason}`);
+            throw fromFetchError(preciosResult.reason);
+        }
+
+        if (!preciosResult.value.ok) {
+            throw await fromFetchResponse(preciosResult.value, 'Error en consulta principal');
         }
 
         const productos = await preciosResult.value.json();
@@ -93,7 +98,7 @@ export async function getPreciosActualesOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo precios optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'PRECIOS_ERROR', 500);
     }
 }
 
@@ -118,7 +123,7 @@ function buildPreciosQuery(
     });
 }
 
-function buildPreciosCountQuery(
+async function buildPreciosCountQuery(
     supabaseUrl: string,
     supabaseReadHeaders: Record<string, string>,
     categoria: string,
@@ -130,12 +135,19 @@ function buildPreciosCountQuery(
         query += `&categoria=eq.${encodeURIComponent(categoria)}`;
     }
 
-    return fetch(query, {
+    const res = await fetch(query, {
         headers: supabaseReadHeaders
-    }).then(res => res.json()).then(data => data[0]?.count || 0);
+    });
+
+    if (!res.ok) {
+        throw await fromFetchResponse(res, 'Error obteniendo conteo de precios');
+    }
+
+    const data = await res.json();
+    return data[0]?.count || 0;
 }
 
-function buildPreciosStatsQuery(
+async function buildPreciosStatsQuery(
     supabaseUrl: string,
     supabaseReadHeaders: Record<string, string>,
     categoria: string,
@@ -143,18 +155,23 @@ function buildPreciosStatsQuery(
 ): Promise<any> {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=precio_actual,stock_disponible,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true${categoria !== 'todos' ? `&categoria=eq.${encodeURIComponent(categoria)}` : ''}`;
 
-    return fetch(query, {
+    const res = await fetch(query, {
         headers: supabaseReadHeaders
-    }).then(res => res.json()).then(data => {
-        const precios = data.map((item: any) => item.precio_actual);
-        const totalStock = data.reduce((sum: number, item: any) => sum + (item.stock_disponible || 0), 0);
-
-        return {
-            precio_promedio: precios.length > 0 ? precios.reduce((a: number, b: number) => a + b, 0) / precios.length : 0,
-            precio_minimo: precios.length > 0 ? Math.min(...precios) : 0,
-            precio_maximo: precios.length > 0 ? Math.max(...precios) : 0,
-            total_stock_disponible: totalStock,
-            productos_con_stock: data.filter((item: any) => item.stock_disponible > 0).length
-        };
     });
+
+    if (!res.ok) {
+        throw await fromFetchResponse(res, 'Error obteniendo estadísticas de precios');
+    }
+
+    const data = await res.json();
+    const precios = data.map((item: any) => item.precio_actual);
+    const totalStock = data.reduce((sum: number, item: any) => sum + (item.stock_disponible || 0), 0);
+
+    return {
+        precio_promedio: precios.length > 0 ? precios.reduce((a: number, b: number) => a + b, 0) / precios.length : 0,
+        precio_minimo: precios.length > 0 ? Math.min(...precios) : 0,
+        precio_maximo: precios.length > 0 ? Math.max(...precios) : 0,
+        total_stock_disponible: totalStock,
+        productos_con_stock: data.filter((item: any) => item.stock_disponible > 0).length
+    };
 }

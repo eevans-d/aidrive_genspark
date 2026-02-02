@@ -172,7 +172,11 @@ function buildContext(
     const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
     const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
     if (!supabaseUrl || !supabaseAnonKey || !serviceRoleKey) {
-        throw new Error('Variables de entorno faltantes: SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY');
+        throw toAppError(
+            new Error('Variables de entorno faltantes: SUPABASE_URL, SUPABASE_ANON_KEY y SUPABASE_SERVICE_ROLE_KEY'),
+            'CONFIG_MISSING',
+            500
+        );
     }
 
     const authHeader = request.headers.get('authorization');

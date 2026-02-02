@@ -7,6 +7,7 @@ import {
 import { createLogger } from '../../_shared/logger.ts';
 import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
 import { ok } from '../../_shared/response.ts';
+import { fromFetchResponse, toAppError } from '../../_shared/errors.ts';
 
 const logger = createLogger('api-proveedor:configuracion');
 
@@ -36,7 +37,7 @@ export async function getConfiguracionProveedorOptimizado(
         );
 
         if (!response.ok) {
-            throw new Error(`Error obteniendo configuración: ${response.statusText}`);
+            throw await fromFetchResponse(response, 'Error obteniendo configuración');
         }
 
         const configuraciones = await response.json();
@@ -87,6 +88,6 @@ export async function getConfiguracionProveedorOptimizado(
             error: (error as Error).message
         });
 
-        throw new Error(`Error obteniendo configuración optimizado: ${(error as Error).message}`);
+        throw toAppError(error, 'CONFIGURACION_ERROR', 500);
     }
 }

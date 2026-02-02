@@ -1,4 +1,5 @@
 import { EndpointName } from './schemas.ts';
+import { toAppError } from '../_shared/errors.ts';
 
 export type EndpointContext = {
     supabaseUrl: string;
@@ -24,7 +25,7 @@ export async function routeRequest(
 ): Promise<Response> {
     const handler = handlers[endpoint];
     if (!handler) {
-        throw new Error(`Endpoint no soportado: ${endpoint}`);
+        throw toAppError(new Error(`Endpoint no soportado: ${endpoint}`), 'ENDPOINT_NOT_SUPPORTED', 404);
     }
 
     return handler(context);

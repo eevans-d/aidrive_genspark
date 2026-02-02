@@ -12,7 +12,7 @@
 |---------|-------|--------|
 | **Score UX** | **9/10** | ≥8 |
 | **Flujos Funcionales** | 9/9 | 9/9 |
-| **Backend "Killers"** | ✅ 0 (productos corregido; re‑audit pendiente) | 0 |
+| **Backend "Killers"** | ✅ 0 (api-proveedor estandarizado; re‑audit recomendado) | 0 |
 | **Console.logs** | ✅ 0 (Clean) | 0 |
 | **Mobile Ready** | ✅ Si | ✅ |
 
@@ -26,9 +26,9 @@
 
 ## ⚠️ Fricciones (P1)
 1. ✅ **Generic Error Throwing (Backend) — RESUELTO:**
-   - Archivo: `api-proveedor/handlers/productos.ts`
-   - Cambio: se reemplazó `throw new Error(...)` por `AppError` (`fromFetchResponse` / `toAppError`).
-   - Nota: re‑auditar backend si se desea confirmar 0 ocurrencias restantes fuera del scope original.
+   - Scope: `api-proveedor` (handlers + router/index).
+   - Cambio: se reemplazó `throw new Error(...)` por `AppError` (`fromFetchResponse` / `fromFetchError` / `toAppError`).
+   - Nota: re‑auditar backend si se desea confirmar 0 ocurrencias en otros módulos fuera del scope.
 
 ## 📋 Estado por Flujo/Página (Descubrimiento Dinámico)
 
@@ -58,5 +58,5 @@
 ---
 
 ## 🎯 Plan de Acción (Quick Wins)
-1. ✅ **Refactor Error Handling:** Cambiado `throw new Error` en `api-proveedor/handlers/productos.ts` por `AppError`.
-2. **Verify Middleware:** Asegurar que `router.ts` o `index.ts` tenga `try/catch` global para estos errores genéricos.
+1. ✅ **Refactor Error Handling:** Estandarizado `api-proveedor` con `AppError`.
+2. ✅ **Middleware global:** `index.ts` mantiene `try/catch` y convierte a `fail()` con `toAppError`.
