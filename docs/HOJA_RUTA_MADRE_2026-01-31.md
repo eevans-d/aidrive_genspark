@@ -26,7 +26,7 @@
 - ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=2**, INFO=15.  
   - WARN: leaked password protection desactivado + vista materializada pública `tareas_metricas`.
 - ❌ Leaked password protection **DESACTIVADO** (requiere SMTP).
-- ❌ Migración `20260202000000` **pendiente** en PROD (historial remoto con 20250101000000 + 20260131034xxx no presentes localmente).
+- ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
 
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
@@ -54,7 +54,7 @@
 - [x] **Revisión humana de módulos críticos P0** (security review manual).  
 
 ### 1.2 Base de datos y consistencia
-- [ ] **Sincronizar historial de migraciones** en prod (alinear versiones remotas y aplicar/registrar `20260202000000`). *(Re‑abierto 2026-02-02)*  
+- [x] **Sincronizar historial de migraciones** en prod (alinear versiones remotas y aplicar/registrar `20260202000000`). *(Resuelto 2026-02-02)*  
 - [x] **Verificar aplicación de migración de constraints/indexes**.  
 - [x] **Actualizar evidencias RLS** si se ejecuta en staging/local.  
 - [x] **Confirmar N/A de `REPORTE_REVISION_DB.md`**: `docs/DB_GAPS.md` indica que no existe.

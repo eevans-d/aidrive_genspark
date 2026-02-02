@@ -23,9 +23,14 @@
 - ❌ Migración `20260202000000` **NO aplicada** en PROD (historial remoto incluye `20250101000000` y 20260131034xxx no presentes localmente).
 - ⚠️ Políticas RLS: COMET reporta **18** activas en tablas críticas (esperado 30 según auditoría 2026-01-31).
 
+**Corrección post‑COMET (2026-02-02):**
+- ✅ Historial de migraciones reconciliado con placeholders locales.
+- ✅ `20260202000000_version_sp_aplicar_precio.sql` aplicada en PROD (ver `supabase migration list --linked`).
+
 **Acciones requeridas:**
 1) Configurar SMTP y habilitar leaked password protection.
-2) Reconciliar historial de migraciones (ver plan sugerido en `docs/ESTADO_ACTUAL.md`) y aplicar/registrar `20260202000000`.
+2) ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` (resuelto 2026-02-02).
+3) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
 
 ---
 

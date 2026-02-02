@@ -4,8 +4,8 @@
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
 **Cierre 2026-02-01 (confirmación usuario):**
-- Leaked password protection habilitado en panel.
-- WARN residual del Security Advisor confirmado/resuelto.
+- Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
+- WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02)**
 - Migración `20260131020000_security_advisor_mitigations.sql` validada en entornos no‑PROD.
 - Secrets de CI (GitHub Actions) configurados.
 - Revisión humana P0 completada.
@@ -27,9 +27,15 @@
 - ⚠️ **Políticas RLS**: COMET reporta **18** activas en tablas críticas (esperado 30 según docs previas) — requiere verificación.
 - ✅ RLS en tablas críticas PASS; ✅ 13 Edge Functions; ✅ secretos críticos presentes.
 
+**Corrección post‑COMET (2026-02-02):**
+- ✅ Historial de migraciones reconciliado (placeholders locales para `20250101000000`, `20260131034034`, `20260131034328`).
+- ✅ `20260202000000_version_sp_aplicar_precio.sql` aplicada en PROD (`supabase db push`).
+- ✅ `supabase migration list --linked` confirma `20260202000000` en remoto.
+
 **Pendientes críticos (bloquean cierre):**
 1) Habilitar leaked password protection en Auth (requiere SMTP).
-2) Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD (ver plan en `docs/ESTADO_CIERRE_REAL_2026-02-01.md`).
+2) Resolver WARN de Security Advisor (vista materializada pública `tareas_metricas`).
+3) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
@@ -117,7 +123,7 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)
-- **Migraciones en repo:** 12 archivos en `supabase/migrations`
+- **Migraciones en repo:** 15 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
 - **Build frontend:** `minimarket-system/dist/` presente (artefacto, no revalidado)
 
 ---

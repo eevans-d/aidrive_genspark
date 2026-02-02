@@ -1,0 +1,3 @@
+-- Placeholder migration to align with remote history.
+-- The function is defined in 20260202000000_version_sp_aplicar_precio.sql.
+-- Remote already includes version 20250101000000; no-op here.

@@ -1,0 +1,2 @@
+-- Placeholder migration to align with remote history (version exists in PROD).
+-- Real changes were applied remotely and tracked outside this repo.
