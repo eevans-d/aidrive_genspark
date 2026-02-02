@@ -21,6 +21,7 @@
 - ❌ Leaked password protection: **DESACTIVADO** (Auth requiere SMTP).
 - ⚠️ Security Advisor: **WARN=2** (vista materializada pública `tareas_metricas` + leaked password protection).
 - ❌ Migración `20260202000000` **NO aplicada** en PROD (historial remoto incluye `20250101000000` y 20260131034xxx no presentes localmente).
+- ⚠️ Políticas RLS: COMET reporta **18** activas en tablas críticas (esperado 30 según auditoría 2026-01-31).
 
 **Acciones requeridas:**
 1) Configurar SMTP y habilitar leaked password protection.

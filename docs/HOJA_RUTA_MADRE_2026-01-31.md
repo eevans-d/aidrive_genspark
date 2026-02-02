@@ -22,6 +22,7 @@
 ## 0) Estado actual verificado (resumen)
 
 - ✅ RLS role-based v2 aplicada y verificada en PROD (10/10 tablas core).  
+- ⚠️ COMET reporta **18 políticas** en tablas críticas (esperado 30 según auditoría 2026-01-31) — requiere verificación.
 - ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=2**, INFO=15.  
   - WARN: leaked password protection desactivado + vista materializada pública `tareas_metricas`.
 - ❌ Leaked password protection **DESACTIVADO** (requiere SMTP).

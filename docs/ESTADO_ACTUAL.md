@@ -24,6 +24,7 @@
 - ❌ **Leaked Password Protection**: DESACTIVADO (requiere configurar proveedor de correo).
 - ⚠️ **Security Advisor**: WARN=2 (vista materializada pública `tareas_metricas` + leaked password protection).
 - ❌ **Migración pendiente en PROD**: `20260202000000` no aplicada (historial remoto contiene `20250101000000` y dos versiones 20260131034xxx no presentes localmente).
+- ⚠️ **Políticas RLS**: COMET reporta **18** activas en tablas críticas (esperado 30 según docs previas) — requiere verificación.
 - ✅ RLS en tablas críticas PASS; ✅ 13 Edge Functions; ✅ secretos críticos presentes.
 
 **Pendientes críticos (bloquean cierre):**
