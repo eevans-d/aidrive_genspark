@@ -468,7 +468,7 @@ $$;
 
 ### 5.1 Archivo de migración verificado
 **Ruta:** `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`  
-**Líneas:** 307  
+**Líneas:** 306  
 **Estado:** ✅ Ya aplicado en PROD
 
 ---
@@ -828,8 +828,9 @@ SELECT tablename, count(*) AS policies FROM pg_policies WHERE schemaname='public
 #### Grants a `anon` (ANTES): 21 objetos
 | Tipo | Objetos |
 |------|---------|
-| Tablas internas (16) | alertas_cambios_precios, cache_proveedor, comparacion_precios, configuracion_proveedor, cron_jobs_* (9), estadisticas_scraping, precios_proveedor, stock_reservado |
+| Tablas internas (15) | alertas_cambios_precios, cache_proveedor, comparacion_precios, configuracion_proveedor, cron_jobs_* (9), estadisticas_scraping, precios_proveedor |
 | Vistas (5) | vista_alertas_activas, vista_cron_jobs_* (3), vista_oportunidades_ahorro |
+| Otra (1) | stock_reservado |
 
 #### Vistas SECURITY DEFINER (ANTES): 5
 - vista_alertas_activas
@@ -862,7 +863,7 @@ ALTER VIEW public.vista_oportunidades_ahorro SET (security_invoker = true);
 
 #### B3) Grants de `anon` revocados ✅
 ```sql
--- 16 tablas internas
+-- 15 tablas internas + 1 adicional (stock_reservado)
 REVOKE ALL ON TABLE public.alertas_cambios_precios FROM anon;
 REVOKE ALL ON TABLE public.cache_proveedor FROM anon;
 REVOKE ALL ON TABLE public.comparacion_precios FROM anon;
