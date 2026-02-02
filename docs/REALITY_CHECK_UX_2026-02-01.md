@@ -5,6 +5,10 @@
 **Depth:** DEEP  
 **Ejecutor:** Antigravity Agent + RealityCheck Skill
 
+> **Nota (histórico):** Este reporte refleja el estado al **2026-02-01**.  
+> Desde 2026-02-02 hay pendientes re‑abiertos (Security Advisor WARN=3, leaked password bloqueado por SMTP).  
+> **Fuente de verdad actual:** `docs/ESTADO_ACTUAL.md`.
+
 ---
 
 ## 📊 Resumen Ejecutivo
@@ -17,7 +21,8 @@
 | **Error Handling** | 87.5% (7/8 páginas con data) | 100% | ⚠️ |
 | **Mobile Ready** | ⚠️ | ✅ | No verificado en esta revisión |
 
-### 🟢 Veredicto: **LISTO PARA PRODUCCIÓN** (con observaciones menores)
+### 🟡 Veredicto (histórico 2026-02-01): **LISTO PARA PRODUCCIÓN**  
+**Estado actual:** cierre condicionado (ver `docs/ESTADO_ACTUAL.md`).
 
 ---
 
@@ -28,7 +33,7 @@
 | Componente | Esperado | Encontrado | Estado |
 |------------|----------|------------|--------|
 | Edge Functions | 13 | **13** | ✅ |
-| Migraciones SQL | 12 | **12** | ✅ |
+| Migraciones SQL | 12 | **12** (histórico; repo actual 16) | ⚠️ |
 | Endpoints API Gateway | 29 | **29** | ✅ |
 | Páginas Frontend | 9 | **9** (+2 tests) | ✅ |
 | Hooks React Query | 8 | **8** | ✅ |
@@ -114,12 +119,12 @@
 | Políticas activas | 30 | ✅ |
 | Grants `anon` | 0 | ✅ |
 | Security Advisor ERROR | 0 | ✅ |
-| Security Advisor WARN | 0 | ✅ (confirmación usuario 2026-02-01) |
+| Security Advisor WARN | 0 | ✅ (histórico 2026-02-01; re‑abierto 2026-02-02) |
 | Security Advisor INFO | 15 | ✅ (esperado) |
 
 ### Pendientes de Seguridad
-- [x] **P0:** Habilitar Leaked Password Protection (confirmación usuario 2026-02-01)
-- [x] **P1:** Confirmar segundo WARN residual en panel (confirmación usuario 2026-02-01)
+- [ ] **P0:** Habilitar Leaked Password Protection (re‑abierto 2026-02-02; requiere SMTP personalizado)
+- [ ] **P1:** Confirmar WARN residual post‑mitigación (debería quedar WARN=1)
 
 ---
 
@@ -204,7 +209,7 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 |----|----------|--------|
 | D-039 | Mitigación de alertas Advisor | Completada |
 | D-041 | Consolidación planificación | Completada |
-| D-042 | Producción 100% completada (confirmación usuario) | Aprobada |
+| D-042 | Producción 100% completada (confirmación usuario, **histórico**) | Aprobada |
 | D-043 | Revisión humana P0 módulos críticos | Completada |
 | D-044 | ALLOWED_ORIGINS actualizado en producción | Aprobada |
 
@@ -236,11 +241,12 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 
 ---
 
-## ✅ Checklist Final de Producción
+## ✅ Checklist Final de Producción (histórico 2026-02-01)
+> **Nota:** Estado re‑abierto 2026-02-02; usar `docs/ESTADO_ACTUAL.md` para cierre definitivo.
 
 ### Automatizables ✅
 - [x] Edge Functions: 13 presentes
-- [x] Migraciones SQL: 12 presentes
+- [x] Migraciones SQL: 12 presentes (histórico 2026-02-01; repo actual 16)
 - [x] Endpoints API: 29 implementados
 - [x] Hooks React: 8 implementados
 - [x] RLS: 10/10 tablas protegidas
@@ -250,8 +256,8 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 - [x] Revisión humana P0: Completada
 
 ### Manuales (confirmación usuario 2026-02-01) ✅
-- [x] **Leaked Password Protection** — Dashboard → Auth → Settings
-- [x] **Confirmar WARN residual** — Security Advisor panel
+- [x] **Leaked Password Protection** — Dashboard → Auth → Settings (**histórico; re‑abierto 2026-02-02**)
+- [x] **Confirmar WARN residual** — Security Advisor panel (**histórico; re‑abierto 2026-02-02**)
 - [x] **GitHub Secrets** — `SUPABASE_*`, `API_PROVEEDOR_SECRET`, `VITE_*`
 - [x] **ALLOWED_ORIGINS** — Configurar dominio de producción (valor no expuesto)
 
@@ -260,7 +266,7 @@ supabase/functions/api-proveedor/utils/auth.ts:73
 ## 📋 Plan de Acción Final (post-cierre)
 
 1. **Inmediato (Usuario):**
-   - Sin acciones críticas pendientes (cierre confirmado)
+   - Sin acciones críticas pendientes (histórico 2026-02-01; re‑abierto 2026-02-02)
 
 2. **Pre-Deploy (Usuario):**
    - Repetir build/health checks si se actualiza infraestructura

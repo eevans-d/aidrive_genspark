@@ -3,7 +3,7 @@
 **Proyecto:** Mini Market System  
 **Fecha:** 2026-01-31  
 **Versión:** 1.2.0  
-**Estado:** Consolidado (fuente: `docs/ESTADO_ACTUAL.md`, `docs/HOJA_RUTA_MADRE_2026-01-31.md`, `docs/BACKLOG_PRIORIZADO.md`)
+**Estado:** Consolidado (histórico; ver `docs/ESTADO_ACTUAL.md` para estado vigente)
 
 ---
 
@@ -28,7 +28,9 @@
 ## 3) Riesgos y bloqueos
 
 - **Rollback:** ✅ Probado exitosamente en staging (2026-01-30).
-- **Security Advisor:** ✅ Mitigado (ERROR=0, WARN=0, INFO=15) — confirmación usuario 2026-02-01 (leaked password protection habilitado).
+- **Security Advisor:** ⚠️ WARN re‑abiertos 2026-02-02 (search_path `sp_aplicar_precio`, `tareas_metricas` en API, leaked password).  
+  - Mitigación técnica aplicada en PROD 2026-02-02 (migración + deploy `api-minimarket`).  
+  - Pendiente evidencia visual del Advisor + habilitar leaked password (requiere SMTP).
 
 ---
 

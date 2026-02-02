@@ -33,7 +33,10 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 
 **Pendientes por limitación de entorno (Antigravity):**
 - Verificación visual del Security Advisor (confirmar WARN=1).
-- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido.
+- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido (**último intento 2026-02-02: 401 Invalid JWT**).
+
+> **Nota de coherencia:** las listas con `[x]` en fases posteriores corresponden a la ejecución **histórica 2026-02-01**.  
+> El estado actual está re‑abierto; usar este addendum como referencia principal.
 
 ---
 
@@ -56,7 +59,7 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 | Nivel | Cantidad | Detalle |
 |-------|----------|---------|
 | **ERROR** | 0 | ✅ Todos eliminados |
-| **WARN** | 0 | ✅ Leaked password protection habilitado |
+| **WARN** | 0 | ✅ Leaked password protection habilitado (histórico 2026-02-01; re‑abierto 2026-02-02) |
 | **INFO** | 15 | Tablas internas sin políticas (aceptable - uso por service_role) |
 
 > **Nota (2026-02-02):** esta confirmación quedó **desactualizada**. COMET verificó en PROD **WARN=3** y leaked password protection **deshabilitada** por falta de SMTP personalizado.
@@ -373,7 +376,7 @@ Agregar **PARTE 9** al archivo `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` con:
 - **Resultado:** [OK / N/A]
 
 ### 9.4 Conclusión Final
-✅ Security Advisor sin alertas críticas
+✅ Security Advisor sin alertas críticas (histórico 2026-02-01; re‑abierto 2026-02-02)
 ✅ Migraciones validadas en todos los entornos
 ```
 
@@ -437,7 +440,7 @@ Agregar **PARTE 9** al archivo `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` con:
 ### Fase 2: Habilitar Leaked Password Protection
 - [x] Navegar a Authentication → Settings
 - [x] Localizar sección "Password" o "Security"
-- [x] Habilitar toggle "Leaked password protection"
+- [x] Habilitar toggle "Leaked password protection" (histórico 2026-02-01; re‑abierto 2026-02-02)
 - [x] Verificar que menciona "HaveIBeenPwned"
 - [x] Guardar cambios
 - [x] Capturar screenshot de confirmación
@@ -480,8 +483,8 @@ Agregar **PARTE 9** al archivo `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` con:
 ---
 
 ### Post-ejecución - Verificación Final
-- [x] Security Advisor muestra: 0 ERROR, 0-1 WARN, ~15 INFO
-- [x] Leaked password protection habilitado
+- [x] Security Advisor muestra: 0 ERROR, 0-1 WARN, ~15 INFO (histórico 2026-02-01; re‑abierto 2026-02-02)
+- [x] Leaked password protection habilitado (histórico 2026-02-01; re‑abierto 2026-02-02)
 - [x] Migración validada en local
 - [x] Migración validada en staging (o N/A)
 - [x] Documentación actualizada

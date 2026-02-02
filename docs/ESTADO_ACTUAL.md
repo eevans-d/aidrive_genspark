@@ -3,7 +3,7 @@
 **Última actualización:** 2026-02-02  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
-**Cierre 2026-02-01 (confirmación usuario):**
+**Cierre 2026-02-01 (confirmación usuario, histórico):**
 - Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
 - WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02)**
 - Migración `20260131020000_security_advisor_mitigations.sql` validada en entornos no‑PROD.
@@ -33,13 +33,14 @@
 - ✅ `supabase migration list --linked` confirma `20260202000000` en remoto.
 - ✅ Mitigación aplicada en PROD (Antigravity 2026-02-02): `20260202083000_security_advisor_followup.sql`.
 - ✅ API desplegada (Antigravity 2026-02-02): endpoint `/reportes/efectividad-tareas` actualizado y función `api-minimarket` desplegada.
-- ⚠️ Evidencia pendiente (limitaciones de entorno Antigravity): verificación visual del Security Advisor y test real del endpoint con JWT.
+- ⚠️ Evidencia pendiente (limitaciones de entorno Antigravity): verificación visual del Security Advisor.
+- ⚠️ Test real del endpoint con JWT **intentado** (2026-02-02): **401 Invalid JWT** usando credenciales de `.env.test` → requiere revisar credenciales/usuario o configuración Auth.
 
 **Pendientes críticos (bloquean cierre):**
 1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado**).
 2) Confirmar visualmente el Security Advisor post‑mitigación (WARN debería bajar a 1).
-3) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK).
-4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
+3) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — último intento devolvió **401 Invalid JWT**.
+4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — **requiere DB URL/credenciales**.
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
@@ -56,7 +57,7 @@
 - Evidencia: `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Gaps P0 de `productos`, `proveedores`, `categorias` cerrados.
 - Migración versionada aplicada en PROD y verificada (04:06–04:15 UTC): `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`.
-- Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedaban 2 WARN (leaked password protection + 1 WARN residual) y 15 INFO (tablas internas sin policies) — **resuelto 2026-02-01 por confirmación usuario**. Ver Parte 8 en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
+- Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedaban 2 WARN (leaked password protection + 1 WARN residual) y 15 INFO (tablas internas sin policies) — **resuelto 2026-02-01 por confirmación usuario (histórico; re‑abierto 2026-02-02)**. Ver Parte 8 y Addendum en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario 2026-02-01).
 - Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (planes antiguos retirados).
 

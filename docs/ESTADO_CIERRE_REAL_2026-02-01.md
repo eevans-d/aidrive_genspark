@@ -6,8 +6,8 @@
 ---
 
 ## ✅ Confirmaciones manuales (usuario)
-- Security Advisor en PROD verificado y sin WARN críticos (confirmación usuario).
-- Leaked password protection habilitado (confirmación usuario). **Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado)**.
+- Security Advisor en PROD verificado y sin WARN críticos (confirmación usuario **2026-02-01**, histórico).
+- Leaked password protection habilitado (confirmación usuario **2026-02-01**). **Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado)**.
 - Migración `20260131020000_security_advisor_mitigations.sql` validada en no‑PROD (confirmación usuario).
 - Secrets de CI (GitHub Actions) configurados (confirmación usuario).
 - Configuraciones manuales en paneles (Supabase/GitHub) confirmadas por usuario.
@@ -28,13 +28,13 @@
 - ✅ `20260202000000_version_sp_aplicar_precio.sql` aplicada en PROD (ver `supabase migration list --linked`).
 - ✅ Mitigación aplicada en PROD (Antigravity 2026-02-02): `20260202083000_security_advisor_followup.sql`.
 - ✅ API desplegada (Antigravity 2026-02-02): endpoint `/reportes/efectividad-tareas` actualizado y función `api-minimarket` desplegada.
-- ⚠️ Evidencia pendiente: Antigravity no pudo validar visualmente Security Advisor ni probar endpoint con JWT real.
+- ⚠️ Evidencia pendiente: Antigravity no pudo validar visualmente Security Advisor; test real del endpoint con JWT devolvió **401 Invalid JWT**.
 
 **Acciones requeridas:**
 1) Configurar **SMTP personalizado** y habilitar leaked password protection.
 2) ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` (resuelto 2026-02-02).
 3) ✅ Aplicar mitigación Security Advisor (search_path `sp_aplicar_precio` + `tareas_metricas` sin acceso `authenticated`) - EJECUTADO.
-4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) - Pendiente verificación manual.
+4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) - Pendiente (requiere DB URL/credenciales).
 5) Verificación final Security Advisor y Endpoint `/reportes/efectividad-tareas` (limitación entorno agente: requiere browser/credenciales manuales).
 
 ---

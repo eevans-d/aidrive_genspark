@@ -17,12 +17,13 @@
 | **Mobile Ready** | ✅ Si | ✅ |
 
 ### Veredicto
-🟢 **LISTO PARA USUARIOS** (Con observaciones menores en manejo de errores backend)
+🟢 **LISTO PARA USUARIOS** (UX) — **no implica** cierre de seguridad; ver `docs/ESTADO_ACTUAL.md`.
 
 ---
 
 ## 🚨 Blockers (P0)
-*Ninguno detectado.*
+*Ninguno detectado en UX.*  
+> Nota: bloqueo de seguridad/release se documenta en `docs/ESTADO_ACTUAL.md`.
 
 ## ⚠️ Fricciones (P1)
 1. ✅ **Generic Error Throwing (Backend) — RESUELTO:**
@@ -49,7 +50,7 @@
 ---
 
 ## 🛡️ DocuGuard Consistency Check
-- **ESTADO_ACTUAL.md:** Marca "PRODUCCIÓN 100%".
+- **ESTADO_ACTUAL.md:** Cierre condicionado (pendientes críticos re‑abiertos 2026-02-02).
 - **Codebase Check:** Coincide mayormente.
 - **Deuda Técnica Detectada:**
   - `console.log`: **0 ocurrencias** en backend (Excelente).

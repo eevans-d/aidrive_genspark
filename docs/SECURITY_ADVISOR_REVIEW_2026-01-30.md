@@ -3,6 +3,9 @@
 **Fuente:** panel de Security Advisor en Supabase (capturas compartidas).  
 **Objetivo:** revisar avisos de tablas públicas/RLS y confirmar el estado real.
 
+> **Nota (histórico):** Este documento refleja el estado 2026-01-30/2026-02-01.  
+> **Estado actual:** ver `docs/ESTADO_ACTUAL.md` (WARN re‑abiertos 2026-02-02).
+
 ---
 
 ## 1) Avisos observados (capturas)
@@ -193,10 +196,10 @@ Acciones recomendadas (no bloqueantes): ajustar `search_path`, revocar `anon` en
 
 **Post-mitigación (Advisor):**
 - **ERROR:** 0 (antes 5).
-- **WARN:** 2 (antes 7) — **resuelto 2026-02-01** (confirmación usuario: leaked password protection habilitado y WARN residual confirmado).
+- **WARN:** 2 (antes 7) — **resuelto 2026-02-01** (confirmación usuario, histórico; re‑abierto 2026-02-02).
 - **INFO:** 15 (tablas internas con RLS sin policies; aceptable por uso `service_role`).
 
-**Pendiente manual:** **resuelto 2026-02-01** — leaked password protection habilitado en Dashboard → Auth → Settings (confirmación usuario).
+**Pendiente manual:** **resuelto 2026-02-01** — leaked password protection habilitado en Dashboard → Auth → Settings (confirmación usuario, histórico; re‑abierto 2026-02-02).
 **Migración recomendada:** versionar mitigaciones en `supabase/migrations/20260131020000_security_advisor_mitigations.sql`.
 
 ---

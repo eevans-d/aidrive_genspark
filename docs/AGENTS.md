@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-02-01  
+**Última actualización:** 2026-02-02  
 
 ---
 
@@ -9,22 +9,22 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | ✅ 100% completado (confirmación usuario 2026-02-01) |
+| **Avance Global** | ⚠️ Cierre condicionado (pendientes re‑abiertos 2026-02-02) |
 | **Build** | Último reporte documentado 2026-01-28 (ver `docs/closure/BUILD_VERIFICATION.md`) |
 | **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
 | **Gateway** | 29 endpoints en código (`api-minimarket`) |
-| **Supabase** | Panel y mitigaciones confirmadas por usuario (2026-02-01) |
+| **Supabase** | Confirmaciones 2026-02-01 re‑abiertas 2026-02-02 (ver `docs/ESTADO_ACTUAL.md`) |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
 ---
 
 ## 🎯 Próximos Pasos
 
-Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (cerrada).  
+Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (cierre condicionado).  
 Estado consolidado: `docs/ESTADO_ACTUAL.md`.  
 Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).  
-Siguiente enfoque: monitoreo y mantenimiento según `docs/OPERATIONS_RUNBOOK.md`.
+Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OPERATIONS_RUNBOOK.md`.
 
 ---
 
@@ -74,7 +74,7 @@ aidrive_genspark/
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # 12 migraciones versionadas
+│   └── migrations/           # 16 migraciones versionadas
 ├── tests/                    # Unit, E2E, Performance, Security
 └── docs/                     # Documentación (ver HOJA_RUTA_MADRE)
 ```
@@ -115,8 +115,10 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Sin tareas críticas pendientes (cierre confirmado 2026-02-01).
-- Enfoque: monitoreo y mantenimiento según `docs/OPERATIONS_RUNBOOK.md`.
+- Verificación visual del Security Advisor (WARN debería quedar en 1).
+- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido (último intento 401 Invalid JWT).
+- Habilitar leaked password protection (requiere SMTP personalizado).
+- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado; requiere DB URL/credenciales).
 
 ---
 

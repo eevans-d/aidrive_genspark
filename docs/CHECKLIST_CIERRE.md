@@ -26,7 +26,7 @@
 
 ## Resumen Ejecutivo
 
-El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01). Se logró:
+El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01, **histórico**; re‑abierto 2026-02-02). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
 - **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
@@ -34,7 +34,7 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Migraciones versionadas en repo (16 archivos)** ✅
 - **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
-- COMET 2026-02-02: leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD.
+- COMET 2026-02-02 (histórico): leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD (**resuelta 2026-02-02**).
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **CI con jobs gated** para integration/E2E ✅
@@ -44,9 +44,9 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - Habilitar leaked password protection (Auth) **requiere SMTP personalizado**.
 - ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
-- ⚠️ Verificación manual pendiente: Security Advisor (WARN debería bajar a 1) + test real de `/reportes/efectividad-tareas` con JWT.
+- ⚠️ Verificación manual pendiente: Security Advisor (WARN debería bajar a 1) + test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**).
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
-- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).
+- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — requiere DB URL/credenciales.
 **Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).
 
 ### F0: Gobierno y Baseline

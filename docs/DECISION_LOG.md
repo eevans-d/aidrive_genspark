@@ -46,7 +46,7 @@
 | D-039 | **Mitigación de alertas no críticas (Advisor)** | Completada | 2026-01-31 | search_path fijado, security_invoker en vistas, anon grants revocados; ERROR=0, WARN=2, INFO=15 (histórico). **Estado actual (COMET 2026-02-02): WARN=3** por search_path `sp_aplicar_precio`, `tareas_metricas` en API y leaked password protection. |
 | D-040 | **Migración para mitigaciones Advisor** | Aprobada | 2026-01-31 | Archivo creado: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario 2026-02-01). |
 | D-041 | **Consolidación de planificación en Hoja de Ruta MADRE** | Completada | 2026-01-31 | Se creó `docs/HOJA_RUTA_MADRE_2026-01-31.md` y se retiraron planes antiguos (`HOJA_RUTA_30_PASOS.md`, `PLAN_PENDIENTES_DEFINITIVO.md`, `HOJA_RUTA_UNIFICADA_2026-01-30.md`). |
-| D-042 | **Proyecto marcado como Producción 100% completada** | Aprobada (confirmación usuario) | 2026-02-01 | Acciones manuales en panel/CI confirmadas por usuario; evidencia en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` Parte 9. |
+| D-042 | **Proyecto marcado como Producción 100% completada** | Aprobada (confirmación usuario, histórico) | 2026-02-01 | Estado re‑abierto 2026-02-02 por WARN/SMTP; ver Addendum en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` Parte 10. |
 | D-043 | **Revisión humana P0 de módulos críticos** | Completada | 2026-02-01 | 6 módulos críticos analizados y aprobados: `api-minimarket/index.ts`, `cors.ts`, `rate-limit.ts`, `fix_rls_security_definer.sql`, `AuthContext.tsx`, `scraper-maxiconsumo/`. Todos PASS. |
 | D-044 | **ALLOWED_ORIGINS actualizado en producción** | Aprobada (confirmación usuario) | 2026-02-01 | Dominio real configurado en Edge Functions/CI (valor no expuesto). |
 | D-045 | **E2E auth real solo con `VITE_USE_MOCKS=false`** | Aprobada | 2026-02-01 | Evita ejecutar auth real sobre mocks; requiere Supabase real + envs. |
@@ -58,17 +58,18 @@
 | D-051 | **Leaked password protection bloqueado por SMTP** | Bloqueada | 2026-02-02 | El toggle no aparece sin SMTP personalizado; requiere credenciales externas. |
 | D-052 | **Mitigación Advisor WARN=3 (search_path + tareas_metricas)** | Completada | 2026-02-02 | Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD + endpoint `/reportes/efectividad-tareas` usa `service_role` (deploy Antigravity 2026-02-02). |
 | D-053 | **Ejecución de mitigación en PROD (Antigravity)** | Completada | 2026-02-02 | `supabase db push --linked` + deploy `api-minimarket`; pendiente evidencia visual del Advisor y test JWT. |
+| D-054 | **Test endpoint con JWT (Invalid JWT)** | Bloqueada | 2026-02-02 | Intento con credenciales de `.env.test` devolvió **401 Invalid JWT**; requiere revisar credenciales/usuarios o configuración Auth/Keys. |
 
 ---
 
 ## Siguientes Pasos (2026-02-01)
 
-### Estado post-cierre (sin pendientes críticos)
+### Estado post-cierre (cierre condicionado por hallazgos 2026-02-02)
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
 | P0 | Habilitar leaked password protection (Auth) | Supabase Dashboard → Auth → Settings | ⚠️ Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado; ver D-051) |
-| P1 | Confirmar WARN residual en Security Advisor | Panel Supabase | ✅ Completado (confirmación usuario) |
+| P1 | Confirmar WARN residual en Security Advisor | Panel Supabase | ⚠️ Re‑abierto 2026-02-02 (pendiente evidencia visual) |
 | P1 | Validar migraciones en staging/prod | `migrate.sh status` | ✅ Completado (confirmación usuario) |
 | P1 | Configurar secrets en GitHub Actions | Settings → Secrets | ✅ Completado (confirmación usuario) |
 | P2 | Monitoreo operativo post-release | `docs/OPERATIONS_RUNBOOK.md` | En curso |

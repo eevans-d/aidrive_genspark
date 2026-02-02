@@ -1,4 +1,4 @@
-# Hoja de Ruta MADRE — Producción 100% (2026-01-31)
+# Hoja de Ruta MADRE — Producción 100% (histórico) / Cierre condicionado (2026-02-02)
 
 **Última actualización:** 2026-02-02  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
@@ -103,10 +103,10 @@
 
 ---
 
-## 2) Ruta mínima hasta “100% Producción” (secuencia ejecutada)
+## 2) Ruta mínima hasta “100% Producción” (objetivo / pendiente de cierre)
 
-1) **Seguridad:** activar leaked password protection (panel).  
-2) **Verificación Advisor:** revisar WARN residual y capturar evidencia final.  
+1) **Seguridad:** activar leaked password protection (panel) — **pendiente** (requiere SMTP personalizado).  
+2) **Verificación Advisor:** revisar WARN residual y capturar evidencia final — **pendiente** (verificación visual).  
 3) **DB Consistencia:** validar migraciones 20260131 + fix_constraints en staging/prod.  
 4) **CI/CD:** configurar secrets en GitHub y decidir integración/E2E en CI.  
 5) **Backups/DR:** documentar y probar procedimiento mínimo.  
@@ -119,8 +119,8 @@
 
 ## 3) Evidencia mínima capturada/confirmada (para cierre definitivo)
 
-- Captura/registro del Security Advisor sin alertas críticas relevantes (confirmación usuario).  
-- Registro de leaked password protection habilitado (confirmación usuario).  
+- Captura/registro del Security Advisor sin alertas críticas relevantes — **pendiente** (verificación visual).  
+- Registro de leaked password protection habilitado — **pendiente** (requiere SMTP personalizado).  
 - `migrate.sh status` o `supabase db push` confirmando migraciones 20260131 (confirmación usuario).  
 - Evidencia de revisión humana P0 (checklist firmado o log).  
 - Actualización en `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.
