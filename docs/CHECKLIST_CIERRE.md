@@ -1,6 +1,6 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-02-01  
+**Fecha:** 2026-02-02  
 **Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación usuario)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
@@ -33,7 +33,7 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Suite de seguridad: 14 tests definidos** ✅
 - **Migraciones versionadas en repo (12 archivos)** ✅
 - **13 Edge Functions en repo** ✅
-- Tests reales con Vitest y runner alineado (unit + integration + e2e) — últimas ejecuciones reales documentadas 2026-01-27; re‑ejecución 2026-02-01 de integration/e2e bloqueada por Docker (ver `docs/ESTADO_ACTUAL.md`).
+- Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅

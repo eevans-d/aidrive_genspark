@@ -19,6 +19,9 @@ fi
 # VALIDACIÓN DE REQUISITOS ANTES DE INICIAR
 # ============================================================================
 
+# Evitar override de contexto Docker por variables globales del host
+unset DOCKER_HOST
+
 # 1. Verificar que existe .env.test
 if [ ! -f "$ROOT_DIR/.env.test" ]; then
   echo "============================================================================" >&2
@@ -80,19 +83,33 @@ if ! command -v supabase >/dev/null 2>&1; then
   exit 1
 fi
 
+# Detectar si el entorno apunta a Supabase remoto (no-local)
+is_local_supabase() {
+  case "${SUPABASE_URL:-}" in
+    http://localhost:*|http://127.0.0.1:*|https://localhost:*|https://127.0.0.1:*)
+      return 0
+      ;;
+  esac
+  return 1
+}
+
 # ============================================================================
 # EJECUCIÓN DE TESTS
 # ============================================================================
 
-echo "Iniciando Supabase local..."
-supabase start
+if is_local_supabase || [ "${SUPABASE_FORCE_LOCAL:-}" = "1" ]; then
+  echo "Iniciando Supabase local..."
+  supabase start
 
-# Actualizar variables desde supabase status si están disponibles
-if supabase status -o env >/dev/null 2>&1; then
-  eval "$(supabase status -o env)"
-  export SUPABASE_URL="${SUPABASE_URL:-${API_URL:-}}"
-  export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
-  export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
+  # Actualizar variables desde supabase status si están disponibles
+  if supabase status -o env >/dev/null 2>&1; then
+    eval "$(supabase status -o env)"
+    export SUPABASE_URL="${SUPABASE_URL:-${API_URL:-}}"
+    export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
+    export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
+  fi
+else
+  echo "SUPABASE_URL apunta a un proyecto remoto. Se omite supabase start." >&2
 fi
 
 # Si API_PROVEEDOR_SECRET no esta configurado, usar valor por defecto para tests

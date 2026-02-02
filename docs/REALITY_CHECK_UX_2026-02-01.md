@@ -83,13 +83,15 @@
 | Playwright Auth Real | 10 (2 skipped) — incluidos en Playwright E2E |
 | **TOTAL** | **811** |
 
-> **Nota:** Ejecución de tests requiere entorno local con Supabase. Estado verificado por documentación; se solicitó correr todos los tests en una ventana separada.
+> **Nota:** Los tests pueden ejecutarse con Supabase local o con `SUPABASE_URL` remoto en `.env.test`. Los scripts ahora omiten `supabase start` cuando el URL es remoto.
 
-**Ejecución 2026-02-01 (local):**
+**Ejecución 2026-02-02:**
 - ✅ `npm run test:all` (unit + auxiliary).
-- ❌ `npm run test:integration` y `npm run test:e2e` bloqueados por Docker daemon apagado.
+- ✅ `npm run test:integration` (38 tests).
+- ✅ `npm run test:e2e` (4 smoke tests).
 - ✅ `pnpm run test:components`.
 - ✅ `pnpm run test:e2e:frontend` con mocks (auth real + gateway skipped).
+> **Local Docker:** `supabase start` falla por `schema_migrations` duplicado; tests E2E/integration se ejecutaron con `.env.test` remoto.
 
 ---
 

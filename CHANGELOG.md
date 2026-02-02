@@ -22,7 +22,7 @@ y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.h
 #### PR #17: Validación de Precio Mínimo (SHA: 28d3688)
 - Validación `precio_compra > 0` obligatoria en stored procedure
 - Verificación de margen mínimo configurable (default: 5%)
-- Migración `20250101000000_version_sp_aplicar_precio.sql`
+- Migración `20260202000000_version_sp_aplicar_precio.sql`
 
 #### PR #18: Stock en Tránsito (SHA: b069148)
 - Nuevas tablas `stock_reservado` y `ordenes_compra`

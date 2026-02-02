@@ -37,12 +37,14 @@
 ---
 
 ## ⚠️ Observaciones locales (no bloqueantes)
-- Cambios locales sin commit en scripts (`deploy.sh`, `test.sh`, `scripts/run-e2e-tests.sh`, `scripts/run_security_advisor_check.sh`). Verificar si deben commitearse o descartarse.
-- Tests ejecutados (2026-02-01):
+- Tests ejecutados (2026-02-02):
   - ✅ `npm run test:all` (unit + auxiliary).
-  - ❌ `npm run test:integration` y `npm run test:e2e` — bloqueados por Docker daemon apagado (Supabase local).
+  - ✅ `npm run test:integration` (38 tests).
+  - ✅ `npm run test:e2e` (4 smoke tests).
   - ✅ `pnpm run test:components` (frontend).
   - ✅ `pnpm run test:e2e:frontend` — PASS con mocks (auth real + gateway skipped).
+- **Modo remoto:** para esta corrida, `SUPABASE_URL` en `.env.test` apunta a proyecto remoto; los scripts omiten `supabase start` en ese modo.
+- **Local Docker:** `supabase start` falla con `schema_migrations` duplicado (migraciones ya presentes en DB template). No bloquea ejecución de tests remotos.
 
 ---
 
@@ -55,5 +57,5 @@
 
 ---
 
-**Actualizado:** 2026-02-01  
+**Actualizado:** 2026-02-02  
 **Estado:** ✅ CIERRE CONFIRMADO (evidencia manual de usuario)

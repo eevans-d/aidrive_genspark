@@ -461,8 +461,9 @@ npm run test:unit           # Run unit tests
 npm run test:coverage       # Con coverage
 
 # Suites específicas
-npm run test:integration    # Integration (requiere DB local)
-npm run test:e2e            # E2E (requiere credenciales)
+npm run test:integration    # Integration (requiere .env.test; local o remoto)
+npm run test:e2e            # E2E (requiere .env.test + API_PROVEEDOR_SECRET; local o remoto)
+npm run test:e2e            # Forzar Supabase local: SUPABASE_FORCE_LOCAL=1 npm run test:e2e
 npm run test:security       # Security tests
 npm run test:performance    # Performance baseline
 ```
@@ -741,10 +742,10 @@ npm run test:unit
 # Con coverage
 npm run test:coverage
 
-# Integration (requiere Supabase local)
+# Integration (requiere .env.test; local o remoto)
 npm run test:integration
 
-# E2E (requiere credenciales)
+# E2E (requiere .env.test + API_PROVEEDOR_SECRET; local o remoto)
 npm run test:e2e
 
 # Security

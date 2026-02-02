@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-01  
+**Última actualización:** 2026-02-02  
 **Estado:** ✅ PRODUCCIÓN 100% COMPLETADA (confirmación de usuario; evidencia manual)
 
 **Cierre 2026-02-01 (confirmación usuario):**
@@ -11,12 +11,14 @@
 - Revisión humana P0 completada.
 - Backup/DR documentado y baseline performance k6 ejecutado.
 - Documentación sincronizada y cerrada.
-- **Ejecución de tests (2026-02-01):**
+- **Ejecución de tests (2026-02-02):**
   - ✅ `npm run test:all` (unit + auxiliary) — reportes en `test-reports/junit.xml` y `test-reports/junit.auxiliary.xml`.
-  - ❌ `npm run test:integration` — falla por Docker daemon apagado (Supabase local).
-  - ❌ `npm run test:e2e` — falla por Docker daemon apagado (Supabase local).
+  - ✅ `npm run test:integration` — PASS (38 tests).
+  - ✅ `npm run test:e2e` — PASS (4 tests smoke).
   - ✅ `pnpm run test:components` (frontend) — PASS.
   - ✅ `pnpm run test:e2e:frontend` — PASS con mocks (6 passed, 9 skipped: auth real + gateway).
+  - **Nota:** `npm run test:integration`/`npm run test:e2e` se ejecutaron con `SUPABASE_URL` remoto desde `.env.test` (scripts ahora omiten `supabase start` en ese modo).
+  - **Local Docker:** `supabase start` falla por `schema_migrations` duplicado en migraciones preexistentes del DB template; ver detalle en `docs/ESTADO_CIERRE_REAL_2026-02-01.md`.
 
 **Actualización 2026-01-30 (COMET):**
 - Secretos críticos obtenidos desde Supabase y cargados en Edge Functions/CI (sin exponer valores).
