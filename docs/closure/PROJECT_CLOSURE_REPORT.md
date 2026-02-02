@@ -1,5 +1,35 @@
 # Project Closure Report - Sistema Mini Market
 
+## Pre-cierre 2026-02-02 (EN DESARROLLO)
+
+**Base Commit:** b1df6187df4023e10c0907c38fb2c522bc4d7d58  
+**Estado:** EN DESARROLLO (pre-cierre controlado)  
+**Fuente de verdad actual:** `docs/ESTADO_ACTUAL.md` (actualizado 2026-02-02)  
+**Build/Tests:** PENDIENTE DE EJECUCIÓN en esta sesión (ver `docs/closure/BUILD_VERIFICATION.md`).  
+
+### Pendientes críticos que bloquean cierre final (según `docs/ESTADO_ACTUAL.md`)
+1) Habilitar **Leaked Password Protection** (requiere SMTP personalizado).  
+2) Verificación visual del **Security Advisor** post‑mitigación (WARN esperado = 1).  
+3) Probar endpoint `/reportes/efectividad-tareas` con JWT real (último intento 401 Invalid JWT).  
+4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).  
+
+### Módulos críticos para revisión humana
+- `supabase/functions/api-minimarket/index.ts` (gateway principal y routing).  
+- `supabase/functions/api-minimarket/helpers/auth.ts` (auth/roles).  
+- `supabase/functions/api-proveedor/index.ts` + `supabase/functions/api-proveedor/utils/auth.ts` (shared secret + read mode).  
+- `supabase/functions/_shared/cors.ts` y `supabase/functions/_shared/rate-limit.ts` (CORS y rate limiting).  
+- `supabase/migrations/` (RLS, grants y seguridad de datos).  
+- `minimarket-system/src/contexts/AuthContext.tsx` (login/sesión).  
+
+### Alcance del pre-cierre
+- Consolidar documentación verificable y riesgos pendientes.  
+- Preparar PR con hardening básico y guía de uso de IA.  
+- No ejecutar cambios irreversibles ni despliegues.  
+
+---
+
+## Histórico (2026-01-26 / 2026-01-31)
+
 > **Nota (2026-01-31):** documento histórico. La fuente de verdad actual es `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/ESTADO_ACTUAL.md`.
 
 **Versión:** 1.0.0  

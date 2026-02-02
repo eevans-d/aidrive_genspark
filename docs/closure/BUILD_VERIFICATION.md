@@ -1,5 +1,38 @@
 # Build Verification Report
 
+## Pre-cierre 2026-02-02 (PENDIENTE DE EJECUCIÓN)
+
+**Base Commit:** b1df6187df4023e10c0907c38fb2c522bc4d7d58  
+**Branch:** main (antes del pre-cierre)  
+**Última actualización:** 2026-02-02  
+**Estado:** PENDIENTE DE EJECUCIÓN  
+
+**Nota:** En esta sesión no se ejecutaron quality gates. Las evidencias listadas
+son instrucciones verificables derivadas de scripts y CI/CD del repositorio.
+
+### Quality Gates (pendiente)
+
+| Gate | Comando | Estado | Evidencia |
+|------|---------|--------|-----------|
+| Frontend Install | `cd minimarket-system && pnpm install --frozen-lockfile` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
+| Frontend Lint | `cd minimarket-system && pnpm lint` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
+| Frontend Build | `cd minimarket-system && pnpm build` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
+| Frontend Typecheck | `cd minimarket-system && npx tsc --noEmit` | PENDIENTE | `.github/workflows/ci.yml` |
+| Unit Tests | `npm run test:unit` | PENDIENTE | `package.json` |
+| Coverage | `npm run test:coverage` | PENDIENTE | `package.json` |
+| Integration Tests | `bash scripts/run-integration-tests.sh` | PENDIENTE | `scripts/run-integration-tests.sh` |
+| E2E Tests | `bash scripts/run-e2e-tests.sh` | PENDIENTE | `scripts/run-e2e-tests.sh` |
+| Edge Functions Check | `deno check --no-lock supabase/functions/**/index.ts` | PENDIENTE | `.github/workflows/ci.yml` |
+
+### Artefactos esperados (si se ejecuta)
+- `minimarket-system/dist/` (build frontend)
+- `coverage/` (reporte coverage)
+- `test-reports/` (junit si aplica)
+
+---
+
+## Histórico (2026-01-28)
+
 **Template Version:** 1.0.0  
 **Base Commit:** 3b53a76  
 **Última actualización:** 2026-01-28 03:46 UTC
