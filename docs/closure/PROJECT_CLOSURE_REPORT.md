@@ -1,17 +1,18 @@
 # Project Closure Report - Sistema Mini Market
 
-## Pre-cierre 2026-02-02 (EN DESARROLLO)
+## Pre-cierre 2026-02-03 (EN DESARROLLO)
 
-**Base Commit:** b1df6187df4023e10c0907c38fb2c522bc4d7d58  
+**Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  
 **Estado:** EN DESARROLLO (pre-cierre controlado)  
-**Fuente de verdad actual:** `docs/ESTADO_ACTUAL.md` (actualizado 2026-02-02)  
-**Build/Tests:** PENDIENTE DE EJECUCIÓN en esta sesión (ver `docs/closure/BUILD_VERIFICATION.md`).  
+**Fuente de verdad actual:** `docs/ESTADO_ACTUAL.md` (actualizado 2026-02-03)  
+**Build/Tests:** Ejecutados el 2026-02-03 (lint/build/unit/integration/e2e smoke + edge check OK). Ver `docs/closure/BUILD_VERIFICATION.md`.  
 
 ### Pendientes críticos que bloquean cierre final (según `docs/ESTADO_ACTUAL.md`)
 1) Habilitar **Leaked Password Protection** (requiere SMTP personalizado).  
 2) Verificación visual del **Security Advisor** post‑mitigación (WARN esperado = 1).  
 3) Probar endpoint `/reportes/efectividad-tareas` con JWT real (último intento 401 Invalid JWT).  
 4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado).  
+5) Confirmar licencia definitiva (LICENSE con placeholder `[OWNER PENDIENTE]`).  
 
 ### Módulos críticos para revisión humana
 - `supabase/functions/api-minimarket/index.ts` (gateway principal y routing).  

@@ -1,6 +1,6 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-03  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
 **Cierre 2026-02-01 (confirmación usuario, histórico):**
@@ -36,11 +36,33 @@
 - ⚠️ Evidencia pendiente (limitaciones de entorno Antigravity): verificación visual del Security Advisor.
 - ⚠️ Test real del endpoint con JWT **intentado** (2026-02-02): **401 Invalid JWT** usando credenciales de `.env.test` → requiere revisar credenciales/usuario o configuración Auth.
 
+**Actualización 2026-02-03 (local):**
+- ✅ `pnpm lint` (frontend) — OK.
+- ✅ `pnpm build` — OK (corrige TS2339 en `minimarket-system/src/lib/apiClient.ts`).
+- ✅ `npx tsc --noEmit` — OK.
+- ✅ `npm run test:unit` — PASS (689 tests, junit en `test-reports/junit.xml`).
+- ✅ `npm run test:coverage` — PASS (lines 70.34%, v8).
+- ✅ `deno check --no-lock supabase/functions/**/index.ts` — OK (con `deno.json` y `nodeModulesDir: "auto"`).
+- ✅ `bash scripts/run-integration-tests.sh` — PASS (38 tests).
+- ✅ `bash scripts/run-e2e-tests.sh` — PASS (4 tests smoke; junit en `test-reports/junit.e2e.xml`).
+
+**Actualización 2026-02-03 (COMET - credenciales Supabase):**
+- ✅ SUPABASE_URL / VITE_SUPABASE_URL **guardadas** en GitHub Secrets.
+- ✅ SUPABASE_ANON_KEY / VITE_SUPABASE_ANON_KEY **guardadas** en GitHub Secrets.
+- ✅ SUPABASE_SERVICE_ROLE_KEY **guardada** en GitHub Secrets (solo servidor).
+- ✅ `.env.test` actualizado con valores disponibles (incluye `DATABASE_URL` y `API_PROVEEDOR_SECRET`).
+- ✅ `DATABASE_URL` completa (password incluido) — guardada en GitHub Secrets y `.env.test`.
+- ✅ `API_PROVEEDOR_SECRET` alineado (Supabase Secrets + GitHub Secrets + `.env.test`).
+- ✅ `SENDGRID_API_KEY` y `SMTP_*` cargados en Supabase Secrets (Edge Functions).
+- ✅ Usuarios Auth verificados (3) — JWT requiere contraseña (no visible en dashboard).
+- ⚠️ SMTP personalizado (Auth) **pendiente** — configurar en panel con SendGrid y activar leaked password protection.
+
 **Pendientes críticos (bloquean cierre):**
 1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado**).
 2) Confirmar visualmente el Security Advisor post‑mitigación (WARN debería bajar a 1).
 3) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — último intento devolvió **401 Invalid JWT**.
-4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — **requiere DB URL/credenciales**.
+4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — ahora posible con `DATABASE_URL`.
+5) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.

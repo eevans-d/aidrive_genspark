@@ -1,6 +1,6 @@
 # Hoja de Ruta MADRE — Producción 100% (histórico) / Cierre condicionado (2026-02-02)
 
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-03  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
 **Fuente primaria:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`.
 
@@ -79,7 +79,7 @@
 
 ### 1.5 Documentación y gobernanza
 - [x] **Referencias legacy removidas** (ya no existen en repo).
-- [x] **Confirmar licencia oficial** (LICENSE verificado).
+- [ ] **Confirmar licencia oficial** (LICENSE contiene placeholder `[OWNER PENDIENTE]`).
 - [x] **Onboarding guide** para nuevos devs.
 - [x] **Runbook operacional expandido** (incidentes, rollback, soporte).
 - [x] **Postman collections**: confirmar vigencia / actualizar si cambió el API.

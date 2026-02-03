@@ -1,33 +1,41 @@
 # Build Verification Report
 
-## Pre-cierre 2026-02-02 (PENDIENTE DE EJECUCIÓN)
+## Pre-cierre 2026-02-03 (EJECUTADO)
 
-**Base Commit:** b1df6187df4023e10c0907c38fb2c522bc4d7d58  
-**Branch:** main (antes del pre-cierre)  
-**Última actualización:** 2026-02-02  
-**Estado:** PENDIENTE DE EJECUCIÓN  
+**Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  
+**Branch:** chore/closure-prep-20260202  
+**Última actualización:** 2026-02-03  
+**Estado:** EJECUTADO (integration/E2E OK)  
 
-**Nota:** En esta sesión no se ejecutaron quality gates. Las evidencias listadas
-son instrucciones verificables derivadas de scripts y CI/CD del repositorio.
+**Entorno local:**
+- Node: v20.20.0
+- pnpm: 9.15.9 (corepack)
+- Deno: 2.6.8
 
-### Quality Gates (pendiente)
+**Notas clave:**
+- `pnpm build` ✅ OK tras ajuste de tipado en `minimarket-system/src/lib/apiClient.ts`.
+- `deno check --no-lock supabase/functions/**/index.ts` ✅ OK (se agregó `deno.json` con `nodeModulesDir: "auto"`).
+- `pnpm lint` y `npm run test:unit` re-ejecutados tras incluir `minimarket-system/src/lib/**` en el repo: ✅ OK (689 tests).
+- Integration/E2E ejecutados con `SUPABASE_URL` remoto desde `.env.test` (scripts omiten `supabase start` en ese modo).
+
+### Quality Gates (ejecutados)
 
 | Gate | Comando | Estado | Evidencia |
 |------|---------|--------|-----------|
-| Frontend Install | `cd minimarket-system && pnpm install --frozen-lockfile` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
-| Frontend Lint | `cd minimarket-system && pnpm lint` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
-| Frontend Build | `cd minimarket-system && pnpm build` | PENDIENTE | `README.md`, `minimarket-system/package.json` |
-| Frontend Typecheck | `cd minimarket-system && npx tsc --noEmit` | PENDIENTE | `.github/workflows/ci.yml` |
-| Unit Tests | `npm run test:unit` | PENDIENTE | `package.json` |
-| Coverage | `npm run test:coverage` | PENDIENTE | `package.json` |
-| Integration Tests | `bash scripts/run-integration-tests.sh` | PENDIENTE | `scripts/run-integration-tests.sh` |
-| E2E Tests | `bash scripts/run-e2e-tests.sh` | PENDIENTE | `scripts/run-e2e-tests.sh` |
-| Edge Functions Check | `deno check --no-lock supabase/functions/**/index.ts` | PENDIENTE | `.github/workflows/ci.yml` |
+| Frontend Install | `cd minimarket-system && pnpm install --frozen-lockfile --prefer-offline --force` | ✅ OK | Instalación completa sin cambios en lockfile. |
+| Frontend Lint | `cd minimarket-system && pnpm lint` | ✅ OK | ESLint sin errores. |
+| Frontend Build | `cd minimarket-system && pnpm build` | ✅ OK | Build Vite completado y `dist/` generado. |
+| Frontend Typecheck | `cd minimarket-system && npx tsc --noEmit` | ✅ OK | Exit 0. |
+| Unit Tests | `npm run test:unit` | ✅ OK | 35 files / 689 tests; `test-reports/junit.xml`. |
+| Coverage | `npm run test:coverage` | ✅ OK | Lines 70.34%, Stmts 68.39%, Branch 61%, Funcs 70.76%. |
+| Integration Tests | `bash scripts/run-integration-tests.sh` | ✅ OK | PASS (38/38). |
+| E2E Tests | `bash scripts/run-e2e-tests.sh` | ✅ OK | PASS (4/4; junit en `test-reports/junit.e2e.xml`). |
+| Edge Functions Check | `deno check --no-lock supabase/functions/**/index.ts` | ✅ OK | Resuelto con `deno.json` (`nodeModulesDir: "auto"`). |
 
-### Artefactos esperados (si se ejecuta)
+### Artefactos generados en esta ejecución
+- `coverage/` (reporte coverage v8)
+- `test-reports/junit.xml` (unit + coverage)
 - `minimarket-system/dist/` (build frontend)
-- `coverage/` (reporte coverage)
-- `test-reports/` (junit si aplica)
 
 ---
 
