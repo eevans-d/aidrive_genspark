@@ -830,12 +830,11 @@ En **GitHub Settings → Secrets and variables → Actions**:
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
 2. **HOJA_RUTA_MADRE_2026-01-31.md** - Checklist único vigente (plan maestro)
-3. **PROMPT_CONTEXT_NUEVA_VENTANA_IA.md** - Prompt base para nueva ventana IA
-4. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
-5. **API_README.md** - Todos los endpoints disponibles
-6. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
-7. **DECISION_LOG.md** - Decisiones técnicas registradas
-8. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
+3. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
+4. **API_README.md** - Todos los endpoints disponibles
+5. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
+6. **DECISION_LOG.md** - Decisiones técnicas registradas
+7. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
 
 ### APIs y Esquemas
 

@@ -8,21 +8,15 @@ Documentar **cómo se usa IA en este repositorio**, con evidencia y controles de
 
 ## Evidencias disponibles (fuentes en repo)
 - `docs/AGENTS.md` (guía rápida y roles de agentes IA).  
-- `docs/PROMPT_CONTEXT_NUEVA_VENTANA_IA.md` (prompts operativos para Copilot en modo agente).  
 - `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (ejecución documentada por GitHub Copilot MCP).  
 - `docs/ESTADO_ACTUAL.md` (menciones de ejecuciones por Copilot/COMET).  
 
 ## Herramientas IA documentadas
 | Herramienta | Evidencia | Estado |
 |-------------|-----------|--------|
-| GitHub Copilot (modo agente) | `docs/PROMPT_CONTEXT_NUEVA_VENTANA_IA.md` | Documentada |
+| GitHub Copilot (modo agente) | `docs/ESTADO_ACTUAL.md` | Documentada |
 | GitHub Copilot (MCP Supabase) | `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` | Documentada |
 | Otras herramientas (OpenAI, Claude, etc.) | NO ENCONTRADO | PENDIENTE |
-
-## Patrones de prompts útiles (con evidencia)
-- **Ejecución operativa + evidencia:** `docs/PROMPT_CONTEXT_NUEVA_VENTANA_IA.md` (PROMPT 1).  
-- **Documentación y cierre:** `docs/PROMPT_CONTEXT_NUEVA_VENTANA_IA.md` (PROMPT 2).  
-- **Bloqueos y escalamiento:** `docs/PROMPT_CONTEXT_NUEVA_VENTANA_IA.md` (PROMPT 3).  
 
 ## Checklist de revisión humana (obligatorio)
 1) Verificar **auth/roles** en frontend y edge functions (`AuthContext`, helpers/auth).  
