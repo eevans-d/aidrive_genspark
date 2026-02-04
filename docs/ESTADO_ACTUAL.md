@@ -62,7 +62,7 @@
   - Host: `smtp.sendgrid.net`
   - Port: `587`
   - User: `apikey`
-  - From Email: `eevans.d@gmail.com` (confirmación usuario)
+  - From Email: `eevans.d@…` (confirmación usuario)
   - From Name: `Sistema MiniMarket`
 - ⚠️ **Leaked Password Protection**: **NO DISPONIBLE** en el plan actual (COMET reporta que requiere plan Pro o superior).
   - **Decisión (usuario):** no upgrade por ahora; se activará al pasar a producción.
