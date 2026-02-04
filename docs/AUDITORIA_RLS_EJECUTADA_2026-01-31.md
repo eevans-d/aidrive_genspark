@@ -1055,9 +1055,9 @@ REVOKE ALL ON TABLE public.tareas_metricas FROM anon;
 - ✅ Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD (SET search_path + REVOKE `tareas_metricas` para `authenticated`).
 - ✅ Deploy `api-minimarket` con `/reportes/efectividad-tareas` usando `service_role`.
 
-**Pendientes de evidencia manual:**
-- Verificación visual del Security Advisor (WARN debería bajar a 1).
-- Prueba real del endpoint `/reportes/efectividad-tareas` con JWT válido (**último intento 2026-02-02: 401 Invalid JWT**).
-- Habilitar leaked password protection (requiere SMTP personalizado).
+**Pendientes de evidencia manual (actualizado 2026-02-04):**
+- ✅ Verificación visual del Security Advisor (confirmado **WARN=1**, ERROR=0, INFO=15).
+- ✅ Prueba real del endpoint `/reportes/efectividad-tareas` con JWT válido (**200 OK**). *(Se requirió redeploy `api-minimarket` con `--no-verify-jwt` por JWT ES256; validación queda en app).*
+- ⚠️ Leaked password protection: **NO DISPONIBLE** en plan Free (COMET reporta que requiere plan Pro). **Decisión usuario: diferir hasta producción.**
 
-> **Estado:** cierre **condicionado** hasta completar evidencias y SMTP.
+> **Estado:** cierre **condicionado** (ver `docs/ESTADO_ACTUAL.md`).

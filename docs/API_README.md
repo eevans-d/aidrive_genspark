@@ -214,10 +214,17 @@ cd minimarket-system && VITE_USE_MOCKS=true pnpm dev
 
 ### Obtener Token JWT
 ```bash
-curl -X POST https://dqaygmjpzoqjjrywdsxi.supabase.co/auth/v1/token?grant_type=password \
+curl -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_ANON_KEY" \
-  -d '{"email":"admin@minimarket.com","password":"password123"}'
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -d "{\"email\":\"$TEST_USER_ADMIN\",\"password\":\"$TEST_PASSWORD\"}"
+```
+
+**Nota (Edge Functions / JWT ES256):** los access tokens emitidos por Supabase Auth pueden ser **ES256**.  
+Si al invocar una Function vía `.../functions/v1/...` recibes `401 Invalid JWT` (antes de entrar al handler), despliega la function con `--no-verify-jwt` y deja la validación en la app (ej: `api-minimarket` valida con `/auth/v1/user` + roles).
+
+```bash
+supabase functions deploy api-minimarket --no-verify-jwt --use-api
 ```
 
 ### Usar Token

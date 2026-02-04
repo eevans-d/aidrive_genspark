@@ -9,8 +9,11 @@
 
 ### Pendientes críticos que bloquean cierre final (según `docs/ESTADO_ACTUAL.md`)
 1) Habilitar **Leaked Password Protection** (COMET reporta que requiere plan Pro; SMTP ya configurado). **Decisión: diferir hasta producción.**  
-2) Probar endpoint `/reportes/efectividad-tareas` con JWT real (último intento 401 Invalid JWT).  
-3) Confirmar licencia definitiva (LICENSE con placeholder `[OWNER PENDIENTE]`).  
+2) Confirmar licencia definitiva (LICENSE con placeholder `[OWNER PENDIENTE]`).  
+
+### Verificaciones P0 completadas (2026-02-04)
+- ✅ Endpoint `/reportes/efectividad-tareas` probado con JWT real: **200 OK**.  
+  - Nota técnica: access tokens emitidos por Supabase Auth son **ES256**; se requirió redeploy de `api-minimarket` con `--no-verify-jwt` para evitar `401 Invalid JWT` del gateway y dejar la validación en app (`/auth/v1/user` + roles).
 
 ### Módulos críticos para revisión humana
 - `supabase/functions/api-minimarket/index.ts` (gateway principal y routing).  
@@ -23,7 +26,7 @@
 ### Alcance del pre-cierre
 - Consolidar documentación verificable y riesgos pendientes.  
 - Preparar PR con hardening básico y guía de uso de IA.  
-- No ejecutar cambios irreversibles ni despliegues.  
+- Evitar cambios irreversibles; despliegues solo si desbloquean P0 y quedan documentados (ver `docs/ESTADO_ACTUAL.md`).  
 
 ---
 

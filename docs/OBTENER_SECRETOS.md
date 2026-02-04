@@ -9,7 +9,7 @@
 ## Objetivo
 Esta guia explica, paso a paso y en lenguaje simple, como obtener y configurar **todos los secretos/credenciales** necesarios para desbloquear pruebas, despliegues y tareas pendientes. No requiere conocimientos avanzados.
 
-> Si delegas la obtención en un asistente, genera el prompt en la sesión actual (no hay archivo fijo).
+> Si delegas la obtención en un asistente, usa instrucciones en la sesión actual (no hay archivo fijo).
 
 ## Requisitos previos
 - Acceso al proyecto en **Supabase Dashboard** (staging y/o prod).

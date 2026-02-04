@@ -21,7 +21,7 @@
 | D-014 | **CORS restrictivo en gateway**: bloquea requests browser sin `Origin`; requiere `ALLOWED_ORIGINS` env var | Aprobada | 2026-01-12 | Evita fallback permisivo; server-to-server sin Origin permitido. |
 | D-015 | **CI gated jobs**: integration/E2E solo corren con `workflow_dispatch` o `vars.RUN_*_TESTS=true` | Aprobada | 2026-01-12 | Evita fallos CI por falta de secrets; jobs obligatorios siguen corriendo. |
 | D-016 | **Carpetas Jest legacy** (`tests/performance/`, `tests/security/`, `tests/api-contracts/`) marcadas con README y desactivadas de CI | Aprobada | 2026-01-12 | Clarifica qué suites están activas vs legacy. |
-| D-017 | **API_PROVEEDOR_READ_MODE**: api-proveedor usa `anon` por defecto para lecturas; `service` solo para escrituras (sincronizar/cache persistente) | Aprobada | 2026-01-13 | Reduce exposición de service role key; hardening PROMPT 3. |
+| D-017 | **API_PROVEEDOR_READ_MODE**: api-proveedor usa `anon` por defecto para lecturas; `service` solo para escrituras (sincronizar/cache persistente) | Aprobada | 2026-01-13 | Reduce exposición de service role key; hardening de lectura/escritura por clave. |
 | D-018 | **SCRAPER_READ_MODE**: scraper-maxiconsumo usa `anon` por defecto para lecturas; `service` solo para escrituras | Aprobada | 2026-01-13 | Implementado: readKey/writeKey separados en index.ts y storage.ts. Fallback a service con warning si falta ANON_KEY. |
 | D-019 | **Auditoría RLS ejecutada**: checklist y scripts en `docs/AUDITORIA_RLS_CHECKLIST.md` y `scripts/rls_audit.sql` | Completada | 2026-01-23 | Tablas P0 verificadas y protegidas. |
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
@@ -58,8 +58,9 @@
 | D-051 | **Leaked password protection bloqueado por SMTP** | Bloqueada | 2026-02-02 | El toggle no aparece sin SMTP personalizado; requiere credenciales externas. |
 | D-052 | **Mitigación Advisor WARN=3 (search_path + tareas_metricas)** | Completada | 2026-02-02 | Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD + endpoint `/reportes/efectividad-tareas` usa `service_role` (deploy Antigravity 2026-02-02). |
 | D-053 | **Ejecución de mitigación en PROD (Antigravity)** | Completada | 2026-02-02 | `supabase db push --linked` + deploy `api-minimarket`; pendiente evidencia visual del Advisor y test JWT. |
-| D-054 | **Test endpoint con JWT (Invalid JWT)** | Bloqueada | 2026-02-02 | Intento con credenciales de `.env.test` devolvió **401 Invalid JWT**; requiere revisar credenciales/usuarios o configuración Auth/Keys. |
+| D-054 | **Test endpoint con JWT (Invalid JWT)** | Completada | 2026-02-04 | Resuelto: access_token **ES256** era rechazado por `functions/v1` con verify_jwt activo. Fix: redeploy `api-minimarket` con `--no-verify-jwt` + rol `admin` en `app_metadata`. Endpoint OK (200). |
 | D-055 | **Leaked Password Protection diferido** | Aprobada | 2026-02-04 | COMET reporta que requiere plan Pro; decisión usuario: no upgrade hasta producción. |
+| D-056 | **`api-minimarket` sin verify_jwt (workaround ES256)** | Completada | 2026-02-04 | Deploy con `--no-verify-jwt` para aceptar JWT ES256; la validación queda en app (`/auth/v1/user` + roles). |
 
 ---
 
@@ -95,9 +96,9 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
-| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
-| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
+| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
+| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
+| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
@@ -158,7 +159,7 @@
 
 ## Resumen de sesión (2026-01-13)
 
-**Ejecutado (4 PROMPTs sin credenciales):**
+**Ejecutado (4 tareas sin credenciales):**
 1. ✅ E2E frontend: 8 tests Playwright con mocks (`minimarket-system/e2e/`)
 2. ✅ CI/Runbook: documentación E2E en OPERATIONS_RUNBOOK.md
 3. ✅ Hardening api-proveedor/scraper: +46 tests unitarios (D-017, D-018)

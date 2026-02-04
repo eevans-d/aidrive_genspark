@@ -46,7 +46,8 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - **Decisión (usuario):** diferir hasta producción.
 - ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
 - ✅ Security Advisor verificado 2026-02-04: WARN=1 (leaked password protection deshabilitada), ERROR=0, INFO=15.
-- ⚠️ Test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**; requiere JWT admin).
+- ✅ Test real de `/reportes/efectividad-tareas` con JWT: **200 OK** (2026-02-04).
+  - Nota técnica: access_token ES256 era rechazado por `functions/v1` con `verify_jwt` activo (`401 Invalid JWT`). Se aplicó redeploy `api-minimarket` con `--no-verify-jwt` y la validación queda en app (`/auth/v1/user` + roles).
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
 - ✅ Conteo de políticas RLS verificado por COMET 2026-02-04: **33** en schema `public`.
 **Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).

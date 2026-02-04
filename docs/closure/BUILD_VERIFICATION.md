@@ -4,7 +4,7 @@
 
 **Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  
 **Branch:** chore/closure-prep-20260202  
-**Última actualización:** 2026-02-03  
+**Última actualización:** 2026-02-04  
 **Estado:** EJECUTADO (integration/E2E OK)  
 
 **Entorno local:**
@@ -31,6 +31,14 @@
 | Integration Tests | `bash scripts/run-integration-tests.sh` | ✅ OK | PASS (38/38). |
 | E2E Tests | `bash scripts/run-e2e-tests.sh` | ✅ OK | PASS (4/4; junit en `test-reports/junit.e2e.xml`). |
 | Edge Functions Check | `deno check --no-lock supabase/functions/**/index.ts` | ✅ OK | Resuelto con `deno.json` (`nodeModulesDir: "auto"`). |
+
+### Addendum 2026-02-04 (Runtime Smoke)
+
+| Gate | Comando | Estado | Evidencia |
+|------|---------|--------|-----------|
+| API Smoke (real JWT) | `node scripts/smoke-efectividad-tareas.mjs` | ✅ OK | `/reportes/efectividad-tareas` devuelve **200** (sin exponer payload). |
+
+**Nota técnica:** para permitir JWT ES256 emitidos por Supabase Auth, `api-minimarket` fue redeployado con `--no-verify-jwt` (la validación queda en app con `/auth/v1/user` + roles). Ver `docs/ESTADO_ACTUAL.md`.
 
 ### Artefactos generados en esta ejecución
 - `coverage/` (reporte coverage v8)

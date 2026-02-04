@@ -141,7 +141,7 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 # ejemplo local; en 
 
 - Codex **no** puede acceder a dashboards ni obtener secretos reales.  
 - Codex puede verificar consistencia en docs y preparar validaciones sin exponer valores.  
- - Para delegar obtención en Supabase, generar prompt en la sesión (no hay archivo fijo).
+ - Para delegar obtención en Supabase, usar instrucciones en la sesión (no hay archivo fijo).
 
 ---
 

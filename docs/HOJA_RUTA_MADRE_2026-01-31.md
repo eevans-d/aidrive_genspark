@@ -53,7 +53,7 @@
 - [x] **Confirmar WARN residual** en Security Advisor (post‑mitigación; WARN=1 por leaked password protection). *(Verificado COMET 2026-02-04)*  
 - ✅ **Mitigar WARN search_path** en `public.sp_aplicar_precio` (migración aplicada 2026-02-02).
 - ✅ **Mitigar WARN de vista materializada** `public.tareas_metricas` (endpoint migrado a `service_role` + REVOKE aplicado 2026-02-02).  
-- [ ] **Validar endpoint** `/reportes/efectividad-tareas` con JWT real (200 OK).
+- [x] **Validar endpoint** `/reportes/efectividad-tareas` con JWT real (**200 OK**, 2026-02-04). *(Requirió redeploy `api-minimarket` con `--no-verify-jwt` por JWT ES256; validación queda en app con `/auth/v1/user` + roles)*  
 - [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 - [x] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD.  
 - [x] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.  
