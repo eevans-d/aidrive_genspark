@@ -80,7 +80,7 @@
 
 ### 1.5 Documentación y gobernanza
 - [x] **Referencias legacy removidas** (ya no existen en repo).
-- [ ] **Confirmar licencia oficial** (LICENSE contiene placeholder `[OWNER PENDIENTE]`).
+- [x] **Confirmar licencia oficial** (MIT, `ORIGEN•AI`) — 2026-02-04.
 - [x] **Onboarding guide** para nuevos devs.
 - [x] **Runbook operacional expandido** (incidentes, rollback, soporte).
 - [x] **Postman collections**: confirmar vigencia / actualizar si cambió el API.

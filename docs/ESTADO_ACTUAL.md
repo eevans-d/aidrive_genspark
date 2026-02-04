@@ -88,7 +88,6 @@
 
 **Pendientes críticos (bloquean cierre):**
 1) **Leaked Password Protection**: pendiente por plan (**decisión actual: no upgrade hasta producción**).
-2) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
 
 **Próximos pasos (no críticos, recomendados antes de producción):**
 - Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).

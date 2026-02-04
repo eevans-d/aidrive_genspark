@@ -9,11 +9,11 @@
 
 ### Pendientes críticos que bloquean cierre final (según `docs/ESTADO_ACTUAL.md`)
 1) Habilitar **Leaked Password Protection** (COMET reporta que requiere plan Pro; SMTP ya configurado). **Decisión: diferir hasta producción.**  
-2) Confirmar licencia definitiva (LICENSE con placeholder `[OWNER PENDIENTE]`).  
 
 ### Verificaciones P0 completadas (2026-02-04)
 - ✅ Endpoint `/reportes/efectividad-tareas` probado con JWT real: **200 OK**.  
   - Nota técnica: access tokens emitidos por Supabase Auth son **ES256**; se requirió redeploy de `api-minimarket` con `--no-verify-jwt` para evitar `401 Invalid JWT` del gateway y dejar la validación en app (`/auth/v1/user` + roles).
+- ✅ Licencia definida: **MIT** (owner: `ORIGEN•AI`).
 
 ### Módulos críticos para revisión humana
 - `supabase/functions/api-minimarket/index.ts` (gateway principal y routing).  
@@ -277,7 +277,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 - MIT License (recomendado para proyectos comerciales privados)
 - Propietaria (si es uso interno exclusivo)
 
-**Acción Requerida:** Confirmar licencia con stakeholders
+**Acción Requerida:** Licencia confirmada (MIT, `ORIGEN•AI`).
 
 ---
 
@@ -401,7 +401,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 1. **Obtener credenciales:** Configurar secrets de GitHub para habilitar tests gated
 2. **WS7.5 Roles:** ✅ Completado (rol desde `app_metadata`, sin fallback a `user_metadata`)
 3. **Rollback probado:** Ejecutar prueba en staging y guardar evidencia
-4. **Definir licencia:** Decidir MIT vs Propietaria
+4. **Definir licencia:** ✅ MIT (owner: `ORIGEN•AI`)
 5. **Revisión P0:** Revisar manualmente los 6 módulos críticos listados
 
 ### Corto Plazo (1-2 semanas)

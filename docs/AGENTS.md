@@ -114,7 +114,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Confirmar licencia definitiva (`LICENSE` contiene placeholder `[OWNER PENDIENTE]`).
+- Licencia definitiva definida (MIT, `ORIGEN•AI`).
 - Leaked password protection (Auth) **requiere plan Pro** (decisión actual: diferir hasta producción).
 - Confirmar que el `From Email` de SMTP (Auth) sea un sender verificado real en SendGrid (si se usa en producción).
 - Mantener evidencia actualizada en `docs/ESTADO_ACTUAL.md` y `docs/closure/*`.

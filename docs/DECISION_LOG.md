@@ -61,6 +61,7 @@
 | D-054 | **Test endpoint con JWT (Invalid JWT)** | Completada | 2026-02-04 | Resuelto: access_token **ES256** era rechazado por `functions/v1` con verify_jwt activo. Fix: redeploy `api-minimarket` con `--no-verify-jwt` + rol `admin` en `app_metadata`. Endpoint OK (200). |
 | D-055 | **Leaked Password Protection diferido** | Aprobada | 2026-02-04 | COMET reporta que requiere plan Pro; decisión usuario: no upgrade hasta producción. |
 | D-056 | **`api-minimarket` sin verify_jwt (workaround ES256)** | Completada | 2026-02-04 | Deploy con `--no-verify-jwt` para aceptar JWT ES256; la validación queda en app (`/auth/v1/user` + roles). |
+| D-057 | **Licencia definitiva** | Aprobada | 2026-02-04 | MIT; owner: `ORIGEN•AI`. |
 
 ---
 
