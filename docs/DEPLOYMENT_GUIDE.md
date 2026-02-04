@@ -31,11 +31,13 @@ supabase db push
 ### 3.2 Edge Functions
 ```bash
 # Deploy individual (ejemplo)
-supabase functions deploy api-minimarket
+supabase functions deploy api-minimarket --no-verify-jwt --use-api
 
 # Deploy completo (si aplica)
 supabase functions deploy
 ```
+
+**Nota:** `api-minimarket` requiere `--no-verify-jwt` (workaround JWT ES256). Ver `docs/ESTADO_ACTUAL.md`.
 
 ### 3.3 Frontend
 ```bash
