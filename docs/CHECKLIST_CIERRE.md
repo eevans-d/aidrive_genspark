@@ -1,7 +1,7 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-02-02  
-**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-02)  
+**Fecha:** 2026-02-04  
+**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-04)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
 ---
@@ -42,11 +42,12 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
-- Habilitar leaked password protection (Auth) **requiere SMTP personalizado**.
+- Habilitar leaked password protection (Auth) **requiere SMTP personalizado**. *(Verificado 2026-02-04: sigue OFF)*
 - ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
-- ⚠️ Verificación manual pendiente: Security Advisor (WARN debería bajar a 1) + test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**).
+- ✅ Security Advisor verificado 2026-02-04: WARN=1 (leaked password protection deshabilitada), ERROR=0, INFO=15.
+- ⚠️ Test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**).
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
-- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — requiere DB URL/credenciales.
+- ✅ Conteo de políticas RLS verificado por COMET 2026-02-04: **33** en schema `public`.
 **Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).
 
 ### F0: Gobierno y Baseline

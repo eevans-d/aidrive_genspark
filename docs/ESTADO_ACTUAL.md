@@ -1,11 +1,11 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-03  
+**Última actualización:** 2026-02-04  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
 **Cierre 2026-02-01 (confirmación usuario, histórico):**
 - Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
-- WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02)**
+- WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02; verificado 2026-02-04: WARN=1)**  
 - Migración `20260131020000_security_advisor_mitigations.sql` validada en entornos no‑PROD.
 - Secrets de CI (GitHub Actions) configurados.
 - Revisión humana P0 completada.
@@ -57,12 +57,19 @@
 - ✅ Usuarios Auth verificados (3) — JWT requiere contraseña (no visible en dashboard).
 - ⚠️ SMTP personalizado (Auth) **pendiente** — configurar en panel con SendGrid y activar leaked password protection.
 
+**Actualización 2026-02-04 (COMET - verificación panel):**
+- ⚠️ **SMTP personalizado (Auth)**: **NO configurado** (toggle visible pero campos vacíos).
+- ⚠️ **Leaked Password Protection**: **DESACTIVADO** (requiere SMTP configurado).
+- ✅ **Security Advisor**: WARN=1, ERROR=0, INFO=15.  
+  - WARN único: leaked password protection deshabilitada.
+  - INFO: tablas con RLS habilitada sin políticas (no bloqueante si solo `service_role`).
+- ✅ **RLS policies count (public)**: **33** (consulta en SQL Editor).
+- ⚠️ **Endpoint** `/reportes/efectividad-tareas`: sin evidencia reciente; requiere JWT admin para prueba real.
+
 **Pendientes críticos (bloquean cierre):**
 1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado**).
-2) Confirmar visualmente el Security Advisor post‑mitigación (WARN debería bajar a 1).
-3) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — último intento devolvió **401 Invalid JWT**.
-4) Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — ahora posible con `DATABASE_URL`.
-5) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
+2) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — último intento devolvió **401 Invalid JWT**.
+3) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
