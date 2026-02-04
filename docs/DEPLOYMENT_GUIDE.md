@@ -1,7 +1,7 @@
 # DEPLOYMENT GUIDE - MINI MARKET SYSTEM
 
 **Fecha:** 2026-01-23  
-**Estado:** Documento operativo (rollback documentado, no probado en staging)
+**Estado:** Documento operativo (rollback documentado y probado en staging 2026-01-30)
 
 ---
 
@@ -54,7 +54,7 @@ npm run build
 
 ## 4) Rollback (procedimiento)
 
-> Checklist operativo: ver `docs/ROLLBACK_DRILL_STAGING.md` (OPS-SMART-1).
+> Checklist operativo: ver `docs/archive/ROLLBACK_DRILL_STAGING.md` (OPS-SMART-1).
 
 ### 4.1 Rollback DB (produccion/staging)
 **Opcion preferida:** Point-in-Time Recovery (PITR) o restore desde backup.

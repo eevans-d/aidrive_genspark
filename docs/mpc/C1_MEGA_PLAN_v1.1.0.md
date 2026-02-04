@@ -85,7 +85,7 @@
 | M4 | Errores/timeouts revisados + docs endpoint | `docs/API_README.md` |
 | M5 | Hooks estables + UX de roles coherente | Tests frontend + revisión visual |
 | M6 | Suites con evidencia (unit/integration/e2e) | `test-reports/*` |
-| M7 | Rollback probado con evidencia | `docs/DEPLOYMENT_GUIDE.md`, `docs/ROLLBACK_DRILL_STAGING.md` |
+| M7 | Rollback probado con evidencia | `docs/DEPLOYMENT_GUIDE.md`, `docs/archive/ROLLBACK_DRILL_STAGING.md` |
 | M8 | Secrets rotados + decision log | `docs/DECISION_LOG.md` |
 | M9 | Cron y scraper con métricas estables | `cron_jobs_execution_log` |
 | M10 | Inventario/validacion de secretos + owners | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` |

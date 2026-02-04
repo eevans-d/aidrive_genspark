@@ -3,6 +3,8 @@
 **Última actualización:** 2026-02-04  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
 
+**Nuevo:** Plan de ejecución pre-mortem operativo: `docs/PLAN_EJECUCION_PREMORTEM.md` (2026-02-04).  
+
 **Cierre 2026-02-01 (confirmación usuario, histórico):**
 - Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
 - WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02; verificado 2026-02-04: WARN=1)**  
@@ -92,6 +94,7 @@
 **Próximos pasos (no críticos, recomendados antes de producción):**
 - Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).
 - Planificar **rotación de secretos** antes de producción si hubo exposición histórica (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
+- Ejecutar **Preflight Pre-Mortem** y registrar evidencia (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`).
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.

@@ -31,6 +31,16 @@
 - ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
 - ✅ Mitigación Advisor (WARN search_path + tareas_metricas) ejecutada en PROD (2026-02-02).
 
+### 0.1 Premortem operativo (nuevo)
+
+**Plan fuente:** `docs/PLAN_EJECUCION_PREMORTEM.md`  
+**Proximos pasos inmediatos (48–72h):**
+- Ejecutar Preflight y registrar evidencia en `docs/ESTADO_ACTUAL.md`.
+- WS1 hotfix: idempotency key en `/reservas` + constraint unico + bloqueo doble submit si aplica.
+- WS2 lock por job en `cron-jobs-maxiconsumo` para evitar solapamientos.
+- WS5 guardrail: bloquear deploy si `cron-notifications` queda en modo simulacion en PROD.
+- Confirmar si existe flujo UI de reservas; si no, cambios solo backend.
+
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
 - Security Advisor mitigado (ERROR=0; anon grants internos revocados).  
@@ -94,7 +104,8 @@
 
 ### 1.7 Backend / Scraper / Cron / Notificaciones (no bloqueante)
 - [x] Dividir `api-minimarket/index.ts` en routers.  
-- [x] Rate limit por usuario (además de IP).  
+- [x] Rate limit por usuario en `api-proveedor` (usa `x-user-id`/`authorization`).  
+- [ ] Rate limit por usuario en gateway `api-minimarket` (pendiente; ver `docs/PLAN_EJECUCION_PREMORTEM.md` WS3).  
 - [x] OpenAPI para endpoints nuevos.  
 - [x] Mejoras scraper (retry inteligente, métricas, headless si aplica).  
 - [x] Dashboard de cron + backoff + alertas por fallo.  
