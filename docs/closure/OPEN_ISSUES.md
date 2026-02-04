@@ -5,7 +5,7 @@
 
 | Pendiente | Severidad | Evidencia | Plan | Responsable |
 |-----------|-----------|-----------|------|-------------|
-| Habilitar leaked password protection (Auth) requiere SMTP personalizado | P0 | `docs/ESTADO_ACTUAL.md` | SMTP ya configurado; falta habilitar LPP (COMET reporta que requiere plan Pro) | PENDIENTE |
+| Habilitar leaked password protection (Auth) requiere SMTP personalizado | P0 | `docs/ESTADO_ACTUAL.md` | SMTP ya configurado; falta habilitar LPP (COMET reporta que requiere plan Pro). **Decisión: diferir hasta producción.** | PENDIENTE |
 | Verificación visual Security Advisor post‑mitigación (WARN esperado = 1) | P0 | `docs/ESTADO_ACTUAL.md` | Confirmar en panel Supabase y registrar evidencia | RESUELTO 2026-02-04 |
 | Probar `/reportes/efectividad-tareas` con JWT real (último intento 401) | P0 | `docs/ESTADO_ACTUAL.md` | Ejecutar request autenticado (requiere JWT admin) y registrar output | PENDIENTE |
 | Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) | P0 | `docs/ESTADO_ACTUAL.md` | Re-ejecutar auditoría RLS con credenciales y comparar | RESUELTO 2026-02-04 (33 policies) |

@@ -65,6 +65,7 @@
   - From Email: `noreply@minimarket-system.com`
   - From Name: `Sistema MiniMarket`
 - ⚠️ **Leaked Password Protection**: **NO DISPONIBLE** en el plan actual (COMET reporta que requiere plan Pro o superior).
+  - **Decisión (usuario):** no upgrade por ahora; se activará al pasar a producción.
 - ✅ **Security Advisor**: WARN=1, ERROR=0, INFO=15.  
   - WARN único: leaked password protection deshabilitada.
   - INFO: tablas con RLS habilitada sin políticas (no bloqueante si solo `service_role`).
@@ -72,7 +73,7 @@
 - ⚠️ **Endpoint** `/reportes/efectividad-tareas`: sin evidencia en logs/invocaciones; requiere JWT admin para prueba real.
 
 **Pendientes críticos (bloquean cierre):**
-1) Definir acción para **Leaked Password Protection** (requiere **plan Pro** según COMET; decidir upgrade o aceptar riesgo).
+1) **Leaked Password Protection**: pendiente por plan (**decisión actual: no upgrade hasta producción**).
 2) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — requiere JWT admin.
 3) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
 

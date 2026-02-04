@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-04  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -59,6 +59,7 @@
 | D-052 | **Mitigación Advisor WARN=3 (search_path + tareas_metricas)** | Completada | 2026-02-02 | Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD + endpoint `/reportes/efectividad-tareas` usa `service_role` (deploy Antigravity 2026-02-02). |
 | D-053 | **Ejecución de mitigación en PROD (Antigravity)** | Completada | 2026-02-02 | `supabase db push --linked` + deploy `api-minimarket`; pendiente evidencia visual del Advisor y test JWT. |
 | D-054 | **Test endpoint con JWT (Invalid JWT)** | Bloqueada | 2026-02-02 | Intento con credenciales de `.env.test` devolvió **401 Invalid JWT**; requiere revisar credenciales/usuarios o configuración Auth/Keys. |
+| D-055 | **Leaked Password Protection diferido** | Aprobada | 2026-02-04 | COMET reporta que requiere plan Pro; decisión usuario: no upgrade hasta producción. |
 
 ---
 
