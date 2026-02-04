@@ -58,9 +58,13 @@
 - ⚠️ SMTP personalizado (Auth) **pendiente** — configurar en panel con SendGrid y activar leaked password protection.
 
 **Actualización 2026-02-04 (COMET - verificación panel):**
-- ⚠️ **SMTP personalizado (Auth)**: **NO configurado** (toggle desactivado; servicio integrado activo con advertencia de límites).
-- ⚠️ **Leaked Password Protection**: **DESACTIVADO** (requiere SMTP configurado).
-- ⚠️ **Requiere para configurar SMTP**: SendGrid API key + email verificado + nombre de remitente.
+- ✅ **SMTP personalizado (Auth)**: **HABILITADO** y configurado con SendGrid.
+  - Host: `smtp.sendgrid.net`
+  - Port: `587`
+  - User: `apikey`
+  - From Email: `noreply@minimarket-system.com`
+  - From Name: `Sistema MiniMarket`
+- ⚠️ **Leaked Password Protection**: **NO DISPONIBLE** en el plan actual (COMET reporta que requiere plan Pro o superior).
 - ✅ **Security Advisor**: WARN=1, ERROR=0, INFO=15.  
   - WARN único: leaked password protection deshabilitada.
   - INFO: tablas con RLS habilitada sin políticas (no bloqueante si solo `service_role`).
@@ -68,7 +72,7 @@
 - ⚠️ **Endpoint** `/reportes/efectividad-tareas`: sin evidencia en logs/invocaciones; requiere JWT admin para prueba real.
 
 **Pendientes críticos (bloquean cierre):**
-1) Habilitar leaked password protection en Auth (**requiere SMTP personalizado + SendGrid API key + email verificado**).
+1) Definir acción para **Leaked Password Protection** (requiere **plan Pro** según COMET; decidir upgrade o aceptar riesgo).
 2) Probar `/reportes/efectividad-tareas` con JWT real (confirmar 200 OK) — requiere JWT admin.
 3) Confirmar licencia definitiva (**LICENSE** contiene placeholder `[OWNER PENDIENTE]`).
 

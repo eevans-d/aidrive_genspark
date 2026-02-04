@@ -42,7 +42,7 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
-- Habilitar leaked password protection (Auth) **requiere SMTP personalizado + SendGrid API key + email verificado**. *(Verificado 2026-02-04: toggle SMTP OFF)*
+- Habilitar leaked password protection (Auth) **requiere plan Pro** (COMET reporta que no está disponible en Free; SMTP ya configurado).
 - ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
 - ✅ Security Advisor verificado 2026-02-04: WARN=1 (leaked password protection deshabilitada), ERROR=0, INFO=15.
 - ⚠️ Test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**; requiere JWT admin).

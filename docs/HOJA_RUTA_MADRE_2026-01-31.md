@@ -26,7 +26,7 @@
 - ✅ **Security Advisor** verificado por COMET 2026-02-04: ERROR=0, **WARN=1**, INFO=15.  
   - WARN único: leaked password protection deshabilitada.
   - INFO: tablas con RLS habilitada sin políticas (no bloqueante si solo `service_role`).
-- ❌ Leaked password protection **DESACTIVADO** (requiere **SMTP personalizado**; toggle SMTP OFF y faltan credenciales SendGrid).
+- ❌ Leaked password protection **NO DISPONIBLE** (COMET reporta que requiere **plan Pro**; SMTP ya está configurado).
 - ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
 - ✅ Mitigación Advisor (WARN search_path + tareas_metricas) ejecutada en PROD (2026-02-02).
 
@@ -47,7 +47,7 @@
 > - **Observación**: notas críticas por paso.
 
 ### 1.1 Seguridad (P0/P1)
-- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere SMTP personalizado + SendGrid API key + email verificado**). *(Re‑abierto 2026-02-02; verificado 2026-02-04: sigue OFF)*  
+- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere plan Pro según COMET**). *(Re‑abierto 2026-02-02; verificado 2026-02-04: SMTP OK, LPP no disponible)*  
 - [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
 - [x] **Confirmar WARN residual** en Security Advisor (post‑mitigación; WARN=1 por leaked password protection). *(Verificado COMET 2026-02-04)*  
 - ✅ **Mitigar WARN search_path** en `public.sp_aplicar_precio` (migración aplicada 2026-02-02).
@@ -105,7 +105,7 @@
 
 ## 2) Ruta mínima hasta “100% Producción” (objetivo / pendiente de cierre)
 
-1) **Seguridad:** activar leaked password protection (panel) — **pendiente** (requiere SMTP personalizado + SendGrid API key + email verificado).  
+1) **Seguridad:** activar leaked password protection (panel) — **pendiente** (requiere plan Pro según COMET).  
 2) **Verificación Advisor:** confirmar WARN=0 (o 1 si aún falta LPP) y capturar evidencia final — **pendiente** hasta activar LPP.  
 3) **DB Consistencia:** validar migraciones 20260131 + fix_constraints en staging/prod.  
 4) **CI/CD:** configurar secrets en GitHub y decidir integración/E2E en CI.  
@@ -120,7 +120,7 @@
 ## 3) Evidencia mínima capturada/confirmada (para cierre definitivo)
 
 - Verificación Security Advisor (COMET 2026-02-04): ERROR=0, WARN=1, INFO=15.  
-- Registro de leaked password protection habilitado — **pendiente** (requiere SMTP personalizado + SendGrid API key + email verificado).  
+- Registro de leaked password protection habilitado — **pendiente** (requiere plan Pro según COMET).  
 - `migrate.sh status` o `supabase db push` confirmando migraciones 20260131 (confirmación usuario).  
 - Evidencia de revisión humana P0 (checklist firmado o log).  
 - Actualización en `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.
