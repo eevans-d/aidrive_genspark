@@ -123,6 +123,49 @@ check_prerequisites() {
             fi
             ;;
     esac
+
+    # Guardrail: NOTIFICATIONS_MODE en producción
+    if [ "$DEPLOY_ENV" = "production" ]; then
+        local notifications_mode
+        notifications_mode="$(echo "${NOTIFICATIONS_MODE:-simulation}" | tr '[:upper:]' '[:lower:]')"
+
+        if [ "$notifications_mode" != "real" ]; then
+            if [ "$FORCE_DEPLOY" != "true" ]; then
+                log_error "NOTIFICATIONS_MODE=$notifications_mode bloqueado en producción (requiere 'real')"
+                exit 1
+            else
+                log_warning "NOTIFICATIONS_MODE=$notifications_mode en producción (FORCE_DEPLOY=true)"
+            fi
+        fi
+
+        if command -v supabase &> /dev/null; then
+            local secrets_json
+            if secrets_json=$(supabase secrets list --output json 2>/dev/null); then
+                if ! echo "$secrets_json" | grep -q '"name":"NOTIFICATIONS_MODE"'; then
+                    if [ "$FORCE_DEPLOY" != "true" ]; then
+                        log_error "NOTIFICATIONS_MODE no configurado en Supabase Secrets"
+                        exit 1
+                    else
+                        log_warning "NOTIFICATIONS_MODE no configurado en Supabase Secrets (FORCE_DEPLOY=true)"
+                    fi
+                fi
+            else
+                if [ "$FORCE_DEPLOY" != "true" ]; then
+                    log_error "No se pudo verificar Supabase Secrets para NOTIFICATIONS_MODE"
+                    exit 1
+                else
+                    log_warning "Supabase Secrets no verificable (FORCE_DEPLOY=true)"
+                fi
+            fi
+        else
+            if [ "$FORCE_DEPLOY" != "true" ]; then
+                log_error "Supabase CLI no disponible para verificar NOTIFICATIONS_MODE"
+                exit 1
+            else
+                log_warning "Supabase CLI no disponible (FORCE_DEPLOY=true)"
+            fi
+        fi
+    fi
     
     log_success "Precondiciones verificadas"
 }

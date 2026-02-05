@@ -5,6 +5,24 @@
 
 **Nuevo:** Plan de ejecución pre-mortem operativo: `docs/PLAN_EJECUCION_PREMORTEM.md` (2026-02-04).  
 
+**Preflight Premortem (2026-02-04):**
+- `supabase functions list` OK. `api-minimarket` con `verify_jwt=false`; resto de funciones `verify_jwt=true`.
+- `supabase secrets list` OK (secrets presentes: ALLOWED_ORIGINS, API_PROVEEDOR_SECRET, SENDGRID_API_KEY, SMTP_*, SUPABASE_*).
+- Healthcheck `/functions/v1/api-minimarket/health` OK (200).
+- Pendiente: healthcheck `api-proveedor` y `cron-jobs-maxiconsumo` (requieren Authorization valido).
+- Pendiente: estado real de cron jobs (`cron.job`) y pooling DB (requiere acceso DB).
+
+**Cambios en repo (2026-02-04) — estado deploy mixto:**
+- Nueva migración `20260204100000_add_idempotency_stock_reservado.sql` (idempotency en reservas).
+- Nueva migración `20260204110000_add_cron_job_locks.sql` (locks distribuidos para cron jobs).
+- Nueva migración `20260204120000_add_sp_reservar_stock.sql` (SP atomica para reservas).
+- `api-minimarket` ahora usa `Idempotency-Key` y responde idempotente en `/reservas`.
+- `api-minimarket` ahora usa `sp_reservar_stock` (lock + idempotencia) en `/reservas`.
+- `cron-jobs-maxiconsumo/orchestrator.ts` ahora intenta lock con TTL via RPC.
+- `cron-notifications` bloquea envios en PROD si `NOTIFICATIONS_MODE` no es `real` (guardrail runtime).
+- `deploy.sh` bloquea deploy a PROD si `NOTIFICATIONS_MODE` != `real` o no existe en Supabase Secrets.
+ - **Nota:** migraciones DB pendientes por error de conectividad IPv6 (ver actualización 2026-02-04 post-deploy).
+
 **Cierre 2026-02-01 (confirmación usuario, histórico):**
 - Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
 - WARN residual del Security Advisor confirmado/resuelto. **(Re-abierto por COMET 2026-02-02; verificado 2026-02-04: WARN=1)**  
@@ -90,11 +108,36 @@
 
 **Pendientes críticos (bloquean cierre):**
 1) **Leaked Password Protection**: pendiente por plan (**decisión actual: no upgrade hasta producción**).
+2) **Migraciones WS1/WS2/WS1-SP**: `20260204100000`/`20260204110000`/`20260204120000` **no aplicadas** por bloqueo IPv6. Riesgo: `/reservas` devuelve 503 si falta RPC y cron jobs sin lock real.
 
 **Próximos pasos (no críticos, recomendados antes de producción):**
 - Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).
 - Planificar **rotación de secretos** antes de producción si hubo exposición histórica (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
-- Ejecutar **Preflight Pre-Mortem** y registrar evidencia (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`).
+- Ejecutar **Preflight Pre-Mortem** y registrar evidencia (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`). *(Pendiente por acceso a Supabase CLI/Dashboard).*
+
+**Actualización 2026-02-04 (local - preflight premortem):**
+- ✅ `supabase secrets list` (ref `dqaygmjpzoqjjrywdsxi`) ejecutado: secrets críticos presentes (hash digest mostrado por CLI).
+- ⚠️ `NOTIFICATIONS_MODE` no aparece en secrets (default `simulation`).
+- ✅ `supabase functions list` ejecutado: 13 funciones activas (api-minimarket v15, resto v9).
+- ⚠️ SQL preflight (cron jobs + pooling) falló por conectividad: `psql` a `db.dqaygmjpzoqjjrywdsxi.supabase.co:5432` → **Network is unreachable**.
+- ✅ Health `api-minimarket`: **200 OK** (`/functions/v1/api-minimarket/health`).
+- ✅ Health `cron-jobs-maxiconsumo`: **healthy** (`/functions/v1/cron-jobs-maxiconsumo/health` con service role).
+- ⚠️ Health `api-proveedor`: **200 OK** pero estado **unhealthy** (DB no disponible, scraper degradado). Ejecutado con `x-api-secret`, `Authorization: Bearer <anon>` y `Origin` permitido.
+
+**Actualización 2026-02-04 (post-deploy remoto):**
+- ✅ `NOTIFICATIONS_MODE=real` configurado en Supabase Secrets.
+- ✅ Deploy Edge Functions:
+  - `api-minimarket` v18 (`verify_jwt=false`).
+  - `cron-jobs-maxiconsumo` v12.
+  - `cron-notifications` v11.
+- ⚠️ `supabase db push` **falló**: conexión a DB remota no disponible (IPv6 `Network is unreachable`).
+  - Resultado: **migraciones DB pendientes** (idempotency/locks/sp_reservar_stock).
+  - Mitigación temporal: `cron-jobs-maxiconsumo` permite fallback sin lock si RPC no existe.
+  - `/reservas` devuelve **503** si RPC `sp_reservar_stock` no está disponible.
+- ✅ Health checks:
+  - `api-minimarket/health`: **200 OK**, `healthy`.
+  - `cron-jobs-maxiconsumo/health`: **200 OK**, `healthy`.
+  - `api-proveedor/health`: **200 OK**, `unhealthy` (DB no disponible).
 
 **Actualización 2026-01-30 (local):**
 - Revisión Security Advisor pendiente en ese momento (resuelto 2026-02-01 por confirmación usuario); ejecución local bloqueada por falta de `DATABASE_URL` en `.env.test`. Ver `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md`.
@@ -177,7 +220,7 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)
-- **Migraciones en repo:** 16 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
+- **Migraciones en repo:** 19 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
 - **Build frontend:** `minimarket-system/dist/` presente (artefacto, no revalidado)
 
 ---

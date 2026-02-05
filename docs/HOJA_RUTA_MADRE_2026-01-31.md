@@ -1,6 +1,6 @@
 # Hoja de Ruta MADRE — Producción 100% (histórico) / Cierre condicionado (2026-02-02)
 
-**Última actualización:** 2026-02-03  
+**Última actualización:** 2026-02-04  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
 **Fuente primaria:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`.
 

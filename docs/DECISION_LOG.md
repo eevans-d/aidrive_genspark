@@ -62,6 +62,11 @@
 | D-055 | **Leaked Password Protection diferido** | Aprobada | 2026-02-04 | COMET reporta que requiere plan Pro; decisión usuario: no upgrade hasta producción. |
 | D-056 | **`api-minimarket` sin verify_jwt (workaround ES256)** | Completada | 2026-02-04 | Deploy con `--no-verify-jwt` para aceptar JWT ES256; la validación queda en app (`/auth/v1/user` + roles). |
 | D-057 | **Licencia definitiva** | Aprobada | 2026-02-04 | MIT; owner: `ORIGEN•AI`. |
+| D-058 | **Idempotency en reservas** | Parcial (función deploy, DB pendiente) | 2026-02-04 | Migración agrega `idempotency_key` + índice único; `/reservas` usa key y devuelve respuesta idempotente. **DB pendiente por red IPv6**. |
+| D-059 | **Locks distribuidos para cron jobs** | Parcial (función deploy, DB pendiente) | 2026-02-04 | Migración agrega `cron_jobs_locks` + RPC `sp_acquire_job_lock`/`sp_release_job_lock`; orquestador usa lock con TTL. **DB pendiente por red IPv6** (fallback sin lock). |
+| D-060 | **Reserva atómica vía RPC** | Parcial (función deploy, DB pendiente) | 2026-02-04 | `sp_reservar_stock` aplica lock + validación de stock y `/reservas` usa RPC. **DB pendiente por red IPv6** (endpoint devuelve 503 si RPC no existe). |
+| D-061 | **Fallback sin lock si RPC no existe** | Completada (deploy) | 2026-02-04 | `cron-jobs-maxiconsumo` continúa sin lock si `sp_acquire_job_lock` no está disponible (evita caída total por DB pendiente). |
+| D-062 | **503 explícito si RPC de reservas falta** | Completada (deploy) | 2026-02-04 | `/reservas` retorna 503 cuando `sp_reservar_stock` no existe, en vez de 500 silencioso. |
 
 ---
 

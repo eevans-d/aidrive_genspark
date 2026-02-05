@@ -1480,34 +1480,58 @@ Deno.serve(async (req) => {
       const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
       const referenciaValue =
         typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
+      const idempotencyKey = req.headers.get('idempotency-key')?.trim() || null;
 
-      const stockInfo = await callFunction(supabaseUrl, 'fnc_stock_disponible', requestHeaders(), {
-        p_producto_id: producto_id,
-        p_deposito: depositoValue,
-      });
-      const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
-      const disponible = Number((stockRow as Record<string, unknown>)?.stock_disponible ?? 0);
-      const disponibleNumero = Number.isFinite(disponible) ? disponible : 0;
-
-      if (disponibleNumero < cantidadNumero) {
-        return respondFail(
-          'INSUFFICIENT_STOCK',
-          'Stock disponible insuficiente para la reserva',
-          409,
-          { details: { disponible: disponibleNumero } },
-        );
+      if (!idempotencyKey) {
+        logger.warn('IDEMPOTENCY_KEY_MISSING', {
+          requestId,
+          path,
+          clientIp,
+          userId: user?.id,
+        });
       }
 
-      const reserva = await insertTable(supabaseUrl, 'stock_reservado', requestHeaders(), {
-        producto_id,
-        cantidad: cantidadNumero,
-        estado: 'activa',
-        referencia: referenciaValue,
-        usuario: user!.id,
-        fecha_reserva: new Date().toISOString(),
-      });
+      try {
+        const result = await callFunction(supabaseUrl, 'sp_reservar_stock', requestHeaders(), {
+          p_producto_id: producto_id,
+          p_cantidad: cantidadNumero,
+          p_usuario: user!.id,
+          p_referencia: referenciaValue,
+          p_deposito: depositoValue,
+          p_idempotency_key: idempotencyKey,
+        });
 
-      return respondOk((reserva as unknown[])[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
+        const payload = result as Record<string, unknown>;
+        const reserva = (payload?.reserva as Record<string, unknown>) || payload;
+        const idempotent = Boolean(payload?.idempotent);
+        const stockDisponible = payload?.stock_disponible;
+
+        return respondOk(reserva, idempotent ? 200 : 201, {
+          message: idempotent ? 'Reserva ya existente (idempotente)' : 'Reserva creada exitosamente',
+          extra: {
+            idempotent,
+            stock_disponible: stockDisponible,
+          },
+        });
+      } catch (error) {
+        if (isAppError(error) && (error.code === 'UNDEFINED_FUNCTION' || error.code === 'POSTGREST_NOT_FOUND')) {
+          logger.error('RESERVA_RPC_MISSING', { requestId, path, error: error.message });
+          return respondFail(
+            'RESERVA_UNAVAILABLE',
+            'Reserva temporalmente no disponible. Intente nuevamente más tarde.',
+            503,
+          );
+        }
+        if (isAppError(error) && error.code === 'RAISE_EXCEPTION' && error.message === 'INSUFFICIENT_STOCK') {
+          return respondFail(
+            'INSUFFICIENT_STOCK',
+            'Stock disponible insuficiente para la reserva',
+            409,
+          );
+        }
+
+        throw error;
+      }
     }
 
     // 22. POST /reservas/:id/cancelar - Cancelar reserva

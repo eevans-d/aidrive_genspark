@@ -1,6 +1,6 @@
 # DEPLOYMENT GUIDE - MINI MARKET SYSTEM
 
-**Fecha:** 2026-01-23  
+**Fecha:** 2026-02-04  
 **Estado:** Documento operativo (rollback documentado y probado en staging 2026-01-30)
 
 ---
@@ -15,6 +15,7 @@
 ## 2) Prerrequisitos
 - Acceso al proyecto Supabase (staging/prod).
 - Secrets configurados (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
+- En producción: `NOTIFICATIONS_MODE=real` configurado en `.env` y Supabase Secrets.
 - Working tree limpio y tag de release.
 - Plan de backup/restore (PITR o snapshot).
 

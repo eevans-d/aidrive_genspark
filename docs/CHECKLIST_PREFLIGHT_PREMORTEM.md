@@ -75,3 +75,45 @@ curl -sS "${SUPABASE_URL}/functions/v1/cron-jobs-maxiconsumo/health" \
 - Output de cada comando SQL y curl.
 - Screenshot de verify_jwt por funcion si es via Dashboard.
 - Registrar en `docs/ESTADO_ACTUAL.md`.
+
+---
+
+## 7) Registro de ejecucion (2026-02-04)
+
+Ejecutado desde CLI local.
+
+Verificaciones completadas:
+- `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` OK.
+  - `verify_jwt=false` solo en `api-minimarket`.
+  - Todas las demas funciones: `verify_jwt=true`.
+- `supabase secrets list --project-ref dqaygmjpzoqjjrywdsxi --output json` OK.
+  - Secrets presentes (nombres): `ALLOWED_ORIGINS`, `API_PROVEEDOR_SECRET`, `SENDGRID_API_KEY`, `SMTP_FROM`, `SMTP_HOST`, `SMTP_PASS`, `SMTP_PORT`, `SMTP_USER`, `SUPABASE_ANON_KEY`, `SUPABASE_DB_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `SUPABASE_URL`.
+  - `NOTIFICATIONS_MODE` no aparece en secrets (default actual: `simulation`).
+- Health check gateway:
+  - `GET /functions/v1/api-minimarket/health` → **200 OK**.
+
+Bloqueado / pendiente (requiere credenciales o acceso DB):
+- Health check `api-proveedor` y `cron-jobs-maxiconsumo`: requieren `Authorization` valido (verify_jwt true).
+- Estado real de cron jobs (SQL en `cron.job`): requiere acceso DB.
+- Pooling y conexiones (`pg_stat_activity`): requiere acceso DB.
+
+---
+
+## 8) Registro de ejecucion (2026-02-04, segunda corrida post-deploy)
+
+Verificaciones completadas:
+- `supabase secrets list --project-ref dqaygmjpzoqjjrywdsxi --output json` OK.
+  - `NOTIFICATIONS_MODE` presente (configurado en Supabase Secrets).
+- `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` OK.
+  - `verify_jwt=false` solo en `api-minimarket`.
+  - Versiones: `api-minimarket` v18, `cron-jobs-maxiconsumo` v12, `cron-notifications` v11.
+- Health check gateway:
+  - `GET /functions/v1/api-minimarket/health` → **200 OK**, `status=healthy`.
+- Health check proveedor:
+  - `GET /functions/v1/api-proveedor/health` (con `x-api-secret` + `Authorization`) → **200 OK**, `status=unhealthy` (DB no disponible, scraper degradado).
+- Health check cron jobs:
+  - `GET /functions/v1/cron-jobs-maxiconsumo/health` (service role) → **200 OK**, `status=healthy`.
+
+Bloqueado / pendiente:
+- `psql` a `db.dqaygmjpzoqjjrywdsxi.supabase.co:5432` falla por **Network is unreachable (IPv6)**.
+- No se pudo ejecutar SQL de `cron.job`/`cron_jobs_execution_log` ni pooling/conexiones.

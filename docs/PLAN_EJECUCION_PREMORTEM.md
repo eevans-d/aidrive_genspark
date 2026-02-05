@@ -20,26 +20,29 @@ Ejecutar todas las mitigaciones del pre-mortem con el minimo riesgo operativo, p
 Nota: No se detecto UI que consuma `/reservas` en `minimarket-system/src/pages`. Confirmar flujo real antes de cambios UX.
 
 ## 2) Preflight (bloqueante)
-Ejecutar checklist completo y registrar evidencia en `docs/ESTADO_ACTUAL.md`.
+Estado: **parcialmente completado (2026-02-04)**. Ver detalle en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` y `docs/ESTADO_ACTUAL.md`.
+Bloqueador actual: `supabase db push` no puede conectar a DB remota (IPv6 `Network is unreachable`). Ejecutar desde host con IPv6 o aplicar migraciones manualmente via SQL Editor.
 
 Checklist fuente:
 - `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`
 
 ## 3) Proximos pasos inmediatos (48–72h)
-1. Ejecutar Preflight y registrar evidencia.
-2. WS1 hotfix: idempotency key en `/reservas` + constraint unico + bloqueo doble submit si aplica.
-3. WS2 lock por job en `cron-jobs-maxiconsumo`.
-4. WS5 guardrail: bloquear deploy si `cron-notifications` queda en modo simulacion en PROD.
-5. Confirmar si existe flujo UI de reservas; si no, cambios solo backend.
+1. Ejecutar Preflight y registrar evidencia. **Estado:** parcial OK (ver `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`).
+2. WS1 hotfix: idempotency key en `/reservas` + constraint unico. **Estado:** listo en repo, **deploy DB bloqueado (IPv6)**.
+3. WS1 SP: `sp_reservar_stock` + `/reservas` usa RPC atomica. **Estado:** función desplegada, **DB pendiente**.
+4. WS2 lock por job en `cron-jobs-maxiconsumo`. **Estado:** función desplegada, **DB pendiente** (fallback sin lock activo si RPC no existe).
+5. WS5 guardrail runtime: `cron-notifications` bloquea envios en PROD si `NOTIFICATIONS_MODE` != `real`. **Estado:** desplegado.
+6. WS5 guardrail deploy: `deploy.sh` bloquea PROD si `NOTIFICATIONS_MODE` != `real` o no existe en Secrets. **Estado:** listo en repo.
+7. Confirmar si existe flujo UI de reservas; si no, cambios solo backend. **Estado:** pendiente.
 
 ## 4) Plan de tareas WS1–WS5 (responsables, estimacion, dependencias)
 
 WS1 — Stock/Reservas atomicas (R-001)
-- WS1-T1 (Owner: Backend/DB, Est: 0.5d) agregar columna `idempotency_key` + indice unico en `stock_reservado`.
+- WS1-T1 (Owner: Backend/DB, Est: 0.5d) agregar columna `idempotency_key` + indice unico en `stock_reservado`. **Estado:** listo en repo, **DB pendiente**.
 - Dep: Preflight completado.
-- WS1-T2 (Owner: Backend/DB, Est: 1.5d) crear `sp_reservar_stock` con lock por producto y update atomico.
+- WS1-T2 (Owner: Backend/DB, Est: 1.5d) crear `sp_reservar_stock` con lock por producto y update atomico. **Estado:** listo en repo, **DB pendiente**.
 - Dep: WS1-T1.
-- WS1-T3 (Owner: Backend, Est: 0.5d) actualizar `/reservas` para usar SP y exigir `Idempotency-Key`.
+- WS1-T3 (Owner: Backend, Est: 0.5d) actualizar `/reservas` para usar SP y exigir `Idempotency-Key`. **Estado:** desplegado (devuelve **503** si RPC no existe).
 - Dep: WS1-T2.
 - WS1-T4 (Owner: QA/Backend, Est: 1.0d) tests de concurrencia, idempotencia y no stock negativo.
 - Dep: WS1-T3.
@@ -47,9 +50,9 @@ WS1 — Stock/Reservas atomicas (R-001)
 - Dep: Confirmacion de flujo UI.
 
 WS2 — Cron jobs dedupe y concurrencia (R-002)
-- WS2-T1 (Owner: Backend/DB, Est: 0.5d) agregar lock por `job_id` y estatus `in_progress` con TTL.
+- WS2-T1 (Owner: Backend/DB, Est: 0.5d) agregar lock por `job_id` y estatus `in_progress` con TTL. **Estado:** listo en repo, **DB pendiente**.
 - Dep: Preflight completado.
-- WS2-T2 (Owner: Backend, Est: 0.5d) actualizar orquestador para skip si lock activo.
+- WS2-T2 (Owner: Backend, Est: 0.5d) actualizar orquestador para skip si lock activo. **Estado:** desplegado (fallback sin lock si RPC no existe).
 - Dep: WS2-T1.
 - WS2-T3 (Owner: QA/Backend, Est: 0.5d) tests de solapamiento y reintentos.
 - Dep: WS2-T2.
@@ -73,11 +76,11 @@ WS4 — Auth JWT resiliente (R-005)
 - Dep: WS4-T1.
 
 WS5 — Notificaciones reales (R-006)
-- WS5-T1 (Owner: SRE/Backend, Est: 0.5d) agregar `NOTIFICATIONS_MODE` y default seguro por entorno.
+- WS5-T1 (Owner: SRE/Backend, Est: 0.5d) agregar `NOTIFICATIONS_MODE` y default seguro por entorno. **Estado:** listo en repo.
 - Dep: Preflight completado.
 - WS5-T2 (Owner: Backend, Est: 1.5d) implementar envio real (SMTP/Twilio/Slack) con secrets.
 - Dep: WS5-T1.
-- WS5-T3 (Owner: SRE, Est: 0.5d) guardrail de deploy si PROD queda en `simulation`.
+- WS5-T3 (Owner: SRE, Est: 0.5d) guardrail de deploy si PROD queda en `simulation`. **Estado:** listo en repo.
 - Dep: WS5-T1.
 - WS5-T4 (Owner: SRE/QA, Est: 0.5d) smoke real en sandbox.
 - Dep: WS5-T2.
