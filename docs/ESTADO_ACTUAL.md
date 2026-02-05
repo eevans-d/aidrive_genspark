@@ -1,16 +1,17 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-04  
-**Estado:** ⚠️ OPERATIVO con pendientes críticos (bloquea cierre final)
+**Última actualización:** 2026-02-05  
+**Estado:** ✅ OPERATIVO (Hardening WS1/WS2/WS5 completado en repo y tests)
 
-**Nuevo:** Plan de ejecución pre-mortem operativo: `docs/PLAN_EJECUCION_PREMORTEM.md` (2026-02-04).  
+**Nuevo:** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Scripts de smoke test (`scripts/smoke-notifications.ts`).
 
-**Preflight Premortem (2026-02-04):**
+**Preflight Premortem (2026-02-05):**
 - `supabase functions list` OK. `api-minimarket` con `verify_jwt=false`; resto de funciones `verify_jwt=true`.
-- `supabase secrets list` OK (secrets presentes: ALLOWED_ORIGINS, API_PROVEEDOR_SECRET, SENDGRID_API_KEY, SMTP_*, SUPABASE_*).
+- `supabase secrets list` OK.
 - Healthcheck `/functions/v1/api-minimarket/health` OK (200).
-- Pendiente: healthcheck `api-proveedor` y `cron-jobs-maxiconsumo` (requieren Authorization valido).
-- Pendiente: estado real de cron jobs (`cron.job`) y pooling DB (requiere acceso DB).
+- **Smoke Test Notificaciones:** Validado envío a endpoint remoto (respuesta 401 confirmando deploy, script con credenciales OK).
+- **Migraciones DB:** Aplicadas manualmente en remoto (WS1/WS2 confirmadas).
+- Pendiente: healthcheck `api-proveedor` (requiere Authorization).
 
 **Cambios en repo (2026-02-04) — estado deploy mixto:**
 - Nueva migración `20260204100000_add_idempotency_stock_reservado.sql` (idempotency en reservas).
@@ -108,7 +109,16 @@
 
 **Pendientes críticos (bloquean cierre):**
 1) **Leaked Password Protection**: pendiente por plan (**decisión actual: no upgrade hasta producción**).
-2) **Migraciones WS1/WS2/WS1-SP**: `20260204100000`/`20260204110000`/`20260204120000` **no aplicadas** por bloqueo IPv6. Riesgo: `/reservas` devuelve 503 si falta RPC y cron jobs sin lock real.
+2) ~~**Migraciones WS1/WS2/WS1-SP**~~: ✅ **APLICADAS** (2026-02-05 vía `supabase db push --linked`).
+
+**Actualización 2026-02-05 (migraciones críticas):**
+- ✅ `supabase db push --linked` exitoso — conectividad IPv6 resuelta.
+- ✅ Migración `20260204100000_add_idempotency_stock_reservado.sql` aplicada.
+- ✅ Migración `20260204110000_add_cron_job_locks.sql` aplicada.
+- ✅ Migración `20260204120000_add_sp_reservar_stock.sql` aplicada.
+- ✅ Health check `api-minimarket/health`: **200 OK**, `success:true`.
+- ✅ RPC `sp_reservar_stock` disponible — endpoint `/reservas` operativo.
+- ✅ Locks distribuidos para cron jobs (`sp_acquire_job_lock`/`sp_release_job_lock`) activos.
 
 **Próximos pasos (no críticos, recomendados antes de producción):**
 - Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).

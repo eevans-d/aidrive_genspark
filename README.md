@@ -107,6 +107,9 @@ npx vitest run --coverage
 
 # E2E (requiere .env.test con credenciales)
 bash scripts/run-e2e-tests.sh
+# Smoke Test (Notificaciones)
+# Requiere .env.test con credenciales remotas
+wsl deno run --allow-net --allow-read --allow-env scripts/smoke-notifications.ts
 ```
 
 ---
@@ -136,4 +139,4 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de versiones.
 
 ---
 
-*Última actualización: 2026-02-04*
+*Última actualización: 2026-02-05*
