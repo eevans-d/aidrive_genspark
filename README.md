@@ -49,9 +49,9 @@ npm run test:unit # Tests unitarios (Vitest)
 │   └── migrations/        # Migraciones SQL
 │
 ├── tests/                 # Tests (Vitest)
-│   └── unit/             # 689 tests
+│   └── unit/             # 722 tests
 │
-├── docs/                  # Documentación (48 archivos)
+├── docs/                  # Documentación
 ```
 
 ---
@@ -64,7 +64,7 @@ npm run test:unit # Tests unitarios (Vitest)
 |-----------|-------------|
 | [docs/AGENTS.md](docs/AGENTS.md) | **Guía rápida para agentes IA** |
 | [docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md) | Fuente de verdad - estado actual |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Plan rolling 90 días |
+| [docs/HOJA_RUTA_MADRE_2026-01-31.md](docs/HOJA_RUTA_MADRE_2026-01-31.md) | Hoja de ruta vigente |
 | [docs/BACKLOG_PRIORIZADO.md](docs/BACKLOG_PRIORIZADO.md) | Prioridades |
 | [docs/ARCHITECTURE_DOCUMENTATION.md](docs/ARCHITECTURE_DOCUMENTATION.md) | Arquitectura |
 | [docs/API_README.md](docs/API_README.md) | Endpoints API |
@@ -79,7 +79,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | Frontend | React 18, TypeScript, Vite, Tailwind, React Query |
 | Backend | Supabase (PostgreSQL + Edge Functions Deno) |
 | Auth | Supabase Auth con JWT |
-| Testing | Vitest (689 tests) |
+| Testing | Vitest (722+ tests) |
 | CI/CD | GitHub Actions |
 
 ---
@@ -91,7 +91,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 90% (26 endpoints hardened) |
-| **Tests** | 689 passing |
+| **Tests** | 722+ passing |
 | **Build** | ✅ OK |
 
 ---
@@ -136,4 +136,4 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de versiones.
 
 ---
 
-*Última actualización: 2026-01-28*
+*Última actualización: 2026-02-04*

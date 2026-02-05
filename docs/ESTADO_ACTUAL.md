@@ -208,6 +208,8 @@
 | Páginas | 9 | Dashboard, Login, Deposito, Kardex, Productos, etc. |
 | Hooks Query | 8 | useDashboardStats, useProductos, useTareas, etc. |
 | Componentes | 3 | Layout, ErrorBoundary, ErrorMessage |
+| Libs | 5 | apiClient, supabase, roles, observability, queryClient |
+| Contexts | 2 | AuthContext.tsx, auth-context.ts |
 | **Tests Frontend (unit)** | **40** | 12 archivos en `minimarket-system/src` |
 
 ### Totales (repo)

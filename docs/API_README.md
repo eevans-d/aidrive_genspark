@@ -463,4 +463,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-01-26*
+*Última actualización: 2026-02-05*
