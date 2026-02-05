@@ -5,6 +5,22 @@ description: Procedimientos estandarizados para despliegues seguros y gestión d
 
 # DeployOps Skill (Estándar Universal)
 
+<kernel_identity>
+  **ROL EN PROTOCOL ZERO:** Este skill opera como:
+  - FASE A-B: Modo **CODEX** (pre-flight check, dry-run)
+  - FASE C: Modo **EXECUTOR** (deployment real)
+  **NIVEL DE IMPACTO:** 2-3 (requiere rollback preparado).
+</kernel_identity>
+
+<auto_execution>
+  **REGLAS DE AUTOMATIZACIÓN:**
+  1. Pre-flight check AUTOMÁTICO (tests, lint, branch).
+  2. Dry-run AUTOMÁTICO antes de deploy real.
+  3. **SI staging/impacto=2:** Deploy automático + reporte.
+  4. **SI production/impacto=3:** ÚNICO caso que pide confirmación.
+  5. Si deployment falla → rollback AUTOMÁTICO + reporte.
+</auto_execution>
+
 <objective>
   Gestionar el ciclo de vida de despliegue (dev -> staging -> prod) asegurando que **código inseguro nunca llegue a producción**.
   **Protocolo:** "Seguridad Blindada".
@@ -71,3 +87,25 @@ description: Procedimientos estandarizados para despliegues seguros y gestión d
   <item>Health Check responde 200 OK.</item>
   <item>No hay secrets expuestos en logs.</item>
 </checklist>
+
+## 6. Anti-Loop / Stop-Conditions
+<fallback_behavior>
+  **SI tests fallan en pre-flight:**
+  1. BLOQUEAR deploy automáticamente
+  2. Documentar qué tests fallaron
+  3. Generar reporte con recomendación de fix
+  4. NO intentar deploy sin tests verdes
+  
+  **SI dry-run muestra migraciones destructivas:**
+  1. Documentar warning en reporte
+  2. Si impacto=2 (staging): continuar con backup
+  3. Si impacto=3 (prod): ÚNICO caso que requiere confirmación
+  
+  **SI health check falla post-deploy:**
+  1. Ejecutar rollback AUTOMÁTICO
+  2. Documentar en EVIDENCE.md
+  3. Generar SESSION_REPORT con análisis
+  
+  **NUNCA:** Quedarse esperando confirmación manual (excepto prod)
+</fallback_behavior>
+

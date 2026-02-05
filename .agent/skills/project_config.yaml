@@ -36,9 +36,6 @@ policies:
   # Testing Thresholds
   coverage_min: 80
   
-  # Testing Thresholds
-  coverage_min: 80
-  
   # Security
   forbidden_patterns:
     - "console.log"
@@ -53,3 +50,142 @@ outputs:
   required_dirs:
     - "logs"
     - "test-reports"
+
+# === PROTOCOL ZERO: Workflow Agéntico Dual V3.0 ===
+
+reality_rules:
+  R0_reality: "No afirmar como hecho algo no verificable en el repo. Clasificar: REAL / A CREAR / PROPUESTA FUTURA"
+  R1_source_of_truth: "La verdad operativa vive en filesystem, no en chat"
+  R2_evidence: "Cada cambio relevante debe dejar rastro (qué, por qué, archivos, validación)"
+  R3_risk: "Acciones con impacto >= Nivel 2 requieren rollback explícito"
+
+impact_levels:
+  0: "Observación - no cambia nada"
+  1: "Optimización transparente - riesgo mínimo"
+  2: "Impacto controlado - requiere rollback claro"
+  3: "Crítico de negocio - requiere aprobación humana"
+
+session_config:
+  sessions_dir: ".agent/sessions"
+  archive_completed: true
+  require_evidence: true
+  max_session_hours: 4
+
+# === SISTEMA DUAL AGÉNTICO: Identidades y Auto-Detección ===
+
+roles:
+  CODEX:
+    identity: "Arquitecto + PM + Auditor. Estado FRÍO."
+    behavior: |
+      - Produce: briefing, checklist, restricciones, validaciones, consolidación documental.
+      - NO hace implementación profunda.
+      - Genera planes, no código final.
+    activates_when:
+      - "No existe SESSION_ACTIVE en .agent/sessions/current/"
+      - "Se completó una sesión (existe SESSION_COMPLETE)"
+      - "Usuario pide planificar, auditar o revisar"
+    output_artifacts:
+      - "BRIEFING.md"
+      - "POST_SESSION_REVIEW.md"
+      - "SESSION_REPORT.md"
+
+  EXECUTOR:
+    identity: "Ejecutor táctico. Estado CALIENTE."
+    behavior: |
+      - Ejecuta paso-a-paso con tracking riguroso.
+      - MÍNIMA charla, MÁXIMA ejecución.
+      - Si hay bloqueo real: registra y pide transición.
+    activates_when:
+      - "Existe SESSION_ACTIVE en .agent/sessions/current/"
+      - "El briefing está listo y aprobado"
+    output_artifacts:
+      - "EVIDENCE.md"
+      - "FILES_CHANGED.md"
+      - "SESSION_LOG.md"
+
+auto_detection:
+  description: "El agente detecta automáticamente qué rol asumir"
+  check_order:
+    - "ls .agent/sessions/current/SESSION_ACTIVE"
+    - "Si existe → EXECUTOR | Si no existe → CODEX"
+  fallback: "CODEX"
+
+kernel:
+  description: "Comportamiento core del agente"
+  rules:
+    - "Antes de responder, verificar estado de SESSION_ACTIVE"
+    - "Si no existe .agent/sessions/, actuar como CODEX y crear infraestructura"
+    - "EXECUTOR ignora debate: ejecuta checklist + deja evidencia"
+    - "CODEX no hace deep implementation: produce plan, valida, consolida"
+    - "Toda afirmación REAL debe tener evidencia (ruta, comando, screenshot)"
+    - "Toda afirmación A CREAR debe indicar por qué se necesita"
+    - "Toda PROPUESTA FUTURA es opcional y no bloquea"
+
+# === SKILL ORCHESTRATOR: Auto-Selección sin Intervención Manual ===
+
+skill_orchestrator:
+  enabled: true
+  auto_select: true
+  default_skill: "RealityCheck"
+  
+  # Patrones que activan cada skill automáticamente
+  trigger_patterns:
+    CodeCraft:
+      keywords: ["crea endpoint", "agrega pantalla", "implementa feature", "nueva función", "nuevo componente", "crea la página", "agrega el endpoint"]
+      intent: "Crear código nuevo"
+    DeployOps:
+      keywords: ["deploy", "despliega", "sube a staging", "sube a prod", "publica", "release"]
+      intent: "Desplegar a un entorno"
+    TestMaster:
+      keywords: ["ejecuta tests", "corre pruebas", "verifica tests", "run tests", "test suite"]
+      intent: "Ejecutar pruebas"
+    RealityCheck:
+      keywords: ["audita", "verifica ux", "revisa usabilidad", "analiza", "reality check", "valida flujo"]
+      intent: "Auditar sistema"
+    DocuGuard:
+      keywords: ["actualiza docs", "sincroniza documentación", "documenta", "update docs"]
+      intent: "Mantener documentación"
+
+# === SKILL GRAPH: Dependencias y Cadenas Automáticas ===
+
+skill_graph:
+  # Cadenas automáticas: skill A dispara skill B al finalizar
+  chains:
+    CodeCraft:
+      on_complete: [TestMaster, DocuGuard]
+      description: "Después de implementar, probar y documentar"
+    DeployOps:
+      pre_check: [TestMaster]
+      on_complete: [RealityCheck]
+      description: "Antes de deploy verificar tests, después smoke test"
+    RealityCheck:
+      on_complete: [DocuGuard]
+      description: "Después de auditar, sincronizar docs"
+  
+  # Dependencias duras: skill X requiere skill Y completado
+  dependencies:
+    DeployOps:
+      requires:
+        - skill: TestMaster
+          condition: "exit_code == 0"
+          message: "Tests deben pasar antes de deploy"
+
+# === FALLBACK BEHAVIOR: Nunca Esperar Input ===
+
+fallback_behavior:
+  on_uncertainty:
+    - "Usar valor/ubicación por defecto"
+    - "Documentar decisión en EVIDENCE.md"
+    - "Continuar ejecución SIN esperar input"
+    - "Reportar en SESSION_REPORT.md"
+  on_error:
+    - "Documentar error con stack trace"
+    - "Intentar recovery automático (max 2 reintentos)"
+    - "Si falla: cerrar sesión como PARCIAL"
+    - "Generar reporte con recomendaciones"
+  never_do:
+    - "Esperar input manual si impacto <= 1"
+    - "Quedarse en loop sin acción"
+    - "Preguntar si no es estrictamente necesario"
+
+
