@@ -307,6 +307,38 @@ PUT /tareas/{id}/completar         # Completar tarea
 PUT /tareas/{id}/cancelar          # Cancelar tarea
 ```
 
+### Pedidos (requiere autenticación) ✨ NUEVO
+```bash
+GET /pedidos                       # Listar pedidos (filtros: ?estado, ?estado_pago, ?fecha_desde, ?fecha_hasta)
+POST /pedidos                      # Crear pedido
+GET /pedidos/{id}                  # Detalle del pedido con items
+PUT /pedidos/{id}/estado           # Actualizar estado (pendiente → preparando → listo → entregado/cancelado)
+PUT /pedidos/{id}/pago             # Registrar pago (calcula estado_pago automáticamente)
+PUT /pedidos/items/{id}            # Marcar item como preparado/no preparado
+```
+
+**Request Body `/pedidos` (POST):**
+```json
+{
+  "cliente_nombre": "Juan Pérez",
+  "cliente_telefono": "+54 9 2262 123456",
+  "tipo_entrega": "domicilio",
+  "direccion_entrega": "Calle 123",
+  "edificio": "Torre A",
+  "piso": "2",
+  "departamento": "B",
+  "horario_entrega_preferido": "18:00-20:00",
+  "observaciones": "Llamar antes de entregar",
+  "items": [
+    {"producto_nombre": "Salchichas FELA x6", "cantidad": 2, "precio_unitario": 1500},
+    {"producto_nombre": "Queso cremoso 250g", "cantidad": 1, "precio_unitario": 2000}
+  ]
+}
+```
+
+**Estados de Pedido:** `pendiente` → `preparando` → `listo` → `entregado` | `cancelado`  
+**Estados de Pago:** `pendiente` | `parcial` | `pagado` (calculado automáticamente según monto_pagado vs monto_total)
+
 ### Reservas y Compras
 ```bash
 POST /reservas                     # Crear reserva
@@ -468,4 +500,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-02-05*
+*Última actualización: 2026-02-06*

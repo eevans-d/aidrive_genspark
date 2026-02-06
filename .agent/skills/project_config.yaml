@@ -145,6 +145,19 @@ skill_orchestrator:
     DocuGuard:
       keywords: ["actualiza docs", "sincroniza documentación", "documenta", "update docs"]
       intent: "Mantener documentación"
+    # === NUEVOS SKILLS V4.0 ===
+    MigrationOps:
+      keywords: ["aplica migración", "crear tabla", "modificar esquema", "migrar", "db push", "supabase db", "migration"]
+      intent: "Gestionar migraciones SQL"
+    DebugHound:
+      keywords: ["debug", "error", "falla", "bug", "arregla", "fix", "broken", "crash", "exception"]
+      intent: "Resolver errores y bugs"
+    PerformanceWatch:
+      keywords: ["performance", "rendimiento", "lento", "optimizar", "bundle size", "slow", "mejorar velocidad"]
+      intent: "Analizar y optimizar rendimiento"
+    APISync:
+      keywords: ["openapi", "swagger", "api spec", "documentar api", "sincronizar api", "api docs"]
+      intent: "Sincronizar OpenAPI spec"
 
 # === SKILL GRAPH: Dependencias y Cadenas Automáticas ===
 
@@ -161,6 +174,22 @@ skill_graph:
     RealityCheck:
       on_complete: [DocuGuard]
       description: "Después de auditar, sincronizar docs"
+    # === NUEVAS CADENAS V4.0 ===
+    MigrationOps:
+      on_complete: [DocuGuard]
+      description: "Después de migrar, actualizar docs de esquema"
+    DebugHound:
+      on_complete: [TestMaster]
+      description: "Después de fix, verificar que tests pasen"
+    CodeCraft:
+      on_complete: [TestMaster, DocuGuard, MigrationOps]
+      description: "Si hay nuevas tablas, ejecutar MigrationOps"
+    PerformanceWatch:
+      on_complete: [DocuGuard]
+      description: "Después de análisis, documentar métricas"
+    APISync:
+      on_complete: [DocuGuard]
+      description: "Después de sync, actualizar changelog"
   
   # Dependencias duras: skill X requiere skill Y completado
   dependencies:
@@ -169,6 +198,11 @@ skill_graph:
         - skill: TestMaster
           condition: "exit_code == 0"
           message: "Tests deben pasar antes de deploy"
+    MigrationOps:
+      requires:
+        - skill: TestMaster
+          condition: "exit_code == 0"
+          message: "Tests deben pasar antes de migrar a producción"
 
 # === FALLBACK BEHAVIOR: Nunca Esperar Input ===
 

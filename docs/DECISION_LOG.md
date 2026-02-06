@@ -67,6 +67,7 @@
 | D-060 | **Reserva atómica vía RPC** | Parcial (función deploy, DB pendiente) | 2026-02-04 | `sp_reservar_stock` aplica lock + validación de stock y `/reservas` usa RPC. **DB pendiente por red IPv6** (endpoint devuelve 503 si RPC no existe). |
 | D-061 | **Fallback sin lock si RPC no existe** | Completada (deploy) | 2026-02-04 | `cron-jobs-maxiconsumo` continúa sin lock si `sp_acquire_job_lock` no está disponible (evita caída total por DB pendiente). |
 | D-062 | **503 explícito si RPC de reservas falta** | Completada (deploy) | 2026-02-04 | `/reservas` retorna 503 cuando `sp_reservar_stock` no existe, en vez de 500 silencioso. |
+| D-063 | **Store compartido para rate limit/breaker = Supabase tabla** | Aprobada | 2026-02-06 | Decisión: usar tabla `rate_limit_state` en Supabase en vez de Redis. Trade-offs: +Simplicidad (sin infra adicional), +Costo (incluido en plan), -Latencia (~20-50ms vs ~1ms Redis). Aceptable para volumen actual (<1K rps). Si escala, migrar a Redis. Ver detalle D-063 abajo. |
 
 ---
 
@@ -247,3 +248,98 @@ Entonces migrar lecturas al gateway.
 ✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
 ⚠️ Excepción actual: `AuthContext.tsx` crea registro en `personal` al signUp (write directo)
 ✅ RLS verificada para tablas críticas (auditoría completa D-019)
+
+---
+
+## D-063: Store Compartido para Rate Limit y Circuit Breaker
+
+### Contexto
+
+Edge Functions de Deno son stateless. Cada request puede ejecutarse en una instancia diferente. La implementación actual de rate limit (`_shared/rate-limit.ts`) usa `Map` in-memory, lo que significa que:
+- **Cada instancia tiene su propio contador**
+- Un usuario puede hacer 60 req/min por instancia
+- Sin límite real en escenarios de alta concurrencia
+
+### Opciones Evaluadas
+
+| Criterio | Redis (Upstash) | Supabase Tabla |
+|----------|-----------------|----------------|
+| Latencia | ~1-5ms | ~20-50ms |
+| Costo | $0.20/100K ops | Incluido en plan |
+| Complejidad | +1 servicio, SDK | Solo SQL/RPC |
+| Escalabilidad | Excelente | Buena hasta ~10K rps |
+| Atomicidad | INCR nativo | RPC con SERIALIZABLE |
+| TTL automático | Sí (EXPIRE) | Manual (scheduled cleanup) |
+
+### Decisión
+
+**Usar tabla Supabase** para fase actual:
+
+1. **Simplicidad**: No requiere configurar Upstash ni agregar dependencias
+2. **Costo**: Ya incluido en el plan actual
+3. **Volumen**: El proyecto maneja <1K rps, latencia de 20-50ms es aceptable
+4. **Atomicidad**: Se implementa con RPC `sp_check_rate_limit` usando `SERIALIZABLE`
+
+### Implementación Propuesta
+
+```sql
+-- Tabla para rate limit compartido
+CREATE TABLE IF NOT EXISTS rate_limit_state (
+  key TEXT PRIMARY KEY,      -- 'user:{uid}' o 'ip:{ip}' o 'user:{uid}:ip:{ip}'
+  count INTEGER DEFAULT 0,
+  window_start TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RPC atómico para check + increment
+CREATE OR REPLACE FUNCTION sp_check_rate_limit(
+  p_key TEXT,
+  p_limit INTEGER DEFAULT 60,
+  p_window_seconds INTEGER DEFAULT 60
+) RETURNS TABLE(allowed BOOLEAN, remaining INTEGER, reset_at TIMESTAMPTZ)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count INTEGER;
+  v_window_start TIMESTAMPTZ;
+BEGIN
+  -- UPSERT atómico
+  INSERT INTO rate_limit_state (key, count, window_start)
+  VALUES (p_key, 1, NOW())
+  ON CONFLICT (key) DO UPDATE SET
+    count = CASE
+      WHEN rate_limit_state.window_start + (p_window_seconds || ' seconds')::INTERVAL < NOW()
+      THEN 1  -- Reset window
+      ELSE rate_limit_state.count + 1
+    END,
+    window_start = CASE
+      WHEN rate_limit_state.window_start + (p_window_seconds || ' seconds')::INTERVAL < NOW()
+      THEN NOW()
+      ELSE rate_limit_state.window_start
+    END,
+    updated_at = NOW()
+  RETURNING count, window_start INTO v_count, v_window_start;
+
+  RETURN QUERY SELECT
+    v_count <= p_limit AS allowed,
+    GREATEST(0, p_limit - v_count) AS remaining,
+    v_window_start + (p_window_seconds || ' seconds')::INTERVAL AS reset_at;
+END;
+$$;
+```
+
+### Migración a Redis (futuro)
+
+Si el proyecto escala >10K rps:
+1. Configurar Upstash Redis
+2. Usar SDK `@upstash/redis` en Edge Functions
+3. Mantener tabla Supabase como fallback
+
+### Validación
+
+- [ ] Crear migración con tabla y RPC
+- [ ] Modificar `_shared/rate-limit.ts` para usar RPC
+- [ ] Tests de concurrencia para verificar atomicidad
+- [ ] Benchmark de latencia en producción
+

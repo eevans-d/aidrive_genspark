@@ -1,16 +1,17 @@
 # Esquema de Base de Datos - Sistema Mini Market
-**Actualizado:** 2025-10-31 (Post FASE 1)
+**Actualizado:** 2026-02-06 (Post Sistema Pedidos)
 
 ## 📊 Resumen Ejecutivo
 
 | Métrica | Valor |
 |---------|-------|
-| **Tablas principales** | 11 |
-| **Total campos** | 120+ |
-| **Índices custom** | 12 |
-| **Constraints CHECK** | 40+ |
-| **Foreign Keys** | 4 |
-| **Tamaño total** | ~700 KB |
+| **Tablas principales** | 14 |
+| **Total campos** | 180+ |
+| **Índices custom** | 16 |
+| **Constraints CHECK** | 50+ |
+| **Foreign Keys** | 8 |
+| **Stored Procedures** | 3 |
+| **Tamaño total** | ~850 KB |
 
 ---
 
@@ -612,6 +613,123 @@ TABLE (
 
 ---
 
+## 🛒 Sistema de Pedidos (NUEVO - 2026-02-06)
+
+### clientes
+**Propósito:** Datos de clientes para pedidos recurrentes
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| nombre | VARCHAR(100) | Nombre completo del cliente |
+| telefono | VARCHAR(30) | Teléfono de contacto |
+| email | VARCHAR(255) | Email (opcional) |
+| direccion_default | TEXT | Dirección predeterminada |
+| notas | TEXT | Notas sobre el cliente |
+| activo | BOOLEAN | Estado del cliente |
+| created_at | TIMESTAMPTZ | Fecha de creación |
+| updated_at | TIMESTAMPTZ | Última modificación |
+
+**Índices:**
+- `idx_clientes_telefono` (búsqueda rápida por teléfono)
+- `idx_clientes_activo` (parcial: WHERE activo = TRUE)
+
+**RLS:** Políticas por `user_id` para CRUD completo.
+
+---
+
+### pedidos
+**Propósito:** Registro de pedidos con estados y pagos
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| numero_pedido | SERIAL | Número secuencial único |
+| cliente_id | UUID | FK → clientes(id) (opcional) |
+| cliente_nombre | VARCHAR(100) | Nombre del cliente |
+| cliente_telefono | VARCHAR(30) | Teléfono (opcional) |
+| estado | VARCHAR(20) | pendiente\|preparando\|listo\|entregado\|cancelado |
+| tipo_entrega | VARCHAR(20) | retiro\|domicilio |
+| direccion_entrega | TEXT | Dirección para domicilio |
+| edificio | VARCHAR(100) | Edificio/torre (opcional) |
+| piso | VARCHAR(10) | Piso (opcional) |
+| departamento | VARCHAR(10) | Depto (opcional) |
+| horario_entrega_preferido | VARCHAR(50) | Horario preferido |
+| monto_total | DECIMAL(12,2) | Total del pedido |
+| monto_pagado | DECIMAL(12,2) | Monto abonado (default 0) |
+| estado_pago | VARCHAR(20) | pendiente\|parcial\|pagado |
+| observaciones | TEXT | Observaciones generales |
+| fecha_pedido | TIMESTAMPTZ | Fecha/hora de creación |
+| fecha_preparado | TIMESTAMPTZ | Fecha de preparación completa |
+| fecha_entregado | TIMESTAMPTZ | Fecha de entrega |
+| cancelado_por_id | UUID | Usuario que canceló |
+| motivo_cancelacion | TEXT | Razón de cancelación |
+| transcripcion_texto | TEXT | Transcripción speech-to-text |
+| created_at | TIMESTAMPTZ | Creación en sistema |
+| updated_at | TIMESTAMPTZ | Última modificación |
+
+**Índices:**
+- `idx_pedidos_numero` (UNIQUE)
+- `idx_pedidos_estado` (filtrado por estado)
+- `idx_pedidos_fecha` (ordenamiento temporal)
+- `idx_pedidos_cliente_id` (búsqueda por cliente)
+
+**RLS:** Políticas por `user_id` para lectura/escritura.
+
+---
+
+### detalle_pedidos
+**Propósito:** Items individuales de cada pedido
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| pedido_id | UUID | FK → pedidos(id) ON DELETE CASCADE |
+| producto_id | UUID | FK → productos(id) (opcional) |
+| producto_nombre | VARCHAR(255) | Nombre del producto |
+| producto_sku | VARCHAR(50) | SKU del producto (opcional) |
+| cantidad | INTEGER | Cantidad (CHECK > 0) |
+| precio_unitario | DECIMAL(12,2) | Precio por unidad |
+| subtotal | DECIMAL(12,2) | Generated: cantidad * precio_unitario |
+| observaciones | TEXT | Notas del ítem (ej: "sin sal") |
+| preparado | BOOLEAN | Item preparado (default false) |
+| preparado_por_id | UUID | Usuario que preparó |
+| fecha_preparado | TIMESTAMPTZ | Cuándo se preparó |
+| created_at | TIMESTAMPTZ | Fecha de creación |
+
+**Índices:**
+- `idx_detalle_pedido_id` (FK lookup)
+- `idx_detalle_producto_id` (FK lookup)
+- `idx_detalle_preparado` (filtrado de pendientes)
+
+**RLS:** Heredado de pedidos (cascade).
+
+---
+
+### Stored Procedures de Pedidos
+
+#### sp_crear_pedido
+**Propósito:** Creación atómica de pedido con detalles  
+**Tipo:** SECURITY DEFINER  
+**Uso:**
+```sql
+SELECT sp_crear_pedido(
+  p_cliente_nombre := 'Juan Pérez',
+  p_tipo_entrega := 'domicilio',
+  p_direccion_entrega := 'Calle 123',
+  p_edificio := NULL,
+  p_piso := '2',
+  p_departamento := 'A',
+  p_horario_preferido := '18:00-20:00',
+  p_observaciones := 'Llamar antes',
+  p_items := '[{"producto_nombre":"Salchichas","cantidad":2,"precio_unitario":1500}]'::jsonb,
+  p_transcripcion := NULL
+);
+```
+**Retorna:** `{success, pedido_id, numero_pedido}`
+
+---
+
 ## 📝 Notas Técnicas
 
 ### Performance
@@ -631,6 +749,6 @@ TABLE (
 
 ---
 
-**Última actualización:** 2025-10-31  
-**Versión:** Post-FASE 1  
+**Última actualización:** 2026-02-06  
+**Versión:** Post-Sistema Pedidos  
 **Estado:** Producción estable

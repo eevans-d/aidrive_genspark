@@ -17,6 +17,7 @@ const Stock = lazy(() => import('./pages/Stock'))
 const Tareas = lazy(() => import('./pages/Tareas'))
 const Productos = lazy(() => import('./pages/Productos'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
+const Pedidos = lazy(() => import('./pages/Pedidos'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -135,6 +136,16 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Proveedores />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/pedidos"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Pedidos />
               </Layout>
             </ProtectedRoute>
           }

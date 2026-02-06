@@ -1,12 +1,15 @@
 /**
  * API Client for minimarket gateway
- * @description Handles authenticated requests to the api-minimarket gateway
+ * @description Handles authenticated requests to the api-minimarket gateway with timeout support
  */
 
 import { supabase } from './supabase';
 
 const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL || '/api-minimarket';
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || import.meta.env.VITE_USE_MOCKS === '1';
+
+/** Default request timeout in milliseconds (30 seconds) */
+const DEFAULT_TIMEOUT_MS = 30_000;
 
 export interface ApiResponse<T = unknown> {
         success: boolean;
@@ -35,6 +38,19 @@ export class ApiError extends Error {
         }
 }
 
+/**
+ * Error thrown when a request times out
+ */
+export class TimeoutError extends Error {
+        constructor(
+                public timeoutMs: number,
+                public endpoint: string
+        ) {
+                super(`La solicitud a ${endpoint} excedió el tiempo límite (${timeoutMs / 1000}s). Por favor, intente de nuevo.`);
+                this.name = 'TimeoutError';
+        }
+}
+
 const ensureArray = <T>(value: unknown): T[] => {
         return Array.isArray(value) ? (value as T[]) : [];
 };
@@ -47,13 +63,22 @@ async function getAuthToken(): Promise<string | null> {
         return session?.access_token ?? null;
 }
 
+export interface ApiRequestOptions extends Omit<RequestInit, 'signal'> {
+        /** Request timeout in milliseconds. Defaults to 30s. Set to 0 to disable. */
+        timeoutMs?: number;
+        /** Custom AbortSignal for manual cancellation */
+        signal?: AbortSignal;
+}
+
 /**
- * Make authenticated request to the gateway
+ * Make authenticated request to the gateway with timeout support
  */
 async function apiRequest<T>(
         endpoint: string,
-        options: RequestInit = {}
+        options: ApiRequestOptions = {}
 ): Promise<T> {
+        const { timeoutMs = DEFAULT_TIMEOUT_MS, signal: externalSignal, ...fetchOptions } = options;
+
         const token = await getAuthToken();
 
         if (!token) {
@@ -63,26 +88,60 @@ async function apiRequest<T>(
         const headers: Record<string, string> = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
-                ...(options.headers as Record<string, string> || {}),
+                ...(fetchOptions.headers as Record<string, string> || {}),
         };
 
-        const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-                ...options,
-                headers,
-        });
+        // Setup timeout with AbortController
+        const controller = new AbortController();
+        let timeoutId: ReturnType<typeof setTimeout> | undefined;
 
-        const json: ApiResponse<T> = await response.json();
-
-        if (!response.ok || !json.success) {
-                throw new ApiError(
-                        json.error?.code || 'API_ERROR',
-                        json.error?.message || 'Request failed',
-                        response.status,
-                        json.error?.details
-                );
+        // Combine external signal with timeout signal
+        const handleExternalAbort = () => controller.abort();
+        if (externalSignal) {
+                externalSignal.addEventListener('abort', handleExternalAbort);
         }
 
-        return json.data as T;
+        if (timeoutMs > 0) {
+                timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+        }
+
+        try {
+                const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+                        ...fetchOptions,
+                        headers,
+                        signal: controller.signal,
+                });
+
+                const json: ApiResponse<T> = await response.json();
+
+                if (!response.ok || !json.success) {
+                        throw new ApiError(
+                                json.error?.code || 'API_ERROR',
+                                json.error?.message || 'Request failed',
+                                response.status,
+                                json.error?.details
+                        );
+                }
+
+                return json.data as T;
+        } catch (error) {
+                // Handle abort/timeout
+                if (error instanceof Error && error.name === 'AbortError') {
+                        if (externalSignal?.aborted) {
+                                throw new ApiError('REQUEST_CANCELLED', 'La solicitud fue cancelada', 0);
+                        }
+                        throw new TimeoutError(timeoutMs, endpoint);
+                }
+                throw error;
+        } finally {
+                // Cleanup
+                if (timeoutId !== undefined) {
+                        clearTimeout(timeoutId);
+                }
+                if (externalSignal) {
+                        externalSignal.removeEventListener('abort', handleExternalAbort);
+                }
+        }
 }
 
 export interface DropdownItem {
@@ -285,9 +344,142 @@ export const depositoApi = {
         },
 };
 
+// =============================================================================
+// PEDIDOS API
+// =============================================================================
+
+export interface PedidoItem {
+        id?: string;
+        producto_id?: string;
+        producto_nombre: string;
+        producto_sku?: string;
+        cantidad: number;
+        precio_unitario: number;
+        subtotal?: number;
+        preparado?: boolean;
+        observaciones?: string;
+}
+
+export interface PedidoResponse {
+        id: string;
+        numero_pedido: number;
+        cliente_id?: string;
+        cliente_nombre: string;
+        cliente_telefono?: string;
+        tipo_entrega: 'retiro' | 'domicilio';
+        direccion_entrega?: string;
+        edificio?: string;
+        piso?: string;
+        departamento?: string;
+        horario_entrega_preferido?: string;
+        estado: 'pendiente' | 'preparando' | 'listo' | 'entregado' | 'cancelado';
+        estado_pago: 'pendiente' | 'pagado' | 'parcial';
+        monto_total: number;
+        monto_pagado: number;
+        observaciones?: string;
+        fecha_pedido: string;
+        fecha_entrega_estimada?: string;
+        fecha_entregado?: string;
+        detalle_pedidos?: PedidoItem[];
+}
+
+export interface CreatePedidoParams {
+        cliente_nombre: string;
+        cliente_telefono?: string;
+        cliente_id?: string;
+        tipo_entrega: 'retiro' | 'domicilio';
+        direccion_entrega?: string;
+        edificio?: string;
+        piso?: string;
+        departamento?: string;
+        horario_entrega_preferido?: string;
+        observaciones?: string;
+        items: Omit<PedidoItem, 'id' | 'subtotal' | 'preparado'>[];
+}
+
+export interface UpdateEstadoParams {
+        id: string;
+        estado: PedidoResponse['estado'];
+}
+
+export interface UpdatePagoParams {
+        id: string;
+        monto_pagado: number;
+}
+
+export interface UpdateItemPreparadoParams {
+        itemId: string;
+        preparado: boolean;
+}
+
+export interface PedidosListResponse {
+        pedidos: PedidoResponse[];
+        total: number;
+}
+
+export const pedidosApi = {
+        /**
+         * Listar pedidos con filtros
+         */
+        async list(params: Record<string, string> = {}): Promise<PedidosListResponse> {
+                const queryString = new URLSearchParams(params).toString();
+                const endpoint = queryString ? `/pedidos?${queryString}` : '/pedidos';
+                const pedidos = await apiRequest<PedidoResponse[]>(endpoint);
+                return { pedidos, total: pedidos.length };
+        },
+
+        /**
+         * Obtener pedido por ID
+         */
+        async get(id: string): Promise<PedidoResponse> {
+                return apiRequest<PedidoResponse>(`/pedidos/${id}`);
+        },
+
+        /**
+         * Crear nuevo pedido
+         */
+        async create(params: CreatePedidoParams): Promise<{ pedido_id: string; numero_pedido: number }> {
+                return apiRequest<{ pedido_id: string; numero_pedido: number }>('/pedidos', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        /**
+         * Actualizar estado del pedido
+         */
+        async updateEstado(id: string, estado: PedidoResponse['estado']): Promise<PedidoResponse> {
+                return apiRequest<PedidoResponse>(`/pedidos/${id}/estado`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ estado }),
+                });
+        },
+
+        /**
+         * Registrar pago
+         */
+        async updatePago(id: string, monto_pagado: number): Promise<PedidoResponse> {
+                return apiRequest<PedidoResponse>(`/pedidos/${id}/pago`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ monto_pagado }),
+                });
+        },
+
+        /**
+         * Marcar item como preparado/no preparado
+         */
+        async updateItemPreparado(itemId: string, preparado: boolean): Promise<PedidoItem> {
+                return apiRequest<PedidoItem>(`/pedidos/items/${itemId}/preparado`, {
+                        method: 'PUT',
+                        body: JSON.stringify({ preparado }),
+                });
+        },
+};
+
 export default {
         tareas: tareasApi,
         deposito: depositoApi,
         productos: productosApi,
         proveedores: proveedoresApi,
+        pedidos: pedidosApi,
 };

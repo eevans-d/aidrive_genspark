@@ -5,7 +5,21 @@
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
 
-**Nuevo:** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Smoke test notificaciones (read-only): `node scripts/smoke-notifications.mjs`.
+**Nuevo (2026-02-06 sesión tarde):**
+- ✅ **Sistema de Pedidos implementado:**
+  - 3 migraciones SQL aplicadas: `clientes`, `pedidos`, `detalle_pedidos` + SP `sp_crear_pedido`.
+  - Handler backend: `supabase/functions/api-minimarket/handlers/pedidos.ts` (6 funciones).
+  - 7 rutas API: GET/POST `/pedidos`, GET `/pedidos/{id}`, PUT `/pedidos/{id}/estado`, PUT `/pedidos/{id}/pago`, PUT `/pedidos/items/{id}`.
+  - Frontend: `minimarket-system/src/pages/Pedidos.tsx` (706 líneas), hook `usePedidos.ts`, ruta en `App.tsx`, nav en `Layout.tsx`.
+  - OpenAPI spec actualizado: +460 líneas, 4 schemas (`Cliente`, `Pedido`, `DetallePedido`, `CrearPedidoRequest`), tag `Pedidos`.
+  - Tests: `tests/unit/pedidos-handlers.test.ts` (32 tests).
+- ✅ **Skills Agénticos optimizados (V4.0):**
+  - 4 nuevos skills: `MigrationOps`, `DebugHound`, `PerformanceWatch`, `APISync`.
+  - Total skills operativos: 9.
+  - `project_config.yaml` actualizado con trigger patterns y skill graph.
+- ✅ Build frontend verificado: `npm run build` → 166.16 kB (gzip: 52.67 kB).
+
+**Nuevo (previo):** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Smoke test notificaciones (read-only): `node scripts/smoke-notifications.mjs`.
 
 **Auditoría local (2026-02-06):**
 - ✅ `npm run test:unit` — PASS (696 tests).
@@ -143,13 +157,13 @@
 - Registrar evidencia final del **Preflight Pre-Mortem** (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`). *(Suites ejecutadas local 2026-02-06; faltan capturas Dashboard si aplica).*
 
 **Checklist próximas 20 tareas/pasos (priorizado, 2026-02-06):**
-- [ ] P0: Alinear contrato de `POST /reservas` (header `Idempotency-Key` obligatorio) y ejemplos de uso (docs + clientes).
+- [x] P0: Alinear contrato de `POST /reservas` (header `Idempotency-Key` obligatorio) y ejemplos de uso (docs + clientes). *(Completado 2026-02-06: API_README.md + OpenAPI)*
 - [ ] P0: Agregar tests de integración reales para `/reservas` (idempotencia + 409 + concurrencia) en `tests/integration/`.
 - [ ] P0: Agregar smoke E2E mínimo para `/reservas` (create + idempotent) y registrar evidencia en `test-reports/`.
-- [ ] P0: Investigar y corregir `api-proveedor/health` en estado `unhealthy` (DB/scraper) o documentar degradación/SLO.
-- [ ] P1: Extender `docs/api-openapi-3.1.yaml` para incluir `/tareas`, `/reservas`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`.
-- [ ] P1: Implementar timeout + abort + mensaje UX en `minimarket-system/src/lib/apiClient.ts` (AbortController).
-- [ ] P1: Definir store compartido para rate limit/breaker (Redis vs tabla Supabase) y registrar decisión en `docs/DECISION_LOG.md`.
+- [x] P0: Investigar y corregir `api-proveedor/health` en estado `unhealthy` (DB/scraper) o documentar degradación/SLO. *(Completado 2026-02-06: es comportamiento esperado sin datos scraping)*
+- [x] P1: Extender `docs/api-openapi-3.1.yaml` para incluir `/tareas`, `/reservas`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`. *(Completado 2026-02-06: +297 líneas)*
+- [x] P1: Implementar timeout + abort + mensaje UX en `minimarket-system/src/lib/apiClient.ts` (AbortController). *(Completado 2026-02-06: 30s default, TimeoutError class)*
+- [x] P1: Definir store compartido para rate limit/breaker (Redis vs tabla Supabase) y registrar decisión en `docs/DECISION_LOG.md`. *(Completado 2026-02-06: D-063 tabla Supabase)*
 - [ ] P1: Implementar rate limit compartido (WS3) con claves `userId + ip` y fallback seguro si IP es `unknown`.
 - [ ] P1: Implementar circuit breaker compartido/persistente (WS3) con expiración y métricas.
 - [ ] P1: Auth resiliente (WS4): cache de validación `/auth/v1/user` o verificación local JWT; revisar viabilidad de volver `verify_jwt=true`.
