@@ -59,6 +59,7 @@ import {
   getProductosDropdown,
   getProveedoresDropdown,
 } from './handlers/utils.ts';
+import { handleCreateReserva } from './handlers/reservas.ts';
 
 const logger = createLogger('api-minimarket');
 
@@ -1466,72 +1467,18 @@ Deno.serve(async (req) => {
       const bodyResult = await parseJsonBody();
       if (bodyResult instanceof Response) return bodyResult;
 
-      const { producto_id, cantidad, referencia, deposito } = bodyResult as Record<string, unknown>;
-
-      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
-        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
-      }
-
-      const cantidadNumero = parsePositiveInt(cantidad);
-      if (cantidadNumero === null) {
-        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
-      }
-
-      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
-      const referenciaValue =
-        typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
-      const idempotencyKey = req.headers.get('idempotency-key')?.trim() || null;
-
-      if (!idempotencyKey) {
-        logger.warn('IDEMPOTENCY_KEY_MISSING', {
-          requestId,
-          path,
-          clientIp,
-          userId: user?.id,
-        });
-      }
-
-      try {
-        const result = await callFunction(supabaseUrl, 'sp_reservar_stock', requestHeaders(), {
-          p_producto_id: producto_id,
-          p_cantidad: cantidadNumero,
-          p_usuario: user!.id,
-          p_referencia: referenciaValue,
-          p_deposito: depositoValue,
-          p_idempotency_key: idempotencyKey,
-        });
-
-        const payload = result as Record<string, unknown>;
-        const reserva = (payload?.reserva as Record<string, unknown>) || payload;
-        const idempotent = Boolean(payload?.idempotent);
-        const stockDisponible = payload?.stock_disponible;
-
-        return respondOk(reserva, idempotent ? 200 : 201, {
-          message: idempotent ? 'Reserva ya existente (idempotente)' : 'Reserva creada exitosamente',
-          extra: {
-            idempotent,
-            stock_disponible: stockDisponible,
-          },
-        });
-      } catch (error) {
-        if (isAppError(error) && (error.code === 'UNDEFINED_FUNCTION' || error.code === 'POSTGREST_NOT_FOUND')) {
-          logger.error('RESERVA_RPC_MISSING', { requestId, path, error: error.message });
-          return respondFail(
-            'RESERVA_UNAVAILABLE',
-            'Reserva temporalmente no disponible. Intente nuevamente más tarde.',
-            503,
-          );
-        }
-        if (isAppError(error) && error.code === 'RAISE_EXCEPTION' && error.message === 'INSUFFICIENT_STOCK') {
-          return respondFail(
-            'INSUFFICIENT_STOCK',
-            'Stock disponible insuficiente para la reserva',
-            409,
-          );
-        }
-
-        throw error;
-      }
+      return await handleCreateReserva({
+        supabaseUrl,
+        userId: user!.id,
+        requestId,
+        clientIp,
+        body: bodyResult as Record<string, unknown>,
+        idempotencyKeyRaw: req.headers.get('idempotency-key'),
+        requestHeaders,
+        respondOk,
+        respondFail,
+        logger,
+      });
     }
 
     // 22. POST /reservas/:id/cancelar - Cancelar reserva

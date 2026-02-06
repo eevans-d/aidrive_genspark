@@ -1,5 +1,35 @@
 # Build Verification Report
 
+## Addendum 2026-02-06 (Auditoría local)
+
+**Branch:** `chore/closure-prep-20260202`  
+**Estado:** EJECUTADO (gates + smokes OK; SQL directo DB sigue bloqueado por IPv6 en este host)
+
+**Entorno local:**
+- Node: v20.20.0
+- pnpm: 9.15.9
+- Deno: no disponible en PATH (no se re-ejecutó `deno check` en este host)
+
+**Quality Gates (2026-02-06):**
+- ✅ Unit: `npm run test:unit` → 37 files / 696 tests.
+- ✅ Coverage: `npm run test:coverage` → 69.39% lines.
+- ✅ Auxiliary: `npm run test:auxiliary` → 29 passed / 3 skipped (gated).
+- ✅ Integration: `npm run test:integration` → 38 tests (suite basada mayormente en mocks de fetch).
+- ✅ E2E backend smoke: `npm run test:e2e` → 4 tests (real network).
+- ✅ Smoke notificaciones: `node scripts/smoke-notifications.mjs` → 200 OK (`/channels`, `/templates`).
+- ✅ Frontend: `pnpm -C minimarket-system lint` / `build` / `test:components` → OK.
+
+**Evidencia local generada:**
+- `test-reports/junit.xml`
+- `test-reports/junit.auxiliary.xml`
+- `test-reports/junit.integration.xml`
+- `test-reports/junit.e2e.xml`
+- `coverage/`
+
+Notas:
+- `test-reports/` y `coverage/` están en `.gitignore` (evidencia por ejecución).
+- `psql` a `db.<ref>.supabase.co:5432` falla desde este host (IPv6 `Network is unreachable`); usar SQL Editor en Dashboard para checks SQL.
+
 ## Pre-cierre 2026-02-03 (EJECUTADO)
 
 **Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  

@@ -314,6 +314,11 @@ POST /reservas/{id}/cancelar       # Cancelar reserva
 POST /compras/recepcion            # Registrar recepción de OC
 ```
 
+**Notas `/reservas` (hardening WS1):**
+- Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
+- La respuesta incluye campos top-level `idempotent` y `stock_disponible`.
+- Errores esperados: `400 IDEMPOTENCY_KEY_REQUIRED` si falta el header; `409 INSUFFICIENT_STOCK` si no hay stock disponible; `503 RESERVA_UNAVAILABLE` si el RPC `sp_reservar_stock` no está disponible.
+
 ### Reportes
 ```bash
 GET /reportes/efectividad-tareas   # Métricas de tareas

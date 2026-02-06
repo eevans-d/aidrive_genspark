@@ -29,7 +29,7 @@
 El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01, **histórico**; re‑abierto 2026-02-02). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
+- **736 tests unitarios** (raíz 696 + frontend 40; última corrida 2026-02-06) ✅
 - **Suite de seguridad: 14 tests definidos** ✅
 - **Migraciones versionadas en repo (16 archivos)** ✅
 - **13 Edge Functions en repo** ✅
@@ -114,9 +114,10 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - Logging: todos los handlers migrados a `_shared/logger`
   - Hardening: timing-safe comparison, validación origen interno
 
-- [x] **scraper-maxiconsumo** (3212 → 9 módulos) ✅ Verificado 2026-01-23
-  - types.ts, config.ts, cache.ts, anti-detection.ts
-  - parsing.ts, matching.ts, storage.ts, scraping.ts
+- [x] **scraper-maxiconsumo** (3212 → modular: 10 módulos + utils/) ✅ Verificado 2026-02-06
+  - index.ts, types.ts, config.ts, cache.ts, anti-detection.ts
+  - parsing.ts, matching.ts, alertas.ts, storage.ts, scraping.ts
+  - utils/ (helpers internos)
   - Tests: reales (imports de módulos) - 10+ tests parsing, 9+ matching
   - Logging: 8 módulos con `_shared/logger`
   - Validación runtime: implementada en alertas.ts (buildAlertasDesdeComparaciones)
@@ -132,7 +133,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - Validación runtime: implementada en validators.ts (38 tests)
 
 ### F4: Testing
-- [x] Framework: Vitest 4.0.16
+- [x] Framework: Vitest 4.0.18
 - [x] Coverage: @vitest/coverage-v8
 - [x] Runner/scripts: `package.json` y `test.sh` alineados con Vitest
 - [x] Tests reales: imports de módulos reales (parsing/matching/alertas/router/cron)
@@ -224,8 +225,8 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 | Métrica | Antes | Después (2026-02-01, conteo repo) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios definidos | ~10 | **722** (Backend 682 + Frontend 40) ✅ |
-| Tests archivos (unit) | 5 | **47** (backend 35 + frontend 12) ✅ |
+| Tests unitarios | ~10 | **736** (raíz 696 + frontend 40; 2026-02-06) ✅ |
+| Tests archivos (unit) | 5 | **49** (raíz 37 + frontend 12; 2026-02-06) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 7 módulos `_shared/` (adopción parcial) |
@@ -247,47 +248,27 @@ supabase/functions/
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
 ├── api-minimarket/       # Gateway principal (HARDENED)
-│   ├── index.ts          # 1357 líneas (refactorizado)
-│   └── helpers/          # NUEVO - Helpers modularizados
+│   ├── index.ts          # Gateway (29 endpoints)
+│   ├── handlers/         # Handlers puntuales (ej: reservas)
+│   ├── routers/          # Routers por dominio (productos/stock/deposito/tareas)
+│   └── helpers/          # Helpers modularizados
 │       ├── auth.ts       # JWT auth, roles
 │       ├── validation.ts # UUID, dates, required fields
 │       ├── pagination.ts # Parsing, range headers
 │       ├── supabase.ts   # Client creation, queries
 │       └── index.ts      # Barrel export
-├── api-proveedor/        # Modular (router + handlers + utils)
-├── scraper-maxiconsumo/  # Modular (9 módulos especializados)
+├── api-proveedor/        # Modular (router + handlers + schemas + utils)
+├── scraper-maxiconsumo/  # Modular (10 módulos TS + utils/)
 ├── cron-jobs-maxiconsumo/# Modular (4 jobs + orchestrator)
 └── [otras funciones]/    # Adoptan _shared progresivamente
 
-tests/unit/
-├── api-proveedor-routing.test.ts  # 17 tests
-├── scraper-parsing.test.ts        # 10 tests
-├── scraper-matching.test.ts       # 9 tests
-├── scraper-alertas.test.ts        # 3 tests
-├── scraper-cache.test.ts          # tests de cache
-├── scraper-config.test.ts         # tests de config
-├── scraper-cookie-jar.test.ts     # tests de cookies
-├── cron-jobs.test.ts              # 8 tests
-├── response-fail-signature.test.ts # tests de respuesta
-└── api-minimarket-gateway.test.ts # 46 tests (auth, validation, pagination, supabase, CORS, rate limit)
-
-tests/integration/        # (gated - requiere env vars)
-├── api-scraper.integration.test.ts
-└── database.integration.test.ts
-
-tests/e2e/                # (manual via workflow_dispatch)
-├── api-proveedor.smoke.test.ts
-└── cron.smoke.test.ts
-
-tests/performance/        # (Vitest mock)
-├── README.md             # Nota de estado
-└── load-testing.vitest.test.ts
-
-tests/security/           # (Vitest mock)
-├── README.md             # Nota de estado
-└── security.vitest.test.ts
-
-tests/api-contracts/      # (Vitest mock)
+tests/
+├── unit/                 # 37 archivos / 696 tests (2026-02-06)
+├── integration/          # 3 archivos / 38 tests (gated)
+├── e2e/                  # 2 archivos / 4 smoke tests
+├── security/             # suite auxiliar (gated)
+├── performance/          # suite auxiliar
+└── api-contracts/        # suite auxiliar
 ├── README.md             # Nota de estado
 └── openapi-compliance.vitest.test.ts
 

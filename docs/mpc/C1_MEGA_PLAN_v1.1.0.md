@@ -99,8 +99,8 @@
 
 
 **Comandos exactos (M1)**
-- `rg -n "Tests unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar 682/40; conteo repo).
-- `find tests/unit -maxdepth 1 -type f -name '*.test.*' | wc -l` (esperado: 33).
+- `rg -n "Tests unitarios" docs/ESTADO_ACTUAL.md` (debe reflejar conteo vigente).
+- `find tests/unit -maxdepth 2 -type f -name '*.test.*' | wc -l` (esperado: 37; 2026-02-06).
 - `find minimarket-system/src -type f -name '*.test.tsx' | wc -l` (esperado: 12).
 - `rg -n "aidrive_genspark" docs` (no debe haber referencias a nombres antiguos).
 
@@ -205,7 +205,7 @@
 **Checklist de ejecución**
 | ID | Tarea | Estado | Evidencia |
 |---|---|---|---|
-| M6-T1 | Unit tests (conteo repo) 722 | ✅ | `test-reports/junit.xml` |
+| M6-T1 | Unit tests (conteo: ver `docs/ESTADO_ACTUAL.md`) | ✅ | `test-reports/junit.xml` |
 | M6-T2 | Integration 38 definidos (gated) | ✅ | `tests/integration` |
 | M6-T3 | E2E backend smoke 4/4 | ✅ | `tests/e2e/*.smoke.test.ts` |
 | M6-T4 | E2E auth real 10 definidos (2 skip) | ✅ | `minimarket-system/e2e/auth.real.spec.ts` |

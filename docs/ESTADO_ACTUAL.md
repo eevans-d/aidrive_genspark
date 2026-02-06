@@ -1,28 +1,45 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-05  
+**Última actualización:** 2026-02-06  
 **Estado:** ✅ OPERATIVO (Hardening WS1/WS2/WS5 completado en repo y tests)
 
-**Nuevo:** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Scripts de smoke test (`scripts/smoke-notifications.ts`).
+**Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
+
+**Nuevo:** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Smoke test notificaciones (read-only): `node scripts/smoke-notifications.mjs`.
+
+**Auditoría local (2026-02-06):**
+- ✅ `npm run test:unit` — PASS (696 tests).
+- ✅ `npm run test:coverage` — PASS (lines 69.39%, v8).
+- ⚠️ `deno` no está disponible en PATH en este host; no se re-ejecutó `deno check` (última evidencia 2026-02-03).
+- ✅ `npm run test:auxiliary` — PASS (29 tests; 3 skipped por credenciales).
+- ✅ `npm run test:integration` — PASS (38 tests).
+- ℹ️ Nota: `tests/integration/` hoy valida principalmente flujos con mocks (`global.fetch = vi.fn()`); la validación real-network está en `tests/e2e/` y smoke scripts.
+- ✅ `npm run test:e2e` — PASS (4 smoke).
+- ✅ `pnpm -C minimarket-system lint` — OK.
+- ✅ `pnpm -C minimarket-system build` — OK.
+- ✅ `pnpm -C minimarket-system test:components` — PASS (40 tests).
+- ✅ `node scripts/smoke-notifications.mjs` — 200 OK (`/channels`, `/templates`).
+- 🔧 `POST /reservas` ahora **requiere** header `Idempotency-Key` (400 si falta) y delega lógica a `supabase/functions/api-minimarket/handlers/reservas.ts`.
+- ⚠️ `psql` a `db.<ref>.supabase.co:5432` desde este host: **Network is unreachable (IPv6)** (bloquea checks SQL del preflight).
 
 **Preflight Premortem (2026-02-05):**
 - `supabase functions list` OK. `api-minimarket` con `verify_jwt=false`; resto de funciones `verify_jwt=true`.
 - `supabase secrets list` OK.
 - Healthcheck `/functions/v1/api-minimarket/health` OK (200).
-- **Smoke Test Notificaciones:** Validado envío a endpoint remoto (respuesta 401 confirmando deploy, script con credenciales OK).
+- **Smoke Test Notificaciones:** `cron-notifications` responde OK en endpoints read-only (`/channels`, `/templates`) con `SUPABASE_ANON_KEY` (ver auditoría 2026-02-06).
 - **Migraciones DB:** Aplicadas manualmente en remoto (WS1/WS2 confirmadas).
-- Pendiente: healthcheck `api-proveedor` (requiere Authorization).
+- Pendiente: estabilizar healthcheck `api-proveedor` (requiere Authorization; actualmente reporta `status=unhealthy`).
 
 **Cambios en repo (2026-02-04) — estado deploy mixto:**
 - Nueva migración `20260204100000_add_idempotency_stock_reservado.sql` (idempotency en reservas).
 - Nueva migración `20260204110000_add_cron_job_locks.sql` (locks distribuidos para cron jobs).
 - Nueva migración `20260204120000_add_sp_reservar_stock.sql` (SP atomica para reservas).
-- `api-minimarket` ahora usa `Idempotency-Key` y responde idempotente en `/reservas`.
+- `api-minimarket` ahora **requiere** `Idempotency-Key` y responde idempotente en `/reservas`.
 - `api-minimarket` ahora usa `sp_reservar_stock` (lock + idempotencia) en `/reservas`.
 - `cron-jobs-maxiconsumo/orchestrator.ts` ahora intenta lock con TTL via RPC.
 - `cron-notifications` bloquea envios en PROD si `NOTIFICATIONS_MODE` no es `real` (guardrail runtime).
 - `deploy.sh` bloquea deploy a PROD si `NOTIFICATIONS_MODE` != `real` o no existe en Supabase Secrets.
- - **Nota:** migraciones DB pendientes por error de conectividad IPv6 (ver actualización 2026-02-04 post-deploy).
+- **Nota:** migraciones DB pendientes por error de conectividad IPv6 (ver actualización 2026-02-04 post-deploy).
 
 **Cierre 2026-02-01 (confirmación usuario, histórico):**
 - Leaked password protection habilitado en panel. **(Re-abierto por COMET 2026-02-02)**
@@ -60,7 +77,7 @@
 **Actualización 2026-02-03 (local):**
 - ✅ `pnpm lint` (frontend) — OK.
 - ✅ `pnpm build` — OK (corrige TS2339 en `minimarket-system/src/lib/apiClient.ts`).
-- ✅ `npx tsc --noEmit` — OK.
+- ✅ `cd minimarket-system && npx tsc --noEmit` — OK.
 - ✅ `npm run test:unit` — PASS (689 tests, junit en `test-reports/junit.xml`).
 - ✅ `npm run test:coverage` — PASS (lines 70.34%, v8).
 - ✅ `deno check --no-lock supabase/functions/**/index.ts` — OK (con `deno.json` y `nodeModulesDir: "auto"`).
@@ -112,7 +129,7 @@
 2) ~~**Migraciones WS1/WS2/WS1-SP**~~: ✅ **APLICADAS** (2026-02-05 vía `supabase db push --linked`).
 
 **Actualización 2026-02-05 (migraciones críticas):**
-- ✅ `supabase db push --linked` exitoso — conectividad IPv6 resuelta.
+- ✅ `supabase db push --linked` exitoso — conectividad a DB remota resuelta en ese entorno (puede variar por host).
 - ✅ Migración `20260204100000_add_idempotency_stock_reservado.sql` aplicada.
 - ✅ Migración `20260204110000_add_cron_job_locks.sql` aplicada.
 - ✅ Migración `20260204120000_add_sp_reservar_stock.sql` aplicada.
@@ -123,7 +140,29 @@
 **Próximos pasos (no críticos, recomendados antes de producción):**
 - Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).
 - Planificar **rotación de secretos** antes de producción si hubo exposición histórica (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
-- Ejecutar **Preflight Pre-Mortem** y registrar evidencia (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`). *(Pendiente por acceso a Supabase CLI/Dashboard).*
+- Registrar evidencia final del **Preflight Pre-Mortem** (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`). *(Suites ejecutadas local 2026-02-06; faltan capturas Dashboard si aplica).*
+
+**Checklist próximas 20 tareas/pasos (priorizado, 2026-02-06):**
+- [ ] P0: Alinear contrato de `POST /reservas` (header `Idempotency-Key` obligatorio) y ejemplos de uso (docs + clientes).
+- [ ] P0: Agregar tests de integración reales para `/reservas` (idempotencia + 409 + concurrencia) en `tests/integration/`.
+- [ ] P0: Agregar smoke E2E mínimo para `/reservas` (create + idempotent) y registrar evidencia en `test-reports/`.
+- [ ] P0: Investigar y corregir `api-proveedor/health` en estado `unhealthy` (DB/scraper) o documentar degradación/SLO.
+- [ ] P1: Extender `docs/api-openapi-3.1.yaml` para incluir `/tareas`, `/reservas`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`.
+- [ ] P1: Implementar timeout + abort + mensaje UX en `minimarket-system/src/lib/apiClient.ts` (AbortController).
+- [ ] P1: Definir store compartido para rate limit/breaker (Redis vs tabla Supabase) y registrar decisión en `docs/DECISION_LOG.md`.
+- [ ] P1: Implementar rate limit compartido (WS3) con claves `userId + ip` y fallback seguro si IP es `unknown`.
+- [ ] P1: Implementar circuit breaker compartido/persistente (WS3) con expiración y métricas.
+- [ ] P1: Auth resiliente (WS4): cache de validación `/auth/v1/user` o verificación local JWT; revisar viabilidad de volver `verify_jwt=true`.
+- [ ] P1: Agregar timeout + breaker dedicado a `/auth/v1/user` (WS4-T3) para evitar dependencia total.
+- [ ] P1: Verificar sender real/dominio verificado en SendGrid para SMTP Auth (From Email) y registrar evidencia.
+- [ ] P1: Planificar y ejecutar rotación de secretos pre‑producción (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
+- [ ] P1: Definir plan de upgrade a Supabase Pro para habilitar Leaked Password Protection + checklist de activación.
+- [ ] P2: Integrar observabilidad (Sentry o equivalente) en frontend y correlación con `x-request-id`.
+- [ ] P2: Asegurar propagación de `x-request-id` entre Edge Functions (cron/scraper) y logs.
+- [ ] P2: Cache coherente multi‑instancia: estrategia (singleflight + TTL) para scraper y `api-proveedor` cache.
+- [ ] P2: Verificar pooling/performance DB en PROD + ejecutar prueba de carga y registrar baseline.
+- [ ] P2: Actualizar `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` con evidencia de corrida 2026-02-06 (junit/coverage/smokes).
+- [ ] P2: Preparar release: correr suites en entorno limpio y actualizar `docs/closure/BUILD_VERIFICATION.md` con addendum 2026-02-06.
 
 **Actualización 2026-02-04 (local - preflight premortem):**
 - ✅ `supabase secrets list` (ref `dqaygmjpzoqjjrywdsxi`) ejecutado: secrets críticos presentes (hash digest mostrado por CLI).
@@ -203,14 +242,14 @@
 
 ## 📊 Métricas de Código (Verificadas en repo)
 
-> Conteos calculados por ocurrencias de `it/test` en archivos de tests. No implican ejecución.
+> Conteos verificados por ejecución de suites (última corrida: **2026-02-06**). Evidencia: `test-reports/` + logs CI.
 
 ### Backend (Supabase Edge Functions)
 | Categoría | Cantidad | Detalle |
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests Backend (unit)** | **682** | 35 archivos en `tests/unit` |
+| **Tests unit (raíz)** | **696** | 37 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -223,7 +262,7 @@
 | **Tests Frontend (unit)** | **40** | 12 archivos en `minimarket-system/src` |
 
 ### Totales (repo)
-- **Tests unitarios:** 722 (Backend 682 + Frontend 40)
+- **Tests unitarios:** 736 (raíz 696 + frontend 40)
 - **Tests integración:** 38 (tests/integration)
 - **Tests seguridad:** 14 (tests/security)
 - **Tests performance:** 5 (tests/performance)
@@ -231,9 +270,9 @@
 - **Tests E2E backend smoke:** 4 (solo `tests/e2e/*.smoke.test.ts`; `edge-functions.test.js` es legacy/no ejecuta)
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
-- **Coverage (artefacto repo):** 69.91% lines (coverage/index.html)
+- **Coverage (vitest v8):** 69.39% lines (2026-02-06; `coverage/index.html`)
 - **Migraciones en repo:** 19 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
-- **Build frontend:** `minimarket-system/dist/` presente (artefacto, no revalidado)
+- **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-06)
 
 ---
 

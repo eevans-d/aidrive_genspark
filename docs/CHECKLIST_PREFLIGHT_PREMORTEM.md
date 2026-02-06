@@ -1,6 +1,6 @@
 # CHECKLIST PREFLIGHT PREMORTEM — Mini Market System
-**Fecha:** 2026-02-04  
-**Version:** 1.0  
+**Fecha:** 2026-02-06  
+**Version:** 1.1  
 **Uso:** ejecutar antes de cualquier cambio de WS1–WS5
 
 ## 1) Variables y entorno
@@ -117,3 +117,21 @@ Verificaciones completadas:
 Bloqueado / pendiente:
 - `psql` a `db.dqaygmjpzoqjjrywdsxi.supabase.co:5432` falla por **Network is unreachable (IPv6)**.
 - No se pudo ejecutar SQL de `cron.job`/`cron_jobs_execution_log` ni pooling/conexiones.
+
+---
+
+## 9) Registro de ejecucion (2026-02-06 - auditoría local)
+
+Suites ejecutadas (evidencia en `test-reports/` y `coverage/`):
+- ✅ `npm run test:unit` — PASS (696 tests).
+- ✅ `npm run test:auxiliary` — PASS (29 tests; 3 skipped por credenciales).
+- ✅ `npm run test:integration` — PASS (38 tests).
+- ✅ `npm run test:e2e` — PASS (4 smoke).
+- ✅ `npm run test:coverage` — PASS (69.39% lines).
+- ✅ `node scripts/smoke-notifications.mjs` — 200 OK (`/channels`, `/templates`).
+- ✅ `pnpm -C minimarket-system lint` / `build` / `test:components` — OK.
+
+Notas:
+- `psql` a `db.dqaygmjpzoqjjrywdsxi.supabase.co:5432` sigue fallando desde este host (IPv6 `Network is unreachable`). Para ejecutar SQL preflight usar host con IPv6 o forzar IPv4/pooler (si aplica).
+- `deno` no está disponible en PATH en este host; no se re-ejecutó `deno check` (última evidencia 2026-02-03).
+- Healthcheck `api-proveedor`: sigue devolviendo `status=unhealthy` (ver `docs/ESTADO_ACTUAL.md`).

@@ -1,15 +1,15 @@
 # PLAN DE EJECUCION PREMORTEM — Mini Market System
-**Fecha:** 2026-02-04  
-**Version:** 1.2  
+**Fecha:** 2026-02-06  
+**Version:** 1.3  
 **Fuente:** `docs/INFORME_PREMORTEM_OPERATIVO.md`
 
 ## 0) Objetivo
 Ejecutar todas las mitigaciones del pre-mortem con el minimo riesgo operativo, priorizando P0/P1, y dejando el sistema listo para produccion con validaciones tecnicas, UX y seguridad.
 
-## 1) Verificado en repo (baseline confirmada)
-- Reservas no atomicas: `/reservas` valida stock y luego inserta sin transaccion (`supabase/functions/api-minimarket/index.ts`).
+## 1) Verificado en repo (estado actual)
+- Reservas atómicas + idempotentes: `POST /reservas` usa RPC `sp_reservar_stock` y **requiere** `Idempotency-Key` (`supabase/functions/api-minimarket/index.ts`, `supabase/functions/api-minimarket/handlers/reservas.ts`, `supabase/migrations/20260204120000_add_sp_reservar_stock.sql`).
 - SP de inventario sin locking: read-then-write (`supabase/migrations/20260109090000_update_sp_movimiento_inventario.sql`).
-- Cron jobs sin dedupe/lock: `cron-jobs-maxiconsumo` no usa locks (`supabase/functions/cron-jobs-maxiconsumo/orchestrator.ts`).
+- Cron jobs con dedupe/lock: `cron-jobs-maxiconsumo` intenta locks vía RPC con TTL (`supabase/functions/cron-jobs-maxiconsumo/orchestrator.ts`, `supabase/migrations/20260204110000_add_cron_job_locks.sql`).
 - Rate limit y circuit breaker en memoria: estado por instancia (`supabase/functions/_shared/rate-limit.ts`, `supabase/functions/_shared/circuit-breaker.ts`).
 - Auth JWT validado via `/auth/v1/user` en cada request (`supabase/functions/api-minimarket/helpers/auth.ts`).
 - Notificaciones en modo simulacion (`supabase/functions/cron-notifications/index.ts`).
@@ -20,14 +20,14 @@ Ejecutar todas las mitigaciones del pre-mortem con el minimo riesgo operativo, p
 Nota: No se detecto UI que consuma `/reservas` en `minimarket-system/src/pages`. Confirmar flujo real antes de cambios UX.
 
 ## 2) Preflight (bloqueante)
-Estado: **parcialmente completado (2026-02-04)**. Ver detalle en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` y `docs/ESTADO_ACTUAL.md`.
-Bloqueador actual: `supabase db push` no puede conectar a DB remota (IPv6 `Network is unreachable`). Ejecutar desde host con IPv6 o aplicar migraciones manualmente via SQL Editor.
+Estado: **parcialmente completado (2026-02-06)**. Ver detalle en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` y `docs/ESTADO_ACTUAL.md`.
+Nota: la verificación SQL vía `psql` a la DB remota puede seguir bloqueada por conectividad IPv6 desde algunos entornos.
 
 Checklist fuente:
 - `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`
 
 ## 3) Proximos pasos inmediatos (48–72h)
-1. Ejecutar Preflight y registrar evidencia. **Estado:** parcial OK (ver `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`).
+1. Ejecutar Preflight y registrar evidencia. **Estado:** parcial OK (suites + smokes OK; SQL DB pendiente según entorno). Ver `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`.
 2. WS1 hotfix: idempotency key en `/reservas` + constraint unico. **Estado:** ✅ COMPLETADO (2026-02-05).
 3. WS1 SP: `sp_reservar_stock` + `/reservas` usa RPC atomica. **Estado:** ✅ COMPLETADO (2026-02-05).
 4. WS2 lock por job en `cron-jobs-maxiconsumo`. **Estado:** ✅ COMPLETADO (2026-02-05).
@@ -42,9 +42,9 @@ WS1 — Stock/Reservas atomicas (R-001)
 - Dep: Preflight completado.
 - WS1-T2 (Owner: Backend/DB, Est: 1.5d) crear `sp_reservar_stock` con lock por producto y update atomico. **Estado:** ✅ APLICADO (2026-02-05).
 - Dep: WS1-T1.
-- WS1-T3 (Owner: Backend, Est: 0.5d) actualizar `/reservas` para usar SP y exigir `Idempotency-Key`. **Estado:** ✅ OPERATIVO (RPC disponible).
+- WS1-T3 (Owner: Backend, Est: 0.5d) actualizar `/reservas` para usar SP y exigir `Idempotency-Key`. **Estado:** ✅ OPERATIVO (400 si falta key; RPC disponible).
 - Dep: WS1-T2.
-- WS1-T4 (Owner: QA/Backend, Est: 1.0d) tests de concurrencia, idempotencia y no stock negativo. **Estado:** ✅ COMPLETADO (2026-02-05 - tests/unit/api-reservas-concurrencia.test.ts).
+- WS1-T4 (Owner: QA/Backend, Est: 1.0d) tests de concurrencia, idempotencia y no stock negativo. **Estado:** ✅ COMPLETADO (2026-02-06 - tests/unit/api-reservas-concurrencia.test.ts).
 - WS1-T5 (Owner: Frontend, Est: 0.5d) bloqueo doble submit y estado “en proceso” si hay UI de reservas.
 - Dep: Confirmacion de flujo UI.
 
@@ -53,7 +53,7 @@ WS2 — Cron jobs dedupe y concurrencia (R-002)
 - Dep: Preflight completado.
 - WS2-T2 (Owner: Backend, Est: 0.5d) actualizar orquestador para skip si lock activo. **Estado:** ✅ OPERATIVO (locks activos).
 - Dep: WS2-T1.
-- WS2-T3 (Owner: QA/Backend, Est: 0.5d) tests de solapamiento y reintentos. **Estado:** ✅ COMPLETADO (2026-02-05 - tests/unit/cron-jobs-locking.test.ts).
+- WS2-T3 (Owner: QA/Backend, Est: 0.5d) tests de solapamiento y reintentos. **Estado:** ✅ COMPLETADO (2026-02-06 - tests/unit/cron-jobs-locking.test.ts).
 
 WS3 — Rate limit y circuit breaker compartidos (R-003)
 - WS3-T1 (Owner: SRE/Backend, Est: 0.5d) decision de store compartido (Redis vs tabla Supabase).
@@ -80,7 +80,7 @@ WS5 — Notificaciones reales (R-006)
 - Dep: WS5-T1.
 - WS5-T3 (Owner: SRE, Est: 0.5d) guardrail de deploy si PROD queda en `simulation`. **Estado:** listo en repo.
 - Dep: WS5-T1.
-- WS5-T4 (Owner: SRE/QA, Est: 0.5d) smoke real en sandbox. **Estado:** ✅ COMPLETADO (2026-02-05 - scripts/smoke-notifications.ts).
+- WS5-T4 (Owner: SRE/QA, Est: 0.5d) smoke real (read-only) en sandbox. **Estado:** ✅ COMPLETADO (2026-02-06 - scripts/smoke-notifications.mjs).
 
 ## 5) Plan por Workstream (mapa de riesgos)
 

@@ -43,13 +43,13 @@ npm run test:unit # Tests unitarios (Vitest)
 ├── supabase/
 │   ├── functions/         # Edge Functions (Deno)
 │   │   ├── _shared/       # Módulos compartidos
-│   │   ├── api-minimarket/# Gateway (26 endpoints)
+│   │   ├── api-minimarket/# Gateway (29 endpoints)
 │   │   ├── api-proveedor/ # API proveedor
 │   │   └── scraper-*/     # Scraping
 │   └── migrations/        # Migraciones SQL
 │
 ├── tests/                 # Tests (Vitest)
-│   └── unit/             # 722 tests
+│   └── unit/             # 696 tests (2026-02-06)
 │
 ├── docs/                  # Documentación
 ```
@@ -79,7 +79,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | Frontend | React 18, TypeScript, Vite, Tailwind, React Query |
 | Backend | Supabase (PostgreSQL + Edge Functions Deno) |
 | Auth | Supabase Auth con JWT |
-| Testing | Vitest (722+ tests) |
+| Testing | Vitest (unit/integration/e2e) + Vitest (frontend) |
 | CI/CD | GitHub Actions |
 
 ---
@@ -90,8 +90,8 @@ npm run test:unit # Tests unitarios (Vitest)
 |---------|-------|
 | **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 90% (26 endpoints hardened) |
-| **Tests** | 722+ passing |
+| **Gateway** | 90% (29 endpoints) |
+| **Tests** | ✅ Unit 696 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
 | **Build** | ✅ OK |
 
 ---
@@ -109,7 +109,7 @@ npx vitest run --coverage
 bash scripts/run-e2e-tests.sh
 # Smoke Test (Notificaciones)
 # Requiere .env.test con credenciales remotas
-wsl deno run --allow-net --allow-read --allow-env scripts/smoke-notifications.ts
+node scripts/smoke-notifications.mjs
 ```
 
 ---
@@ -139,4 +139,4 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de versiones.
 
 ---
 
-*Última actualización: 2026-02-05*
+*Última actualización: 2026-02-06*
