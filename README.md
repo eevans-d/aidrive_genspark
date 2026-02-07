@@ -49,7 +49,7 @@ npm run test:unit # Tests unitarios (Vitest)
 │   └── migrations/        # Migraciones SQL
 │
 ├── tests/                 # Tests (Vitest)
-│   └── unit/             # 696 tests (2026-02-06)
+│   └── unit/             # 725 tests (2026-02-06)
 │
 ├── docs/                  # Documentación
 ```
@@ -58,7 +58,7 @@ npm run test:unit # Tests unitarios (Vitest)
 
 ## 📚 Documentación
 
-> **Para Agentes IA:** Ver [docs/AGENTS.md](docs/AGENTS.md) para consultar los **Skills** activos (TestMaster, DeployOps, DocuGuard).
+> **Para Agentes IA:** Ver `docs/AGENTS.md` y `.agent/skills/project_config.yaml` para consultar los **Skills** activos (9).
 
 | Documento | Descripción |
 |-----------|-------------|
@@ -91,7 +91,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
 | **Gateway** | 90% (29 endpoints) |
-| **Tests** | ✅ Unit 696 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
+| **Tests** | ✅ Unit 725 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
 | **Build** | ✅ OK |
 
 ---

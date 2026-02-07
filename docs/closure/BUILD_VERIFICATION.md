@@ -11,7 +11,7 @@
 - Deno: no disponible en PATH (no se re-ejecutó `deno check` en este host)
 
 **Quality Gates (2026-02-06):**
-- ✅ Unit: `npm run test:unit` → 37 files / 696 tests.
+- ✅ Unit: `npm run test:unit` → 38 files / 725 tests.
 - ✅ Coverage: `npm run test:coverage` → 69.39% lines.
 - ✅ Auxiliary: `npm run test:auxiliary` → 29 passed / 3 skipped (gated).
 - ✅ Integration: `npm run test:integration` → 38 tests (suite basada mayormente en mocks de fetch).

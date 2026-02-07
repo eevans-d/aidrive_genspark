@@ -9,20 +9,20 @@
 - ✅ **Sistema de Pedidos implementado:**
   - 3 migraciones SQL aplicadas: `clientes`, `pedidos`, `detalle_pedidos` + SP `sp_crear_pedido`.
   - Handler backend: `supabase/functions/api-minimarket/handlers/pedidos.ts` (6 funciones).
-  - 7 rutas API: GET/POST `/pedidos`, GET `/pedidos/{id}`, PUT `/pedidos/{id}/estado`, PUT `/pedidos/{id}/pago`, PUT `/pedidos/items/{id}`.
-  - Frontend: `minimarket-system/src/pages/Pedidos.tsx` (706 líneas), hook `usePedidos.ts`, ruta en `App.tsx`, nav en `Layout.tsx`.
+  - 6 rutas API: GET/POST `/pedidos`, GET `/pedidos/{id}`, PUT `/pedidos/{id}/estado`, PUT `/pedidos/{id}/pago`, PUT `/pedidos/items/{id}`.
+  - Frontend: `minimarket-system/src/pages/Pedidos.tsx` (705 líneas), hook `minimarket-system/src/hooks/queries/usePedidos.ts`, ruta en `minimarket-system/src/App.tsx`, nav en `minimarket-system/src/components/Layout.tsx`.
   - OpenAPI spec actualizado: +460 líneas, 4 schemas (`Cliente`, `Pedido`, `DetallePedido`, `CrearPedidoRequest`), tag `Pedidos`.
-  - Tests: `tests/unit/pedidos-handlers.test.ts` (32 tests).
+  - Tests: `tests/unit/pedidos-handlers.test.ts` (29 tests).
 - ✅ **Skills Agénticos optimizados (V4.0):**
   - 4 nuevos skills: `MigrationOps`, `DebugHound`, `PerformanceWatch`, `APISync`.
   - Total skills operativos: 9.
-  - `project_config.yaml` actualizado con trigger patterns y skill graph.
-- ✅ Build frontend verificado: `npm run build` → 166.16 kB (gzip: 52.67 kB).
+  - `.agent/skills/project_config.yaml` actualizado con trigger patterns y skill graph.
+- ✅ Build frontend verificado: `pnpm -C minimarket-system build` → 166.16 kB (gzip: 52.67 kB).
 
 **Nuevo (previo):** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Smoke test notificaciones (read-only): `node scripts/smoke-notifications.mjs`.
 
 **Auditoría local (2026-02-06):**
-- ✅ `npm run test:unit` — PASS (696 tests).
+- ✅ `npm run test:unit` — PASS (725 tests).
 - ✅ `npm run test:coverage` — PASS (lines 69.39%, v8).
 - ⚠️ `deno` no está disponible en PATH en este host; no se re-ejecutó `deno check` (última evidencia 2026-02-03).
 - ✅ `npm run test:auxiliary` — PASS (29 tests; 3 skipped por credenciales).
@@ -263,7 +263,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests unit (raíz)** | **696** | 37 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
+| **Tests unit (raíz)** | **725** | 38 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -276,7 +276,7 @@
 | **Tests Frontend (unit)** | **40** | 12 archivos en `minimarket-system/src` |
 
 ### Totales (repo)
-- **Tests unitarios:** 736 (raíz 696 + frontend 40)
+- **Tests unitarios:** 765 (raíz 725 + frontend 40)
 - **Tests integración:** 38 (tests/integration)
 - **Tests seguridad:** 14 (tests/security)
 - **Tests performance:** 5 (tests/performance)
@@ -285,7 +285,7 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (vitest v8):** 69.39% lines (2026-02-06; `coverage/index.html`)
-- **Migraciones en repo:** 19 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
+- **Migraciones en repo:** 23 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
 - **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-06)
 
 ---

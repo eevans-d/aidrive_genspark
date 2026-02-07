@@ -469,7 +469,7 @@ export const pedidosApi = {
          * Marcar item como preparado/no preparado
          */
         async updateItemPreparado(itemId: string, preparado: boolean): Promise<PedidoItem> {
-                return apiRequest<PedidoItem>(`/pedidos/items/${itemId}/preparado`, {
+                return apiRequest<PedidoItem>(`/pedidos/items/${itemId}`, {
                         method: 'PUT',
                         body: JSON.stringify({ preparado }),
                 });

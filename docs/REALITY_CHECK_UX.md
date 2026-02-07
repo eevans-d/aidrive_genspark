@@ -20,7 +20,7 @@ Auditoría completa del proyecto **aidrive_genspark / Sistema Mini Market** ejec
 - **Sistema:** OPERATIVO con pendientes críticos
 - **Documentación:** SINCRONIZADA (100%) - Verificada contra código
 - **Código:** LIMPIO (0 console.log fuera de logger, 0 secretos expuestos)
-- **Tests:** 736 unitarios (verificados), 38 integración (verificados), 4 E2E smoke (verificados)
+- **Tests:** 765 unitarios (verificados), 38 integración (verificados), 4 E2E smoke (verificados)
 
 ---
 
@@ -45,7 +45,7 @@ Auditoría completa del proyecto **aidrive_genspark / Sistema Mini Market** ejec
 | ~~1~~ | ~~README.md fecha desactualizada~~ | ~~Doc~~ | ~~`README.md:139`~~ | ✅ **Corregido** |
 | ~~2~~ | ~~README.md enlaza ROADMAP.md archivado~~ | ~~Doc~~ | ~~`README.md:67`~~ | ✅ **Corregido** |
 | ~~3~~ | ~~README.md: conteos de tests desalineados vs suite real~~ | ~~Doc~~ | ~~`README.md`~~ | ✅ **Corregido** |
-| 4 | ESTADO_ACTUAL.md: "19 migraciones" | Doc | `ESTADO_ACTUAL.md:223` | ✅ Verificado correcto |
+| 4 | ESTADO_ACTUAL.md: "23 migraciones" | Doc | `docs/ESTADO_ACTUAL.md:288` | ✅ Verificado correcto |
 | 5 | Rate limit por usuario en `api-minimarket` pendiente | Backend | HOJA_RUTA 1.7 | ⚠️ Pendiente |
 | 6 | `api-proveedor/health`: "unhealthy" (DB no disponible) | Infra | Edge Function | ⚠️ Externo |
 
@@ -83,7 +83,7 @@ Auditoría completa del proyecto **aidrive_genspark / Sistema Mini Market** ejec
 - [x] Error boundaries implementados
 
 ### Tests - Verificados contra código
-- [x] **Unitarios:** 736 (raíz 696 + frontend 40)
+- [x] **Unitarios:** 765 (raíz 725 + frontend 40)
 - [x] **Integración:** 38 tests (Vitest)
 - [x] **E2E Backend Smoke:** 4 tests
 - [x] **E2E Frontend:** 18 definidos (Playwright)
@@ -95,10 +95,10 @@ Auditoría completa del proyecto **aidrive_genspark / Sistema Mini Market** ejec
 
 > Esta sección documenta los comandos ejecutados para verificar cada conteo.
 
-### Tests Backend (unit) (Vitest: 696 tests / 37 archivos; 2026-02-06)
+### Tests Backend (unit) (Vitest: 725 tests / 38 archivos; 2026-02-06)
 ```bash
 npm run test:unit
-# Resultado: 37 files / 696 tests
+# Resultado: 38 files / 725 tests
 ```
 
 ### Tests Frontend (unit) (Vitest: 40 tests / 12 archivos; 2026-02-06)
@@ -182,14 +182,14 @@ ls supabase/migrations/*.sql | wc -l
 | project_config.yaml | Estructura real | ✅ Paths correctos |
 | Edge Functions (repo) | ESTADO_ACTUAL.md | ✅ 13/13 match |
 | Páginas frontend (repo) | ESTADO_ACTUAL.md | ✅ 9/9 match |
-| Tests unitarios (repo) | ESTADO_ACTUAL.md | ✅ 736/736 match |
+| Tests unitarios (repo) | ESTADO_ACTUAL.md | ✅ 765/765 match |
 | Tests integración (repo) | ESTADO_ACTUAL.md | ✅ 38/38 match |
-| Migraciones (repo) | ESTADO_ACTUAL.md | ✅ 19/19 match |
+| Migraciones (repo) | ESTADO_ACTUAL.md | ✅ 23/23 match |
 
 ### Discrepancias Corregidas ✅
 
 1. **README.md** - ~~Enlazaba `docs/ROADMAP.md`~~ → Cambiado a `docs/HOJA_RUTA_MADRE_2026-01-31.md`
-2. **README.md** - Conteos de tests → Actualizado a "Unit 696 + Integration 38 + E2E 4 + Frontend 40 (2026-02-06)"
+2. **README.md** - Conteos de tests → Actualizado a "Unit 725 + Integration 38 + E2E 4 + Frontend 40 (2026-02-06)"
 3. **README.md** - Fecha → Actualizado a "2026-02-06"
 
 ---
@@ -245,7 +245,7 @@ rg "ey[A-Za-z0-9-_=]{20,}" supabase/functions → 0 resultados
 |---------|----------|--------|
 | `API_README.md` | Fecha 2026-01-26 desactualizada | ✅ Actualizado a 2026-02-05 |
 | `ESTADO_ACTUAL.md` | Faltaban Libs (5) y Contexts (2) | ✅ Añadidos |
-| `README.md` | Tests: actualizado a Unit 696 + Integration 38 + E2E 4 + Frontend 40 (2026-02-06) | ✅ Corregido |
+| `README.md` | Tests: actualizado a Unit 725 + Integration 38 + E2E 4 + Frontend 40 (2026-02-06) | ✅ Corregido |
 
 ### Conteos Verificados vs Documentación Actualizada
 | Elemento | Código Real | Doc Previa | Doc Actual |

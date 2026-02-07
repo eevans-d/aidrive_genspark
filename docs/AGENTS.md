@@ -74,7 +74,7 @@ aidrive_genspark/
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # 16 migraciones versionadas
+│   └── migrations/           # 23 migraciones versionadas
 ├── tests/                    # Unit, E2E, Performance, Security
 └── docs/                     # Documentación (ver HOJA_RUTA_MADRE)
 ```

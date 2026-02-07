@@ -1571,7 +1571,7 @@ Deno.serve(async (req) => {
     }
 
     // ====================================================================
-    // ENDPOINTS: PEDIDOS (7 endpoints)
+    // ENDPOINTS: PEDIDOS (6 endpoints)
     // ====================================================================
 
     // 24. GET /pedidos - Listar pedidos con filtros
@@ -1672,8 +1672,9 @@ Deno.serve(async (req) => {
       );
     }
 
-    // 29. PUT /pedidos/items/:id/preparado - Marcar item como preparado
-    if (path.match(/^\/pedidos\/items\/[a-f0-9-]+\/preparado$/) && method === 'PUT') {
+    // 29. PUT /pedidos/items/:id - Marcar item como preparado/no preparado
+    // Back-compat: aceptar también /pedidos/items/:id/preparado (ruta anterior del frontend)
+    if (path.match(/^\/pedidos\/items\/[a-f0-9-]+(\/preparado)?$/) && method === 'PUT') {
       checkRole(BASE_ROLES);
       const id = path.split('/')[3];
       if (!isUuid(id)) {

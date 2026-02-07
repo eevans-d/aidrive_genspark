@@ -450,8 +450,9 @@
 ## 🚀 Próximas Fases
 
 ### FASE 2: Tablas Transaccionales
-- [ ] pedidos
-- [ ] detalle_pedidos
+- [x] clientes ✅ (2026-02-06)
+- [x] pedidos ✅ (2026-02-06)
+- [x] detalle_pedidos ✅ (2026-02-06)
 - [ ] proveedor_performance
 
 ### FASE 3: Auditoría Particionada
@@ -616,25 +617,32 @@ TABLE (
 ## 🛒 Sistema de Pedidos (NUEVO - 2026-02-06)
 
 ### clientes
-**Propósito:** Datos de clientes para pedidos recurrentes
+**Propósito:** Datos de clientes recurrentes (opcional) para asociar pedidos.
 
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| nombre | VARCHAR(100) | Nombre completo del cliente |
-| telefono | VARCHAR(30) | Teléfono de contacto |
-| email | VARCHAR(255) | Email (opcional) |
-| direccion_default | TEXT | Dirección predeterminada |
-| notas | TEXT | Notas sobre el cliente |
-| activo | BOOLEAN | Estado del cliente |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Última modificación |
+| nombre | TEXT | Nombre completo del cliente |
+| telefono | TEXT | Teléfono de contacto (opcional) |
+| email | TEXT | Email (opcional) |
+| direccion_default | TEXT | Dirección predeterminada (opcional) |
+| edificio | TEXT | Edificio/torre (opcional) |
+| piso | TEXT | Piso (opcional) |
+| departamento | TEXT | Depto (opcional) |
+| observaciones | TEXT | Notas internas (opcional) |
+| activo | BOOLEAN | Estado (default true) |
+| created_at | TIMESTAMPTZ | Fecha de creación (default now()) |
+| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
 
 **Índices:**
+- `idx_clientes_nombre`
 - `idx_clientes_telefono` (búsqueda rápida por teléfono)
 - `idx_clientes_activo` (parcial: WHERE activo = TRUE)
 
-**RLS:** Políticas por `user_id` para CRUD completo.
+**RLS:** ENABLED (role-based vía `public.personal`).
+- SELECT: cualquier `authenticated`
+- INSERT/UPDATE: roles `admin|deposito|jefe`
+- DELETE: solo `admin`
 
 ---
 
@@ -644,37 +652,47 @@ TABLE (
 | Campo | Tipo | Descripción |
 |-------|------|-------------|
 | id | UUID | PK |
-| numero_pedido | SERIAL | Número secuencial único |
+| numero_pedido | SERIAL | Número secuencial legible |
 | cliente_id | UUID | FK → clientes(id) (opcional) |
-| cliente_nombre | VARCHAR(100) | Nombre del cliente |
-| cliente_telefono | VARCHAR(30) | Teléfono (opcional) |
-| estado | VARCHAR(20) | pendiente\|preparando\|listo\|entregado\|cancelado |
-| tipo_entrega | VARCHAR(20) | retiro\|domicilio |
-| direccion_entrega | TEXT | Dirección para domicilio |
-| edificio | VARCHAR(100) | Edificio/torre (opcional) |
-| piso | VARCHAR(10) | Piso (opcional) |
-| departamento | VARCHAR(10) | Depto (opcional) |
-| horario_entrega_preferido | VARCHAR(50) | Horario preferido |
-| monto_total | DECIMAL(12,2) | Total del pedido |
+| cliente_nombre | TEXT | Nombre del cliente (NOT NULL) |
+| cliente_telefono | TEXT | Teléfono (opcional) |
+| tipo_entrega | TEXT | retiro\|domicilio |
+| direccion_entrega | TEXT | Dirección para domicilio (opcional) |
+| edificio | TEXT | Edificio/torre (opcional) |
+| piso | TEXT | Piso (opcional) |
+| departamento | TEXT | Depto (opcional) |
+| horario_entrega_preferido | TEXT | Horario preferido (opcional) |
+| estado | TEXT | pendiente\|preparando\|listo\|entregado\|cancelado |
+| estado_pago | TEXT | pendiente\|parcial\|pagado |
+| monto_total | DECIMAL(12,2) | Total del pedido (default 0) |
 | monto_pagado | DECIMAL(12,2) | Monto abonado (default 0) |
-| estado_pago | VARCHAR(20) | pendiente\|parcial\|pagado |
-| observaciones | TEXT | Observaciones generales |
-| fecha_pedido | TIMESTAMPTZ | Fecha/hora de creación |
-| fecha_preparado | TIMESTAMPTZ | Fecha de preparación completa |
-| fecha_entregado | TIMESTAMPTZ | Fecha de entrega |
-| cancelado_por_id | UUID | Usuario que canceló |
-| motivo_cancelacion | TEXT | Razón de cancelación |
-| transcripcion_texto | TEXT | Transcripción speech-to-text |
-| created_at | TIMESTAMPTZ | Creación en sistema |
-| updated_at | TIMESTAMPTZ | Última modificación |
+| observaciones | TEXT | Observaciones visibles para el cliente (opcional) |
+| observaciones_internas | TEXT | Notas solo para personal (opcional) |
+| audio_url | TEXT | URL de audio (opcional) |
+| transcripcion_texto | TEXT | Texto transcripto del audio original (opcional) |
+| creado_por_id | UUID | FK → auth.users(id) (opcional) |
+| preparado_por_id | UUID | FK → auth.users(id) (opcional) |
+| entregado_por_id | UUID | FK → auth.users(id) (opcional) |
+| fecha_pedido | TIMESTAMPTZ | Fecha/hora del pedido (default now()) |
+| fecha_entrega_estimada | TIMESTAMPTZ | Fecha estimada (opcional) |
+| fecha_preparado | TIMESTAMPTZ | Fecha de preparado (opcional) |
+| fecha_entregado | TIMESTAMPTZ | Fecha de entrega (opcional) |
+| created_at | TIMESTAMPTZ | Creación en sistema (default now()) |
+| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
 
 **Índices:**
-- `idx_pedidos_numero` (UNIQUE)
+- `idx_pedidos_numero`
 - `idx_pedidos_estado` (filtrado por estado)
+- `idx_pedidos_estado_pago`
 - `idx_pedidos_fecha` (ordenamiento temporal)
-- `idx_pedidos_cliente_id` (búsqueda por cliente)
+- `idx_pedidos_cliente_id` (parcial: WHERE cliente_id IS NOT NULL)
+- `idx_pedidos_creado_por`
+- `idx_pedidos_estado_fecha` (estado + fecha_pedido)
 
-**RLS:** Políticas por `user_id` para lectura/escritura.
+**RLS:** ENABLED (role-based vía `public.personal`).
+- SELECT: staff activo (existe en `public.personal`)
+- INSERT/UPDATE: roles `admin|deposito|jefe|ventas`
+- DELETE: solo `admin`
 
 ---
 
@@ -686,23 +704,23 @@ TABLE (
 | id | UUID | PK |
 | pedido_id | UUID | FK → pedidos(id) ON DELETE CASCADE |
 | producto_id | UUID | FK → productos(id) (opcional) |
-| producto_nombre | VARCHAR(255) | Nombre del producto |
-| producto_sku | VARCHAR(50) | SKU del producto (opcional) |
+| producto_nombre | TEXT | Nombre del producto (snapshot al momento del pedido) |
+| producto_sku | TEXT | SKU del producto (opcional) |
 | cantidad | INTEGER | Cantidad (CHECK > 0) |
 | precio_unitario | DECIMAL(12,2) | Precio por unidad |
-| subtotal | DECIMAL(12,2) | Generated: cantidad * precio_unitario |
-| observaciones | TEXT | Notas del ítem (ej: "sin sal") |
+| subtotal | DECIMAL(12,2) | Generated: cantidad * precio_unitario (STORED) |
+| observaciones | TEXT | Notas del ítem (opcional) |
 | preparado | BOOLEAN | Item preparado (default false) |
 | preparado_por_id | UUID | Usuario que preparó |
 | fecha_preparado | TIMESTAMPTZ | Cuándo se preparó |
 | created_at | TIMESTAMPTZ | Fecha de creación |
 
 **Índices:**
-- `idx_detalle_pedido_id` (FK lookup)
-- `idx_detalle_producto_id` (FK lookup)
-- `idx_detalle_preparado` (filtrado de pendientes)
+- `idx_detalle_pedidos_pedido`
+- `idx_detalle_pedidos_producto` (parcial: WHERE producto_id IS NOT NULL)
+- `idx_detalle_pedidos_preparado`
 
-**RLS:** Heredado de pedidos (cascade).
+**RLS:** ENABLED (role-based vía `public.personal`, mismo patrón que `pedidos`).
 
 ---
 
@@ -722,11 +740,11 @@ SELECT sp_crear_pedido(
   p_departamento := 'A',
   p_horario_preferido := '18:00-20:00',
   p_observaciones := 'Llamar antes',
-  p_items := '[{"producto_nombre":"Salchichas","cantidad":2,"precio_unitario":1500}]'::jsonb,
-  p_transcripcion := NULL
+  p_cliente_telefono := '11-5555-5555',
+  p_items := '[{"producto_nombre":"Salchichas","cantidad":2,"precio_unitario":1500}]'::jsonb
 );
 ```
-**Retorna:** `{success, pedido_id, numero_pedido}`
+**Retorna (JSONB):** `{success, pedido_id, numero_pedido, monto_total, items_count}` (o `{success:false,error}`).
 
 ---
 

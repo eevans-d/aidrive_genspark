@@ -9,7 +9,7 @@
 ## 🎉 Hitos Completados (2026-01-23)
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
-2. **16 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
+2. **23 migraciones versionadas en repo** (incluye placeholders de historial remoto + hardening search_path (pedidos) + sistema de pedidos; aplicación en PROD verificada para RLS v2 el 2026-01-31)
 3. **13 Edge Functions en repo** (despliegue confirmado por usuario en panel, 2026-02-01)
 4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
@@ -29,9 +29,9 @@
 El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01, **histórico**; re‑abierto 2026-02-02). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **736 tests unitarios** (raíz 696 + frontend 40; última corrida 2026-02-06) ✅
+- **765 tests unitarios** (raíz 725 + frontend 40; última corrida 2026-02-06) ✅
 - **Suite de seguridad: 14 tests definidos** ✅
-- **Migraciones versionadas en repo (16 archivos)** ✅
+- **Migraciones versionadas en repo (23 archivos)** ✅
 - **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
 - COMET 2026-02-02 (histórico): leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD (**resuelta 2026-02-02**).
@@ -60,7 +60,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
-- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 16 archivos)
+- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 23 archivos)
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
@@ -85,7 +85,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
-  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 16 archivos)
+  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 23 archivos)
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
@@ -225,8 +225,8 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 | Métrica | Antes | Después (2026-02-01, conteo repo) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios | ~10 | **736** (raíz 696 + frontend 40; 2026-02-06) ✅ |
-| Tests archivos (unit) | 5 | **49** (raíz 37 + frontend 12; 2026-02-06) ✅ |
+| Tests unitarios | ~10 | **765** (raíz 725 + frontend 40; 2026-02-06) ✅ |
+| Tests archivos (unit) | 5 | **50** (raíz 38 + frontend 12; 2026-02-06) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 7 módulos `_shared/` (adopción parcial) |
@@ -263,7 +263,7 @@ supabase/functions/
 └── [otras funciones]/    # Adoptan _shared progresivamente
 
 tests/
-├── unit/                 # 37 archivos / 696 tests (2026-02-06)
+├── unit/                 # 38 archivos / 725 tests (2026-02-06)
 ├── integration/          # 3 archivos / 38 tests (gated)
 ├── e2e/                  # 2 archivos / 4 smoke tests
 ├── security/             # suite auxiliar (gated)

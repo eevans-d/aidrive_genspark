@@ -123,7 +123,7 @@ Bloqueado / pendiente:
 ## 9) Registro de ejecucion (2026-02-06 - auditoría local)
 
 Suites ejecutadas (evidencia en `test-reports/` y `coverage/`):
-- ✅ `npm run test:unit` — PASS (696 tests).
+- ✅ `npm run test:unit` — PASS (725 tests).
 - ✅ `npm run test:auxiliary` — PASS (29 tests; 3 skipped por credenciales).
 - ✅ `npm run test:integration` — PASS (38 tests).
 - ✅ `npm run test:e2e` — PASS (4 smoke).
