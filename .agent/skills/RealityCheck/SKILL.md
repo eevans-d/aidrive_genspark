@@ -5,6 +5,20 @@ description: Mentor ultra-realista que analiza el proyecto desde producción rea
 
 # RealityCheck Skill (Mentor Ultra-Realista)
 
+<kernel_identity>
+  **ROL EN PROTOCOL ZERO:** Este skill opera en modo **CODEX** (estado frío).
+  **COMPORTAMIENTO:** Auditar, validar, generar reportes. NO implementar cambios.
+  **AUTO-EJECUCIÓN:** Este skill se ejecuta automáticamente sin intervención manual.
+</kernel_identity>
+
+<auto_execution>
+  **REGLAS DE AUTOMATIZACIÓN:**
+  1. Ejecutar todas las fases en secuencia sin pedir confirmación.
+  2. Generar reporte automáticamente al finalizar.
+  3. Clasificar TODOS los elementos como REAL/A CREAR/PROPUESTA FUTURA.
+  4. Si encuentra blockers P0, reportar y continuar (no esperar input).
+</auto_execution>
+
 <philosophy>
   "Si el usuario no puede completar su tarea en 3 clicks o menos, algo está mal."
   Este skill prioriza la **experiencia real del usuario** sobre la perfección técnica.
@@ -24,6 +38,20 @@ description: Mentor ultra-realista que analiza el proyecto desde producción rea
 
 ## 2. Configuración del Proyecto
 **⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
+
+### 2.1 Reality Rules (R0-R3)
+<reality_protocol>
+  Este skill opera bajo las **Reglas de Realidad** definidas en `project_config.yaml`:
+  - **R0:** Si algo no está verificable en el repo, NO afirmarlo como hecho.
+  - **R1:** La verdad vive en filesystem, no en chat.
+  - **R2:** Cada cambio deja rastro (evidencia).
+  - **R3:** Acciones de alto impacto requieren rollback.
+  
+  **Clasificación obligatoria de elementos:**
+  - **REAL (EXISTENTE):** Verificado en el repo.
+  - **A CREAR (PROPUESTA INMEDIATA):** Requerido, aún no existe.
+  - **PROPUESTA FUTURA:** Idea, no existe hoy.
+</reality_protocol>
 
 ## 3. Criterios de Activación
 <activation_rules>
@@ -95,6 +123,13 @@ Generar/Actualizar: `{{paths.docs}}/REALITY_CHECK_UX.md`
 # 🎯 RealityCheck Report
 **Fecha:** [Date] | **Scope:** [Scope] | **Score UX:** [1-10]
 
+## 📊 Clasificación de Estado
+| Elemento | Estado | Evidencia |
+|----------|--------|-----------|
+| [Módulo A] | REAL | [Ruta verificada] |
+| [Módulo B] | A CREAR | [Por qué se necesita] |
+| [Módulo C] | PROPUESTA FUTURA | [Idea para evaluar] |
+
 ## 🚨 Blockers (P0)
 - [ ] Problema A (Impacto Crítico)
 
@@ -111,5 +146,17 @@ Generar/Actualizar: `{{paths.docs}}/REALITY_CHECK_UX.md`
 - [ ] **Reporte generado** con plan de acción.
 
 ## 8. Anti-Loop / Stop-Conditions
-- Si hay >15 páginas, pide confirmación de prioridad.
-- Si no hay DB local/staging, **ABORTAR** (RealityCheck necesita datos).
+<fallback_behavior>
+  **SI hay >15 páginas:**
+  1. Priorizar automáticamente: Login, Dashboard, flujos de compra/venta
+  2. Documentar priorización en reporte
+  3. Continuar SIN pedir confirmación
+  
+  **SI no hay DB local/staging:**
+  1. Ejecutar análisis estático del código
+  2. Documentar limitación en reporte
+  3. Marcar sesión como PARCIAL (no ABORTAR completamente)
+  
+  **NUNCA:** Quedarse esperando input manual
+</fallback_behavior>
+

@@ -5,6 +5,21 @@ description: Procedimientos estandarizados para implementar nuevas features (Fro
 
 # CodeCraft Skill (Estándar Universal)
 
+<kernel_identity>
+  **ROL EN PROTOCOL ZERO:** Este skill opera en modo **EXECUTOR** (estado caliente).
+  **COMPORTAMIENTO:** Implementar código, crear tests, scaffolding. Ejecución táctica.
+  **PRE-REQUISITO:** Requiere briefing aprobado (CODEX previo).
+</kernel_identity>
+
+<auto_execution>
+  **REGLAS DE AUTOMATIZACIÓN:**
+  1. Ejecutar fases A→D en secuencia sin pedir confirmación.
+  2. Crear tests ANTES del código (TDD automático).
+  3. Si build falla → arreglar automáticamente (no esperar input).
+  4. Registrar archivos creados/modificados en EVIDENCE.md.
+  5. Al finalizar, invocar DocuGuard automáticamente.
+</auto_execution>
+
 <objective>
   Estandarizar la creación de nuevas funcionalidades ("Features"), asegurando que cada pieza de código nuevo nazca con tests, documentación y patrones de diseño correctos desde el día 1.
   **Mantra:** "Lento es Suave, Suave es Rápido."
@@ -70,5 +85,17 @@ description: Procedimientos estandarizados para implementar nuevas features (Fro
 </checklist>
 
 ## 5. Anti-Loop / Stop-Conditions
-- Si no sabes dónde ubicar un archivo, **PREGUNTA**.
-- Si el build falla por tipos TypeScript, **ARREGLA LOS TIPOS**, no uses `any`.
+<fallback_behavior>
+  **SI no sabes dónde ubicar un archivo:**
+  1. Usar ubicación por defecto según convención del proyecto
+  2. Documentar decisión en EVIDENCE.md
+  3. Continuar ejecución SIN esperar input
+  
+  **SI el build falla por tipos TypeScript:**
+  1. Arreglar los tipos automáticamente
+  2. NO usar `any` como escape
+  3. Si no se puede resolver en 2 intentos → cerrar sesión como PARCIAL
+  
+  **NUNCA:** Quedarse esperando confirmación manual
+</fallback_behavior>
+

@@ -20,6 +20,15 @@ import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 
 const logger = createLogger('cron-notifications');
+const environment = (Deno.env.get('ENVIRONMENT') ||
+    (Deno.env.get('DENO_DEPLOYMENT_ID') ? 'production' : 'development')).toLowerCase();
+const isProduction = environment === 'production';
+const notificationsModeRaw = (Deno.env.get('NOTIFICATIONS_MODE') || 'simulation').toLowerCase();
+const notificationsMode = notificationsModeRaw === 'real' ? 'real' : 'simulation';
+
+if (notificationsModeRaw !== 'real' && notificationsModeRaw !== 'simulation') {
+    logger.warn('INVALID_NOTIFICATIONS_MODE', { notificationsModeRaw, notificationsMode });
+}
 
 // =====================================================
 // INTERFACES Y TIPOS
@@ -545,6 +554,21 @@ Deno.serve(async (req) => {
         const action = url.pathname.split('/').pop() || 'send';
 
         logger.info('ACTION_START', { action });
+
+        if (isProduction && notificationsMode !== 'real' && (action === 'send' || action === 'test')) {
+            logger.warn('NOTIFICATIONS_MODE_BLOCKED', { action, notificationsMode, environment });
+            return new Response(JSON.stringify({
+                success: false,
+                error: {
+                    code: 'NOTIFICATIONS_MODE_BLOCKED',
+                    message: 'NOTIFICATIONS_MODE=simulation bloqueado en producción. Configure NOTIFICATIONS_MODE=real.',
+                    timestamp: new Date().toISOString()
+                }
+            }), {
+                status: 503,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            });
+        }
 
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
         const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');

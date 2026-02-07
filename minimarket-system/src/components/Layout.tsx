@@ -19,6 +19,7 @@ interface LayoutProps {
 
 const NAV_ITEMS: NavItem[] = [
   { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
+  { path: '/pedidos', icon: ClipboardList, label: 'Pedidos', allowedRoles: ['admin', 'deposito', 'ventas'] },
   { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
   { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
   { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
@@ -93,8 +94,8 @@ export default function Layout({ children }: LayoutProps) {
                   key={item.path}
                   to={item.path}
                   className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
-                      ? 'bg-blue-50 text-blue-700 font-medium'
-                      : 'text-gray-700 hover:bg-gray-100'
+                    ? 'bg-blue-50 text-blue-700 font-medium'
+                    : 'text-gray-700 hover:bg-gray-100'
                     }`}
                 >
                   <Icon className="w-5 h-5" />
@@ -117,8 +118,8 @@ export default function Layout({ children }: LayoutProps) {
                   key={item.path}
                   to={item.path}
                   className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-colors ${isActive
-                      ? 'bg-blue-50 text-blue-700'
-                      : 'text-gray-600 hover:bg-gray-100'
+                    ? 'bg-blue-50 text-blue-700'
+                    : 'text-gray-600 hover:bg-gray-100'
                     }`}
                 >
                   <Icon className="w-5 h-5 mb-1" />

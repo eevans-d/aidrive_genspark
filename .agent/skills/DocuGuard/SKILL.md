@@ -5,6 +5,22 @@ description: Habilidad de mantenimiento para asegurar que la documentación est�
 
 # DocuGuard Skill (Estándar Universal)
 
+<kernel_identity>
+  **ROL EN PROTOCOL ZERO:** Este skill opera como **CODEX** (auditoría) + **EXECUTOR** (sincronización).
+  - FASE 0-A: Modo CODEX (verificar, validar)
+  - FASE B-C: Modo EXECUTOR (sincronizar, actualizar)
+  **AUTO-EJECUCIÓN:** Ejecuta automáticamente sin intervención manual.
+</kernel_identity>
+
+<auto_execution>
+  **REGLAS DE AUTOMATIZACIÓN:**
+  1. Ejecutar TODAS las fases automáticamente en secuencia.
+  2. Si encuentra patrones prohibidos → BLOQUEAR y reportar (no esperar input).
+  3. Si encuentra desincronización → CORREGIR automáticamente.
+  4. Clasificar cambios como REAL/A CREAR/PROPUESTA FUTURA.
+  5. Generar reporte de sincronización al finalizar.
+</auto_execution>
+
 <objective>
   Actuar como "Guardián de la Verdad".
   Asegurar que la documentación (`docs/`) refleje fielmente el código (`src/`, `supabase/`).
@@ -28,6 +44,21 @@ description: Habilidad de mantenimiento para asegurar que la documentación est�
 </activation_rules>
 
 ## 3. Protocolo de Ejecución
+
+### FASE 0: Reality Check (R0)
+<reality_validation>
+  **Antes de documentar CUALQUIER cosa, verificar:**
+  1. ¿El archivo/módulo existe en el repo? → `ls` o `find`
+  2. ¿El endpoint/función existe? → `grep` en el código
+  3. ¿La afirmación es verificable? → Si no, clasificar como **PROPUESTA FUTURA**
+  
+  **Referencia:** Ver `reality_rules` en `project_config.yaml`
+  
+  **Clasificar todo output como:**
+  - **REAL:** Verificado con ruta/evidencia
+  - **A CREAR:** Necesario pero no existe
+  - **PROPUESTA FUTURA:** Idea, evaluar después
+</reality_validation>
 
 ### FASE A: Code Pattern Scan
 <step>
@@ -58,3 +89,19 @@ description: Habilidad de mantenimiento para asegurar que la documentación est�
   <item>Enlaces en docs funcionan.</item>
   <item>Cumple con guia de IA (`docs/IA_USAGE_GUIDE.md`).</item>
 </checklist>
+
+## 5. Anti-Loop / Stop-Conditions
+<fallback_behavior>
+  **SI hay conflicto entre docs:**
+  1. Priorizar archivo más reciente por timestamp
+  2. Documentar decisión en EVIDENCE.md
+  3. Continuar SIN esperar input
+  
+  **SI enlace roto encontrado:**
+  1. Marcar con [ENLACE ROTO] en el doc
+  2. Continuar verificación
+  3. Reportar todos al final
+  
+  **NUNCA:** Quedarse esperando confirmación manual
+</fallback_behavior>
+

@@ -5,6 +5,21 @@ description: Procedimientos estandarizados para ejecución, análisis y mantenim
 
 # TestMaster Skill (Estándar Universal)
 
+<kernel_identity>
+  **ROL EN PROTOCOL ZERO:** Este skill opera en modo **EXECUTOR** (estado caliente).
+  **COMPORTAMIENTO:** Ejecutar tests, analizar resultados, reportar. Sin debate.
+  **AUTO-INVOCADO POR:** CodeCraft, DeployOps, session-workflow.
+</kernel_identity>
+
+<auto_execution>
+  **REGLAS DE AUTOMATIZACIÓN:**
+  1. Verificar entorno (Docker) AUTOMÁTICAMENTE antes de ejecutar.
+  2. Ejecutar suite de tests sin pedir confirmación.
+  3. SI tests fallan → analizar + reportar + NO esperar input.
+  4. SI falla >2 veces mismo test → generar reporte y DETENERSE.
+  5. Guardar resultados en test-reports/ automáticamente.
+</auto_execution>
+
 <objective>
   Centralizar la calidad del código mediante la ejecución férrea de pruebas.
   **Objetivo:** "0 Regresiones".
@@ -62,6 +77,24 @@ description: Procedimientos estandarizados para ejecución, análisis y mantenim
   <item>Coverage > {{policies.coverage_min}}% (Nuevo código).</item>
 </checklist>
 
-## 5. Anti-Loop
-- Si falla por "Connection Refused", levanta Supabase/Docker.
-- Si falla >2 veces, genera reporte y DETENTE.
+## 5. Anti-Loop / Stop-Conditions
+<fallback_behavior>
+  **SI falla por "Connection Refused":**
+  1. Verificar si Docker está corriendo: `docker ps`
+  2. Si Docker caído → intentar levantar Supabase: `supabase start`
+  3. Si falla después de 2 intentos → marcar sesión PARCIAL
+  
+  **SI test falla >2 veces el mismo:**
+  1. Generar reporte con stack trace
+  2. Clasificar: ¿código roto o test flaky?
+  3. Documentar hallazgo
+  4. DETENERSE y cerrar sesión como PARCIAL
+  
+  **SI coverage < umbral:**
+  1. Documentar archivos sin cobertura
+  2. Continuar ejecución (no bloquear)
+  3. Reportar como warning, no blocker
+  
+  **NUNCA:** Quedarse esperando confirmación manual
+</fallback_behavior>
+

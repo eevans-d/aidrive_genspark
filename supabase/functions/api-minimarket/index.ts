@@ -59,6 +59,15 @@ import {
   getProductosDropdown,
   getProveedoresDropdown,
 } from './handlers/utils.ts';
+import { handleCreateReserva } from './handlers/reservas.ts';
+import {
+  handleListarPedidos,
+  handleObtenerPedido,
+  handleCrearPedido,
+  handleActualizarEstadoPedido,
+  handleMarcarItemPreparado,
+  handleActualizarPagoPedido,
+} from './handlers/pedidos.ts';
 
 const logger = createLogger('api-minimarket');
 
@@ -1466,48 +1475,18 @@ Deno.serve(async (req) => {
       const bodyResult = await parseJsonBody();
       if (bodyResult instanceof Response) return bodyResult;
 
-      const { producto_id, cantidad, referencia, deposito } = bodyResult as Record<string, unknown>;
-
-      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
-        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
-      }
-
-      const cantidadNumero = parsePositiveInt(cantidad);
-      if (cantidadNumero === null) {
-        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
-      }
-
-      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
-      const referenciaValue =
-        typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
-
-      const stockInfo = await callFunction(supabaseUrl, 'fnc_stock_disponible', requestHeaders(), {
-        p_producto_id: producto_id,
-        p_deposito: depositoValue,
+      return await handleCreateReserva({
+        supabaseUrl,
+        userId: user!.id,
+        requestId,
+        clientIp,
+        body: bodyResult as Record<string, unknown>,
+        idempotencyKeyRaw: req.headers.get('idempotency-key'),
+        requestHeaders,
+        respondOk,
+        respondFail,
+        logger,
       });
-      const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
-      const disponible = Number((stockRow as Record<string, unknown>)?.stock_disponible ?? 0);
-      const disponibleNumero = Number.isFinite(disponible) ? disponible : 0;
-
-      if (disponibleNumero < cantidadNumero) {
-        return respondFail(
-          'INSUFFICIENT_STOCK',
-          'Stock disponible insuficiente para la reserva',
-          409,
-          { details: { disponible: disponibleNumero } },
-        );
-      }
-
-      const reserva = await insertTable(supabaseUrl, 'stock_reservado', requestHeaders(), {
-        producto_id,
-        cantidad: cantidadNumero,
-        estado: 'activa',
-        referencia: referenciaValue,
-        usuario: user!.id,
-        fecha_reserva: new Date().toISOString(),
-      });
-
-      return respondOk((reserva as unknown[])[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
     }
 
     // 22. POST /reservas/:id/cancelar - Cancelar reserva
@@ -1589,6 +1568,136 @@ Deno.serve(async (req) => {
       });
 
       return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
+    }
+
+    // ====================================================================
+    // ENDPOINTS: PEDIDOS (6 endpoints)
+    // ====================================================================
+
+    // 24. GET /pedidos - Listar pedidos con filtros
+    if (path === '/pedidos' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const pagination = getPaginationOrFail(50, 100);
+      if (pagination instanceof Response) return pagination;
+
+      return await handleListarPedidos(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        {
+          estado: url.searchParams.get('estado') || undefined,
+          estado_pago: url.searchParams.get('estado_pago') || undefined,
+          fecha_desde: url.searchParams.get('fecha_desde') || undefined,
+          fecha_hasta: url.searchParams.get('fecha_hasta') || undefined,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        }
+      );
+    }
+
+    // 25. GET /pedidos/:id - Obtener pedido específico
+    if (path.match(/^\/pedidos\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+      }
+      return await handleObtenerPedido(supabaseUrl, requestHeaders(), responseHeaders, requestId, id);
+    }
+
+    // 26. POST /pedidos - Crear nuevo pedido
+    if (path === '/pedidos' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleCrearPedido(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Parameters<typeof handleCrearPedido>[4]
+      );
+    }
+
+    // 27. PUT /pedidos/:id/estado - Actualizar estado del pedido
+    if (path.match(/^\/pedidos\/[a-f0-9-]+\/estado$/) && method === 'PUT') {
+      checkRole(BASE_ROLES);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { estado } = bodyResult as { estado: string };
+
+      return await handleActualizarEstadoPedido(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        id,
+        estado,
+        user!.id
+      );
+    }
+
+    // 28. PUT /pedidos/:id/pago - Registrar pago del pedido
+    if (path.match(/^\/pedidos\/[a-f0-9-]+\/pago$/) && method === 'PUT') {
+      checkRole(['admin', 'deposito', 'jefe']);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { monto_pagado } = bodyResult as { monto_pagado: number };
+
+      if (typeof monto_pagado !== 'number' || monto_pagado < 0) {
+        return respondFail('VALIDATION_ERROR', 'monto_pagado debe ser >= 0', 400);
+      }
+
+      return await handleActualizarPagoPedido(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        id,
+        monto_pagado
+      );
+    }
+
+    // 29. PUT /pedidos/items/:id - Marcar item como preparado/no preparado
+    // Back-compat: aceptar también /pedidos/items/:id/preparado (ruta anterior del frontend)
+    if (path.match(/^\/pedidos\/items\/[a-f0-9-]+(\/preparado)?$/) && method === 'PUT') {
+      checkRole(BASE_ROLES);
+      const id = path.split('/')[3];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de item invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { preparado } = bodyResult as { preparado: boolean };
+
+      if (typeof preparado !== 'boolean') {
+        return respondFail('VALIDATION_ERROR', 'preparado debe ser boolean', 400);
+      }
+
+      return await handleMarcarItemPreparado(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        id,
+        preparado,
+        user!.id
+      );
     }
 
     // ====================================================================

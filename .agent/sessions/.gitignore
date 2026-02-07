@@ -1,0 +1,7 @@
+# Session markers - no versionar
+SESSION_ACTIVE
+SESSION_COMPLETE
+
+# Logs temporales de sesión
+current/EVIDENCE.md
+current/SESSION_LOG.md

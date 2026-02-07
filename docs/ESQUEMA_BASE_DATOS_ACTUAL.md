@@ -1,16 +1,17 @@
 # Esquema de Base de Datos - Sistema Mini Market
-**Actualizado:** 2025-10-31 (Post FASE 1)
+**Actualizado:** 2026-02-06 (Post Sistema Pedidos)
 
 ## 📊 Resumen Ejecutivo
 
 | Métrica | Valor |
 |---------|-------|
-| **Tablas principales** | 11 |
-| **Total campos** | 120+ |
-| **Índices custom** | 12 |
-| **Constraints CHECK** | 40+ |
-| **Foreign Keys** | 4 |
-| **Tamaño total** | ~700 KB |
+| **Tablas principales** | 14 |
+| **Total campos** | 180+ |
+| **Índices custom** | 16 |
+| **Constraints CHECK** | 50+ |
+| **Foreign Keys** | 8 |
+| **Stored Procedures** | 3 |
+| **Tamaño total** | ~850 KB |
 
 ---
 
@@ -449,8 +450,9 @@
 ## 🚀 Próximas Fases
 
 ### FASE 2: Tablas Transaccionales
-- [ ] pedidos
-- [ ] detalle_pedidos
+- [x] clientes ✅ (2026-02-06)
+- [x] pedidos ✅ (2026-02-06)
+- [x] detalle_pedidos ✅ (2026-02-06)
 - [ ] proveedor_performance
 
 ### FASE 3: Auditoría Particionada
@@ -612,6 +614,140 @@ TABLE (
 
 ---
 
+## 🛒 Sistema de Pedidos (NUEVO - 2026-02-06)
+
+### clientes
+**Propósito:** Datos de clientes recurrentes (opcional) para asociar pedidos.
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| nombre | TEXT | Nombre completo del cliente |
+| telefono | TEXT | Teléfono de contacto (opcional) |
+| email | TEXT | Email (opcional) |
+| direccion_default | TEXT | Dirección predeterminada (opcional) |
+| edificio | TEXT | Edificio/torre (opcional) |
+| piso | TEXT | Piso (opcional) |
+| departamento | TEXT | Depto (opcional) |
+| observaciones | TEXT | Notas internas (opcional) |
+| activo | BOOLEAN | Estado (default true) |
+| created_at | TIMESTAMPTZ | Fecha de creación (default now()) |
+| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
+
+**Índices:**
+- `idx_clientes_nombre`
+- `idx_clientes_telefono` (búsqueda rápida por teléfono)
+- `idx_clientes_activo` (parcial: WHERE activo = TRUE)
+
+**RLS:** ENABLED (role-based vía `public.personal`).
+- SELECT: cualquier `authenticated`
+- INSERT/UPDATE: roles `admin|deposito|jefe`
+- DELETE: solo `admin`
+
+---
+
+### pedidos
+**Propósito:** Registro de pedidos con estados y pagos
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| numero_pedido | SERIAL | Número secuencial legible |
+| cliente_id | UUID | FK → clientes(id) (opcional) |
+| cliente_nombre | TEXT | Nombre del cliente (NOT NULL) |
+| cliente_telefono | TEXT | Teléfono (opcional) |
+| tipo_entrega | TEXT | retiro\|domicilio |
+| direccion_entrega | TEXT | Dirección para domicilio (opcional) |
+| edificio | TEXT | Edificio/torre (opcional) |
+| piso | TEXT | Piso (opcional) |
+| departamento | TEXT | Depto (opcional) |
+| horario_entrega_preferido | TEXT | Horario preferido (opcional) |
+| estado | TEXT | pendiente\|preparando\|listo\|entregado\|cancelado |
+| estado_pago | TEXT | pendiente\|parcial\|pagado |
+| monto_total | DECIMAL(12,2) | Total del pedido (default 0) |
+| monto_pagado | DECIMAL(12,2) | Monto abonado (default 0) |
+| observaciones | TEXT | Observaciones visibles para el cliente (opcional) |
+| observaciones_internas | TEXT | Notas solo para personal (opcional) |
+| audio_url | TEXT | URL de audio (opcional) |
+| transcripcion_texto | TEXT | Texto transcripto del audio original (opcional) |
+| creado_por_id | UUID | FK → auth.users(id) (opcional) |
+| preparado_por_id | UUID | FK → auth.users(id) (opcional) |
+| entregado_por_id | UUID | FK → auth.users(id) (opcional) |
+| fecha_pedido | TIMESTAMPTZ | Fecha/hora del pedido (default now()) |
+| fecha_entrega_estimada | TIMESTAMPTZ | Fecha estimada (opcional) |
+| fecha_preparado | TIMESTAMPTZ | Fecha de preparado (opcional) |
+| fecha_entregado | TIMESTAMPTZ | Fecha de entrega (opcional) |
+| created_at | TIMESTAMPTZ | Creación en sistema (default now()) |
+| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
+
+**Índices:**
+- `idx_pedidos_numero`
+- `idx_pedidos_estado` (filtrado por estado)
+- `idx_pedidos_estado_pago`
+- `idx_pedidos_fecha` (ordenamiento temporal)
+- `idx_pedidos_cliente_id` (parcial: WHERE cliente_id IS NOT NULL)
+- `idx_pedidos_creado_por`
+- `idx_pedidos_estado_fecha` (estado + fecha_pedido)
+
+**RLS:** ENABLED (role-based vía `public.personal`).
+- SELECT: staff activo (existe en `public.personal`)
+- INSERT/UPDATE: roles `admin|deposito|jefe|ventas`
+- DELETE: solo `admin`
+
+---
+
+### detalle_pedidos
+**Propósito:** Items individuales de cada pedido
+
+| Campo | Tipo | Descripción |
+|-------|------|-------------|
+| id | UUID | PK |
+| pedido_id | UUID | FK → pedidos(id) ON DELETE CASCADE |
+| producto_id | UUID | FK → productos(id) (opcional) |
+| producto_nombre | TEXT | Nombre del producto (snapshot al momento del pedido) |
+| producto_sku | TEXT | SKU del producto (opcional) |
+| cantidad | INTEGER | Cantidad (CHECK > 0) |
+| precio_unitario | DECIMAL(12,2) | Precio por unidad |
+| subtotal | DECIMAL(12,2) | Generated: cantidad * precio_unitario (STORED) |
+| observaciones | TEXT | Notas del ítem (opcional) |
+| preparado | BOOLEAN | Item preparado (default false) |
+| preparado_por_id | UUID | Usuario que preparó |
+| fecha_preparado | TIMESTAMPTZ | Cuándo se preparó |
+| created_at | TIMESTAMPTZ | Fecha de creación |
+
+**Índices:**
+- `idx_detalle_pedidos_pedido`
+- `idx_detalle_pedidos_producto` (parcial: WHERE producto_id IS NOT NULL)
+- `idx_detalle_pedidos_preparado`
+
+**RLS:** ENABLED (role-based vía `public.personal`, mismo patrón que `pedidos`).
+
+---
+
+### Stored Procedures de Pedidos
+
+#### sp_crear_pedido
+**Propósito:** Creación atómica de pedido con detalles  
+**Tipo:** SECURITY DEFINER  
+**Uso:**
+```sql
+SELECT sp_crear_pedido(
+  p_cliente_nombre := 'Juan Pérez',
+  p_tipo_entrega := 'domicilio',
+  p_direccion_entrega := 'Calle 123',
+  p_edificio := NULL,
+  p_piso := '2',
+  p_departamento := 'A',
+  p_horario_preferido := '18:00-20:00',
+  p_observaciones := 'Llamar antes',
+  p_cliente_telefono := '11-5555-5555',
+  p_items := '[{"producto_nombre":"Salchichas","cantidad":2,"precio_unitario":1500}]'::jsonb
+);
+```
+**Retorna (JSONB):** `{success, pedido_id, numero_pedido, monto_total, items_count}` (o `{success:false,error}`).
+
+---
+
 ## 📝 Notas Técnicas
 
 ### Performance
@@ -631,6 +767,6 @@ TABLE (
 
 ---
 
-**Última actualización:** 2025-10-31  
-**Versión:** Post-FASE 1  
+**Última actualización:** 2026-02-06  
+**Versión:** Post-Sistema Pedidos  
 **Estado:** Producción estable

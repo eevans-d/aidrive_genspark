@@ -1,5 +1,37 @@
 # Project Closure Report - Sistema Mini Market
 
+## Pre-cierre 2026-02-03 (EN DESARROLLO)
+
+**Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  
+**Estado:** EN DESARROLLO (pre-cierre controlado)  
+**Fuente de verdad actual:** `docs/ESTADO_ACTUAL.md` (actualizado 2026-02-04)  
+**Build/Tests:** Ejecutados el 2026-02-03 (lint/build/unit/integration/e2e smoke + edge check OK). Ver `docs/closure/BUILD_VERIFICATION.md`.  
+
+### Pendientes críticos que bloquean cierre final (según `docs/ESTADO_ACTUAL.md`)
+1) Habilitar **Leaked Password Protection** (COMET reporta que requiere plan Pro; SMTP ya configurado). **Decisión: diferir hasta producción.**  
+
+### Verificaciones P0 completadas (2026-02-04)
+- ✅ Endpoint `/reportes/efectividad-tareas` probado con JWT real: **200 OK**.  
+  - Nota técnica: access tokens emitidos por Supabase Auth son **ES256**; se requirió redeploy de `api-minimarket` con `--no-verify-jwt` para evitar `401 Invalid JWT` del gateway y dejar la validación en app (`/auth/v1/user` + roles).
+- ✅ Licencia definida: **MIT** (owner: `ORIGEN•AI`).
+
+### Módulos críticos para revisión humana
+- `supabase/functions/api-minimarket/index.ts` (gateway principal y routing).  
+- `supabase/functions/api-minimarket/helpers/auth.ts` (auth/roles).  
+- `supabase/functions/api-proveedor/index.ts` + `supabase/functions/api-proveedor/utils/auth.ts` (shared secret + read mode).  
+- `supabase/functions/_shared/cors.ts` y `supabase/functions/_shared/rate-limit.ts` (CORS y rate limiting).  
+- `supabase/migrations/` (RLS, grants y seguridad de datos).  
+- `minimarket-system/src/contexts/AuthContext.tsx` (login/sesión).  
+
+### Alcance del pre-cierre
+- Consolidar documentación verificable y riesgos pendientes.  
+- Preparar PR con hardening básico y guía de uso de IA.  
+- Evitar cambios irreversibles; despliegues solo si desbloquean P0 y quedan documentados (ver `docs/ESTADO_ACTUAL.md`).  
+
+---
+
+## Histórico (2026-01-26 / 2026-01-31)
+
 > **Nota (2026-01-31):** documento histórico. La fuente de verdad actual es `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/ESTADO_ACTUAL.md`.
 
 **Versión:** 1.0.0  
@@ -245,7 +277,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 - MIT License (recomendado para proyectos comerciales privados)
 - Propietaria (si es uso interno exclusivo)
 
-**Acción Requerida:** Confirmar licencia con stakeholders
+**Acción Requerida:** Licencia confirmada (MIT, `ORIGEN•AI`).
 
 ---
 
@@ -369,7 +401,7 @@ El proyecto **Sistema Mini Market** esta funcionalmente completo con features cr
 1. **Obtener credenciales:** Configurar secrets de GitHub para habilitar tests gated
 2. **WS7.5 Roles:** ✅ Completado (rol desde `app_metadata`, sin fallback a `user_metadata`)
 3. **Rollback probado:** Ejecutar prueba en staging y guardar evidencia
-4. **Definir licencia:** Decidir MIT vs Propietaria
+4. **Definir licencia:** ✅ MIT (owner: `ORIGEN•AI`)
 5. **Revisión P0:** Revisar manualmente los 6 módulos críticos listados
 
 ### Corto Plazo (1-2 semanas)

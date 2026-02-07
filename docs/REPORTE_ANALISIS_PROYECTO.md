@@ -9,7 +9,7 @@
 
 ## 1) Resumen ejecutivo
 
-- El repo define **722 tests unitarios** (Backend 682 + Frontend 40); la ejecución real se documenta en `docs/ESTADO_ACTUAL.md`.
+- El repo tiene suite de **tests unitarios** (backend + frontend); conteos y evidencia de ejecución en `docs/ESTADO_ACTUAL.md`.
 - La **arquitectura real** incluye lecturas directas desde el frontend a Supabase en varios hooks, con escrituras vía gateway (excepción actual: alta inicial en `personal` durante `signUp`).
 - Credenciales disponibles y auditoria RLS completada (revalidada 2026-01-31).
 - **Rollback probado exitosamente** en staging (OPS-SMART-1, 2026-01-30).

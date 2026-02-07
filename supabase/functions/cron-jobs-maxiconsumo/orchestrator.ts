@@ -21,6 +21,75 @@ const JOB_HANDLERS: Record<string, JobHandler> = {
   'maintenance_cleanup': executeMaintenanceCleanup
 };
 
+async function callRpc<T>(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  fnName: string,
+  payload: Record<string, unknown>
+): Promise<T> {
+  const response = await fetch(`${supabaseUrl}/rest/v1/rpc/${fnName}`, {
+    method: 'POST',
+    headers: {
+      'apikey': serviceRoleKey,
+      'Authorization': `Bearer ${serviceRoleKey}`,
+      'Content-Type': 'application/json'
+    },
+    body: JSON.stringify(payload)
+  });
+
+  if (!response.ok) {
+    throw new Error(`RPC ${fnName} failed: ${response.status} ${response.statusText}`);
+  }
+
+  return await response.json() as T;
+}
+
+async function tryAcquireJobLock(
+  jobId: string,
+  lockSeconds: number,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  owner: string
+): Promise<boolean> {
+  let result: unknown;
+  try {
+    result = await callRpc<unknown>(supabaseUrl, serviceRoleKey, 'sp_acquire_job_lock', {
+      p_job_id: jobId,
+      p_lock_seconds: lockSeconds,
+      p_owner: owner
+    });
+  } catch (error) {
+    const message = (error as Error).message || '';
+    if (message.includes('404') || message.includes('Not Found')) {
+      logger.warn('JOB_LOCK_RPC_MISSING', { jobId, owner, action: 'fallback_no_lock' });
+      return true;
+    }
+    throw error;
+  }
+
+  if (Array.isArray(result)) {
+    return result[0] === true;
+  }
+
+  return result === true;
+}
+
+async function releaseJobLock(
+  jobId: string,
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  owner: string
+): Promise<void> {
+  try {
+    await callRpc<unknown>(supabaseUrl, serviceRoleKey, 'sp_release_job_lock', {
+      p_job_id: jobId,
+      p_owner: owner
+    });
+  } catch (error) {
+    logger.warn('JOB_LOCK_RELEASE_FAILED', { jobId, error: (error as Error).message });
+  }
+}
+
 export function generateRunId(): string {
   return `run_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
@@ -59,6 +128,28 @@ export async function executeJob(
   const jobLog: StructuredLog = { ...log, jobId, runId: ctx.runId };
   logger.info('ORCHESTRATOR_EXECUTE_START', jobLog);
 
+  const lockOwner = ctx.executionId;
+  const lockSeconds = Math.ceil(config.timeoutMs / 1000) + 60;
+  const lockAcquired = await tryAcquireJobLock(jobId, lockSeconds, supabaseUrl, serviceRoleKey, lockOwner);
+
+  if (!lockAcquired) {
+    logger.warn('JOB_LOCKED', { ...jobLog, lockSeconds });
+    return {
+      success: true,
+      executionTimeMs: 0,
+      productsProcessed: 0,
+      productsSuccessful: 0,
+      productsFailed: 0,
+      alertsGenerated: 0,
+      emailsSent: 0,
+      smsSent: 0,
+      metrics: { skipped: true, reason: 'lock_active' },
+      errors: [],
+      warnings: ['job_locked'],
+      recommendations: []
+    };
+  }
+
   try {
     const result = await Promise.race([
       handler(ctx, supabaseUrl, serviceRoleKey, jobLog),
@@ -72,6 +163,10 @@ export async function executeJob(
   } catch (e) {
     breaker.recordFailure();
     throw e;
+  } finally {
+    if (lockAcquired) {
+      await releaseJobLock(jobId, supabaseUrl, serviceRoleKey, lockOwner);
+    }
   }
 }
 

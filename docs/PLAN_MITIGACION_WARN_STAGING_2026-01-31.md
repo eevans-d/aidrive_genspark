@@ -32,8 +32,8 @@ Confirmar el WARN residual del Security Advisor en PROD, habilitar la protecció
 - Leaked password protection **no se puede habilitar** sin **SMTP personalizado** (credenciales externas).
 
 **Pendientes por limitación de entorno (Antigravity):**
-- Verificación visual del Security Advisor (confirmar WARN=1).
-- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido (**último intento 2026-02-02: 401 Invalid JWT**).
+- ✅ Verificación visual del Security Advisor (confirmado WARN=1) — 2026-02-04.
+- ✅ Test real del endpoint `/reportes/efectividad-tareas` con JWT válido (**200 OK**) — 2026-02-04. *(Requirió redeploy `api-minimarket` con `--no-verify-jwt` por JWT ES256; validación queda en app).*
 
 > **Nota de coherencia:** las listas con `[x]` en fases posteriores corresponden a la ejecución **histórica 2026-02-01**.  
 > El estado actual está re‑abierto; usar este addendum como referencia principal.
@@ -500,7 +500,7 @@ Agregar **PARTE 9** al archivo `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` con:
 | Migración | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` | SQL aplicado |
 | Deployment Guide | `docs/DEPLOYMENT_GUIDE.md` | Procedimientos de deploy |
 | Obtener Secretos | `docs/OBTENER_SECRETOS.md` | Credenciales staging/local |
-| Runbook Security Advisor | `docs/COMET_RUNBOOK_SECURITY_ADVISOR.md` | Verificación rápida |
+| Security Advisor Check | `scripts/run_security_advisor_check.sh` | Verificación rápida (sin COMET) |
 
 ---
 

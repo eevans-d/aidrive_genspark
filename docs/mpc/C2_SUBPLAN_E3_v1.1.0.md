@@ -17,7 +17,7 @@
 
 - Migraciones verificadas: conteo repo actual 12 archivos (aplicación en entornos requiere verificación).
 - Rollback documentado en `docs/DEPLOYMENT_GUIDE.md`.
-- **Pendiente:** prueba real de rollback en staging (OPS-SMART-1). Checklist: `docs/ROLLBACK_DRILL_STAGING.md`. Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+- **Completado:** rollback real en staging (OPS-SMART-1, 2026-01-30). Checklist: `docs/archive/ROLLBACK_DRILL_STAGING.md`. Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
 
 ---
 
