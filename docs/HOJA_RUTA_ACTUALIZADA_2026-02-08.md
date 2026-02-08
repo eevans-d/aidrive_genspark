@@ -1,7 +1,7 @@
 # Hoja de Ruta Actualizada (post-plan) — Mini Market System
 
 **Fecha:** 2026-02-08  
-**Baseline verificado:** branch `chore/closure-prep-20260202`, commit `85ab94a` (este documento + referencia; features Fases 0–6 + remoto + refresh MVs quedaron en `6584a1b`).  
+**Baseline verificado:** branch `chore/closure-prep-20260202` (registrar el commit exacto con `git log -1 --oneline`; la implementación de Fases 0–6 + alineación remoto + refresh MVs quedó en `6584a1b`).  
 **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`, `docs/closure/EXECUTION_LOG_2026-02-07.md`, `docs/PLAN_EJECUCION_PREMORTEM.md`.
 
 ## 0) Objetivo
@@ -13,26 +13,23 @@ En particular:
 3. Consolidar observabilidad y checklist de release.
 
 ## 1) Reglas operativas (obligatorias para agentes ejecutores)
-1. Registrar TODO en un log auditable:
-   - Crear `docs/closure/EXECUTION_LOG_YYYY-MM-DD_<scope>.md`.
-   - Cada tarea: comandos, resultados, evidencia (tests/logs), y cambios aplicados.
-2. Baseline antes de tocar nada:
-   - `git status --porcelain=v1` (pegar en el log).
-   - `supabase migration list --linked` (pegar en el log).
-   - `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` (pegar resumen en el log).
-3. Prohibido:
-   - `git reset --hard`, `git checkout -- <file>`, “limpiar” working tree sin aprobación explícita.
-4. Cada módulo/fase debe cerrar con:
-   - tests obligatorios (sección 7),
-   - actualización mínima de docs (`docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, OpenAPI si cambió API),
-   - evidencia en el log.
+1. Log auditable: crear `docs/closure/EXECUTION_LOG_YYYY-MM-DD_<scope>.md` y mantenerlo actualizado (qué se hizo, comandos, resultados, evidencias y archivos tocados).
+2. Baseline antes de tocar nada: ejecutar y pegar en el log `git status --porcelain=v1`, `git log -1 --oneline`, `supabase migration list --linked`, `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` y `supabase secrets list --project-ref dqaygmjpzoqjjrywdsxi --output json` (solo nombres).
+3. Prohibido: `git reset --hard`, `git checkout -- <file>`, “limpiar” working tree sin aprobación explícita.
+4. Cierre por módulo/fase: ejecutar tests (sección 4), actualizar docs mínimas (estado/decisiones/OpenAPI si aplica) y registrar evidencia en el log.
+
+## 1.1) Convenciones (para evitar confusiones)
+- Migraciones: `supabase/migrations/YYYYMMDDHHMMSS_<desc>.sql` (timestamp incremental, sin espacios).
+- Deploy DB remoto: usar `supabase db push --linked` (no requiere Docker). Evitar `supabase status` / `supabase db dump` si Docker no está disponible.
+- Deploy Edge Functions remoto: usar `supabase functions deploy <fn> --use-api`.
+- `api-minimarket` debe permanecer con `verify_jwt=false` hasta que se cierre WS4 (ver `docs/DECISION_LOG.md` D-056). Si se redeployea, usar `--no-verify-jwt`.
+- Commits: 1 commit por fase o por módulo (mensaje claro + evidencias en el log).
 
 ## 2) Estado actual (resumen)
 Implementado y verificado (local + remoto):
 - Fases 0–6 del plan `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`.
 - DB remoto alineado + Edge Functions desplegadas (ver `docs/ESTADO_ACTUAL.md`).
-- Refresh operativo de MVs de stock:
-  - RPC `public.fn_refresh_stock_views()` disponible (migración `20260208010000_*`).
+- Refresh operativo de MVs de stock: RPC `public.fn_refresh_stock_views()` disponible (migración `20260208010000_*`).
 
 Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 - WS3: rate limit y circuit breaker **compartidos** (hoy es in-memory por instancia).
@@ -49,17 +46,14 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 **Problema actual:** `FixedWindowRateLimiter` vive en memoria; en Edge Functions hay múltiples instancias, por lo que el límite no es consistente.
 
 **Checklist**
-- [ ] DB: crear migración `rate_limit_state` + RPC atómico `sp_check_rate_limit(...)` (usar `SECURITY DEFINER` + `SET search_path = public`).
-- [ ] Backend: actualizar `supabase/functions/_shared/rate-limit.ts` para usar RPC cuando esté disponible.
-  - Fallback: si RPC no existe (404), usar in-memory (dev).
-- [ ] Gateway: en `supabase/functions/api-minimarket/index.ts` usar key por `userId + ip`:
-  - key recomendada: `user:{uid}:ip:{ip}` si hay ip, si no `user:{uid}`, y como último `ip:{ip}`.
-- [ ] Tests:
-  - unit tests: claves y headers (`RateLimit-*`).
-  - test de concurrencia (si se hace RPC con `SERIALIZABLE`).
-- [ ] Docs:
-  - registrar decisión/ajuste en `docs/DECISION_LOG.md`,
-  - actualizar `docs/ESTADO_ACTUAL.md` (qué cambió + evidencia).
+- [ ] Crear migración sugerida `supabase/migrations/20260208020000_add_rate_limit_state.sql` con: tabla `rate_limit_state` + RPC atómico `sp_check_rate_limit(p_key text, p_limit int, p_window_seconds int)` + permisos correctos (`SECURITY DEFINER`, `SET search_path = public`, `REVOKE ALL FROM PUBLIC`, `GRANT EXECUTE TO service_role`).
+- [ ] Actualizar `supabase/functions/_shared/rate-limit.ts` para usar la RPC si existe; fallback in-memory solo si la RPC responde 404.
+- [ ] Actualizar `supabase/functions/api-minimarket/index.ts` para construir key `user:{uid}:ip:{ip}` cuando haya ip; fallback `user:{uid}`; último fallback `ip:{ip}`.
+- [ ] En `api-minimarket`, llamar la RPC con headers de `service_role` (no con JWT de usuario), para evitar exposición pública del rate-limit state.
+- [ ] Agregar tests unitarios para: claves, headers `RateLimit-*`, `Retry-After`, y fallback cuando la RPC no existe.
+- [ ] Deploy DB: `supabase db push --linked`.
+- [ ] Deploy Edge: redeploy `api-minimarket` si cambió el gateway (mantener `--no-verify-jwt`).
+- [ ] Docs: actualizar `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md` con evidencia (tests + comportamiento esperado).
 
 **Done**
 - Límite consistente cross-instancia (mismo usuario no puede “bypassear” con reintentos/distribución).
@@ -72,13 +66,13 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 - Persistir solo el breaker “crítico” (DB/PostgREST) en Supabase tabla para evitar tormentas.
 
 **Checklist**
-- [ ] DB: tabla `circuit_breaker_state` + RPC `sp_circuit_breaker_record(p_key, p_success)`:
-  - Guarda: `state`, `failure_count`, `opened_at`, `last_failure`.
-  - TTL: limpieza por job semanal o “reset si opened_at viejo”.
-- [ ] Backend: `supabase/functions/_shared/circuit-breaker.ts`:
-  - si RPC existe: usar estado persistido para `api-minimarket-db`.
-  - si no: fallback in-memory.
-- [ ] Tests unitarios: transiciones `closed -> open -> half_open -> closed`.
+- [ ] Crear migración sugerida `supabase/migrations/20260208030000_add_circuit_breaker_state.sql` con: tabla `circuit_breaker_state` + RPC para registrar `success/failure` y calcular transición de estado + lógica de “TTL” (reset si `opened_at` es muy viejo) + permisos (`REVOKE ALL FROM PUBLIC`, `GRANT EXECUTE TO service_role`).
+- [ ] Actualizar `supabase/functions/_shared/circuit-breaker.ts` para persistir SOLO el breaker crítico `api-minimarket-db` cuando la RPC exista; fallback in-memory si no existe.
+- [ ] En `api-minimarket`, llamar la RPC con headers de `service_role` (no con JWT de usuario).
+- [ ] Agregar tests unitarios para transiciones `closed -> open -> half_open -> closed` y para “TTL reset”.
+- [ ] Deploy DB: `supabase db push --linked`.
+- [ ] Deploy Edge: redeploy `api-minimarket` (mantener `--no-verify-jwt`).
+- [ ] Docs: actualizar `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.
 
 **Done**
 - Si DB falla repetidamente, el breaker se mantiene abierto aunque cambie la instancia.
@@ -87,13 +81,12 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 **Problema actual:** `api-minimarket` valida token llamando `/auth/v1/user` en cada request.
 
 **Checklist**
-- [ ] Implementar cache en memoria por token (TTL 30–60s):
-  - key: hash corto del token (no guardar token crudo en logs).
-  - negative cache (401) por 10–30s para evitar loops.
-- [ ] Agregar timeout a `fetchUserInfo()` (AbortController).
-- [ ] Agregar breaker dedicado a `auth-v1-user` para degradación controlada.
-- [ ] Tests unitarios: cache hit/miss, timeout, breaker open.
-- [ ] Documentar impacto: p95 menor, menos carga a Auth.
+- [ ] Implementar cache en memoria por token (TTL 30–60s) en `supabase/functions/api-minimarket/helpers/auth.ts` usando key hash (nunca loggear token crudo) + negative-cache de 401 (10–30s).
+- [ ] Agregar timeout a `fetchUserInfo()` (AbortController) y error tipificado cuando vence.
+- [ ] Agregar breaker dedicado a `/auth/v1/user` para fail-fast (no bloquear toda la request).
+- [ ] Tests unitarios: cache hit/miss, negative-cache, timeout, breaker open.
+- [ ] Deploy Edge: redeploy `api-minimarket` (mantener `--no-verify-jwt`).
+- [ ] Docs: actualizar `docs/ESTADO_ACTUAL.md` con evidencia (comandos y resultados).
 
 **Done**
 - En una sesión normal, se reduce drásticamente el número de llamadas a `/auth/v1/user`.
@@ -101,12 +94,10 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 
 #### A4) Cron jobs y refresh de MVs (verificación operativa)
 **Checklist**
-- [ ] Confirmar en SQL Editor:
-  - `pg_cron` y `pg_net` instaladas (si se usan).
-  - jobs activos en `cron.job` (incluye `refresh_stock_views` si está disponible).
-- [ ] Si `refresh_stock_views` NO existe:
-  - crear schedule manual: `select cron.schedule('refresh_stock_views','7 * * * *','select public.fn_refresh_stock_views()');`
-- [ ] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (nueva sección “MVs refresh”).
+- [ ] Confirmar en SQL Editor si existen `pg_cron` y `pg_net` (si se usan) y listar jobs activos en `cron.job`.
+- [ ] Si `pg_cron` existe pero `refresh_stock_views` NO está scheduleado: crear schedule manual `cron.schedule('refresh_stock_views','7 * * * *','select public.fn_refresh_stock_views()');`.
+- [ ] Si `pg_cron` NO existe: documentar operación manual vía RPC `fn_refresh_stock_views()` (service_role) o plan alternativo (sincronizar con operaciones).
+- [ ] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (sección “MVs refresh”).
 
 **Done**
 - `mv_stock_bajo` y `mv_productos_proximos_vencer` se refrescan periódicamente (o se documenta alternativa).
@@ -126,9 +117,9 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 
 **Checklist**
 - [ ] `minimarket-system/src/pages/Productos.tsx`: CTA “Nuevo producto”.
-- [ ] Modal/form mínimo:
-  - `nombre` (requerido), `sku`, `categoria_id`, `marca`, `contenido_neto`.
-- [ ] Mutación vía gateway (`productosApi.create`) y revalidación de listados.
+- [ ] Modal/form mínimo con campos: `nombre` (requerido), `sku`, `categoria_id`, `marca`, `contenido_neto`.
+- [ ] Extender `minimarket-system/src/lib/apiClient.ts` agregando `productosApi.create(...)` y, si conviene, `productosApi.update(...)`.
+- [ ] Mutación vía gateway y revalidación de listados (React Query).
 - [ ] Tests de componentes: render modal + submit OK + error.
 
 **Done**
@@ -141,9 +132,8 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 
 **Checklist**
 - [ ] En `Productos.tsx`: acción “Actualizar precio”.
-- [ ] Definir UX:
-  - Admin: usa `/precios/aplicar` si cambia costo y quiere recálculo.
-  - Depósito: usa `PUT /productos/:id` si solo ajusta precio actual (si aplica al negocio).
+- [ ] Definir UX: Admin usa `/precios/aplicar` para costo+recalculo; Depósito usa `PUT /productos/:id` solo si el negocio lo permite (si no, ocultar en UI para rol depósito).
+- [ ] Extender `productosApi.update(...)` si se usa `PUT /productos/:id` desde UI.
 - [ ] Tests de componentes para ambos flujos.
 
 **Done**
@@ -154,10 +144,8 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 
 **Checklist**
 - [ ] `minimarket-system/src/pages/Deposito.tsx`: agregar tipo “Ajuste”.
-- [ ] Campos:
-  - producto, cantidad, motivo obligatorio (mapear a `motivo`), observaciones opcional.
-- [ ] Semántica:
-  - `cantidad` es positiva; el signo se resuelve con `tipo_movimiento` si se decide ampliar (si no, documentar).
+- [ ] Campos: producto, cantidad, motivo obligatorio (mapear a `motivo`), observaciones opcional.
+- [ ] Semántica: `cantidad` es positiva; el signo se resuelve con `tipo_movimiento` si se decide ampliar (si no, documentar).
 - [ ] Tests de componentes: ajuste OK + validaciones.
 
 **Done**
@@ -180,8 +168,7 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 
 #### C2) Smoke tests reales (remoto) para features nuevas
 **Checklist**
-- [ ] Agregar script `scripts/smoke-minimarket-features.mjs` (read-only) que valide:
-  - `/search`, `/insights/arbitraje`, `/clientes`, `/cuentas-corrientes/resumen`, `/ofertas/sugeridas`, `/bitacora`.
+- [ ] Agregar script `scripts/smoke-minimarket-features.mjs` (read-only) que valide: `/search`, `/insights/arbitraje`, `/clientes`, `/cuentas-corrientes/resumen`, `/ofertas/sugeridas`, `/bitacora`.
 - [ ] Registrar evidencia en `docs/ESTADO_ACTUAL.md`.
 
 #### C3) Rotación de secretos pre-producción
@@ -211,14 +198,17 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 - [ ] `pnpm -C minimarket-system lint`
 - [ ] `pnpm -C minimarket-system build`
 - [ ] `pnpm -C minimarket-system test:components`
-- [ ] Actualizar:
-  - `docs/ESTADO_ACTUAL.md` (fecha + cambios + evidencia),
-  - `docs/DECISION_LOG.md` (si hubo decisión nueva),
-  - `docs/api-openapi-3.1.yaml` y `docs/API_README.md` (si cambia API),
-  - `docs/closure/EXECUTION_LOG_*.md` (registro auditable).
+- [ ] Actualizar `docs/ESTADO_ACTUAL.md` (fecha + cambios + evidencia).
+- [ ] Actualizar `docs/DECISION_LOG.md` (si hubo decisión nueva).
+- [ ] Actualizar `docs/api-openapi-3.1.yaml` y `docs/API_README.md` (si cambia API).
+- [ ] Actualizar `docs/closure/EXECUTION_LOG_*.md` (registro auditable).
 
 ## 5) Mega planificación (secuencial, recomendada)
-1. MODULO A (hardening) primero: A1 + A3 como P0; A2/A4/A5 según riesgo.
-2. MODULO B (UX) después: B1/B2/B3 cierran los gaps de operación diaria.
-3. MODULO C (release readiness): smoke real + observabilidad + rotación secretos.
-4. MODULO D (modelo) solo si se confirma necesidad real (lotes/FEFO).
+1. Fase 0 (preflight y baseline): crear log + registrar estado de git/Supabase + confirmar que el remoto está vinculado al ref `dqaygmjpzoqjjrywdsxi`.
+2. Fase 1 (hardening P0): A3 (auth resiliente) y luego A1 (rate limit compartido). Motivo: A3 reduce costo de mover rate limit a un key dependiente de auth.
+3. Fase 2 (hardening P1): A2 (breaker semi-persistente), A4 (verificación cron/MVs), A5 (hardening api-proveedor).
+4. Fase 3 (UX P1): B1 (alta producto), B2 (cambio precio), B3 (ajuste stock), B4 (acciones desde alertas).
+5. Fase 4 (release readiness): C2 (smokes read-only), C1 (observabilidad frontend), C3 (rotación secretos).
+6. Fase 5 (opcional): MODULO D (modelo) solo si se confirma necesidad real (lotes/FEFO).
+
+Regla: no empezar la fase siguiente si no cerró checklist de verificación (sección 4) y no quedó evidencia en el log.
