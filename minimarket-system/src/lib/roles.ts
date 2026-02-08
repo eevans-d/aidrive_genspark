@@ -22,13 +22,17 @@ export const PUBLIC_ROLES: UserRole[] = ['admin', 'deposito', 'ventas', 'usuario
 /** Rutas del sistema con sus permisos */
 export const ROUTE_CONFIG: Record<string, UserRole[]> = {
         '/': PUBLIC_ROLES, // Dashboard - todos
-        '/deposito': ['admin', 'deposito'], // Solo admin y deposito
-        '/kardex': ['admin', 'deposito'], // Kardex - solo admin y deposito
-                '/rentabilidad': ['admin', 'deposito'], // Rentabilidad - solo admin y deposito
+        '/deposito': ['admin', 'deposito'],
+        '/kardex': ['admin', 'deposito'],
+        '/rentabilidad': ['admin', 'deposito'],
         '/stock': PUBLIC_ROLES, // Stock - todos
         '/tareas': PUBLIC_ROLES, // Tareas - todos
-        '/productos': ['admin', 'deposito', 'ventas'], // Productos - no usuarios básicos
-        '/proveedores': ['admin', 'deposito'], // Proveedores - solo admin y deposito
+        '/productos': ['admin', 'deposito', 'ventas'],
+        '/proveedores': ['admin', 'deposito'],
+        '/pedidos': ['admin', 'deposito', 'ventas'],
+        '/pos': ['admin', 'ventas'],
+        '/pocket': ['admin', 'deposito'],
+        '/clientes': ['admin', 'ventas'],
 };
 
 /**
@@ -38,7 +42,7 @@ export function canAccessRoute(userRole: UserRole | null, path: string): boolean
         if (!userRole) return false;
 
         const allowedRoles = ROUTE_CONFIG[path];
-        if (!allowedRoles) return true; // Ruta no configurada = acceso libre
+        if (!allowedRoles) return false; // DENY-BY-DEFAULT: ruta no configurada = sin acceso
 
         return allowedRoles.includes(userRole);
 }

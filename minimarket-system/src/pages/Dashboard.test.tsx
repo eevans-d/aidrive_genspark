@@ -12,6 +12,13 @@ vi.mock('../hooks/queries', () => ({
         useDashboardStats: vi.fn(),
 }));
 
+// Avoid hitting gateway in Dashboard CC section during component tests
+vi.mock('../hooks/useUserRole', () => ({
+        useUserRole: () => ({
+                role: 'usuario',
+        }),
+}));
+
 // Import the mocked hook to control its return value
 import { useDashboardStats } from '../hooks/queries';
 const mockedUseDashboardStats = vi.mocked(useDashboardStats);
@@ -47,9 +54,11 @@ describe('Dashboard', () => {
                         isFetching: false,
                 } as any);
 
-                renderWithQueryClient(<Dashboard />);
+                const { container } = renderWithQueryClient(<Dashboard />);
 
-                expect(screen.getByText('Cargando...')).toBeInTheDocument();
+                // Skeleton loading uses animate-pulse divs instead of text
+                const skeletons = container.querySelectorAll('.animate-pulse');
+                expect(skeletons.length).toBeGreaterThan(0);
         });
 
         it('renders dashboard with stats when data is loaded', () => {

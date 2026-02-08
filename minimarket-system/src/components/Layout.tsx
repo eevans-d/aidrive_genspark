@@ -1,9 +1,14 @@
-import { ReactNode, useMemo } from 'react'
+import { ReactNode, useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
+import { useScanListener } from '../hooks/useScanListener'
+import { useAlertas } from '../hooks/useAlertas'
+import { bitacoraApi } from '../lib/apiClient'
+import GlobalSearch from './GlobalSearch'
+import AlertsDrawer from './AlertsDrawer'
 
 interface NavItem {
   path: string
@@ -20,6 +25,7 @@ interface LayoutProps {
 const NAV_ITEMS: NavItem[] = [
   { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
   { path: '/pedidos', icon: ClipboardList, label: 'Pedidos', allowedRoles: ['admin', 'deposito', 'ventas'] },
+  { path: '/clientes', icon: UserIcon, label: 'Clientes', allowedRoles: ['admin', 'ventas'] },
   { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
   { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
   { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
@@ -33,6 +39,36 @@ export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
   const { user, signOut } = useAuth()
   const { canAccess } = useUserRole()
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [alertsOpen, setAlertsOpen] = useState(false)
+  const [scanQuery, setScanQuery] = useState('')
+  const { totalAlertas } = useAlertas()
+  const [logoutOpen, setLogoutOpen] = useState(false)
+  const [logoutNota, setLogoutNota] = useState('')
+  const [logoutError, setLogoutError] = useState<string | null>(null)
+  const [logoutSaving, setLogoutSaving] = useState(false)
+
+  // Barcode scanner detection: opens search with scanned barcode
+  useScanListener({
+    onScan: useCallback((barcode: string) => {
+      setScanQuery(barcode)
+      setSearchOpen(true)
+    }, []),
+    enabled: !searchOpen,
+  })
+
+  // Keyboard shortcut: Ctrl+K / Cmd+K
+  const handleKeyDown = useCallback((e: KeyboardEvent) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+      e.preventDefault()
+      setSearchOpen((prev) => !prev)
+    }
+  }, [])
+
+  useEffect(() => {
+    document.addEventListener('keydown', handleKeyDown)
+    return () => document.removeEventListener('keydown', handleKeyDown)
+  }, [handleKeyDown])
 
   // Filtrar items según el rol del usuario
   const navItems = useMemo(() => {
@@ -44,12 +80,35 @@ export default function Layout({ children }: LayoutProps) {
     })
   }, [canAccess])
 
-  async function handleSignOut() {
+  async function performSignOut() {
     try {
       await signOut()
     } catch (error) {
       console.error('Error al cerrar sesión:', error)
     }
+  }
+
+  async function handleGuardarYSalir() {
+    const nota = logoutNota.trim()
+    setLogoutSaving(true)
+    setLogoutError(null)
+    try {
+      if (nota) {
+        const nombre =
+          typeof user?.user_metadata?.nombre === 'string' ? user.user_metadata.nombre : null
+        await bitacoraApi.create({ nota, usuario_nombre: nombre })
+      }
+      await performSignOut()
+    } catch (error) {
+      const msg = error instanceof Error ? error.message : 'Error guardando nota'
+      setLogoutError(msg)
+    } finally {
+      setLogoutSaving(false)
+    }
+  }
+
+  async function handleSalirSinNota() {
+    await performSignOut()
   }
 
   return (
@@ -62,6 +121,33 @@ export default function Layout({ children }: LayoutProps) {
               <h1 className="text-xl sm:text-2xl font-bold text-blue-600">Mini Market System</h1>
             </div>
             <div className="flex items-center gap-4">
+              {/* Search Button */}
+              <button
+                onClick={() => setSearchOpen(true)}
+                className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                title="Buscar (Ctrl+K)"
+              >
+                <Search className="w-4 h-4" />
+                <span className="hidden sm:inline text-sm">Buscar</span>
+                <kbd className="hidden sm:inline-flex items-center px-1.5 py-0.5 text-[10px] text-gray-400 bg-white rounded border ml-1">
+                  Ctrl+K
+                </kbd>
+              </button>
+
+              {/* Alerts Button */}
+              <button
+                onClick={() => setAlertsOpen(true)}
+                className="relative p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                title="Alertas"
+              >
+                <Bell className="w-5 h-5" />
+                {totalAlertas > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex items-center justify-center min-w-[18px] h-[18px] px-1 text-[10px] font-bold text-white bg-red-500 rounded-full">
+                    {totalAlertas > 99 ? '99+' : totalAlertas}
+                  </span>
+                )}
+              </button>
+
               <div className="flex items-center gap-2 text-gray-700">
                 <UserIcon className="w-5 h-5" />
                 <span className="hidden sm:inline text-sm">
@@ -69,7 +155,7 @@ export default function Layout({ children }: LayoutProps) {
                 </span>
               </div>
               <button
-                onClick={handleSignOut}
+                onClick={() => { setLogoutOpen(true); setLogoutNota(''); setLogoutError(null) }}
                 className="flex items-center gap-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                 title="Cerrar Sesión"
               >
@@ -80,6 +166,76 @@ export default function Layout({ children }: LayoutProps) {
           </div>
         </div>
       </nav>
+
+      {/* Global Search Modal */}
+      <GlobalSearch
+        isOpen={searchOpen}
+        onClose={() => { setSearchOpen(false); setScanQuery(''); }}
+        initialQuery={scanQuery}
+      />
+
+      {/* Alerts Drawer */}
+      <AlertsDrawer isOpen={alertsOpen} onClose={() => setAlertsOpen(false)} />
+
+      {/* Logout Bitácora Modal */}
+      {logoutOpen && (
+        <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
+          <div className="fixed inset-0 bg-black/40" onClick={() => !logoutSaving && setLogoutOpen(false)} />
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden">
+            <div className="p-4 border-b flex items-center justify-between">
+              <div className="font-bold text-gray-900">¿Algo que reportar?</div>
+              <button
+                onClick={() => setLogoutOpen(false)}
+                disabled={logoutSaving}
+                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                title="Cerrar"
+              >
+                ✕
+              </button>
+            </div>
+            <div className="p-4 space-y-3">
+              <p className="text-sm text-gray-600">
+                Deja una nota para el dueño o el siguiente turno. Si no tienes nada, puedes salir sin nota.
+              </p>
+              <textarea
+                value={logoutNota}
+                onChange={(e) => setLogoutNota(e.target.value)}
+                placeholder="Ej: Se rompió la heladera de lácteos. Faltó reponer pan lactal."
+                className="w-full min-h-[110px] px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                disabled={logoutSaving}
+              />
+              {logoutError && (
+                <div className="text-sm text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+                  {logoutError}
+                </div>
+              )}
+              <div className="flex flex-col sm:flex-row gap-2 justify-end">
+                <button
+                  onClick={() => setLogoutOpen(false)}
+                  disabled={logoutSaving}
+                  className="px-4 py-2 rounded-lg border bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
+                >
+                  Cancelar
+                </button>
+                <button
+                  onClick={handleSalirSinNota}
+                  disabled={logoutSaving}
+                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-900 font-semibold hover:bg-gray-200 disabled:opacity-50"
+                >
+                  Salir sin nota
+                </button>
+                <button
+                  onClick={handleGuardarYSalir}
+                  disabled={logoutSaving}
+                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-black hover:bg-blue-700 disabled:opacity-50"
+                >
+                  {logoutSaving ? 'Guardando…' : 'Guardar y salir'}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col md:flex-row">
         {/* Sidebar - Oculto en móvil, visible en desktop */}

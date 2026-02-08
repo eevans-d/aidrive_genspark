@@ -147,7 +147,9 @@ async function apiRequest<T>(
 export interface DropdownItem {
         id: string;
         nombre: string;
+        sku?: string | null;
         codigo_barras?: string | null;
+        precio_actual?: number | null;
 }
 
 // =============================================================================
@@ -320,6 +322,7 @@ export interface MovimientoParams {
         tipo: 'entrada' | 'salida';
         cantidad: number;
         motivo?: string;
+        destino?: string | null;
         proveedor_id?: string | null;
         observaciones?: string | null;
 }
@@ -476,10 +479,379 @@ export const pedidosApi = {
         },
 };
 
+// =============================================================================
+// CLIENTES API (Cuenta Corriente)
+// =============================================================================
+
+export interface ClienteSaldoItem {
+        cliente_id: string;
+        nombre: string;
+        telefono: string | null;
+        email: string | null;
+        direccion_default: string | null;
+        whatsapp_e164: string | null;
+        link_pago: string | null;
+        limite_credito: number | null;
+        saldo: number;
+        ultimo_movimiento: string | null;
+}
+
+export interface ClienteCreateParams {
+        nombre: string;
+        telefono?: string | null;
+        email?: string | null;
+        direccion_default?: string | null;
+        edificio?: string | null;
+        piso?: string | null;
+        departamento?: string | null;
+        observaciones?: string | null;
+        whatsapp_e164?: string | null;
+        link_pago?: string | null;
+        limite_credito?: number | null;
+        activo?: boolean;
+}
+
+export type ClienteUpdateParams = Partial<ClienteCreateParams>;
+
+export const clientesApi = {
+        async list(params: { q?: string; limit?: number; offset?: number } = {}): Promise<ClienteSaldoItem[]> {
+                const sp = new URLSearchParams();
+                if (params.q) sp.set('q', params.q);
+                if (params.limit != null) sp.set('limit', String(params.limit));
+                if (params.offset != null) sp.set('offset', String(params.offset));
+                const qs = sp.toString();
+                return apiRequest<ClienteSaldoItem[]>(qs ? `/clientes?${qs}` : '/clientes');
+        },
+
+        async create(params: ClienteCreateParams): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>('/clientes', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async update(id: string, params: ClienteUpdateParams): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>(`/clientes/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(params),
+                });
+        },
+};
+
+export interface CuentaCorrienteResumen {
+        dinero_en_la_calle: number;
+        clientes_con_deuda: number;
+        as_of: string;
+}
+
+export interface RegistrarPagoCCParams {
+        cliente_id: string;
+        monto: number;
+        descripcion?: string | null;
+}
+
+export const cuentasCorrientesApi = {
+        async resumen(): Promise<CuentaCorrienteResumen> {
+                return apiRequest<CuentaCorrienteResumen>('/cuentas-corrientes/resumen');
+        },
+
+        async saldos(params: { q?: string; solo_deuda?: boolean; limit?: number; offset?: number } = {}): Promise<ClienteSaldoItem[]> {
+                const sp = new URLSearchParams();
+                if (params.q) sp.set('q', params.q);
+                if (params.solo_deuda) sp.set('solo_deuda', 'true');
+                if (params.limit != null) sp.set('limit', String(params.limit));
+                if (params.offset != null) sp.set('offset', String(params.offset));
+                const qs = sp.toString();
+                return apiRequest<ClienteSaldoItem[]>(qs ? `/cuentas-corrientes/saldos?${qs}` : '/cuentas-corrientes/saldos');
+        },
+
+        async registrarPago(params: RegistrarPagoCCParams): Promise<{ cliente_id: string; saldo: number }> {
+                return apiRequest<{ cliente_id: string; saldo: number }>('/cuentas-corrientes/pagos', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+};
+
+// =============================================================================
+// VENTAS API (POS)
+// =============================================================================
+
+export interface VentaItemInput {
+        producto_id: string;
+        cantidad: number;
+}
+
+export interface CreateVentaParams {
+        metodo_pago: 'efectivo' | 'tarjeta' | 'cuenta_corriente';
+        cliente_id?: string | null;
+        confirmar_riesgo?: boolean;
+        items: VentaItemInput[];
+}
+
+export interface VentaItemRow {
+        id: string;
+        producto_id: string;
+        producto_nombre: string;
+        producto_sku: string | null;
+        cantidad: number;
+        precio_unitario: number;
+        subtotal: number;
+}
+
+export interface VentaResponse {
+        id: string;
+        idempotency_key: string;
+        metodo_pago: string;
+        cliente_id: string | null;
+        monto_total: number;
+        created_at: string;
+        status: 'created' | 'existing';
+        items: VentaItemRow[];
+}
+
+export const ventasApi = {
+        async create(params: CreateVentaParams, idempotencyKey: string): Promise<VentaResponse> {
+                if (!idempotencyKey || !idempotencyKey.trim()) {
+                        throw new ApiError('IDEMPOTENCY_KEY_REQUIRED', 'Idempotency-Key es requerido', 400);
+                }
+
+                return apiRequest<VentaResponse>('/ventas', {
+                        method: 'POST',
+                        headers: {
+                                'Idempotency-Key': idempotencyKey.trim(),
+                        },
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async list(params: { limit?: number; offset?: number } = {}): Promise<unknown[]> {
+                const sp = new URLSearchParams();
+                if (params.limit != null) sp.set('limit', String(params.limit));
+                if (params.offset != null) sp.set('offset', String(params.offset));
+                const qs = sp.toString();
+                return apiRequest<unknown[]>(qs ? `/ventas?${qs}` : '/ventas');
+        },
+
+        async get(id: string): Promise<unknown> {
+                return apiRequest<unknown>(`/ventas/${id}`);
+        },
+};
+
+// =============================================================================
+// INSIGHTS API — Arbitraje de Precios
+// =============================================================================
+
+export interface ArbitrajeItem {
+	producto_id: string;
+	nombre_producto: string;
+	sku: string | null;
+	costo_proveedor_actual: number;
+	costo_proveedor_prev: number | null;
+	delta_costo_pct: number | null;
+	precio_venta_actual: number | null;
+	margen_vs_reposicion: number | null;
+	riesgo_perdida: boolean;
+	margen_bajo: boolean;
+	fecha_ultima_comparacion: string;
+}
+
+export interface OportunidadCompraItem extends ArbitrajeItem {
+	cantidad_actual: number;
+	stock_minimo: number;
+	nivel_stock: string;
+}
+
+export const insightsApi = {
+	/**
+	 * Productos con riesgo de pérdida o margen bajo
+	 */
+	async arbitraje(): Promise<ArbitrajeItem[]> {
+		return apiRequest<ArbitrajeItem[]>('/insights/arbitraje');
+	},
+
+	/**
+	 * Oportunidades de compra: stock bajo + caída de costo >= 10%
+	 */
+	async compras(): Promise<OportunidadCompraItem[]> {
+		return apiRequest<OportunidadCompraItem[]>('/insights/compras');
+	},
+
+	/**
+	 * Payload unificado de arbitraje para un producto
+	 */
+	async producto(id: string): Promise<ArbitrajeItem> {
+		return apiRequest<ArbitrajeItem>(`/insights/producto/${id}`);
+	},
+};
+
+// =============================================================================
+// PRECIOS API
+// =============================================================================
+
+export interface AplicarPrecioParams {
+	producto_id: string;
+	precio_compra: number;
+	margen_ganancia?: number | null;
+}
+
+export interface AplicarPrecioResponse {
+	precio_venta: number;
+	precio_compra: number;
+	margen_ganancia: number;
+}
+
+export const preciosApi = {
+	/**
+	 * Aplicar precio a producto con redondeo automático
+	 */
+	async aplicar(params: AplicarPrecioParams): Promise<AplicarPrecioResponse> {
+		return apiRequest<AplicarPrecioResponse>('/precios/aplicar', {
+			method: 'POST',
+			body: JSON.stringify(params),
+		});
+	},
+};
+
+// =============================================================================
+// OFERTAS API (Anti-mermas)
+// =============================================================================
+
+export interface OfertaSugeridaItem {
+        stock_id: string;
+        producto_id: string;
+        producto_nombre: string;
+        sku: string | null;
+        codigo_barras: string | null;
+        ubicacion: string | null;
+        fecha_vencimiento: string | null;
+        dias_hasta_vencimiento: number;
+        cantidad_actual: number;
+        descuento_sugerido_pct: number;
+        precio_base: number;
+        precio_oferta_sugerido: number;
+        as_of: string;
+}
+
+export type AplicarOfertaParams = {
+        stock_id: string;
+        descuento_pct?: number;
+};
+
+export type AplicarOfertaResponse = Record<string, unknown>;
+
+export const ofertasApi = {
+        async sugeridas(): Promise<OfertaSugeridaItem[]> {
+                return apiRequest<OfertaSugeridaItem[]>('/ofertas/sugeridas');
+        },
+
+        async aplicar(params: AplicarOfertaParams): Promise<AplicarOfertaResponse> {
+                return apiRequest<AplicarOfertaResponse>('/ofertas/aplicar', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async desactivar(ofertaId: string): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>(`/ofertas/${ofertaId}/desactivar`, {
+                        method: 'POST',
+                });
+        },
+};
+
+// =============================================================================
+// BITÁCORA API (Notas de turno)
+// =============================================================================
+
+export type CrearBitacoraParams = {
+        nota: string;
+        usuario_nombre?: string | null;
+};
+
+export type BitacoraItem = {
+        id: string;
+        usuario_nombre: string | null;
+        usuario_email: string | null;
+        usuario_rol: string | null;
+        nota: string;
+        created_at: string;
+};
+
+export const bitacoraApi = {
+        async create(params: CrearBitacoraParams): Promise<BitacoraItem> {
+                return apiRequest<BitacoraItem>('/bitacora', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async list(params: { limit?: number; offset?: number } = {}): Promise<BitacoraItem[]> {
+                const sp = new URLSearchParams();
+                if (params.limit != null) sp.set('limit', String(params.limit));
+                if (params.offset != null) sp.set('offset', String(params.offset));
+                const qs = sp.toString();
+                return apiRequest<BitacoraItem[]>(qs ? `/bitacora?${qs}` : '/bitacora');
+        },
+};
+
+// =============================================================================
+// SEARCH API
+// =============================================================================
+
+export interface SearchResultItem {
+        id: string;
+        nombre?: string;
+        titulo?: string;
+        sku?: string;
+        marca?: string;
+        codigo_barras?: string;
+        precio_actual?: number;
+        contacto?: string;
+        email?: string;
+        telefono?: string;
+        estado?: string;
+        prioridad?: string;
+        // Pedidos fields
+        numero_pedido?: number;
+        cliente_nombre?: string;
+        cliente_telefono?: string;
+        estado_pago?: string;
+        monto_total?: number;
+        fecha_pedido?: string;
+        // Clientes fields
+        direccion_default?: string;
+}
+
+export interface GlobalSearchResponse {
+        productos: SearchResultItem[];
+        proveedores: SearchResultItem[];
+        tareas: SearchResultItem[];
+        pedidos: SearchResultItem[];
+        clientes: SearchResultItem[];
+}
+
+export const searchApi = {
+        /**
+         * Global search across productos, proveedores, tareas, pedidos, clientes
+         */
+        async global(query: string, limit = 10): Promise<GlobalSearchResponse> {
+                const params = new URLSearchParams({ q: query, limit: String(limit) });
+                return apiRequest<GlobalSearchResponse>(`/search?${params.toString()}`);
+        },
+};
+
 export default {
         tareas: tareasApi,
         deposito: depositoApi,
         productos: productosApi,
         proveedores: proveedoresApi,
         pedidos: pedidosApi,
+        clientes: clientesApi,
+        cuentasCorrientes: cuentasCorrientesApi,
+        ventas: ventasApi,
+        insights: insightsApi,
+        precios: preciosApi,
+        ofertas: ofertasApi,
+        bitacora: bitacoraApi,
+        search: searchApi,
 };

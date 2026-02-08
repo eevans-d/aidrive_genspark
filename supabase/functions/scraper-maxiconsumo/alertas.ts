@@ -29,7 +29,6 @@ export function buildAlertasDesdeComparaciones(
     const precioProveedor = Number(c.precio_proveedor ?? 0);
     if (!nombreProducto || !Number.isFinite(precioActual) || !Number.isFinite(precioProveedor)) continue;
 
-    const diffAbs = Number(c.diferencia_absoluta ?? (precioActual - precioProveedor));
     const diffPct = Math.abs(Number(c.diferencia_porcentual ?? 0));
     if (!Number.isFinite(diffPct)) continue;
 
@@ -38,9 +37,14 @@ export function buildAlertasDesdeComparaciones(
     else if (diffPct >= 15) severidad = 'alta';
     else if (diffPct >= 5) severidad = 'media';
 
-    const tipoCambio: AlertaCambio['tipo_cambio'] = diffAbs >= 0 ? 'aumento' : 'disminucion';
+    // FIX: Derivar direccion desde precio_actual - precio_proveedor (signo confiable),
+    // no desde diferencia_absoluta que frecuentemente carece de signo.
+    // Si precio_actual < precio_proveedor: el proveedor cobra MAS → "aumento"
+    // Si precio_actual >= precio_proveedor: el proveedor cobra MENOS → "disminucion"
+    const direction = precioActual - precioProveedor;
+    const tipoCambio: AlertaCambio['tipo_cambio'] = direction < 0 ? 'aumento' : 'disminucion';
     const mensaje = `${nombreProducto} - diferencia ${diffPct.toFixed(1)}%`;
-    const accion = diffAbs > 0
+    const accion = tipoCambio === 'disminucion'
       ? 'Revisar compras para aprovechar mejor precio de proveedor'
       : 'Revisar precios del proveedor y validar competitividad';
 

@@ -62,6 +62,7 @@ vi.mock('./lib/supabase', () => ({
                         limit: vi.fn().mockReturnThis(),
                         range: vi.fn().mockReturnThis(),
                         single: vi.fn().mockReturnThis(),
+                        maybeSingle: vi.fn().mockReturnThis(),
                         then: vi.fn((resolve) => resolve({ data: [], count: 0, error: null })),
                 })),
                 auth: {

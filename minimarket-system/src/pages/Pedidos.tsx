@@ -19,6 +19,7 @@ import {
         DropdownItem
 } from '../lib/apiClient';
 import { useQuery } from '@tanstack/react-query';
+import { SkeletonTable, SkeletonText } from '../components/Skeleton';
 
 // ============================================================================
 // Componente principal
@@ -70,8 +71,10 @@ export default function Pedidos() {
 
         if (isLoading) {
                 return (
-                        <div className="flex items-center justify-center h-64">
-                                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+                        <div className="space-y-6">
+                                <SkeletonText width="w-48" className="h-8" />
+                                <SkeletonText width="w-72" className="h-4" />
+                                <SkeletonTable />
                         </div>
                 );
         }

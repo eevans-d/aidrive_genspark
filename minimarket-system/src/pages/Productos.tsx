@@ -3,6 +3,7 @@ import { TrendingUp, TrendingDown } from 'lucide-react'
 import { useProductos, ProductoConHistorial } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { SkeletonTable, SkeletonText } from '../components/Skeleton'
 
 export default function Productos() {
   const [page, setPage] = useState(1)
@@ -79,7 +80,12 @@ export default function Productos() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-72" className="h-8" />
+        <SkeletonTable />
+      </div>
+    )
   }
 
   if (isError) {

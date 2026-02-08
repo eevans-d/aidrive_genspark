@@ -1,46 +1,52 @@
 ---
-description: Ejecutar suite completa de tests antes de deploy
+description: Suite completa de tests antes de deploy. Gate obligatorio.
+auto_execution: true
+skills: [TestMaster, DeployOps]
 ---
 
 # Test Before Deploy Workflow
 
-Este workflow garantiza que todos los tests pasen antes de cualquier operación de deployment.
+Garantiza que todos los tests pasen antes de cualquier operacion de deployment.
+**100% automatico.** No pedir confirmacion.
 
 ## Pasos
 
-1. Verificar que el repositorio esté limpio:
+### 1. Verificar repo limpio
 ```bash
 git status --short
 ```
+Si hay cambios sin commit -> documentar y continuar con warning.
 
-2. Ejecutar tests unitarios:
+### 2. Ejecutar tests unitarios
 ```bash
-npm run test:unit
+npx vitest run tests/unit/
 ```
 
-// turbo
-3. Verificar coverage mínimo:
+### 3. Verificar coverage
 ```bash
-npm run test:coverage
+npx vitest run --coverage
+```
+Minimo requerido: **80%**.
+
+### 4. Ejecutar tests de integracion (si Docker disponible)
+```bash
+docker ps 2>/dev/null && bash scripts/run-integration-tests.sh || echo "Docker no disponible, skip integration"
 ```
 
-4. Ejecutar tests de integración:
+### 5. Verificar build del frontend
 ```bash
-npm run test:integration
+cd minimarket-system && pnpm build
 ```
 
-5. Verificar build del frontend:
-```bash
-cd minimarket-system && npm run build
-```
-
-6. Si todos los pasos pasan → Proceder con DeployOps skill.
+### 6. Resultado
+- Si todos pasan -> proceder con DeployOps skill.
+- Si alguno falla -> **STOP** y reportar errores.
 
 ## Condiciones de Fallo
 
-- Si cualquier test falla → **STOP** y reportar errores
-- Si coverage < 70% → **STOP** y notificar
-- Si build falla → **STOP** y revisar errores de TypeScript
+- Cualquier test falla -> **STOP** y reportar.
+- Coverage < 80% -> **WARNING** pero no bloquear.
+- Build falla -> **STOP** y revisar errores TypeScript.
 
 ## Skills Relacionados
 

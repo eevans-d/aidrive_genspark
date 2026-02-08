@@ -272,7 +272,7 @@ export default function Rentabilidad() {
               const isLow = margen >= 0 && margen < minMargen
 
               return (
-                <tr key={producto.id} className={isNegative ? 'bg-red-50' : isLow ? 'bg-orange-50' : ''}>
+                <tr key={producto.id} className={isNegative ? 'bg-red-50' : isLow ? 'bg-yellow-50' : ''}>
                   <td className="px-6 py-4">
                     <div className="font-medium text-gray-900">{producto.nombre}</div>
                   </td>
@@ -282,7 +282,7 @@ export default function Rentabilidad() {
                   <td className={`px-6 py-4 text-sm text-right ${utilidad < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                     ${utilidad.toFixed(2)}
                   </td>
-                  <td className={`px-6 py-4 text-sm text-right font-semibold ${isNegative ? 'text-red-600' : isLow ? 'text-orange-600' : 'text-emerald-700'}`}>
+                  <td className={`px-6 py-4 text-sm text-right font-semibold ${isNegative ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-emerald-700'}`}>
                     {margen.toFixed(1)}%
                   </td>
                 </tr>

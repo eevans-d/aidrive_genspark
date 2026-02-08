@@ -68,6 +68,36 @@ import {
   handleMarcarItemPreparado,
   handleActualizarPagoPedido,
 } from './handlers/pedidos.ts';
+import { handleGlobalSearch } from './handlers/search.ts';
+import {
+  handleInsightsArbitraje,
+  handleInsightsCompras,
+  handleInsightsProducto,
+} from './handlers/insights.ts';
+import {
+  handleCreateVentaPos,
+  handleListarVentas,
+  handleObtenerVenta,
+} from './handlers/ventas.ts';
+import {
+  handleListarClientes,
+  handleCrearCliente,
+  handleActualizarCliente,
+} from './handlers/clientes.ts';
+import {
+  handleResumenCC,
+  handleListarSaldosCC,
+  handleRegistrarPagoCC,
+} from './handlers/cuentas_corrientes.ts';
+import {
+  handleListarOfertasSugeridas,
+  handleAplicarOferta,
+  handleDesactivarOferta,
+} from './handlers/ofertas.ts';
+import {
+  handleCrearBitacora,
+  handleListarBitacora,
+} from './handlers/bitacora.ts';
 
 const logger = createLogger('api-minimarket');
 
@@ -333,6 +363,32 @@ Deno.serve(async (req) => {
         nivel
       });
     };
+
+    // ====================================================================
+    // ENDPOINTS: GLOBAL SEARCH
+    // ====================================================================
+
+    // GET /search?q=texto&limit=10 - Global search across entities
+    if (path === '/search' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const q = url.searchParams.get('q');
+      if (!q || !q.trim()) {
+        return respondFail('VALIDATION_ERROR', 'Parametro q es requerido', 400);
+      }
+
+      const limitParam = url.searchParams.get('limit');
+      const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 20) : 10;
+
+      return await handleGlobalSearch(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        q.trim(),
+        limit
+      );
+    }
 
     // ====================================================================
     // ENDPOINTS: UTILS (Dropdowns)
@@ -1314,13 +1370,26 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
       }
 
+      const motivoValue =
+        typeof motivo === 'string' && motivo.trim()
+          ? motivo.trim()
+          : null;
       const origenValue =
         typeof origen === 'string' && origen.trim()
           ? origen.trim()
-          : typeof motivo === 'string' && motivo.trim()
-            ? motivo.trim()
-            : null;
+          : null;
       const destinoValue = typeof destino === 'string' && destino.trim() ? destino.trim() : null;
+
+      // FIX:
+      // - No derivar ubicacion desde `motivo` (evita contaminar stock_deposito.ubicacion).
+      // - Mantener Kardex util: sp_movimiento_inventario inserta p_origen en movimientos_deposito.motivo.
+      // Por eso:
+      // - p_origen => `motivo` (razon / motivo del movimiento)
+      // - p_destino => ubicacion estable (destino|origen|'Principal')
+      //
+      // Nota: sp_movimiento_inventario calcula v_ubicacion = COALESCE(p_destino,p_origen,'Principal').
+      // Si p_destino fuera null y p_origen tuviera texto libre, eso ensuciaria la ubicacion.
+      const destinoFinal = destinoValue ?? origenValue ?? 'Principal';
       let proveedorId: string | null = null;
       if (proveedor_id !== undefined && proveedor_id !== null) {
         if (typeof proveedor_id !== 'string' || !isUuid(proveedor_id)) {
@@ -1336,8 +1405,8 @@ Deno.serve(async (req) => {
         p_producto_id: producto_id,
         p_tipo: tipoMovimiento,
         p_cantidad: cantidadNumero,
-        p_origen: origenValue,
-        p_destino: destinoValue,
+        p_origen: motivoValue,
+        p_destino: destinoFinal,
         p_usuario: user!.id,
         p_proveedor_id: proveedorId,
         p_observaciones: observacionesValue,
@@ -1352,7 +1421,7 @@ Deno.serve(async (req) => {
           {
             tipo_movimiento: tipoMovimiento,
             cantidad: cantidadNumero,
-            motivo: origenValue
+            motivo: motivoValue
           },
           tipoMovimiento === 'ajuste' ? 'warning' : 'info'
         );
@@ -1697,6 +1766,251 @@ Deno.serve(async (req) => {
         id,
         preparado,
         user!.id
+      );
+    }
+
+    // ====================================================================
+    // ENDPOINTS: INSIGHTS — Arbitraje de Precios (Fase 1)
+    // ====================================================================
+
+    // 30. GET /insights/arbitraje - Productos con riesgo de pérdida o margen bajo
+    if (path === '/insights/arbitraje' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      return await handleInsightsArbitraje(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
+
+    // 31. GET /insights/compras - Oportunidades de compra (stock bajo + caída costo)
+    if (path === '/insights/compras' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      return await handleInsightsCompras(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
+
+    // 32. GET /insights/producto/:id - Payload unificado de arbitraje para un producto
+    if (path.match(/^\/insights\/producto\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(BASE_ROLES);
+      const id = path.split('/')[3];
+      return await handleInsightsProducto(supabaseUrl, requestHeaders(), responseHeaders, requestId, id);
+    }
+
+    // ====================================================================
+    // ENDPOINTS: CLIENTES + VENTAS POS + CUENTAS CORRIENTES (Fase 2)
+    // ====================================================================
+
+    // 33. GET /clientes - Listar clientes (incluye saldo CC)
+    if (path === '/clientes' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      return await handleListarClientes(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        {
+          q: url.searchParams.get('q'),
+          limit: pagination.limit,
+          offset: pagination.offset,
+        },
+      );
+    }
+
+    // 34. POST /clientes - Crear cliente
+    if (path === '/clientes' && method === 'POST') {
+      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleCrearCliente(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+        { allowLimiteCredito: user?.role === 'admin' },
+      );
+    }
+
+    // 35. PUT /clientes/:id - Actualizar cliente
+    if (path.match(/^\/clientes\/[a-f0-9-]+$/) && method === 'PUT') {
+      checkRole(['admin', 'ventas']);
+
+      const clienteId = path.split('/')[2];
+      if (!isUuid(clienteId)) {
+        return respondFail('VALIDATION_ERROR', 'id de cliente invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleActualizarCliente(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        clienteId,
+        bodyResult as Record<string, unknown>,
+        { allowLimiteCredito: user?.role === 'admin' },
+      );
+    }
+
+    // 36. GET /cuentas-corrientes/resumen - Resumen "dinero en la calle"
+    if (path === '/cuentas-corrientes/resumen' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+      return await handleResumenCC(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
+
+    // 37. GET /cuentas-corrientes/saldos - Saldos por cliente
+    if (path === '/cuentas-corrientes/saldos' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      const soloDeuda = url.searchParams.get('solo_deuda') === 'true';
+      return await handleListarSaldosCC(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        {
+          q: url.searchParams.get('q'),
+          solo_deuda: soloDeuda,
+          limit: pagination.limit,
+          offset: pagination.offset,
+        },
+      );
+    }
+
+    // 38. POST /cuentas-corrientes/pagos - Registrar pago
+    if (path === '/cuentas-corrientes/pagos' && method === 'POST') {
+      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleRegistrarPagoCC(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+      );
+    }
+
+    // 39. POST /ventas - Crear venta POS (idempotente)
+    if (path === '/ventas' && method === 'POST') {
+      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleCreateVentaPos({
+        supabaseUrl,
+        userId: user!.id,
+        requestId,
+        clientIp,
+        body: bodyResult as Record<string, unknown>,
+        idempotencyKeyRaw: req.headers.get('idempotency-key'),
+        requestHeaders,
+        respondOk,
+        respondFail,
+        logger,
+      });
+    }
+
+    // 40. GET /ventas - Listar ventas
+    if (path === '/ventas' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      return await handleListarVentas(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        { limit: pagination.limit, offset: pagination.offset },
+      );
+    }
+
+    // 41. GET /ventas/:id - Obtener venta
+    if (path.match(/^\/ventas\/[a-f0-9-]+$/) && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+      const ventaId = path.split('/')[2];
+      return await handleObtenerVenta(supabaseUrl, requestHeaders(), responseHeaders, requestId, ventaId);
+    }
+
+    // ====================================================================
+    // ENDPOINTS: OFERTAS (Fase 4) — Anti-mermas
+    // ====================================================================
+
+    // 42. GET /ofertas/sugeridas - Lista sugerencias (<= 7 días, sin oferta activa)
+    if (path === '/ofertas/sugeridas' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      return await handleListarOfertasSugeridas(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+    }
+
+    // 43. POST /ofertas/aplicar - Aplica oferta por stock_id (default 30% si no viene)
+    if (path === '/ofertas/aplicar' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleAplicarOferta(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+      );
+    }
+
+    // 44. POST /ofertas/:id/desactivar - Desactiva oferta
+    if (path.match(/^\/ofertas\/[a-f0-9-]+\/desactivar$/) && method === 'POST') {
+      checkRole(BASE_ROLES);
+      const ofertaId = path.split('/')[2];
+      return await handleDesactivarOferta(supabaseUrl, requestHeaders(), responseHeaders, requestId, ofertaId);
+    }
+
+    // ====================================================================
+    // ENDPOINTS: BITÁCORA (Fase 5) — Notas de turno
+    // ====================================================================
+
+    // 45. POST /bitacora - Crear nota de turno (antes de logout)
+    if (path === '/bitacora' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleCrearBitacora(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+        user ? { email: user.email, role: user.role } : null,
+      );
+    }
+
+    // 46. GET /bitacora - Listar notas (admin)
+    if (path === '/bitacora' && method === 'GET') {
+      checkRole(['admin']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      return await handleListarBitacora(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        { limit: pagination.limit, offset: pagination.offset },
       );
     }
 

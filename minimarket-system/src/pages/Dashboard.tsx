@@ -2,14 +2,47 @@ import { AlertTriangle, TrendingUp, Package, CheckCircle } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { useDashboardStats } from '../hooks/queries'
+import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
+import { useQuery } from '@tanstack/react-query'
+import { bitacoraApi, cuentasCorrientesApi } from '../lib/apiClient'
+import { useUserRole } from '../hooks/useUserRole'
 
 export default function Dashboard() {
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardStats();
+  const { role } = useUserRole()
+
+  const ccEnabled = role === 'admin' || role === 'ventas'
+  const ccResumenQuery = useQuery({
+    queryKey: ['cc-resumen'],
+    queryFn: () => cuentasCorrientesApi.resumen(),
+    enabled: ccEnabled,
+    staleTime: 1000 * 60 * 2,
+    retry: false,
+  })
+
+  const bitacoraEnabled = role === 'admin'
+  const bitacoraQuery = useQuery({
+    queryKey: ['bitacora', 'latest'],
+    queryFn: () => bitacoraApi.list({ limit: 10, offset: 0 }),
+    enabled: bitacoraEnabled,
+    staleTime: 1000 * 60 * 2,
+    retry: false,
+  })
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Cargando...</div>
+      <div className="space-y-6">
+        <SkeletonText width="w-48" className="h-8" />
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+          <SkeletonText width="w-64" className="h-6" />
+          <SkeletonList />
+        </div>
       </div>
     )
   }
@@ -82,6 +115,65 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* Cuenta Corriente */}
+      {ccEnabled && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900">Cuenta Corriente</h2>
+          {ccResumenQuery.isLoading ? (
+            <div className="mt-3 text-gray-500">Cargando…</div>
+          ) : ccResumenQuery.isError ? (
+            <div className="mt-3 text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+              Error cargando resumen de cuenta corriente
+            </div>
+          ) : (
+            <div className="mt-3 flex flex-wrap gap-6">
+              <div>
+                <div className="text-sm text-gray-600">Dinero en la calle</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  ${Number(ccResumenQuery.data?.dinero_en_la_calle ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                </div>
+              </div>
+              <div>
+                <div className="text-sm text-gray-600">Clientes con deuda</div>
+                <div className="text-3xl font-bold text-gray-900">
+                  {Number(ccResumenQuery.data?.clientes_con_deuda ?? 0)}
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Bitácora de turnos (admin) */}
+      {bitacoraEnabled && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900">Bitácora de Turno</h2>
+          {bitacoraQuery.isLoading ? (
+            <div className="mt-3 text-gray-500">Cargando…</div>
+          ) : bitacoraQuery.isError ? (
+            <div className="mt-3 text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
+              Error cargando bitácora
+            </div>
+          ) : (bitacoraQuery.data ?? []).length === 0 ? (
+            <div className="mt-3 text-gray-500">Sin notas</div>
+          ) : (
+            <div className="mt-3 space-y-3">
+              {(bitacoraQuery.data ?? []).slice(0, 5).map((n) => (
+                <div key={n.id} className="p-3 rounded-lg border bg-gray-50">
+                  <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+                    <span>{new Date(n.created_at).toLocaleString('es-AR')}</span>
+                    <span className="font-medium text-gray-700">
+                      {n.usuario_nombre || n.usuario_email || n.usuario_rol || '—'}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{n.nota}</div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Tareas recientes */}
       <div className="bg-white rounded-lg shadow">

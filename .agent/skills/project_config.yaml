@@ -2,68 +2,74 @@ project:
   name: "aidrive_genspark"
   environment: "hybrid (local/supabase)"
 
+# === RUTAS CONCRETAS (sin templates) ===
+
 paths:
-  # Base roots
   root: "."
   docs: "docs"
-  
-  # Source code
   backend_src: "supabase/functions"
   frontend_src: "minimarket-system/src"
   tests_root: "tests"
-  
-  # Configuration files
+  migrations: "supabase/migrations"
+  scripts: "scripts"
+  agent_root: ".agent"
   env_example: ".env.example"
-  agents_guide: "docs/IA_USAGE_GUIDE.md"
+  openapi_spec: "docs/api-openapi-3.1.yaml"
+  openapi_proveedor: "docs/api-proveedor-openapi-3.1.yaml"
+  api_gateway: "supabase/functions/api-minimarket/index.ts"
+  api_handlers: "supabase/functions/api-minimarket/handlers"
 
 scripts:
-  # Primary execution scripts
-  test_script: "./test.sh"
-  deploy_script: "./deploy.sh"
-  
-  # Fallback commands if scripts fail
-  lint_cmd: "npm run lint"
-  install_cmd: "npm install"
+  test_unit: "npx vitest run tests/unit/"
+  test_all: "npm run test:all"
+  test_coverage: "npx vitest run --coverage"
+  test_integration: "bash scripts/run-integration-tests.sh"
+  test_e2e: "bash scripts/run-e2e-tests.sh"
+  test_security: "npm run test:security"
+  build_frontend: "cd minimarket-system && pnpm build"
+  lint: "cd minimarket-system && pnpm lint"
+  deploy: "./deploy.sh"
+  migrate: "supabase db push"
+  functions_deploy: "supabase functions deploy"
 
 policies:
-  # Universal Agent Policies
   retry_max: 2
   timeout_seconds: 300
+  max_session_hours: 4
+  coverage_min: 80
   allowed_branches:
     - "main"
     - "staging"
-  
-  # Testing Thresholds
-  coverage_min: 80
-  
-  # Security
   forbidden_patterns:
     - "console.log"
-    - "ey[A-Za-z0-9-_=]{20,}" # Application secrets regex
+    - "ey[A-Za-z0-9-_=]{20,}"
 
 outputs:
-  # Expected artifacts
   test_report: "test-reports/test-summary.json"
   deploy_log: "logs/deployment-*.json"
-  
-  # Auto-creation triggers
+  reality_check_report: "docs/REALITY_CHECK_UX.md"
+  performance_report: "docs/PERFORMANCE_REPORT.md"
+  session_report: ".agent/sessions/current/SESSION_REPORT.md"
+  evidence: ".agent/sessions/current/EVIDENCE.md"
   required_dirs:
     - "logs"
     - "test-reports"
+    - ".agent/sessions/current"
+    - ".agent/sessions/archive"
 
-# === PROTOCOL ZERO: Workflow Agéntico Dual V3.0 ===
+# === PROTOCOL ZERO V4.0: Sistema Agentico Dual ===
 
 reality_rules:
   R0_reality: "No afirmar como hecho algo no verificable en el repo. Clasificar: REAL / A CREAR / PROPUESTA FUTURA"
   R1_source_of_truth: "La verdad operativa vive en filesystem, no en chat"
-  R2_evidence: "Cada cambio relevante debe dejar rastro (qué, por qué, archivos, validación)"
-  R3_risk: "Acciones con impacto >= Nivel 2 requieren rollback explícito"
+  R2_evidence: "Cada cambio relevante debe dejar rastro (que, por que, archivos, validacion)"
+  R3_risk: "Acciones con impacto >= Nivel 2 requieren rollback explicito"
 
 impact_levels:
-  0: "Observación - no cambia nada"
-  1: "Optimización transparente - riesgo mínimo"
+  0: "Observacion - no cambia nada"
+  1: "Optimizacion transparente - riesgo minimo"
   2: "Impacto controlado - requiere rollback claro"
-  3: "Crítico de negocio - requiere aprobación humana"
+  3: "Critico de negocio - requiere aprobacion humana"
 
 session_config:
   sessions_dir: ".agent/sessions"
@@ -71,18 +77,18 @@ session_config:
   require_evidence: true
   max_session_hours: 4
 
-# === SISTEMA DUAL AGÉNTICO: Identidades y Auto-Detección ===
+# === ROLES DUALES ===
 
 roles:
   CODEX:
-    identity: "Arquitecto + PM + Auditor. Estado FRÍO."
+    identity: "Arquitecto + PM + Auditor. Estado FRIO."
     behavior: |
-      - Produce: briefing, checklist, restricciones, validaciones, consolidación documental.
-      - NO hace implementación profunda.
-      - Genera planes, no código final.
+      - Produce: briefing, checklist, restricciones, validaciones, consolidacion documental.
+      - NO hace implementacion profunda.
+      - Genera planes, no codigo final.
     activates_when:
       - "No existe SESSION_ACTIVE en .agent/sessions/current/"
-      - "Se completó una sesión (existe SESSION_COMPLETE)"
+      - "Se completo una sesion (existe SESSION_COMPLETE)"
       - "Usuario pide planificar, auditar o revisar"
     output_artifacts:
       - "BRIEFING.md"
@@ -90,24 +96,24 @@ roles:
       - "SESSION_REPORT.md"
 
   EXECUTOR:
-    identity: "Ejecutor táctico. Estado CALIENTE."
+    identity: "Ejecutor tactico. Estado CALIENTE."
     behavior: |
       - Ejecuta paso-a-paso con tracking riguroso.
-      - MÍNIMA charla, MÁXIMA ejecución.
-      - Si hay bloqueo real: registra y pide transición.
+      - MINIMA charla, MAXIMA ejecucion.
+      - Si hay bloqueo real: registra y pide transicion.
     activates_when:
       - "Existe SESSION_ACTIVE en .agent/sessions/current/"
-      - "El briefing está listo y aprobado"
+      - "El briefing esta listo y aprobado"
     output_artifacts:
       - "EVIDENCE.md"
       - "FILES_CHANGED.md"
       - "SESSION_LOG.md"
 
 auto_detection:
-  description: "El agente detecta automáticamente qué rol asumir"
+  description: "El agente detecta automaticamente que rol asumir"
   check_order:
     - "ls .agent/sessions/current/SESSION_ACTIVE"
-    - "Si existe → EXECUTOR | Si no existe → CODEX"
+    - "Si existe -> EXECUTOR | Si no existe -> CODEX"
   fallback: "CODEX"
 
 kernel:
@@ -117,40 +123,38 @@ kernel:
     - "Si no existe .agent/sessions/, actuar como CODEX y crear infraestructura"
     - "EXECUTOR ignora debate: ejecuta checklist + deja evidencia"
     - "CODEX no hace deep implementation: produce plan, valida, consolida"
-    - "Toda afirmación REAL debe tener evidencia (ruta, comando, screenshot)"
-    - "Toda afirmación A CREAR debe indicar por qué se necesita"
+    - "Toda afirmacion REAL debe tener evidencia (ruta, comando, screenshot)"
+    - "Toda afirmacion A CREAR debe indicar por que se necesita"
     - "Toda PROPUESTA FUTURA es opcional y no bloquea"
 
-# === SKILL ORCHESTRATOR: Auto-Selección sin Intervención Manual ===
+# === SKILL ORCHESTRATOR: Auto-Seleccion sin Intervencion Manual ===
 
 skill_orchestrator:
   enabled: true
   auto_select: true
   default_skill: "RealityCheck"
-  
-  # Patrones que activan cada skill automáticamente
+
   trigger_patterns:
     CodeCraft:
-      keywords: ["crea endpoint", "agrega pantalla", "implementa feature", "nueva función", "nuevo componente", "crea la página", "agrega el endpoint"]
-      intent: "Crear código nuevo"
+      keywords: ["crea endpoint", "agrega pantalla", "implementa feature", "nueva funcion", "nuevo componente", "crea la pagina", "agrega el endpoint", "crea la funcionalidad"]
+      intent: "Crear codigo nuevo"
+    TestMaster:
+      keywords: ["ejecuta tests", "corre pruebas", "verifica tests", "run tests", "test suite", "coverage"]
+      intent: "Ejecutar pruebas"
+    RealityCheck:
+      keywords: ["audita", "verifica ux", "revisa usabilidad", "analiza", "reality check", "valida flujo", "revisa produccion"]
+      intent: "Auditar sistema"
     DeployOps:
       keywords: ["deploy", "despliega", "sube a staging", "sube a prod", "publica", "release"]
       intent: "Desplegar a un entorno"
-    TestMaster:
-      keywords: ["ejecuta tests", "corre pruebas", "verifica tests", "run tests", "test suite"]
-      intent: "Ejecutar pruebas"
-    RealityCheck:
-      keywords: ["audita", "verifica ux", "revisa usabilidad", "analiza", "reality check", "valida flujo"]
-      intent: "Auditar sistema"
     DocuGuard:
-      keywords: ["actualiza docs", "sincroniza documentación", "documenta", "update docs"]
-      intent: "Mantener documentación"
-    # === NUEVOS SKILLS V4.0 ===
+      keywords: ["actualiza docs", "sincroniza documentacion", "documenta", "update docs", "revisa docs"]
+      intent: "Mantener documentacion"
     MigrationOps:
-      keywords: ["aplica migración", "crear tabla", "modificar esquema", "migrar", "db push", "supabase db", "migration"]
+      keywords: ["aplica migracion", "crear tabla", "modificar esquema", "migrar", "db push", "supabase db", "migration", "nueva columna"]
       intent: "Gestionar migraciones SQL"
     DebugHound:
-      keywords: ["debug", "error", "falla", "bug", "arregla", "fix", "broken", "crash", "exception"]
+      keywords: ["debug", "error", "falla", "bug", "arregla", "fix", "broken", "crash", "exception", "no funciona"]
       intent: "Resolver errores y bugs"
     PerformanceWatch:
       keywords: ["performance", "rendimiento", "lento", "optimizar", "bundle size", "slow", "mejorar velocidad"]
@@ -158,40 +162,46 @@ skill_orchestrator:
     APISync:
       keywords: ["openapi", "swagger", "api spec", "documentar api", "sincronizar api", "api docs"]
       intent: "Sincronizar OpenAPI spec"
+    SecurityAudit:
+      keywords: ["seguridad", "security", "rls", "vulnerabilidad", "auditoria seguridad", "penetration", "xss", "injection"]
+      intent: "Auditar seguridad del sistema"
 
-# === SKILL GRAPH: Dependencias y Cadenas Automáticas ===
+# === SKILL GRAPH: Dependencias y Cadenas Automaticas ===
 
 skill_graph:
-  # Cadenas automáticas: skill A dispara skill B al finalizar
   chains:
     CodeCraft:
-      on_complete: [TestMaster, DocuGuard]
-      description: "Después de implementar, probar y documentar"
+      on_complete: [TestMaster, DocuGuard, MigrationOps]
+      description: "Despues de implementar: probar, documentar, y migrar si hay tablas nuevas"
+    TestMaster:
+      on_complete: []
+      description: "Tests son terminales, no disparan otros skills"
     DeployOps:
       pre_check: [TestMaster]
       on_complete: [RealityCheck]
-      description: "Antes de deploy verificar tests, después smoke test"
+      description: "Antes de deploy verificar tests, despues smoke test"
     RealityCheck:
       on_complete: [DocuGuard]
-      description: "Después de auditar, sincronizar docs"
-    # === NUEVAS CADENAS V4.0 ===
+      description: "Despues de auditar, sincronizar docs"
+    DocuGuard:
+      on_complete: []
+      description: "Documentacion es terminal"
     MigrationOps:
       on_complete: [DocuGuard]
-      description: "Después de migrar, actualizar docs de esquema"
+      description: "Despues de migrar, actualizar docs de esquema"
     DebugHound:
       on_complete: [TestMaster]
-      description: "Después de fix, verificar que tests pasen"
-    CodeCraft:
-      on_complete: [TestMaster, DocuGuard, MigrationOps]
-      description: "Si hay nuevas tablas, ejecutar MigrationOps"
+      description: "Despues de fix, verificar que tests pasen"
     PerformanceWatch:
       on_complete: [DocuGuard]
-      description: "Después de análisis, documentar métricas"
+      description: "Despues de analisis, documentar metricas"
     APISync:
       on_complete: [DocuGuard]
-      description: "Después de sync, actualizar changelog"
-  
-  # Dependencias duras: skill X requiere skill Y completado
+      description: "Despues de sync, actualizar changelog"
+    SecurityAudit:
+      on_complete: [DocuGuard]
+      description: "Despues de auditoria, documentar hallazgos"
+
   dependencies:
     DeployOps:
       requires:
@@ -202,24 +212,23 @@ skill_graph:
       requires:
         - skill: TestMaster
           condition: "exit_code == 0"
-          message: "Tests deben pasar antes de migrar a producción"
+          message: "Tests deben pasar antes de migrar a produccion"
 
 # === FALLBACK BEHAVIOR: Nunca Esperar Input ===
 
 fallback_behavior:
   on_uncertainty:
-    - "Usar valor/ubicación por defecto"
-    - "Documentar decisión en EVIDENCE.md"
-    - "Continuar ejecución SIN esperar input"
+    - "Usar valor/ubicacion por defecto"
+    - "Documentar decision en EVIDENCE.md"
+    - "Continuar ejecucion SIN esperar input"
     - "Reportar en SESSION_REPORT.md"
   on_error:
     - "Documentar error con stack trace"
-    - "Intentar recovery automático (max 2 reintentos)"
-    - "Si falla: cerrar sesión como PARCIAL"
+    - "Intentar recovery automatico (max 2 reintentos)"
+    - "Si falla: cerrar sesion como PARCIAL"
     - "Generar reporte con recomendaciones"
   never_do:
     - "Esperar input manual si impacto <= 1"
-    - "Quedarse en loop sin acción"
+    - "Quedarse en loop sin accion"
     - "Preguntar si no es estrictamente necesario"
-
-
+    - "Afirmar REAL sin evidencia de filesystem"

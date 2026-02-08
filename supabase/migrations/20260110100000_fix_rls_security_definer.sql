@@ -2,17 +2,24 @@
 -- Safe changes: add search_path, validate inputs, and protect concurrency.
 
 -- 1) Harden SECURITY DEFINER functions with explicit search_path
-ALTER FUNCTION sp_aplicar_precio(uuid, numeric, numeric)
-  SET search_path = public;
+DO $$
+BEGIN
+  IF to_regprocedure('public.sp_aplicar_precio(uuid,numeric,numeric)') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.sp_aplicar_precio(uuid, numeric, numeric) SET search_path = public';
+  END IF;
 
-ALTER FUNCTION fnc_deteccion_cambios_significativos(numeric)
-  SET search_path = public;
+  IF to_regprocedure('public.fnc_deteccion_cambios_significativos(numeric)') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_deteccion_cambios_significativos(numeric) SET search_path = public';
+  END IF;
 
-ALTER FUNCTION fnc_limpiar_datos_antiguos()
-  SET search_path = public;
+  IF to_regprocedure('public.fnc_limpiar_datos_antiguos()') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_limpiar_datos_antiguos() SET search_path = public';
+  END IF;
 
-ALTER FUNCTION refresh_tareas_metricas()
-  SET search_path = public;
+  IF to_regprocedure('public.refresh_tareas_metricas()') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.refresh_tareas_metricas() SET search_path = public';
+  END IF;
+END $$;
 
 -- 2) Ensure unique stock row per (producto_id, ubicacion)
 DO $$

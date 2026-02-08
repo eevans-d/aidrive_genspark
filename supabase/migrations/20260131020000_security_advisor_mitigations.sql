@@ -4,11 +4,24 @@
 BEGIN;
 
 -- Fix search_path for functions flagged by Advisor
-ALTER FUNCTION IF EXISTS public.has_personal_role(roles text[]) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.fnc_redondear_precio(precio numeric) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.fnc_margen_sugerido(p_producto_id uuid) SET search_path = public;
-ALTER FUNCTION IF EXISTS public.fnc_productos_bajo_minimo() SET search_path = public;
-ALTER FUNCTION IF EXISTS public.fnc_stock_disponible(p_producto_id uuid, p_deposito text) SET search_path = public;
+DO $$
+BEGIN
+  IF to_regprocedure('public.has_personal_role(text[])') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.has_personal_role(text[]) SET search_path = public';
+  END IF;
+  IF to_regprocedure('public.fnc_redondear_precio(numeric)') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_redondear_precio(numeric) SET search_path = public';
+  END IF;
+  IF to_regprocedure('public.fnc_margen_sugerido(uuid)') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_margen_sugerido(uuid) SET search_path = public';
+  END IF;
+  IF to_regprocedure('public.fnc_productos_bajo_minimo()') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_productos_bajo_minimo() SET search_path = public';
+  END IF;
+  IF to_regprocedure('public.fnc_stock_disponible(uuid,text)') IS NOT NULL THEN
+    EXECUTE 'ALTER FUNCTION public.fnc_stock_disponible(uuid, text) SET search_path = public';
+  END IF;
+END $$;
 
 -- SECURITY DEFINER views -> security_invoker (internal dashboards)
 ALTER VIEW IF EXISTS public.vista_cron_jobs_dashboard SET (security_invoker = true);

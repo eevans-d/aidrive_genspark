@@ -1,101 +1,98 @@
 ---
 name: CodeCraft
-description: Procedimientos estandarizados para implementar nuevas features (Frontend & Backend) con enfoque de calidad primero.
+description: Implementar nuevas features (Frontend y Backend) con enfoque TDD y calidad primero.
+role: EXECUTOR
+impact: 1-2
+chain: [TestMaster, DocuGuard, MigrationOps]
 ---
 
-# CodeCraft Skill (Estándar Universal)
+# CodeCraft Skill
 
-<kernel_identity>
-  **ROL EN PROTOCOL ZERO:** Este skill opera en modo **EXECUTOR** (estado caliente).
-  **COMPORTAMIENTO:** Implementar código, crear tests, scaffolding. Ejecución táctica.
-  **PRE-REQUISITO:** Requiere briefing aprobado (CODEX previo).
-</kernel_identity>
+**ROL:** EXECUTOR (estado caliente). Implementar codigo, crear tests, scaffolding.
+**PRE-REQUISITO:** Briefing aprobado (CODEX previo) o instruccion directa del usuario.
 
-<auto_execution>
-  **REGLAS DE AUTOMATIZACIÓN:**
-  1. Ejecutar fases A→D en secuencia sin pedir confirmación.
-  2. Crear tests ANTES del código (TDD automático).
-  3. Si build falla → arreglar automáticamente (no esperar input).
-  4. Registrar archivos creados/modificados en EVIDENCE.md.
-  5. Al finalizar, invocar DocuGuard automáticamente.
-</auto_execution>
+## Reglas de Automatizacion
 
-<objective>
-  Estandarizar la creación de nuevas funcionalidades ("Features"), asegurando que cada pieza de código nuevo nazca con tests, documentación y patrones de diseño correctos desde el día 1.
-  **Mantra:** "Lento es Suave, Suave es Rápido."
-</objective>
+1. Ejecutar fases A->D en secuencia sin pedir confirmacion.
+2. Crear tests ANTES del codigo (TDD automatico).
+3. Si build falla -> arreglar automaticamente (no esperar input).
+4. Registrar archivos creados/modificados en EVIDENCE.md.
+5. Al finalizar, invocar TestMaster y DocuGuard automaticamente.
 
-## 1. Configuración del Proyecto
-**⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
-- Frontend: `{{paths.frontend_src}}`
-- Backend: `{{paths.backend_src}}`
+## Activacion
 
-## 2. Criterios de Activación
-<activation_rules>
-  <enable_if>
-    - Usuario pide "Crea la pantalla de X".
-    - Usuario pide "Agrega el endpoint de Y".
-    - Necesitas refactorizar un componente legado.
-  </enable_if>
-  <disable_if>
-    - Solo estás corrigiendo un bug menor (Hotfix).
-    - Solo estás actualizando dependencias.
-    - Falta archivo `.env` o credenciales críticas.
-  </disable_if>
-</activation_rules>
+**Activar cuando:**
+- Usuario pide "Crea la pantalla de X" o "Agrega el endpoint de Y".
+- Necesitas crear nueva funcionalidad o refactorizar componente.
 
-## 3. Protocolo de Ejecución
+**NO activar cuando:**
+- Solo corrigiendo bug menor (usar DebugHound).
+- Solo actualizando dependencias.
+- Falta `.env` o credenciales criticas.
 
-### FASE A: Análisis & Arquitectura
-<step>
-  1. **Leer Contexto:** Antes de escribir, lee los archivos relacionados existentes.
-  2. **Decisión Arquitectónica:**
-     - *Backend:* ¿Gateway (Router existente) o Microservice (Nueva Función)?
-     - *Frontend:* ¿Nueva Página o Modal/Componente?
-</step>
+## Protocolo de Ejecucion
+
+### FASE A: Analisis y Arquitectura
+
+1. **Leer contexto:** Antes de escribir, leer los archivos relacionados existentes.
+2. **Decision arquitectonica:**
+   - Backend: Agregar handler en `supabase/functions/api-minimarket/handlers/` o nueva Edge Function?
+   - Frontend: Nueva pagina en `minimarket-system/src/pages/` o componente en `minimarket-system/src/components/`?
+3. **Verificar patrones existentes:**
+   ```bash
+   ls minimarket-system/src/pages/
+   ls minimarket-system/src/hooks/
+   ls supabase/functions/api-minimarket/handlers/
+   ```
 
 ### FASE B: Backend (API First)
-<step>
-  1. **Scaffold:** Crea la estructura de carpetas en `{{paths.backend_src}}`.
-  2. **Shared Libs:** IMPORTANTE: Usa `_shared/` para logs (`logger.ts`) y respuestas (`response.ts`). NO uses `console.log`.
-  3. **Test-Driven:** Crea `{{paths.tests_root}}/unit/<feature>.test.ts` *antes* del código real.
-  4. **Implement:** Escribe el código hasta que el test pase (Red-Green-Refactor).
-</step>
+
+1. **Scaffold:** Crear estructura en `supabase/functions/`.
+2. **Shared Libs:** Usar `supabase/functions/_shared/` para logs (`logger.ts`) y respuestas (`response.ts`). NO usar `console.log`.
+3. **Test-Driven:** Crear `tests/unit/<feature>.test.ts` ANTES del codigo real.
+4. **Implementar:** Escribir codigo hasta que el test pase (Red-Green-Refactor).
+5. **Verificar:**
+   ```bash
+   npx vitest run tests/unit/<feature>.test.ts
+   ```
 
 ### FASE C: Frontend (UI/UX)
-<step>
-  1. **Data Layer:** Crea `hooks/queries/use<Feature>.ts` (React Query).
-  2. **API Client:** Actualiza `lib/apiClient.ts` (Nunca fetch directo en componentes para escrituras).
-  3. **UI Implementation:** Crea la página/componente en `{{paths.frontend_src}}`.
-  4. **Routing:** Registra la ruta en el Router principal.
-</step>
 
-### FASE D: Integration & Verify
-<step>
-  1. **TestMaster:** Ejecuta `TestMaster` para validar no regresión.
-  2. **DocuGuard:** Registra la nueva feature en la documentación (`docs/ESTADO_ACTUAL.md`).
-</step>
+1. **Data Layer:** Crear hook en `minimarket-system/src/hooks/` usando React Query.
+2. **API Client:** Actualizar `minimarket-system/src/lib/apiClient.ts` si hay endpoints nuevos.
+3. **UI:** Crear pagina/componente en `minimarket-system/src/`.
+4. **Routing:** Registrar ruta en `minimarket-system/src/App.tsx`.
 
-## 4. Quality Gates
-<checklist>
-  <item>Tests unitarios creados y pasando.</item>
-  <item>Frontend desacoplado (Usa Custom Hooks).</item>
-  <item>Backend usa utilidades compartidas (`_shared`).</item>
-  <item>Build (`npm run build`) exitoso.</item>
-</checklist>
+### FASE D: Integration y Verify
 
-## 5. Anti-Loop / Stop-Conditions
-<fallback_behavior>
-  **SI no sabes dónde ubicar un archivo:**
-  1. Usar ubicación por defecto según convención del proyecto
-  2. Documentar decisión en EVIDENCE.md
-  3. Continuar ejecución SIN esperar input
-  
-  **SI el build falla por tipos TypeScript:**
-  1. Arreglar los tipos automáticamente
-  2. NO usar `any` como escape
-  3. Si no se puede resolver en 2 intentos → cerrar sesión como PARCIAL
-  
-  **NUNCA:** Quedarse esperando confirmación manual
-</fallback_behavior>
+1. **Tests:** Ejecutar suite completa:
+   ```bash
+   npx vitest run tests/unit/
+   ```
+2. **Build:** Verificar que compila:
+   ```bash
+   cd minimarket-system && pnpm build
+   ```
+3. **Documentar:** Registrar feature en `docs/ESTADO_ACTUAL.md`.
 
+## Quality Gates
+
+- [ ] Tests unitarios creados y pasando.
+- [ ] Frontend desacoplado (usa Custom Hooks).
+- [ ] Backend usa utilidades compartidas (`_shared`).
+- [ ] Build exitoso sin errores.
+- [ ] Sin `console.log` en codigo nuevo.
+
+## Anti-Loop / Stop-Conditions
+
+**SI no sabes donde ubicar un archivo:**
+1. Usar ubicacion por defecto segun convencion del proyecto.
+2. Documentar decision en EVIDENCE.md.
+3. Continuar SIN esperar input.
+
+**SI el build falla por tipos TypeScript:**
+1. Arreglar los tipos automaticamente.
+2. NO usar `any` como escape.
+3. Si no se puede resolver en 2 intentos -> cerrar sesion como PARCIAL.
+
+**NUNCA:** Quedarse esperando confirmacion manual.
