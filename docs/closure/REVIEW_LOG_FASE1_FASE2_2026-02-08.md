@@ -5492,3 +5492,68 @@ To https://github.com/eevans-d/aidrive_genspark.git
  * [new branch]      review/fase1-fase2-20260208 -> review/fase1-fase2-20260208
 branch 'review/fase1-fase2-20260208' set up to track 'origin/review/fase1-fase2-20260208'.
 ```
+
+---
+
+## CHECKLIST FASE 1 (A3 + A1)
+
+- A3 Auth resiliente (api-minimarket): **PASS**
+  - Evidencia: `supabase/functions/api-minimarket/helpers/auth.ts` (cache por token SHA-256, TTL + negative-cache 401, timeout AbortController, breaker dedicado a `/auth/v1/user`).
+  - Evidencia tests: se ejecuta `npm run test:unit -- tests/unit/auth-resilient.test.ts` (ver bloque **TEST (A3) auth resilient**).
+
+- A1 Rate limit compartido (RPC + wiring real en api-minimarket): **PASS**
+  - Evidencia DB: migración `supabase/migrations/20260208020000_add_rate_limit_state.sql` aplicada en remoto (ver bloque **REMOTE (linked) supabase migration list --linked (post-push)**).
+  - Evidencia runtime: `supabase/functions/api-minimarket/index.ts` usa `buildRateLimitKey(user?.id, clientIp)` y llama `checkRateLimitShared(..., SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL, ...)` con fallback a memoria.
+  - Evidencia service_role: `supabase/functions/_shared/rate-limit.ts` usa `apikey` + `Authorization: Bearer <service_role>`.
+  - Evidencia tests: `npm run test:unit -- tests/unit/rate-limit-shared.test.ts` (ver bloque **TEST (A1) rate limit shared helper**).
+
+## CHECKLIST FASE 2 (A2 + A4 + A5)
+
+- A2 Circuit breaker semi-persistente (RPC + wiring real en api-minimarket): **PASS**
+  - Evidencia DB: migración `supabase/migrations/20260208030000_add_circuit_breaker_state.sql` aplicada en remoto (ver bloque **REMOTE (linked) supabase migration list --linked (post-push)**).
+  - Evidencia runtime: `supabase/functions/api-minimarket/index.ts` consulta estado vía `checkCircuitBreakerShared(...)` (fail-fast) y registra eventos vía `recordCircuitBreakerEvent(...)` con `service_role`.
+  - Evidencia NO-4xx: `supabase/functions/api-minimarket/index.ts` sólo registra failure si `appError.status >= 500`.
+  - Evidencia tests: `npm run test:unit -- tests/unit/circuit-breaker-shared.test.ts` y `npm run test:unit -- tests/unit/shared-circuit-breaker.test.ts` (ver bloques **RETEST**).
+
+- A4 Cron/MVs verificación operativa: **PASS (parcial, por tooling)**
+  - Evidencia: migración `supabase/migrations/20260208010000_add_refresh_stock_views_rpc_and_cron.sql` aplicada en remoto (ver bloque **PRELIGHT supabase migration list --linked** y/o **REMOTE ... (post-push)**).
+  - Nota: este host/CLI no expone un comando `supabase db query` para verificar `pg_cron`/`cron.job` directamente; el schedule se crea condicionalmente si existe `pg_cron`.
+
+- A5 Hardening api-proveedor allowlist (sin romper server-to-server): **PASS**
+  - Evidencia: `supabase/functions/api-proveedor/index.ts` permite requests sin `Origin` si NO son browser-like (A5 server-to-server).
+  - Evidencia tests: `npm run test:unit -- tests/unit/api-proveedor-auth.test.ts` (ver bloques **TEST (A5)** y **RETEST (api-proveedor auth)**).
+
+## Verificación Global (antes de deploy)
+
+- `npm run test:unit`: PASS (ver bloque **TEST (global) npm run test:unit**)
+- `npm run test:integration`: ver bloque **TEST (global) npm run test:integration**
+- `npm run test:e2e`: ver bloque **TEST (global) npm run test:e2e**
+- `pnpm -C minimarket-system lint/build/test:components`: ver bloques **minimarket-system:**
+
+## Cierre Remoto
+
+- Migraciones remotas pendientes de FASE 1-2: **APLICADAS** (`20260208020000`, `20260208030000`).
+  - Evidencia: **REMOTE (linked) supabase migration list --linked (post-push)**.
+- Edge Functions redeploy: **SI**
+  - `api-minimarket`: redeploy con `--no-verify-jwt` (ver bloque **REMOTE DEPLOY api-minimarket (verify_jwt=false)**).
+  - `api-proveedor`: redeploy (ver bloque **REMOTE DEPLOY api-proveedor**).
+- Verificación post-deploy (versiones/verify_jwt): ver bloque **REMOTE VERIFY functions list (correct jq)**.
+
+## Smoke Remoto (read-only)
+
+- `node scripts/smoke-minimarket-features.mjs`: **PASS** (ver bloque **SMOKE REMOTO**).
+
+## Hallazgos y Fixes (FASE 1-2)
+
+- GAP: `api-minimarket` no estaba cableado a rate limit compartido (RPC) en runtime.
+  - Fix: wiring a `checkRateLimitShared(...)` con `SUPABASE_SERVICE_ROLE_KEY` + key `user:{uid}:ip:{ip}`.
+- GAP: circuit breaker compartido no se consultaba/registraba vía RPC y contaba errores incorrectos.
+  - Fix: `checkCircuitBreakerShared(...)` + `recordCircuitBreakerEvent(...)`; failure sólo en `>=500`; wiring en returns de handlers.
+- BUG: `api-proveedor` bloqueaba requests server-to-server sin `Origin` a nivel CORS.
+  - Fix: permitir missing Origin salvo browser-like (y mantener allowlist interna).
+
+Commits en branch `review/fase1-fase2-20260208`:
+- `3fbccf4` fix(fase1-2): wire shared rate limit + breaker; relax api-proveedor origin
+- `38b0fe9` docs(closure): review log fase 1-2 + estado actual
+- `4e47d2c` docs: update estado actual for fase 1-2 closure
+- `48c6a9c` docs(closure): finalize review log (remote + push evidence)
