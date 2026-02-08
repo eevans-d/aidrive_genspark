@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, useCallback } from 'react'
+import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Search, Package, Users, CheckSquare, X, ClipboardList, UserCircle, Plus, Warehouse, ArrowRight, Printer, TrendingDown, ShoppingCart } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
@@ -83,15 +83,17 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
   const { data, isLoading } = useGlobalSearch(query, isOpen)
 
   // Build flat results for keyboard navigation
-  const flatResults: FlatResult[] = []
-  if (data) {
+  const flatResults = useMemo<FlatResult[]>(() => {
+    if (!data) return []
+    const out: FlatResult[] = []
     let idx = 0
     for (const category of CATEGORIES) {
       for (const item of (data[category] || [])) {
-        flatResults.push({ item, category, index: idx++ })
+        out.push({ item, category, index: idx++ })
       }
     }
-  }
+    return out
+  }, [data])
 
   // Total navigable items: quick actions (when no query) or search results
   const hasQuery = query.length >= 2

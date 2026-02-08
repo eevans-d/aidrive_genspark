@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-04  
+**Última actualización:** 2026-02-08  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -68,6 +68,15 @@
 | D-061 | **Fallback sin lock si RPC no existe** | Completada (deploy) | 2026-02-04 | `cron-jobs-maxiconsumo` continúa sin lock si `sp_acquire_job_lock` no está disponible (evita caída total por DB pendiente). |
 | D-062 | **503 explícito si RPC de reservas falta** | Completada (deploy) | 2026-02-04 | `/reservas` retorna 503 cuando `sp_reservar_stock` no existe, en vez de 500 silencioso. |
 | D-063 | **Store compartido para rate limit/breaker = Supabase tabla** | Aprobada | 2026-02-06 | Decisión: usar tabla `rate_limit_state` en Supabase en vez de Redis. Trade-offs: +Simplicidad (sin infra adicional), +Costo (incluido en plan), -Latencia (~20-50ms vs ~1ms Redis). Aceptable para volumen actual (<1K rps). Si escala, migrar a Redis. Ver detalle D-063 abajo. |
+| D-064 | **Permisos por rutas (frontend) = deny-by-default** | Completada | 2026-02-07 | `canAccessRoute()` retorna `false` para rutas no configuradas (evita bypass pegando URL). |
+| D-065 | **Roles coherentes FE/BE**: sincronizar `app_metadata.role` + `personal.rol` | Completada | 2026-02-07 | Script `scripts/supabase-admin-sync-role.mjs` alinea alta de empleados (evita 403 “a medias”). |
+| D-066 | **POS ventas idempotente**: `POST /ventas` requiere `Idempotency-Key` | Aprobada | 2026-02-07 | Evita duplicados por reintentos; RPC `sp_procesar_venta_pos` también es idempotente por key. |
+| D-067 | **Pocket Manager cámara**: ZXing (`@zxing/library`) + fallback manual | Aprobada | 2026-02-07 | Cámara requiere HTTPS/localhost; UX mobile-first. |
+| D-068 | **Anti-mermas**: oferta sugerida 30% OFF “sugerir + 1 clic” (no auto-aplicar) | Aprobada | 2026-02-07 | Tabla `ofertas_stock`; POS cobra `precio_oferta` si hay oferta activa (sin tocar precio base). |
+| D-069 | **Bitácora**: modal al logout + fail-open | Aprobada | 2026-02-07 | Guardar nota antes de `signOut()`. Si falla, permitir “Salir sin nota”. |
+| D-070 | **GlobalSearch “Scan & Action”**: producto abre modal de acciones | Aprobada | 2026-02-07 | Acciones: verificar precio (insights), imprimir etiqueta, navegar a POS/Depósito/Pocket según permisos. |
+| D-071 | **MVs requeridas por alertas**: asegurar `mv_stock_bajo` + `mv_productos_proximos_vencer` en DB | Completada | 2026-02-08 | Hotfix migración `20260206235900_create_stock_materialized_views_for_alertas.sql`. |
+| D-072 | **Refresh de MVs de stock**: RPC + cron opcional | Completada | 2026-02-08 | Migración `20260208010000_add_refresh_stock_views_rpc_and_cron.sql` crea `fn_refresh_stock_views()` y agenda `refresh_stock_views` si existe `pg_cron`. |
 
 ---
 

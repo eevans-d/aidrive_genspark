@@ -339,6 +339,57 @@ PUT /pedidos/items/{id}            # Marcar item como preparado/no preparado
 **Estados de Pedido:** `pendiente` → `preparando` → `listo` → `entregado` | `cancelado`  
 **Estados de Pago:** `pendiente` | `parcial` | `pagado` (calculado automáticamente según monto_pagado vs monto_total)
 
+### Búsqueda Global (requiere autenticación) ✨ NUEVO
+```bash
+GET /search?q=texto&limit=10        # Busca en productos/proveedores/tareas/pedidos/clientes
+```
+
+**Notas `/search`:**
+- `q` es requerido (mínimo 2 caracteres).
+- `limit` es opcional (1–20). El límite real por entidad está capado para evitar payloads grandes.
+
+### Insights (Arbitraje / Comprar Ahora) ✨ NUEVO
+```bash
+GET /insights/arbitraje             # Riesgo de pérdida / margen bajo (por reposición proveedor)
+GET /insights/compras               # “Comprar ahora”: stock bajo + caída de costo >= 10%
+GET /insights/producto/{id}         # Payload unificado por producto (POS/Pocket)
+```
+
+### Clientes + Cuentas Corrientes (requiere rol `admin|ventas`) ✨ NUEVO
+```bash
+GET /clientes                       # Listar clientes (filtro: ?q, paginación: ?limit&offset)
+POST /clientes                      # Crear cliente
+PUT /clientes/{id}                  # Actualizar cliente
+
+GET /cuentas-corrientes/resumen     # “Dinero en la calle”
+GET /cuentas-corrientes/saldos      # Saldos por cliente (filtros: ?q, ?solo_deuda=true)
+POST /cuentas-corrientes/pagos      # Registrar pago (monto > 0) -> retorna saldo actualizado
+```
+
+### POS / Ventas (requiere rol `admin|ventas`) ✨ NUEVO
+```bash
+POST /ventas                        # Crear venta POS (idempotente)
+GET /ventas                         # Listado de ventas (paginación: ?limit&offset)
+GET /ventas/{id}                    # Detalle de venta + items
+```
+
+**Notas `/ventas` (idempotencia):**
+- `POST /ventas` requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
+- Error esperado: `409 LOSS_RISK_CONFIRM_REQUIRED` si el producto está en riesgo de pérdida y falta `confirmar_riesgo=true`.
+
+### Ofertas (Anti-mermas) ✨ NUEVO
+```bash
+GET /ofertas/sugeridas              # Stock con vencimiento <= 7 días (sugiere 30% OFF)
+POST /ofertas/aplicar               # Aplica oferta por stock_id (default 30%)
+POST /ofertas/{id}/desactivar       # Desactiva oferta
+```
+
+### Bitácora de Turno ✨ NUEVO
+```bash
+POST /bitacora                      # Crear nota (antes de logout)
+GET /bitacora                       # Listar notas (solo admin)
+```
+
 ### Reservas y Compras
 ```bash
 POST /reservas                     # Crear reserva
@@ -372,6 +423,11 @@ GET /health                        # Healthcheck del gateway
 | Aplicar precios | ❌ | ❌ | ❌ | ✅ |
 | Movimientos depósito | ❌ | ❌ | ✅ | ✅ |
 | Eliminar productos | ❌ | ❌ | ❌ | ✅ |
+| POS / Ventas | ❌ | ✅ | ❌ | ✅ |
+| Clientes / Cuenta Corriente | ❌ | ✅ | ❌ | ✅ |
+| Ofertas anti-mermas | ❌ | ✅ | ✅ | ✅ |
+| Bitácora (crear) | ❌ | ✅ | ✅ | ✅ |
+| Bitácora (listar) | ❌ | ❌ | ❌ | ✅ |
 
 ---
 

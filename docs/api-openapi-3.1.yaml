@@ -20,8 +20,8 @@ info:
     - 12384 → 12400
 
     ## Nota de cobertura
-    Este spec cubre los endpoints principales del gateway. Los endpoints de dropdowns, tareas,
-    reservas/cancelar y health están documentados en `docs/API_README.md` pero aún no se incluyen aquí.
+    Este spec documenta el gateway `api-minimarket`. Para ejemplos prácticos, notas operativas
+    (CORS, idempotencia, errores esperados) y smoke tests, ver `docs/API_README.md`.
     
   contact:
     name: Soporte Mini Market
@@ -394,6 +394,257 @@ components:
                 format: decimal
               observaciones:
                 type: string
+
+    # ============================================================================
+    # SCHEMAS — SEARCH / INSIGHTS / POS / CLIENTES / OFERTAS / BITÁCORA (NUEVO)
+    # ============================================================================
+
+    SearchProducto:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        sku: { type: string, nullable: true }
+        nombre: { type: string }
+        marca: { type: string, nullable: true }
+        precio_actual: { type: number, format: decimal, nullable: true }
+        codigo_barras: { type: string, nullable: true }
+        activo: { type: boolean }
+
+    SearchProveedor:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        contacto: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        telefono: { type: string, nullable: true }
+
+    SearchTarea:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        titulo: { type: string }
+        estado: { type: string }
+        prioridad: { type: string }
+        asignada_a_nombre: { type: string, nullable: true }
+        fecha_vencimiento: { type: string, format: date-time, nullable: true }
+
+    SearchPedido:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        numero_pedido: { type: integer }
+        cliente_nombre: { type: string }
+        cliente_telefono: { type: string, nullable: true }
+        estado: { type: string }
+        estado_pago: { type: string }
+        monto_total: { type: number, format: decimal }
+        fecha_pedido: { type: string, format: date-time }
+
+    SearchCliente:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        nombre: { type: string }
+        telefono: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        direccion_default: { type: string, nullable: true }
+
+    SearchResponse:
+      type: object
+      properties:
+        productos:
+          type: array
+          items: { $ref: '#/components/schemas/SearchProducto' }
+        proveedores:
+          type: array
+          items: { $ref: '#/components/schemas/SearchProveedor' }
+        tareas:
+          type: array
+          items: { $ref: '#/components/schemas/SearchTarea' }
+        pedidos:
+          type: array
+          items: { $ref: '#/components/schemas/SearchPedido' }
+        clientes:
+          type: array
+          items: { $ref: '#/components/schemas/SearchCliente' }
+
+    InsightArbitrajeItem:
+      type: object
+      properties:
+        producto_id: { type: string, format: uuid }
+        nombre_producto: { type: string }
+        sku: { type: string, nullable: true }
+        costo_proveedor_actual: { type: number, format: decimal }
+        costo_proveedor_prev: { type: number, format: decimal, nullable: true }
+        delta_costo_pct: { type: number, format: decimal, nullable: true }
+        precio_venta_actual: { type: number, format: decimal, nullable: true }
+        margen_vs_reposicion: { type: number, format: decimal, nullable: true }
+        riesgo_perdida: { type: boolean }
+        margen_bajo: { type: boolean }
+        fecha_ultima_comparacion: { type: string, format: date-time }
+
+    InsightCompraItem:
+      allOf:
+        - $ref: '#/components/schemas/InsightArbitrajeItem'
+        - type: object
+          properties:
+            cantidad_actual: { type: integer }
+            stock_minimo: { type: integer }
+            nivel_stock: { type: string }
+
+    ClienteSaldoItem:
+      type: object
+      properties:
+        cliente_id: { type: string, format: uuid }
+        nombre: { type: string }
+        telefono: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        direccion_default: { type: string, nullable: true }
+        whatsapp_e164: { type: string, nullable: true }
+        link_pago: { type: string, nullable: true }
+        limite_credito: { type: number, format: decimal, nullable: true }
+        saldo: { type: number, format: decimal }
+        ultimo_movimiento: { type: string, format: date-time, nullable: true }
+
+    ClienteCreateRequest:
+      type: object
+      required: [nombre]
+      properties:
+        nombre: { type: string }
+        telefono: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        direccion_default: { type: string, nullable: true }
+        edificio: { type: string, nullable: true }
+        piso: { type: string, nullable: true }
+        departamento: { type: string, nullable: true }
+        observaciones: { type: string, nullable: true }
+        whatsapp_e164: { type: string, nullable: true }
+        link_pago: { type: string, nullable: true }
+        limite_credito: { type: number, format: decimal, nullable: true, description: "Solo admin" }
+        activo: { type: boolean, default: true }
+
+    ClienteUpdateRequest:
+      type: object
+      properties:
+        nombre: { type: string }
+        telefono: { type: string, nullable: true }
+        email: { type: string, format: email, nullable: true }
+        direccion_default: { type: string, nullable: true }
+        edificio: { type: string, nullable: true }
+        piso: { type: string, nullable: true }
+        departamento: { type: string, nullable: true }
+        observaciones: { type: string, nullable: true }
+        whatsapp_e164: { type: string, nullable: true }
+        link_pago: { type: string, nullable: true }
+        limite_credito: { type: number, format: decimal, nullable: true, description: "Solo admin" }
+        activo: { type: boolean }
+
+    CuentaCorrienteResumen:
+      type: object
+      properties:
+        dinero_en_la_calle: { type: number, format: decimal }
+        clientes_con_deuda: { type: integer }
+        as_of: { type: string, format: date-time }
+
+    RegistrarPagoCCRequest:
+      type: object
+      required: [cliente_id, monto]
+      properties:
+        cliente_id: { type: string, format: uuid }
+        monto: { type: number, format: decimal, description: "Monto > 0 (se registra como pago negativo en ledger)" }
+        descripcion: { type: string, nullable: true }
+
+    RegistrarPagoCCResponse:
+      type: object
+      properties:
+        cliente_id: { type: string, format: uuid }
+        saldo: { type: number, format: decimal }
+
+    VentaItemInput:
+      type: object
+      required: [producto_id, cantidad]
+      properties:
+        producto_id: { type: string, format: uuid }
+        cantidad: { type: integer, minimum: 1 }
+
+    VentaCreateRequest:
+      type: object
+      required: [metodo_pago, items]
+      properties:
+        metodo_pago: { type: string, enum: [efectivo, tarjeta, cuenta_corriente] }
+        cliente_id: { type: string, format: uuid, nullable: true }
+        confirmar_riesgo: { type: boolean, default: false }
+        items:
+          type: array
+          minItems: 1
+          items: { $ref: '#/components/schemas/VentaItemInput' }
+
+    VentaItemRow:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        producto_id: { type: string, format: uuid }
+        producto_nombre: { type: string }
+        producto_sku: { type: string, nullable: true }
+        cantidad: { type: integer }
+        precio_unitario: { type: number, format: decimal }
+        subtotal: { type: number, format: decimal }
+
+    VentaResponse:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        idempotency_key: { type: string }
+        metodo_pago: { type: string }
+        cliente_id: { type: string, format: uuid, nullable: true }
+        monto_total: { type: number, format: decimal }
+        created_at: { type: string, format: date-time }
+        status: { type: string, enum: [created, existing] }
+        items:
+          type: array
+          items: { $ref: '#/components/schemas/VentaItemRow' }
+
+    OfertaSugeridaItem:
+      type: object
+      properties:
+        stock_id: { type: string, format: uuid }
+        producto_id: { type: string, format: uuid }
+        producto_nombre: { type: string }
+        sku: { type: string, nullable: true }
+        codigo_barras: { type: string, nullable: true }
+        ubicacion: { type: string, nullable: true }
+        fecha_vencimiento: { type: string, format: date, nullable: true }
+        dias_hasta_vencimiento: { type: integer }
+        cantidad_actual: { type: integer }
+        descuento_sugerido_pct: { type: number, format: decimal }
+        precio_base: { type: number, format: decimal }
+        precio_oferta_sugerido: { type: number, format: decimal }
+        as_of: { type: string, format: date-time }
+
+    OfertaAplicarRequest:
+      type: object
+      required: [stock_id]
+      properties:
+        stock_id: { type: string, format: uuid }
+        descuento_pct: { type: number, format: decimal, nullable: true, description: "Default 30 si no se envía" }
+
+    BitacoraCreateRequest:
+      type: object
+      required: [nota]
+      properties:
+        nota: { type: string, maxLength: 2000 }
+        usuario_nombre: { type: string, nullable: true }
+
+    BitacoraItem:
+      type: object
+      properties:
+        id: { type: string, format: uuid }
+        usuario_nombre: { type: string, nullable: true }
+        usuario_email: { type: string, format: email, nullable: true }
+        usuario_rol: { type: string, nullable: true }
+        nota: { type: string }
+        created_at: { type: string, format: date-time }
     
     ErrorResponse:
       type: object
@@ -1077,28 +1328,6 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
-tags:
-  - name: Categorías
-    description: Gestión de categorías de productos
-  - name: Productos
-    description: Gestión completa de productos
-  - name: Proveedores
-    description: Gestión de proveedores
-  - name: Precios
-    description: Sistema de precios con redondeo automático
-  - name: Stock
-    description: Consulta de inventario y stock
-  - name: Depósito
-    description: Operaciones de depósito y movimientos
-  - name: Reservas
-    description: Sistema de reservas de stock con idempotencia
-  - name: Tareas
-    description: Gestión de tareas operativas
-  - name: Sistema
-    description: Health checks y endpoints del sistema
-  - name: Pedidos
-    description: Gestión de pedidos de clientes con soporte para retiro y delivery
-
   /health:
     get:
       summary: Health check del gateway
@@ -1642,3 +1871,489 @@ tags:
                 $ref: '#/components/schemas/SuccessResponse'
         '404':
           description: Item no encontrado
+
+  # ============================================================================
+  # SEARCH / INSIGHTS / POS / CLIENTES / OFERTAS / BITÁCORA (NUEVO)
+  # ============================================================================
+
+  /search:
+    get:
+      summary: Búsqueda global (productos, proveedores, tareas, pedidos, clientes)
+      tags: [Search]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 2
+          description: Término de búsqueda (mín 2 caracteres)
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 20
+            default: 10
+      responses:
+        '200':
+          description: Resultados agrupados por entidad
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/SearchResponse'
+        '400':
+          description: Validación fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /insights/arbitraje:
+    get:
+      summary: Insights de arbitraje (riesgo de pérdida / margen bajo)
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de productos con flags de riesgo/margen
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InsightArbitrajeItem'
+
+  /insights/compras:
+    get:
+      summary: Insights de compras (stock bajo + caída de costo)
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de oportunidades de compra
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/InsightCompraItem'
+
+  /insights/producto/{id}:
+    get:
+      summary: Insight unificado de arbitraje por producto
+      tags: [Insights]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Insight del producto
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/InsightArbitrajeItem'
+        '404':
+          description: Sin datos de arbitraje
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /clientes:
+    get:
+      summary: Listar clientes (incluye saldo de cuenta corriente)
+      tags: [Clientes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+          description: Buscar por nombre / teléfono / email
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Lista de clientes con saldo
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ClienteSaldoItem' }
+        '400':
+          description: Error de validación
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+    post:
+      summary: Crear cliente
+      tags: [Clientes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteCreateRequest'
+      responses:
+        '201':
+          description: Cliente creado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /clientes/{id}:
+    put:
+      summary: Actualizar cliente
+      tags: [Clientes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ClienteUpdateRequest'
+      responses:
+        '200':
+          description: Cliente actualizado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '404':
+          description: Cliente no encontrado
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /cuentas-corrientes/resumen:
+    get:
+      summary: Resumen de cuenta corriente ("dinero en la calle")
+      tags: [Cuentas Corrientes]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Resumen
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/CuentaCorrienteResumen'
+
+  /cuentas-corrientes/saldos:
+    get:
+      summary: Saldos por cliente (cuenta corriente)
+      tags: [Cuentas Corrientes]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: q
+          in: query
+          required: false
+          schema: { type: string }
+        - name: solo_deuda
+          in: query
+          required: false
+          schema: { type: boolean, default: false }
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Lista de saldos
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ClienteSaldoItem' }
+
+  /cuentas-corrientes/pagos:
+    post:
+      summary: Registrar pago de cuenta corriente
+      tags: [Cuentas Corrientes]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegistrarPagoCCRequest' }
+      responses:
+        '201':
+          description: Pago registrado
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/RegistrarPagoCCResponse'
+
+  /ventas:
+    post:
+      summary: Crear venta POS (idempotente)
+      tags: [Ventas]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: Idempotency-Key
+          in: header
+          required: true
+          schema: { type: string }
+          description: Header obligatorio para idempotencia (evita duplicados)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/VentaCreateRequest' }
+      responses:
+        '201':
+          description: Venta creada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VentaResponse'
+        '200':
+          description: Venta existente (idempotente)
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/VentaResponse'
+
+    get:
+      summary: Listar ventas
+      tags: [Ventas]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Lista de ventas
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+
+  /ventas/{id}:
+    get:
+      summary: Obtener detalle de venta
+      tags: [Ventas]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Detalle de venta + items
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '404':
+          description: Venta no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /ofertas/sugeridas:
+    get:
+      summary: Ofertas sugeridas (<= 7 días)
+      tags: [Ofertas]
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Lista de sugerencias
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/OfertaSugeridaItem' }
+
+  /ofertas/aplicar:
+    post:
+      summary: Aplicar oferta por stock_id
+      tags: [Ofertas]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/OfertaAplicarRequest' }
+      responses:
+        '201':
+          description: Oferta aplicada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+
+  /ofertas/{id}/desactivar:
+    post:
+      summary: Desactivar oferta por id
+      tags: [Ofertas]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        '200':
+          description: Oferta desactivada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/SuccessResponse' }
+        '404':
+          description: Oferta no encontrada
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/ErrorResponse' }
+
+  /bitacora:
+    post:
+      summary: Crear nota de turno (bitácora)
+      tags: [Bitácora]
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/BitacoraCreateRequest' }
+      responses:
+        '201':
+          description: Nota registrada
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/BitacoraItem'
+
+    get:
+      summary: Listar notas de bitácora
+      tags: [Bitácora]
+      security:
+        - BearerAuth: []
+      parameters:
+        - name: limit
+          in: query
+          required: false
+          schema: { type: integer, default: 50, minimum: 1, maximum: 200 }
+        - name: offset
+          in: query
+          required: false
+          schema: { type: integer, default: 0, minimum: 0 }
+      responses:
+        '200':
+          description: Lista de notas
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/BitacoraItem' }

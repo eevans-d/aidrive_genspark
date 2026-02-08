@@ -615,3 +615,148 @@ Frontend:
 4. El icono favicon.svg es un placeholder simple. Para produccion se recomienda generar PNGs 192x192 y 512x512.
 
 **FASE 3 — COMPLETADA**
+
+---
+
+## FASE 2 — POS MVP + Fiados / Cuenta Corriente (Resumen)
+
+**Estado:** COMPLETADO
+
+**DB (migraciones):**
+- `supabase/migrations/20260207010000_create_pos_ventas_fiados_cc.sql`
+  - Extiende `clientes` (límite crédito, WhatsApp, link pago).
+  - Crea `ventas`, `venta_items`, `cuentas_corrientes_movimientos`.
+  - Crea vistas `vista_cc_saldos_por_cliente`, `vista_cc_resumen`.
+  - RPCs: `sp_procesar_venta_pos(payload jsonb)` (atómica + idempotente) y `sp_registrar_pago_cc(payload jsonb)`.
+
+**Backend (api-minimarket):**
+- Endpoints:
+  - `POST /ventas` (requiere `Idempotency-Key`)
+  - `GET /ventas`, `GET /ventas/:id`
+  - `GET/POST/PUT /clientes`
+  - `GET /cuentas-corrientes/resumen`, `GET /cuentas-corrientes/saldos`, `POST /cuentas-corrientes/pagos`
+- Handlers:
+  - `supabase/functions/api-minimarket/handlers/ventas.ts`
+  - `supabase/functions/api-minimarket/handlers/clientes.ts`
+  - `supabase/functions/api-minimarket/handlers/cuentas_corrientes.ts`
+
+**Frontend:**
+- Ruta standalone `/pos`: `minimarket-system/src/pages/Pos.tsx`
+- Ruta `/clientes`: `minimarket-system/src/pages/Clientes.tsx`
+- API client: `minimarket-system/src/lib/apiClient.ts` (`ventasApi`, `clientesApi`, `cuentasCorrientesApi`)
+
+**Notas de implementación:**
+- POS usa el patrón de idempotencia (header `Idempotency-Key`) para evitar duplicados.
+- Riesgo de pérdida en POS: si el backend levanta `LOSS_RISK_CONFIRM_REQUIRED`, el UI pide confirmación explícita.
+- Crédito fiado: si `limite_credito` es `NULL` no bloquea, pero el UI muestra warning (semáforo).
+
+---
+
+## FASE 4 — Anti-mermas (Zona de Oferta)
+
+**Estado:** COMPLETADO
+
+**DB (migración):**
+- `supabase/migrations/20260207020000_create_ofertas_stock.sql`
+  - Tabla `ofertas_stock` + vista `vista_ofertas_sugeridas`.
+  - RPCs `sp_aplicar_oferta_stock`, `sp_desactivar_oferta_stock`.
+  - POS: `sp_procesar_venta_pos` usa `precio_oferta` si hay oferta activa en `Principal`.
+
+**Backend (api-minimarket):**
+- `GET /ofertas/sugeridas`
+- `POST /ofertas/aplicar`
+- `POST /ofertas/:id/desactivar`
+
+**Frontend:**
+- Alerts drawer agrega CTA “Aplicar 30% OFF”.
+- POS y Pocket respetan oferta activa para totals/etiqueta.
+
+---
+
+## FASE 5 — Bitácora Digital (Nota de turno al logout)
+
+**Estado:** COMPLETADO
+
+**DB (migración):**
+- `supabase/migrations/20260207030000_create_bitacora_turnos.sql`
+
+**Backend (api-minimarket):**
+- `POST /bitacora` (roles base)
+- `GET /bitacora` (admin)
+
+**Frontend:**
+- Modal al logout en `minimarket-system/src/components/Layout.tsx` (guardar antes de `signOut()`; permite “Salir sin nota” si falla).
+- Dashboard admin lista notas recientes.
+
+---
+
+## FASE 6 — UX Quick Wins
+
+**Estado:** COMPLETADO (MVP)
+
+**Cambios principales:**
+- Optimistic UI en tareas (`minimarket-system/src/pages/Tareas.tsx`).
+- Semáforos visuales (rentabilidad + deuda clientes).
+- “Scan & Action”: `minimarket-system/src/components/GlobalSearch.tsx` abre acciones rápidas para productos (verificar precio, imprimir etiqueta, navegar según permisos).
+
+---
+
+## ADDENDUM — 2026-02-08 (Codex)
+
+### 1) Correcciones de estabilidad (tests/lint)
+- Fix test: `minimarket-system/src/components/Layout.test.tsx` (selector de textarea del modal logout).
+- Fix lint: `minimarket-system/src/components/GlobalSearch.tsx` (memoización `flatResults` con `useMemo()`).
+
+### 2) Verificación (local)
+
+Backend (raíz):
+- `npm run test:unit` => PASS (737/737)
+- `npm run test:integration` => PASS (38/38)
+- `npm run test:e2e` => PASS (4/4)
+
+Frontend:
+- `pnpm -C minimarket-system lint` => PASS (0 warnings)
+- `pnpm -C minimarket-system build` => PASS
+- `pnpm -C minimarket-system test:components` => PASS (101/101)
+
+### 3) DB remoto (Supabase) — alineación de migraciones
+
+Hallazgo:
+- El proyecto remoto no tenía `mv_stock_bajo` / `mv_productos_proximos_vencer`, lo que bloqueaba la Fase 1/4 (vistas/anti-mermas) y rompía el drawer de alertas.
+
+Acción:
+- Se agregó `supabase/migrations/20260206235900_create_stock_materialized_views_for_alertas.sql` y se aplicó en remoto.
+- Se aplicaron migraciones faltantes de Fase 1/2/4/5:
+  - `20260207000000`, `20260207010000`, `20260207020000`, `20260207030000`
+- Hotfix posterior de compatibilidad:
+  - `20260208000000_extend_vista_cc_saldos_por_cliente.sql` (evita `UNDEFINED_COLUMN direccion_default` en `GET /clientes`)
+
+Evidencia:
+- `supabase migration list --linked` muestra aplicado hasta `20260208000000`.
+
+### 4) Deploy remoto (Edge Functions)
+
+Hallazgo:
+- El `api-minimarket` remoto (v18, 2026-02-04) no incluía endpoints nuevos (404 en `/search`, `/insights/*`, `/clientes`, `/ventas`, `/ofertas/*`, `/bitacora`).
+
+Acción:
+- Deploy `api-minimarket` con `--no-verify-jwt --use-api` → v19.
+- Deploy `scraper-maxiconsumo` → v11 (fix `tipo_cambio` aumento/disminución).
+
+Smoke (JWT admin):
+- `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/resumen`, `/ofertas/sugeridas`, `/bitacora` => 200 OK.
+
+### 5) Refresh de MVs de stock (operativo)
+
+Hallazgo:
+- El remoto tenía `fn_dashboard_metrics` pero **no** exponía `fn_refresh_stock_views()` (PGRST202 / function not found), dificultando la operación/automatización del refresh de `mv_stock_bajo` y `mv_productos_proximos_vencer`.
+
+Acción:
+- Se agregó y aplicó la migración `supabase/migrations/20260208010000_add_refresh_stock_views_rpc_and_cron.sql`:
+  - Crea `public.fn_refresh_stock_views()` (best-effort: intenta refresh concurrente y cae a refresh normal si no está permitido).
+  - Revoca EXECUTE de `PUBLIC` y concede a `service_role`.
+  - Agenda (si `pg_cron` existe) el job `refresh_stock_views` (cada hora, minuto 07).
+
+Evidencia:
+- `supabase migration list --linked` muestra aplicado hasta `20260208010000`.
+- RPC `POST /rest/v1/rpc/fn_refresh_stock_views` con `service_role` => **204**.

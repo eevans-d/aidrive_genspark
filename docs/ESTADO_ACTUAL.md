@@ -1,9 +1,24 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-06  
-**Estado:** ✅ OPERATIVO (Hardening WS1/WS2/WS5 completado en repo y tests)
+**Última actualización:** 2026-02-08  
+**Estado:** ✅ OPERATIVO (Fases 0-6 + DB/Edge Functions sincronizados y verificados)
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
+
+**Nuevo (2026-02-08):**
+- ✅ **Fases 0-6 implementadas** (Arbitraje, POS+Fiados/CC, Pocket PWA, Ofertas anti-mermas, Bitácora, UX quick wins).
+- ✅ **DB remoto vinculado** (`dqaygmjpzoqjjrywdsxi`) migrado y alineado:
+  - `20260206235900` (crea `mv_stock_bajo` + `mv_productos_proximos_vencer` para AlertsDrawer)
+  - `20260207000000` (vistas arbitraje / oportunidades)
+  - `20260207010000` (POS + ventas + cuenta corriente)
+  - `20260207020000` (ofertas anti-mermas + POS respeta `precio_oferta`)
+  - `20260207030000` (bitácora turnos)
+  - `20260208000000` (hotfix: vista CC incluye `direccion_default`)
+  - `20260208010000` (RPC + cron opcional: refresh MVs `mv_stock_bajo`/`mv_productos_proximos_vencer`)
+- ✅ **Edge Functions desplegadas (remoto):**
+  - `api-minimarket` v19 (incluye `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/*`, `/ventas`, `/ofertas/*`, `/bitacora`)
+  - `scraper-maxiconsumo` v11 (fix dirección aumento/disminución en alertas)
+- ✅ **Smoke remoto (JWT admin):** `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/resumen`, `/ofertas/sugeridas`, `/bitacora` responden 200.
 
 **Nuevo (2026-02-06 sesión tarde):**
 - ✅ **Sistema de Pedidos implementado:**
@@ -20,6 +35,15 @@
 - ✅ Build frontend verificado: `pnpm -C minimarket-system build` → 166.16 kB (gzip: 52.67 kB).
 
 **Nuevo (previo):** Tests de concurrencia e idempotencia (`tests/unit/api-reservas-concurrencia.test.ts`, `tests/unit/cron-jobs-locking.test.ts`). Smoke test notificaciones (read-only): `node scripts/smoke-notifications.mjs`.
+
+**Auditoría local (2026-02-08):**
+- ✅ `npm run test:unit` — PASS (737 tests).
+- ✅ `npm run test:integration` — PASS (38 tests).
+- ✅ `npm run test:e2e` — PASS (4 smoke).
+- ✅ `pnpm -C minimarket-system lint` — OK (0 warnings).
+- ✅ `pnpm -C minimarket-system build` — OK.
+- ✅ `pnpm -C minimarket-system test:components` — PASS (101 tests).
+- ⚠️ `deno` puede no estar disponible en PATH en algunos hosts; si no está, documentar y compensar con tests unitarios + revisión estática.
 
 **Auditoría local (2026-02-06):**
 - ✅ `npm run test:unit` — PASS (725 tests).
