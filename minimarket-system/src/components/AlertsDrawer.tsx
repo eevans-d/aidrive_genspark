@@ -74,20 +74,30 @@ function LoadingState() {
   )
 }
 
-function StockBajoItemRow({ item }: { item: StockBajoItem }) {
+function StockBajoItemRow({ item, onCreateTask }: { item: StockBajoItem; onCreateTask: (item: StockBajoItem) => void }) {
   return (
-    <div className="flex items-center justify-between py-2 px-3 hover:bg-gray-50 transition-colors">
-      <div className="min-w-0 flex-1">
-        <div className="text-sm font-medium text-gray-800 truncate">{item.producto_nombre}</div>
-        <div className="text-xs text-gray-500">
-          {item.cantidad_actual} / {item.stock_minimo} unidades
+    <div className="py-2 px-3 hover:bg-gray-50 transition-colors">
+      <div className="flex items-center justify-between">
+        <div className="min-w-0 flex-1">
+          <div className="text-sm font-medium text-gray-800 truncate">{item.producto_nombre}</div>
+          <div className="text-xs text-gray-500">
+            {item.cantidad_actual} / {item.stock_minimo} unidades
+          </div>
+        </div>
+        <div className="flex items-center gap-2 ml-2 shrink-0">
+          <Badge label={item.nivel_stock} colorClass={NIVEL_STOCK_COLORS[item.nivel_stock] ?? 'bg-gray-100 text-gray-700'} />
+          <Link to="/stock" className="text-blue-500 hover:text-blue-700">
+            <ExternalLink className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </div>
-      <div className="flex items-center gap-2 ml-2 shrink-0">
-        <Badge label={item.nivel_stock} colorClass={NIVEL_STOCK_COLORS[item.nivel_stock] ?? 'bg-gray-100 text-gray-700'} />
-        <Link to="/stock" className="text-blue-500 hover:text-blue-700">
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
+      <div className="flex gap-2 mt-1.5">
+        <button
+          onClick={() => onCreateTask(item)}
+          className="text-xs px-2 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded transition-colors"
+        >
+          Crear tarea reposicion
+        </button>
       </div>
     </div>
   )
@@ -392,6 +402,22 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
     }
   }
 
+  // CTA: Create reposition task from stock bajo alert (B4)
+  const handleCreateRepoTask = async (item: StockBajoItem) => {
+    try {
+      const deficit = item.stock_minimo - item.cantidad_actual
+      await tareasApi.create({
+        titulo: `Reponer: ${item.producto_nombre}`,
+        descripcion: `Stock actual: ${item.cantidad_actual}/${item.stock_minimo} (faltan ${deficit}). Nivel: ${item.nivel_stock}.`,
+        prioridad: item.nivel_stock === 'sin_stock' || item.nivel_stock === 'critico' ? 'urgente' : 'normal',
+      })
+      toast.success(`Tarea de reposicion creada: ${item.producto_nombre}`)
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al crear tarea'
+      toast.error(msg)
+    }
+  }
+
   const handleAplicarOferta = async (stockId: string) => {
     setApplyingStockId(stockId)
     try {
@@ -491,7 +517,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
             ) : (
               <div className="divide-y divide-gray-100">
                 {stockBajo.map((item) => (
-                  <StockBajoItemRow key={item.producto_id} item={item} />
+                  <StockBajoItemRow key={item.producto_id} item={item} onCreateTask={handleCreateRepoTask} />
                 ))}
               </div>
             )}

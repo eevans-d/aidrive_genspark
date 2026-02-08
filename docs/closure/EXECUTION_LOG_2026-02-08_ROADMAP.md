@@ -196,16 +196,60 @@ pnpm build → OK (27 entries precached)
 ## FASE 3 — UX P1
 
 ### B1) Alta producto
-<!-- COMPLETAR -->
+
+**Archivos modificados:**
+- `minimarket-system/src/lib/apiClient.ts` — nuevo `CreateProductoParams` + `productosApi.create()`
+- `minimarket-system/src/pages/Productos.tsx` — boton "Nuevo producto" + modal con form (nombre, sku, codigo_barras, marca, contenido_neto)
+
+**Cambios realizados:**
+- CTA "Nuevo producto" en header de Productos
+- Modal con formulario: nombre (obligatorio), sku, codigo_barras, marca, contenido_neto
+- React Query mutation con invalidation de cache `['productos']`
+- Toast de feedback (success/error)
 
 ### B2) Cambio precio
-<!-- COMPLETAR -->
+
+**Archivos modificados:**
+- `minimarket-system/src/pages/Productos.tsx` — boton "Actualizar precio" + modal de precio
+
+**Cambios realizados:**
+- CTA "Actualizar precio" en panel de detalle del producto
+- Modal con campos: precio_compra (obligatorio), margen_ganancia (opcional)
+- Usa `preciosApi.aplicar()` existente (POST /precios/aplicar)
+- Pre-carga valores actuales del producto seleccionado
 
 ### B3) Ajuste stock
-<!-- COMPLETAR -->
+
+**Archivos modificados:**
+- `minimarket-system/src/lib/apiClient.ts` — tipo `MovimientoParams.tipo` extendido a `'entrada' | 'salida' | 'ajuste'`
+- `minimarket-system/src/pages/Deposito.tsx` — tercer boton AJUSTE + campo motivo obligatorio
+
+**Cambios realizados:**
+- Boton AJUSTE (amber) como tercer tipo de movimiento en modo Normal
+- Campo "Motivo del ajuste" obligatorio (solo visible para tipo ajuste)
+- Oculta proveedor/destino para ajustes
+- Validacion: motivo requerido antes de enviar
 
 ### B4) Acciones alertas
-<!-- COMPLETAR -->
+
+**Archivos modificados:**
+- `minimarket-system/src/components/AlertsDrawer.tsx` — CTA en StockBajoItemRow
+
+**Cambios realizados:**
+- Boton "Crear tarea reposicion" en cada item de Stock Bajo
+- Handler `handleCreateRepoTask()` crea tarea via `tareasApi.create()`
+- Auto-completa titulo, descripcion y prioridad segun nivel de stock
+- Prioridad: urgente para sin_stock/critico, normal para bajo
+
+### FASE 3 — Cierre
+
+**Tests completos post-FASE 3:**
+```
+npx vitest run tests/unit/ → 785 PASS (44 files)
+pnpm lint → OK (0 errors)
+pnpm build → OK (27 entries precached)
+pnpm test:components → 101 PASS (14 files)
+```
 
 ---
 

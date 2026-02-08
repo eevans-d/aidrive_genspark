@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
-import { Plus, Minus, Search, Zap } from 'lucide-react'
+import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 
 type TabMode = 'rapido' | 'normal'
@@ -13,10 +13,11 @@ export default function Deposito() {
   // === Normal mode state ===
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducto, setSelectedProducto] = useState<DropdownItem | null>(null)
-  const [tipo, setTipo] = useState<'entrada' | 'salida'>('entrada')
+  const [tipo, setTipo] = useState<'entrada' | 'salida' | 'ajuste'>('entrada')
   const [cantidad, setCantidad] = useState('')
   const [destino, setDestino] = useState('')
   const [proveedorId, setProveedorId] = useState('')
+  const [motivo, setMotivo] = useState('')
   const [observaciones, setObservaciones] = useState('')
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
 
@@ -94,7 +95,7 @@ export default function Deposito() {
   const movimientoMutation = useMutation({
     mutationFn: async (params: {
       productoId: string
-      tipo: 'entrada' | 'salida'
+      tipo: 'entrada' | 'salida' | 'ajuste'
       cantidad: number
       motivo: string
       destino: string | null
@@ -120,6 +121,7 @@ export default function Deposito() {
       setCantidad('')
       setDestino('')
       setProveedorId('')
+      setMotivo('')
       setObservaciones('')
       setSearchTerm('')
     },
@@ -185,16 +187,25 @@ export default function Deposito() {
 
     setMensaje(null)
 
-    const motivo = tipo === 'entrada'
-      ? (proveedorId ? `Entrada proveedor ${proveedorId}` : 'Entrada manual')
-      : (destino ? `Salida a ${destino}` : 'Salida')
+    let motivoFinal: string
+    if (tipo === 'ajuste') {
+      if (!motivo.trim()) {
+        setMensaje({ tipo: 'error', texto: 'El motivo es obligatorio para ajustes' })
+        return
+      }
+      motivoFinal = motivo.trim()
+    } else {
+      motivoFinal = tipo === 'entrada'
+        ? (proveedorId ? `Entrada proveedor ${proveedorId}` : 'Entrada manual')
+        : (destino ? `Salida a ${destino}` : 'Salida')
+    }
 
     movimientoMutation.mutate({
       productoId: selectedProducto.id,
       tipo,
       cantidad: cantidadNumero,
-      motivo,
-      destino: tipo === 'entrada' ? 'Principal' : (destino || null),
+      motivo: motivoFinal,
+      destino: tipo === 'entrada' ? 'Principal' : (tipo === 'salida' ? (destino || null) : null),
       proveedorId: tipo === 'entrada' && proveedorId ? proveedorId : null,
       observaciones: observaciones || null
     })
@@ -377,6 +388,17 @@ export default function Deposito() {
                   <Minus className="w-6 h-6 mx-auto mb-2" />
                   SALIDA
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setTipo('ajuste')}
+                  className={`flex-1 py-4 px-6 rounded-lg border-2 font-medium transition-all ${tipo === 'ajuste'
+                    ? 'border-amber-500 bg-amber-50 text-amber-700'
+                    : 'border-gray-300 bg-white text-gray-700 hover:border-gray-400'
+                    }`}
+                >
+                  <RefreshCw className="w-6 h-6 mx-auto mb-2" />
+                  AJUSTE
+                </button>
               </div>
             </div>
 
@@ -482,6 +504,23 @@ export default function Deposito() {
                   <option value="Mini Market">Mini Market</option>
                   <option value="Otro">Otro</option>
                 </select>
+              </div>
+            )}
+
+            {/* Motivo (obligatorio para ajustes) */}
+            {tipo === 'ajuste' && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Motivo del ajuste *
+                </label>
+                <input
+                  type="text"
+                  value={motivo}
+                  onChange={(e) => setMotivo(e.target.value)}
+                  required
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 text-lg"
+                  placeholder="Ej: Conteo fisico, merma, rotura..."
+                />
               </div>
             )}
 

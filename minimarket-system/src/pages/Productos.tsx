@@ -1,15 +1,23 @@
 import { useState } from 'react'
-import { TrendingUp, TrendingDown } from 'lucide-react'
+import { TrendingUp, TrendingDown, Plus, DollarSign, Loader2 } from 'lucide-react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { toast, Toaster } from 'sonner'
 import { useProductos, ProductoConHistorial } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { SkeletonTable, SkeletonText } from '../components/Skeleton'
+import { productosApi, preciosApi, ApiError } from '../lib/apiClient'
 
 export default function Productos() {
+  const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [barcodeInput, setBarcodeInput] = useState('')
   const [barcodeSearch, setBarcodeSearch] = useState('')
   const [selectedProducto, setSelectedProducto] = useState<ProductoConHistorial | null>(null)
+  const [showNewModal, setShowNewModal] = useState(false)
+  const [showPriceModal, setShowPriceModal] = useState(false)
+  const [newProducto, setNewProducto] = useState({ nombre: '', sku: '', codigo_barras: '', marca: '', contenido_neto: '' })
+  const [priceForm, setPriceForm] = useState({ precio_compra: '', margen_ganancia: '' })
   const pageSize = 20
 
   const { data, isLoading, isError, error, refetch, isFetching } = useProductos({
@@ -28,6 +36,40 @@ export default function Productos() {
     setBarcodeInput('')
     setBarcodeSearch('')
   }
+
+  const createMutation = useMutation({
+    mutationFn: (params: typeof newProducto) =>
+      productosApi.create({
+        nombre: params.nombre,
+        sku: params.sku || null,
+        codigo_barras: params.codigo_barras || null,
+        marca: params.marca || null,
+        contenido_neto: params.contenido_neto || null,
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productos'] })
+      toast.success('Producto creado correctamente')
+      setShowNewModal(false)
+      setNewProducto({ nombre: '', sku: '', codigo_barras: '', marca: '', contenido_neto: '' })
+    },
+    onError: (err: ApiError | Error) => {
+      toast.error(err instanceof ApiError ? err.message : 'Error al crear producto')
+    },
+  })
+
+  const priceMutation = useMutation({
+    mutationFn: (params: { producto_id: string; precio_compra: number; margen_ganancia?: number }) =>
+      preciosApi.aplicar(params),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['productos'] })
+      toast.success('Precio actualizado correctamente')
+      setShowPriceModal(false)
+      setPriceForm({ precio_compra: '', margen_ganancia: '' })
+    },
+    onError: (err: ApiError | Error) => {
+      toast.error(err instanceof ApiError ? err.message : 'Error al actualizar precio')
+    },
+  })
 
   const handleExportCsv = () => {
     const productos = data?.productos ?? []
@@ -108,7 +150,17 @@ export default function Productos() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Gestión de Productos y Precios</h1>
+      <Toaster position="top-right" richColors />
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold text-gray-900">Gestion de Productos y Precios</h1>
+        <button
+          onClick={() => setShowNewModal(true)}
+          className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
+        >
+          <Plus className="w-4 h-4" />
+          Nuevo producto
+        </button>
+      </div>
 
       <div className="flex flex-col gap-3">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -283,6 +335,20 @@ export default function Productos() {
                   )}
                 </div>
 
+                <button
+                  onClick={() => {
+                    setPriceForm({
+                      precio_compra: selectedProducto.precio_costo?.toString() ?? '',
+                      margen_ganancia: selectedProducto.margen_ganancia?.toString() ?? '',
+                    })
+                    setShowPriceModal(true)
+                  }}
+                  className="flex items-center gap-2 w-full px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors justify-center"
+                >
+                  <DollarSign className="w-4 h-4" />
+                  Actualizar precio
+                </button>
+
                 {selectedProducto.proveedor && (
                   <div className="bg-blue-50 p-4 rounded-lg">
                     <div className="text-sm text-blue-600 font-medium">Proveedor Principal</div>
@@ -339,6 +405,163 @@ export default function Productos() {
           </div>
         </div>
       </div>
+
+      {/* Modal: Nuevo producto (B1) */}
+      {showNewModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setShowNewModal(false)} />
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-4">Nuevo producto</h3>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                if (!newProducto.nombre.trim()) return
+                createMutation.mutate(newProducto)
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Nombre *</label>
+                <input
+                  type="text"
+                  required
+                  value={newProducto.nombre}
+                  onChange={(e) => setNewProducto({ ...newProducto, nombre: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="Nombre del producto"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">SKU</label>
+                  <input
+                    type="text"
+                    value={newProducto.sku}
+                    onChange={(e) => setNewProducto({ ...newProducto, sku: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Codigo de barras</label>
+                  <input
+                    type="text"
+                    value={newProducto.codigo_barras}
+                    onChange={(e) => setNewProducto({ ...newProducto, codigo_barras: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Marca</label>
+                  <input
+                    type="text"
+                    value={newProducto.marca}
+                    onChange={(e) => setNewProducto({ ...newProducto, marca: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Contenido neto</label>
+                  <input
+                    type="text"
+                    value={newProducto.contenido_neto}
+                    onChange={(e) => setNewProducto({ ...newProducto, contenido_neto: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                    placeholder="ej. 500g"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowNewModal(false)}
+                  disabled={createMutation.isPending}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={createMutation.isPending || !newProducto.nombre.trim()}
+                  className="px-4 py-2 text-sm bg-green-600 text-white hover:bg-green-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {createMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Crear producto
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Modal: Actualizar precio (B2) */}
+      {showPriceModal && selectedProducto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div className="fixed inset-0 bg-black/40" onClick={() => setShowPriceModal(false)} />
+          <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6">
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Actualizar precio</h3>
+            <p className="text-sm text-gray-500 mb-4">{selectedProducto.nombre}</p>
+            <form
+              onSubmit={(e) => {
+                e.preventDefault()
+                const compra = parseFloat(priceForm.precio_compra)
+                if (isNaN(compra) || compra <= 0) return
+                const margen = priceForm.margen_ganancia ? parseFloat(priceForm.margen_ganancia) : undefined
+                priceMutation.mutate({
+                  producto_id: selectedProducto.id,
+                  precio_compra: compra,
+                  margen_ganancia: margen && !isNaN(margen) ? margen : undefined,
+                })
+              }}
+              className="space-y-3"
+            >
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Precio de compra *</label>
+                <input
+                  type="number"
+                  required
+                  min="0.01"
+                  step="0.01"
+                  value={priceForm.precio_compra}
+                  onChange={(e) => setPriceForm({ ...priceForm, precio_compra: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Margen de ganancia (%)</label>
+                <input
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={priceForm.margen_ganancia}
+                  onChange={(e) => setPriceForm({ ...priceForm, margen_ganancia: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  placeholder="Usar margen por defecto"
+                />
+              </div>
+              <div className="flex gap-2 justify-end pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowPriceModal(false)}
+                  disabled={priceMutation.isPending}
+                  className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="submit"
+                  disabled={priceMutation.isPending || !priceForm.precio_compra}
+                  className="px-4 py-2 text-sm bg-blue-600 text-white hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2 disabled:opacity-50"
+                >
+                  {priceMutation.isPending && <Loader2 className="w-4 h-4 animate-spin" />}
+                  Aplicar precio
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

@@ -156,9 +156,27 @@ export interface DropdownItem {
 // PRODUCTOS API
 // =============================================================================
 
+export interface CreateProductoParams {
+        nombre: string;
+        sku?: string | null;
+        codigo_barras?: string | null;
+        categoria_id?: string | null;
+        marca?: string | null;
+        contenido_neto?: string | null;
+        precio_costo?: number | null;
+        margen_ganancia?: number | null;
+}
+
 export const productosApi = {
         async dropdown(): Promise<DropdownItem[]> {
                 return apiRequest<DropdownItem[]>('/productos/dropdown');
+        },
+
+        async create(params: CreateProductoParams): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>('/productos', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
         },
 };
 
@@ -319,7 +337,7 @@ export const tareasApi = {
 
 export interface MovimientoParams {
         producto_id: string;
-        tipo: 'entrada' | 'salida';
+        tipo: 'entrada' | 'salida' | 'ajuste';
         cantidad: number;
         motivo?: string;
         destino?: string | null;
