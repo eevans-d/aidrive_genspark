@@ -9,6 +9,7 @@
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
 
 **Nuevo (2026-02-08):**
+- ✅ **FASE 1-2 revisadas/cerradas (QA + deploy remoto):** ver `docs/closure/REVIEW_LOG_FASE1_FASE2_2026-02-08.md`.
 - ✅ **Fases 0-6 implementadas** (Arbitraje, POS+Fiados/CC, Pocket PWA, Ofertas anti-mermas, Bitácora, UX quick wins).
 - ✅ **DB remoto vinculado** (`dqaygmjpzoqjjrywdsxi`) migrado y alineado:
   - `20260206235900` (crea `mv_stock_bajo` + `mv_productos_proximos_vencer` para AlertsDrawer)
@@ -18,8 +19,11 @@
   - `20260207030000` (bitácora turnos)
   - `20260208000000` (hotfix: vista CC incluye `direccion_default`)
   - `20260208010000` (RPC + cron opcional: refresh MVs `mv_stock_bajo`/`mv_productos_proximos_vencer`)
+  - `20260208020000` (rate limit compartido cross-instancia: `rate_limit_state` + `sp_check_rate_limit`)
+  - `20260208030000` (circuit breaker compartido semi-persistente: `circuit_breaker_state` + RPCs)
 - ✅ **Edge Functions desplegadas (remoto):**
-  - `api-minimarket` v19 (incluye `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/*`, `/ventas`, `/ofertas/*`, `/bitacora`)
+  - `api-minimarket` v20 (incluye `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/*`, `/ventas`, `/ofertas/*`, `/bitacora`; `verify_jwt=false`)
+  - `api-proveedor` v11 (hardening allowlist/origin para server-to-server)
   - `scraper-maxiconsumo` v11 (fix dirección aumento/disminución en alertas)
 - ✅ **Smoke remoto (JWT admin):** `/search`, `/insights/*`, `/clientes`, `/cuentas-corrientes/resumen`, `/ofertas/sugeridas`, `/bitacora` responden 200.
 
