@@ -5452,3 +5452,43 @@ RESULT: ALL_PASS
 ```
 
 SMOKE_EXIT_CODE: 0
+
+## GIT SUMMARY (review branch)
+
+```bash
+git log -n 15 --oneline --decorate 
+```
+
+```
+4e47d2c (HEAD -> review/fase1-fase2-20260208) docs: update estado actual for fase 1-2 closure
+38b0fe9 docs(closure): review log fase 1-2 + estado actual
+3fbccf4 fix(fase1-2): wire shared rate limit + breaker; relax api-proveedor origin
+f909478 (origin/feat/roadmap-exec-20260208, feat/roadmap-exec-20260208) feat: FASE 4 release readiness — smoke tests, observabilidad, secretos checklist
+dc57704 feat: FASE 3 UX — alta producto, cambio precio, ajuste stock, acciones alertas
+926513e feat: FASE 1-2 hardening — auth resilience, shared rate limit, circuit breaker, api-proveedor allowlist
+338b30b (origin/chore/closure-prep-20260202, chore/closure-prep-20260202) docs: make db push non-interactive in Claude prompt
+6e81f87 docs: link Claude Code executor prompt in estado actual
+1a36bd1 docs: refine roadmap and add Claude Code executor prompt
+c7df903 docs: clarify roadmap baseline commit
+85ab94a docs: add updated roadmap + checklist (2026-02-08)
+6584a1b chore: post-plan verification, docs, and stock MV refresh RPC
+feb0d62 feat: add ofertas_stock table and related RPCs for managing stock offers
+cb2c1ab Add Zone.Identifier for gemini.docx to track file origin
+0158908 chore: actualizar documentación y conteos de tests en varios archivos, y ajustar endpoint de API para pedidos
+```
+
+## GIT PUSH (review/fase1-fase2-20260208)
+
+```bash
+git push -u origin review/fase1-fase2-20260208 
+```
+
+```
+remote: 
+remote: Create a pull request for 'review/fase1-fase2-20260208' on GitHub by visiting:        
+remote:      https://github.com/eevans-d/aidrive_genspark/pull/new/review/fase1-fase2-20260208        
+remote: 
+To https://github.com/eevans-d/aidrive_genspark.git
+ * [new branch]      review/fase1-fase2-20260208 -> review/fase1-fase2-20260208
+branch 'review/fase1-fase2-20260208' set up to track 'origin/review/fase1-fase2-20260208'.
+```
