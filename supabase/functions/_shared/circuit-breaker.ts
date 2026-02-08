@@ -180,6 +180,68 @@ export async function recordCircuitBreakerEvent(
   }
 }
 
+/**
+ * Check circuit breaker state using shared RPC (cross-instance).
+ * Falls back to the in-memory breaker if RPC is not available.
+ */
+export async function checkCircuitBreakerShared(
+  key: string,
+  serviceRoleKey: string,
+  supabaseUrl: string,
+  fallbackBreaker: CircuitBreaker,
+  options: Partial<CircuitBreakerOptions> = {},
+): Promise<{ state: CircuitState; allows: boolean; failures: number }> {
+  if (cbRpcAvailable === false) {
+    const stats = fallbackBreaker.getStats();
+    return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+  }
+
+  try {
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sp_circuit_breaker_check`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        p_key: key,
+        p_open_timeout_seconds: Math.ceil(opts.openTimeoutMs / 1000),
+      }),
+    });
+
+    if (response.status === 404) {
+      cbRpcAvailable = false;
+      const stats = fallbackBreaker.getStats();
+      return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+    }
+
+    if (!response.ok) {
+      const stats = fallbackBreaker.getStats();
+      return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+    }
+
+    cbRpcAvailable = true;
+    const rows = await response.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+
+    if (!row) {
+      const stats = fallbackBreaker.getStats();
+      return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+    }
+
+    return {
+      state: row.current_state as CircuitState,
+      allows: row.allows_request,
+      failures: Number(row.failures) || 0,
+    };
+  } catch {
+    const stats = fallbackBreaker.getStats();
+    return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+  }
+}
+
 // Exported for testing
 export function _resetCbRpcAvailability(): void {
   cbRpcAvailable = undefined;

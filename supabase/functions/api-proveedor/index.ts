@@ -247,10 +247,19 @@ Deno.serve(async (request: Request): Promise<Response> => {
     const corsResult = validateOrigin(request, allowedOrigins, corsOverrides);
     const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
 
-    // Requiere encabezado Origin para evitar fallback permisivo
-    if (!corsResult.origin) {
-        logger.warn('CORS_MISSING_ORIGIN', { path: url.pathname, requestId });
-        return createCorsErrorResponse(requestId, corsHeaders);
+    // For browser requests, Origin header is required.
+    // Allow requests without Origin for server-to-server calls (A5).
+    const origin = request.headers.get('origin');
+    const requireOrigin = Deno.env.get('REQUIRE_ORIGIN') !== 'false';
+
+    if (requireOrigin && origin === null) {
+        const userAgent = request.headers.get('user-agent') || '';
+        const isBrowserLike = /mozilla|chrome|safari|firefox|edge|opera/i.test(userAgent);
+
+        if (isBrowserLike) {
+            logger.warn('CORS_MISSING_ORIGIN', { path: url.pathname, requestId, userAgent });
+            return createCorsErrorResponse(requestId, corsHeaders);
+        }
     }
 
     if (!corsResult.allowed) {
