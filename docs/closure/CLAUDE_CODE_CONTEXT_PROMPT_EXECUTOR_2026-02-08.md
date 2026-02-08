@@ -104,7 +104,7 @@ Tarea A1 (Rate limit compartido):
   - `supabase/functions/api-minimarket/index.ts` debe usar key `user:{uid}:ip:{ip}` cuando user exista; si no, fallback `ip:{ip}` (opcional: token hash si token existe pero user no).
   - La RPC se llama con headers de `service_role` (no JWT usuario).
 - Deploy:
-  - `supabase db push --linked`
+  - `supabase db push --linked --yes`
   - redeploy `api-minimarket` (mantener `--no-verify-jwt`)
 - Tests: unit tests para headers `RateLimit-*` + `Retry-After` + fallback RPC missing.
 
@@ -186,4 +186,3 @@ Cerrar Fase 4:
 3. Evidencia de tests (salidas resumidas en el log) y estado Supabase (migraciones/funciones).
 
 ## FIN DEL PROMPT
-
