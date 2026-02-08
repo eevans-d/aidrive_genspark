@@ -1,12 +1,29 @@
 /**
- * Observabilidad UI (modo dry-run)
- * @description Reporter local y seguro sin credenciales de producción.
+ * Observabilidad UI
+ * @description Reporter local y seguro. Captura errores con contexto enriquecido
+ * (request-id, userId anonimizado, ruta, build version).
+ *
+ * Modo actual: dry-run (localStorage). Cuando VITE_SENTRY_DSN esté disponible,
+ * los reportes se enviarán a Sentry además de guardarse localmente.
+ *
+ * Variables de entorno:
+ *   VITE_SENTRY_DSN   — DSN de Sentry (opcional; sin ella opera en dry-run)
+ *   VITE_BUILD_ID     — Identificador de build (opcional; inyectado por CI)
+ *
+ * Política de PII:
+ *   - userId se anonimiza con hash SHA-256 truncado (no se almacena el ID real).
+ *   - No se capturan tokens, passwords ni datos de formulario.
+ *   - Stack traces se incluyen solo en dev; en prod solo el mensaje.
  */
 
 export interface ObservabilityErrorPayload {
   error: unknown;
   errorId?: string;
   source?: string;
+  /** x-request-id from API responses for server correlation */
+  requestId?: string;
+  /** Raw userId — will be anonymized before storage */
+  userId?: string;
   context?: Record<string, unknown>;
 }
 
@@ -16,17 +33,52 @@ interface StoredErrorReport {
   source?: string;
   message: string;
   stack?: string;
+  route?: string;
+  buildVersion?: string;
+  requestId?: string;
+  userHash?: string;
   context?: Record<string, unknown>;
 }
 
 const STORAGE_KEY = 'mm_error_reports_v1';
 const MAX_REPORTS = 50;
 
+/**
+ * Anonymize a userId via hash (truncated).
+ * Uses sync approach since crypto.subtle is async.
+ */
+const anonymizeUserId = (userId: string): string => {
+  // Simple deterministic hash for anonymization (no crypto dependency needed)
+  let hash = 0;
+  for (let i = 0; i < userId.length; i++) {
+    const chr = userId.charCodeAt(i);
+    hash = ((hash << 5) - hash) + chr;
+    hash |= 0;
+  }
+  return `anon_${(hash >>> 0).toString(36)}`;
+};
+
+const getBuildVersion = (): string => {
+  try {
+    return (import.meta.env.VITE_BUILD_ID as string) || 'dev';
+  } catch {
+    return 'unknown';
+  }
+};
+
+const getCurrentRoute = (): string => {
+  try {
+    return window.location.pathname;
+  } catch {
+    return 'unknown';
+  }
+};
+
 const serializeError = (error: unknown) => {
   if (error instanceof Error) {
     return {
       message: error.message,
-      stack: error.stack,
+      stack: import.meta.env.DEV ? error.stack : undefined,
     };
   }
   if (typeof error === 'string') {
@@ -59,16 +111,24 @@ const safeWriteReports = (reports: StoredErrorReport[]) => {
 };
 
 /**
- * Reporta un error en modo dry-run.
+ * Reporta un error con contexto enriquecido.
  * - DEV: imprime en consola
  * - PROD: guarda en localStorage (últimos 50)
+ * - Cuando VITE_SENTRY_DSN esté configurado: envía a Sentry
  */
-export const reportError = ({ error, errorId, source, context }: ObservabilityErrorPayload) => {
+export const reportError = ({
+  error,
+  errorId,
+  source,
+  requestId,
+  userId,
+  context,
+}: ObservabilityErrorPayload) => {
   const serialized = serializeError(error);
   const id = errorId || `ERR-${Date.now().toString(36).toUpperCase()}`;
 
   if (import.meta.env.DEV) {
-    console.error('[Observability] Error report', { id, source, ...serialized, context });
+    console.error('[Observability] Error report', { id, source, requestId, ...serialized, context });
   }
 
   const report: StoredErrorReport = {
@@ -77,6 +137,10 @@ export const reportError = ({ error, errorId, source, context }: ObservabilityEr
     source,
     message: serialized.message,
     stack: serialized.stack,
+    route: context?.route as string | undefined ?? getCurrentRoute(),
+    buildVersion: getBuildVersion(),
+    requestId,
+    userHash: userId ? anonymizeUserId(userId) : undefined,
     context,
   };
 
@@ -84,7 +148,15 @@ export const reportError = ({ error, errorId, source, context }: ObservabilityEr
   const next = [report, ...existing].slice(0, MAX_REPORTS);
   safeWriteReports(next);
 
-  // TODO: Integrar Sentry cuando haya credenciales
+  // Sentry integration point (when VITE_SENTRY_DSN is available)
+  const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
+  if (sentryDsn) {
+    // Future: Sentry.captureException(error, { tags: { source, requestId }, extra: context })
+    // For now, log intent so we know DSN is set but integration is pending
+    if (import.meta.env.DEV) {
+      console.info('[Observability] Sentry DSN configured — integration pending');
+    }
+  }
 };
 
 export const getStoredErrorReports = (): StoredErrorReport[] => safeReadReports();

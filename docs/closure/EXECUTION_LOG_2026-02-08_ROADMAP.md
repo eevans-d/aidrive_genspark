@@ -256,15 +256,120 @@ pnpm test:components → 101 PASS (14 files)
 ## FASE 4 — Release Readiness
 
 ### C2) Smokes read-only
-<!-- COMPLETAR -->
+
+**Archivo creado:** `scripts/smoke-minimarket-features.mjs`
+
+**Cambios realizados:**
+- Script read-only (solo GET) que valida 6 endpoints del gateway:
+  - `/search?q=test&limit=3`
+  - `/insights/arbitraje`
+  - `/clientes`
+  - `/cuentas-corrientes/resumen`
+  - `/ofertas/sugeridas`
+  - `/bitacora?limit=3`
+- Autenticacion via password grant (lee `.env.test` gitignored)
+- Seguridad: no imprime JWTs, passwords, API keys ni payloads — solo status + summary estructural
+- Resumen final: TOTAL/PASSED/FAILED/RESULT
+- Patron copiado de `smoke-efectividad-tareas.mjs` existente
+
+**Uso:**
+```bash
+node scripts/smoke-minimarket-features.mjs
+```
+
+---
 
 ### C1) Observabilidad frontend
-<!-- COMPLETAR -->
+
+**Archivo modificado:** `minimarket-system/src/lib/observability.ts`
+
+**Cambios realizados:**
+- Interfaz `ObservabilityErrorPayload` extendida con `requestId` (x-request-id) y `userId`
+- Interfaz `StoredErrorReport` extendida con `route`, `buildVersion`, `requestId`, `userHash`
+- `anonymizeUserId()` — hash determinístico (no almacena ID real, política PII)
+- `getBuildVersion()` — lee `VITE_BUILD_ID` (inyectado por CI)
+- `getCurrentRoute()` — `window.location.pathname` con fallback
+- `serializeError()` — stack traces solo en DEV (produccion solo mensaje)
+- Sentry integration point preparado: cuando `VITE_SENTRY_DSN` esté disponible, se ejecutará logica futura
+- Documentación inline de variables (`VITE_SENTRY_DSN`, `VITE_BUILD_ID`) y politica PII
+
+**Variables de entorno:**
+- `VITE_SENTRY_DSN` — DSN de Sentry (opcional; sin ella opera en dry-run localStorage)
+- `VITE_BUILD_ID` — Identificador de build (opcional; inyectado por CI)
+
+**Política PII documentada:**
+- userId se anonimiza con hash truncado (no se almacena ID real)
+- No se capturan tokens, passwords ni datos de formulario
+- Stack traces solo en dev; en prod solo el mensaje
+
+---
 
 ### C3) Rotacion secretos
-<!-- COMPLETAR -->
+
+**Estado:** VERIFICADO — documentacion revisada y checklist confirmado.
+
+**Secretos actuales en remoto (13, confirmados via `supabase secrets list`):**
+```
+ALLOWED_ORIGINS, API_PROVEEDOR_SECRET, NOTIFICATIONS_MODE,
+SENDGRID_API_KEY, SMTP_FROM, SMTP_HOST, SMTP_PASS, SMTP_PORT,
+SMTP_USER, SUPABASE_ANON_KEY, SUPABASE_DB_URL,
+SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL
+```
+
+**Referencia:** `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md`
+
+**Checklist de rotacion (acciones para operador humano):**
+- [ ] `API_PROVEEDOR_SECRET`: generar nuevo con `openssl rand -hex 32`, actualizar en Supabase Secrets + CI
+- [ ] `SENDGRID_API_KEY` / `SMTP_PASS`: rotar desde SendGrid Dashboard, actualizar en Supabase Secrets
+- [ ] `SMTP_FROM`: confirmar que es sender verificado real en SendGrid (dominio autenticado)
+- [ ] `SUPABASE_*` keys: rotar solo si hay evidencia de compromiso; son generadas por Supabase
+- [ ] Politica de rotacion: API_PROVEEDOR_SECRET y SERVICE_ROLE_KEY cada 90d; ANON_KEY cada 180d
+
+**Nota:** La rotacion real requiere acceso a dashboards (Supabase, SendGrid) que no estan disponibles en este contexto de ejecucion. El checklist queda documentado para ejecucion manual.
+
+### FASE 4 — Cierre
+
+**Tests completos post-FASE 4:**
+```
+npx vitest run tests/unit/ → 785 PASS (44 files)
+pnpm lint → OK (0 errors)
+pnpm build → OK (27 entries precached)
+pnpm test:components → 101 PASS (14 files)
+```
 
 ---
 
 ## RESUMEN FINAL
-<!-- COMPLETAR -->
+
+### Cambios totales por fase
+
+| Fase | Scope | Archivos | Tests nuevos |
+|------|-------|----------|-------------|
+| FASE 1 | Auth resiliente + Rate limit compartido | 6 | +30 |
+| FASE 2 | Circuit breaker + Cron/MVs + api-proveedor | 5 | +19 |
+| FASE 3 | Alta producto, precio, ajuste stock, alertas | 4 | 0 (UI) |
+| FASE 4 | Smoke tests, observabilidad, secretos | 2 | 0 |
+| **Total** | | **17 archivos** | **+49 tests** |
+
+### Tests finales
+| Suite | Resultado | Cantidad |
+|-------|-----------|----------|
+| npm run test:unit | PASS | 785 tests (44 files) |
+| pnpm lint | OK | 0 errors |
+| pnpm build | OK | 27 entries precached |
+| pnpm test:components | PASS | 101 tests (14 files) |
+
+### Commits
+| Hash | Mensaje |
+|------|---------|
+| 926513e | feat: FASE 1-2 hardening — auth resilience, shared rate limit, circuit breaker, api-proveedor allowlist |
+| dc57704 | feat: FASE 3 UX — alta producto, cambio precio, ajuste stock, acciones alertas |
+| (pending) | feat: FASE 4 release readiness — smoke tests, observabilidad, secretos checklist |
+
+### Estado final
+- Branch: `feat/roadmap-exec-20260208`
+- Baseline delta: +49 unit tests (737 → 785)
+- Build: OK
+- Lint: OK
+- Todas las fases del roadmap ejecutadas (FASE 0-4)
+- FASE 5 (Modulo D - lotes/FEFO) omitida como opcional segun roadmap
