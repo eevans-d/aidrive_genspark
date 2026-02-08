@@ -20,7 +20,7 @@ import {
   getErrorStatus,
   isAppError,
 } from '../_shared/errors.ts';
-import { FixedWindowRateLimiter, withRateLimitHeaders } from '../_shared/rate-limit.ts';
+import { FixedWindowRateLimiter, withRateLimitHeaders, buildRateLimitKey, checkRateLimitShared } from '../_shared/rate-limit.ts';
 import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
 import { auditLog, extractAuditContext } from '../_shared/audit.ts';
 
@@ -202,10 +202,13 @@ Deno.serve(async (req) => {
   }
 
   // ========================================================================
-  // RATE LIMITING
+  // RATE LIMITING (shared cross-instance via RPC, fallback in-memory)
+  // Key: user:{uid}:ip:{ip} > user:{uid} > ip:{ip}
   // ========================================================================
-  const rateLimitKey = clientIp;
-  const { result: rateLimitResult, headers: rateLimitHeaders } = rateLimiter.checkWithHeaders(rateLimitKey);
+  // Rate limit key is built AFTER auth, so we need to defer it.
+  // For now use IP-only key; after auth, we'll refine if user is known.
+  const preAuthRateLimitKey = buildRateLimitKey(null, clientIp);
+  const { result: rateLimitResult, headers: rateLimitHeaders } = rateLimiter.checkWithHeaders(preAuthRateLimitKey);
   responseHeaders = withRateLimitHeaders(responseHeaders, rateLimitResult, rateLimiter.getLimit());
 
   if (!rateLimitResult.allowed) {

@@ -292,8 +292,12 @@ Deno.serve(async (request: Request): Promise<Response> => {
         return createAuthErrorResponse(authResult.error || 'Unauthorized', corsHeaders, requestId);
     }
 
-    // Validar origen interno (advertencia, no bloqueo)
+    // Validar origen interno (block unknown origins)
     const originCheck = validateInternalOrigin(request);
+    if (!originCheck.valid) {
+        logger.warn('INTERNAL_ORIGIN_BLOCKED', { ...requestLog, warning: originCheck.warning });
+        return fail('ORIGIN_NOT_ALLOWED', originCheck.warning || 'Origin not allowed', 403, corsHeaders, { requestId });
+    }
     if (originCheck.warning) {
         logger.warn('INTERNAL_API_ORIGIN_WARNING', { ...requestLog, warning: originCheck.warning });
     }

@@ -103,3 +103,84 @@ export function getCircuitBreaker(
 export function getCircuitBreakersSnapshot(): Array<[string, ReturnType<CircuitBreaker['getStats']>]> {
   return Array.from(CIRCUIT_BREAKERS.entries()).map(([key, breaker]) => [key, breaker.getStats()]);
 }
+
+// ============================================================================
+// SHARED CIRCUIT BREAKER (RPC-backed, for critical breakers only)
+// ============================================================================
+
+/** RPC availability: undefined=unknown, true=available, false=missing */
+let cbRpcAvailable: boolean | undefined = undefined;
+
+/**
+ * Record a circuit breaker event using shared RPC.
+ * Only persist the critical breaker (e.g. 'api-minimarket-db').
+ * Falls back to in-memory breaker if RPC not available.
+ */
+export async function recordCircuitBreakerEvent(
+  key: string,
+  event: 'success' | 'failure',
+  serviceRoleKey: string,
+  supabaseUrl: string,
+  fallbackBreaker: CircuitBreaker,
+  options: Partial<CircuitBreakerOptions> = {},
+): Promise<{ state: CircuitState; allows: boolean }> {
+  // Record locally regardless
+  if (event === 'success') {
+    fallbackBreaker.recordSuccess();
+  } else {
+    fallbackBreaker.recordFailure();
+  }
+
+  // If we know RPC is missing, skip
+  if (cbRpcAvailable === false) {
+    return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
+  }
+
+  try {
+    const opts = { ...DEFAULT_OPTIONS, ...options };
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sp_circuit_breaker_record`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        p_key: key,
+        p_event: event,
+        p_failure_threshold: opts.failureThreshold,
+        p_success_threshold: opts.successThreshold,
+        p_open_timeout_seconds: Math.ceil(opts.openTimeoutMs / 1000),
+      }),
+    });
+
+    if (response.status === 404) {
+      cbRpcAvailable = false;
+      return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
+    }
+
+    if (!response.ok) {
+      return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
+    }
+
+    cbRpcAvailable = true;
+    const rows = await response.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+
+    if (!row) {
+      return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
+    }
+
+    return {
+      state: row.current_state as CircuitState,
+      allows: row.allows_request,
+    };
+  } catch {
+    return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
+  }
+}
+
+// Exported for testing
+export function _resetCbRpcAvailability(): void {
+  cbRpcAvailable = undefined;
+}
