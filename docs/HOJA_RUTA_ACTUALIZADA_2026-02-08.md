@@ -1,7 +1,7 @@
 # Hoja de Ruta Actualizada (post-plan) — Mini Market System
 
 **Fecha:** 2026-02-08  
-**Baseline verificado:** branch `chore/closure-prep-20260202`, commit `6584a1b` (incluye Fases 0–6 + alineación remoto + fix refresh MVs).  
+**Baseline verificado:** branch `chore/closure-prep-20260202`, commit `85ab94a` (este documento + referencia; features Fases 0–6 + remoto + refresh MVs quedaron en `6584a1b`).  
 **Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`, `docs/closure/EXECUTION_LOG_2026-02-07.md`, `docs/PLAN_EJECUCION_PREMORTEM.md`.
 
 ## 0) Objetivo
@@ -222,4 +222,3 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 2. MODULO B (UX) después: B1/B2/B3 cierran los gaps de operación diaria.
 3. MODULO C (release readiness): smoke real + observabilidad + rotación secretos.
 4. MODULO D (modelo) solo si se confirma necesidad real (lotes/FEFO).
-
