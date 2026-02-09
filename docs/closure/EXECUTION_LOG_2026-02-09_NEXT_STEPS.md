@@ -156,10 +156,35 @@ PR #34: MERGED @ 2026-02-09T03:46:13Z
 
 ---
 
-## 3. Tareas a Ejecutar
+## 3. Tareas Ejecutadas
 
-> Pendiente de instrucciones del usuario para definir las tareas de esta sesion.
+### 3.1 Sync pendientes post-merge (docs-only)
 
-| # | Tarea | Estado |
-|---|-------|--------|
-| - | (Esperando instrucciones) | PENDING |
+**Objetivo:** Que la documentacion "diga la verdad" post-merge PR #33/#34, sin inventar.
+
+**Verificacion previa:**
+- Artefactos de cierre QA existen: `REVIEW_LOG_FASE1_FASE2_2026-02-08.md`, `INTEGRATION_LOG_FASE1_FASE2_2026-02-09.md`, `CI_FIX_EDGE_FUNCTIONS_SYNTAX_CHECK_2026-02-09.md`.
+- ESTADO_ACTUAL.md referencia correctamente PR #33, CI verde, FASE 1-2.
+- Codigo verificado en repo: migraciones, `_shared/rate-limit.ts`, `_shared/circuit-breaker.ts`, `helpers/auth.ts`, `Productos.tsx`, `Deposito.tsx`, `AlertsDrawer.tsx`, `observability.ts`, `smoke-minimarket-features.mjs`, tests unitarios.
+
+**Archivos editados:**
+
+| Archivo | Cambio |
+|---------|--------|
+| `docs/closure/OPEN_ISSUES.md` | WS3 rate-limit/breaker: PENDIENTE → RESUELTO 2026-02-08 (PR #33), con paths de evidencia |
+| `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` | Seccion 2: resumen actualizado. Checklists A1-A5, B1-B4, C1-C2 marcados `[x]`. Seccion 5: fases 0-4 COMPLETADO. |
+| `docs/ESTADO_ACTUAL.md` | 6 items de checklist 20 tareas: WS3 rate limit, WS3 breaker, WS4 auth cache, WS4 timeout+breaker, observabilidad → `[x]` |
+| `docs/closure/EXECUTION_LOG_2026-02-09_NEXT_STEPS.md` | Este archivo (log de turno) |
+
+**Items que siguen PENDIENTE (genuinamente):**
+- A4: pg_cron / schedule refresh MVs (requiere verificacion en SQL Editor)
+- A5 docs: documentar allowlist en `SECURITY.md` y `API_README.md`
+- C3: rotacion de secretos pre-produccion
+- D1: lotes reales / FEFO (solo si negocio lo requiere)
+- SendGrid sender verificado
+- Upgrade Supabase Pro (Leaked Password Protection)
+- Tests integracion/E2E para `/reservas`
+
+**Branch:** `docs/sync-pendientes-20260209`
+**Commit:** `25b613a`
+**PR:** #36 (https://github.com/eevans-d/aidrive_genspark/pull/36)
