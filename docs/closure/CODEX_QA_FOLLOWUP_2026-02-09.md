@@ -46,3 +46,19 @@ Verificado via GitHub PRs creados post-ejecucion (OPEN al momento de este addend
 - #45 `docs/sentry-plan-20260209`
 - #46 `docs/build-verification-addendum-20260209`
 - #47 `docs/decision-log-update-20260209`
+
+## Addendum 2026-02-09 (post-merge Prompt 5)
+
+Los PRs #38–#47 fueron mergeados a `main` el 2026-02-09 (ver `docs/closure/BUILD_VERIFICATION.md`, Addendum 2026-02-09).
+
+Merge commits:
+- #38 -> `ee2b69975939f5716e721e0fd4890abf2b80b363`
+- #39 -> `6224d88f643b79c672a3210e75a2a8f5b53e5261`
+- #40 -> `1ce3ec04d90777326b47c27744c641b2c1a55350`
+- #41 -> `b7c48217be5c0b60dcb155212559b51b0d0256d6`
+- #42 -> `fea47b4b1bbab7e0917bf67cd3cc81145677dd1a`
+- #43 -> `bad9700669d99ea0204f6dc68077cfbc478c065c`
+- #44 -> `5e0beb8f355e368972be7948f4660e7edc4ba02c`
+- #45 -> `107b4c77c753fb6d34774496861b1328c1259dc7`
+- #46 -> `c80fec8184a01b9de278309c589d6a8b4d171d0b`
+- #47 -> `f4a4cef83a96597ce4b7eaeddfe848cb993671c5`
