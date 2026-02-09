@@ -1,6 +1,6 @@
 # Open Issues (Pre-cierre)
 
-**Última actualización:** 2026-02-06  
+**Última actualización:** 2026-02-09
 **Fuente:** `docs/ESTADO_ACTUAL.md`  
 
 | Pendiente | Severidad | Evidencia | Plan | Responsable |
@@ -13,7 +13,7 @@
 | Verificar sender real en SendGrid (From Email SMTP Auth) | P1 | `docs/ESTADO_ACTUAL.md` | Confirmar sender/dominio verificado en SendGrid | PENDIENTE |
 | Rotación de secretos pre‑producción (si hubo exposición) | P1 | `docs/ESTADO_ACTUAL.md` | Rotar Supabase keys / SendGrid API key / API_PROVEEDOR_SECRET y realinear secrets | PENDIENTE |
 | `api-proveedor/health` retorna `unhealthy` (DB/scraper degradado) | P1 | `docs/ESTADO_ACTUAL.md` | Degradación documentada como comportamiento esperado sin datos de scraping. | RESUELTO 2026-02-06 |
-| Rate limit/circuit breaker compartidos (store multi-instancia) | P1 | `docs/PLAN_EJECUCION_PREMORTEM.md` | Store elegido (tabla Supabase, ver `docs/DECISION_LOG.md` D-063). Falta implementar WS3 (rate limit + breaker) y tests. | PENDIENTE |
+| Rate limit/circuit breaker compartidos (store multi-instancia) | P1 | `docs/PLAN_EJECUCION_PREMORTEM.md` | Store elegido (tabla Supabase, D-063). Implementado en PR #33: migraciones `20260208020000` (rate_limit_state + sp_check_rate_limit) y `20260208030000` (circuit_breaker_state + RPCs). Code: `_shared/rate-limit.ts`, `_shared/circuit-breaker.ts` con fallback in-memory. Tests: `tests/unit/rate-limit-shared.test.ts`, `tests/unit/resilience-gaps.test.ts`. Deploy DB+Edge confirmado (remoto). | RESUELTO 2026-02-08 (PR #33) |
 | Timeout/abort en frontend `apiClient` | P1 | `minimarket-system/src/lib/apiClient.ts` | Implementado AbortController + TimeoutError + timeout default 30s. | RESUELTO 2026-02-06 |
 | OpenAPI spec incompleto (faltan `/tareas`, `/reservas`, `/health`, dropdowns) | P2 | `docs/api-openapi-3.1.yaml` | Spec extendida con `/tareas`, `/reservas`, `/health`, dropdowns. | RESUELTO 2026-02-06 |
 | Completar `DATABASE_URL` (reset password DB) | P0 | `docs/ESTADO_ACTUAL.md` | Reset DB password en Supabase y actualizar `.env.test` / Secrets | RESUELTO 2026-02-03 |

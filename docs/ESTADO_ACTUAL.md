@@ -201,14 +201,14 @@
 - [x] P1: Extender `docs/api-openapi-3.1.yaml` para incluir `/tareas`, `/reservas`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`. *(Completado 2026-02-06: +297 líneas)*
 - [x] P1: Implementar timeout + abort + mensaje UX en `minimarket-system/src/lib/apiClient.ts` (AbortController). *(Completado 2026-02-06: 30s default, TimeoutError class)*
 - [x] P1: Definir store compartido para rate limit/breaker (Redis vs tabla Supabase) y registrar decisión en `docs/DECISION_LOG.md`. *(Completado 2026-02-06: D-063 tabla Supabase)*
-- [ ] P1: Implementar rate limit compartido (WS3) con claves `userId + ip` y fallback seguro si IP es `unknown`.
-- [ ] P1: Implementar circuit breaker compartido/persistente (WS3) con expiración y métricas.
-- [ ] P1: Auth resiliente (WS4): cache de validación `/auth/v1/user` o verificación local JWT; revisar viabilidad de volver `verify_jwt=true`.
-- [ ] P1: Agregar timeout + breaker dedicado a `/auth/v1/user` (WS4-T3) para evitar dependencia total.
+- [x] P1: Implementar rate limit compartido (WS3) con claves `userId + ip` y fallback seguro si IP es `unknown`. *(Completado 2026-02-08: migración `20260208020000`, `_shared/rate-limit.ts` con RPC + fallback, PR #33)*
+- [x] P1: Implementar circuit breaker compartido/persistente (WS3) con expiración y métricas. *(Completado 2026-02-08: migración `20260208030000`, `_shared/circuit-breaker.ts` con RPC + fallback, PR #33)*
+- [x] P1: Auth resiliente (WS4): cache de validación `/auth/v1/user` o verificación local JWT; revisar viabilidad de volver `verify_jwt=true`. *(Completado 2026-02-08: cache 30s SHA-256 + negative-cache 10s en `helpers/auth.ts`, PR #33)*
+- [x] P1: Agregar timeout + breaker dedicado a `/auth/v1/user` (WS4-T3) para evitar dependencia total. *(Completado 2026-02-08: AbortController 5s + breaker threshold 3/timeout 15s en `helpers/auth.ts`, PR #33)*
 - [ ] P1: Verificar sender real/dominio verificado en SendGrid para SMTP Auth (From Email) y registrar evidencia.
 - [ ] P1: Planificar y ejecutar rotación de secretos pre‑producción (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
 - [ ] P1: Definir plan de upgrade a Supabase Pro para habilitar Leaked Password Protection + checklist de activación.
-- [ ] P2: Integrar observabilidad (Sentry o equivalente) en frontend y correlación con `x-request-id`.
+- [x] P2: Integrar observabilidad (Sentry o equivalente) en frontend y correlación con `x-request-id`. *(Completado 2026-02-08: `observability.ts` con localStorage + stub Sentry + context enrichment, PR #33)*
 - [ ] P2: Asegurar propagación de `x-request-id` entre Edge Functions (cron/scraper) y logs.
 - [ ] P2: Cache coherente multi‑instancia: estrategia (singleflight + TTL) para scraper y `api-proveedor` cache.
 - [ ] P2: Verificar pooling/performance DB en PROD + ejecutar prueba de carga y registrar baseline.
