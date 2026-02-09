@@ -75,7 +75,7 @@ Pendientes (no bloqueantes, recomendados pre-produccion):
 - [x] Crear migración `supabase/migrations/20260208030000_add_circuit_breaker_state.sql` con: tabla `circuit_breaker_state` + RPCs `sp_circuit_breaker_record` / `sp_circuit_breaker_check` + TTL + permisos. *(commit 926513e)*
 - [x] Actualizar `supabase/functions/_shared/circuit-breaker.ts` para persistir breaker critico via RPC; fallback in-memory si no existe. *(commit 926513e, refinado en 3fbccf4)*
 - [x] En `api-minimarket`, llamar la RPC con headers de `service_role`. *(commit 926513e)*
-- [x] Agregar tests unitarios: `tests/unit/resilience-gaps.test.ts` (transiciones closed->open->half_open->closed). *(commit 926513e)*
+- [x] Agregar tests unitarios: `tests/unit/circuit-breaker-shared.test.ts` (transiciones closed->open->half_open->closed + RPC/fallback). *(commit 926513e)*
 - [x] Deploy DB: `supabase db push --linked`. *(migración 20260208030000 en remoto, confirmado 2026-02-09)*
 - [x] Deploy Edge: `api-minimarket` v20, `verify_jwt=false`. *(confirmado baseline 2026-02-09)*
 - [x] Docs: `docs/DECISION_LOG.md` D-063 + `docs/ESTADO_ACTUAL.md` actualizados. *(PR #33)*
