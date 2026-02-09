@@ -13,6 +13,9 @@
 - ✅ **CI 100% verde:** Edge Functions Syntax Check PASS, Lint PASS, Type Check PASS, Unit Tests PASS, Build PASS.
 - ✅ **Fix Deno typecheck** aplicado (commit `c1dc33a`): `HeadersInit` → `Record<string,string>`, config freezing, explicit casts.
 - ✅ **Tests totales:** 785 unit (44 archivos) + 38 integration + 4 e2e smoke + 101 component tests.
+- ✅ **Backlog post-merge completado (PRs #36–#48):** docs sincronizados, guardrails A4, evidencia de suites PASS, y PRs adicionales (#38–#42) con tests/scripts para `x-request-id`, `/health` y `/reservas` + perf baseline. Ver `docs/closure/EXECUTION_LOG_2026-02-09_NEXT_STEPS.md` y `docs/closure/BUILD_VERIFICATION.md` (Addendum 2026-02-09).
+- ✅ **Docs nuevas (planes/bloqueos, sin secrets):** `docs/SECRET_ROTATION_PLAN.md`, `docs/SENDGRID_VERIFICATION.md`, `docs/SENTRY_INTEGRATION_PLAN.md`.
+- ✅ **Scripts nuevos (operativos):** `scripts/perf-baseline.mjs` (read-only) y `scripts/smoke-reservas.mjs` (write, idempotente; puede quedar BLOCKED si no hay productos).
 
 **Nuevo (2026-02-08):**
 - ✅ **FASE 1-2 revisadas/cerradas (QA + deploy remoto):** ver `docs/closure/REVIEW_LOG_FASE1_FASE2_2026-02-08.md`.
@@ -189,14 +192,16 @@
 - ✅ Locks distribuidos para cron jobs (`sp_acquire_job_lock`/`sp_release_job_lock`) activos.
 
 **Próximos pasos (no críticos, recomendados antes de producción):**
-- Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado).
-- Planificar **rotación de secretos** antes de producción si hubo exposición histórica (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
-- Registrar evidencia final del **Preflight Pre-Mortem** (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`). *(Suites ejecutadas local 2026-02-06; faltan capturas Dashboard si aplica).*
+- Verificar que el **From Email** configurado en SMTP (Auth) sea un **sender verificado real** en SendGrid (o dominio verificado). Ver `docs/SENDGRID_VERIFICATION.md`.
+- Planificar y ejecutar **rotación de secretos** antes de producción si hubo exposición histórica. Ver `docs/SECRET_ROTATION_PLAN.md`.
+- Si se decide Sentry: seguir `docs/SENTRY_INTEGRATION_PLAN.md` (requiere DSN real).
+- Registrar evidencia final del **Preflight Pre-Mortem** (`docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` + `docs/closure/BUILD_VERIFICATION.md`).
 
 **Checklist próximas 20 tareas/pasos (priorizado, 2026-02-06):**
 - [x] P0: Alinear contrato de `POST /reservas` (header `Idempotency-Key` obligatorio) y ejemplos de uso (docs + clientes). *(Completado 2026-02-06: API_README.md + OpenAPI)*
-- [ ] P0: Agregar tests de integración reales para `/reservas` (idempotencia + 409 + concurrencia) en `tests/integration/`.
-- [ ] P0: Agregar smoke E2E mínimo para `/reservas` (create + idempotent) y registrar evidencia en `test-reports/`.
+- [x] P0: Agregar tests unitarios para `/reservas` (409/503/validation/defaults) en `tests/unit/api-reservas-integration.test.ts`. *(Completado 2026-02-09: PR #40)*
+- [ ] P0: Agregar tests de integración **reales** para `/reservas` (idempotencia + 409 + concurrencia) en `tests/integration/` (requiere credenciales/seed).
+- [x] P0: Agregar smoke E2E mínimo para `/reservas` (create + idempotent) y registrar evidencia en `test-reports/`. *(Completado 2026-02-09: `scripts/smoke-reservas.mjs` — ejecución puede quedar BLOCKED si no hay productos; PR #41)*
 - [x] P0: Investigar y corregir `api-proveedor/health` en estado `unhealthy` (DB/scraper) o documentar degradación/SLO. *(Completado 2026-02-06: es comportamiento esperado sin datos scraping)*
 - [x] P1: Extender `docs/api-openapi-3.1.yaml` para incluir `/tareas`, `/reservas`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`. *(Completado 2026-02-06: +297 líneas)*
 - [x] P1: Implementar timeout + abort + mensaje UX en `minimarket-system/src/lib/apiClient.ts` (AbortController). *(Completado 2026-02-06: 30s default, TimeoutError class)*
@@ -205,12 +210,13 @@
 - [x] P1: Implementar circuit breaker compartido/persistente (WS3) con expiración y métricas. *(Completado 2026-02-08: migración `20260208030000`, `_shared/circuit-breaker.ts` con RPC + fallback, PR #33)*
 - [x] P1: Auth resiliente (WS4): cache de validación `/auth/v1/user` o verificación local JWT; revisar viabilidad de volver `verify_jwt=true`. *(Completado 2026-02-08: cache 30s SHA-256 + negative-cache 10s en `helpers/auth.ts`, PR #33)*
 - [x] P1: Agregar timeout + breaker dedicado a `/auth/v1/user` (WS4-T3) para evitar dependencia total. *(Completado 2026-02-08: AbortController 5s + breaker threshold 3/timeout 15s en `helpers/auth.ts`, PR #33)*
-- [ ] P1: Verificar sender real/dominio verificado en SendGrid para SMTP Auth (From Email) y registrar evidencia.
-- [ ] P1: Planificar y ejecutar rotación de secretos pre‑producción (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET).
+- [ ] P1: Verificar sender real/dominio verificado en SendGrid para SMTP Auth (From Email) y registrar evidencia (ver `docs/SENDGRID_VERIFICATION.md`).
+- [ ] P1: Planificar y ejecutar rotación de secretos pre‑producción (Supabase keys, SendGrid API key, API_PROVEEDOR_SECRET) (ver `docs/SECRET_ROTATION_PLAN.md`).
 - [ ] P1: Definir plan de upgrade a Supabase Pro para habilitar Leaked Password Protection + checklist de activación.
-- [x] P2: Integrar observabilidad (Sentry o equivalente) en frontend y correlación con `x-request-id`. *(Completado 2026-02-08: `observability.ts` con localStorage + stub Sentry + context enrichment, PR #33)*
+- [x] P2: Integrar observabilidad (Sentry o equivalente) en frontend y correlación con `x-request-id`. *(Completado 2026-02-08: `observability.ts` con localStorage + stub Sentry + context enrichment, PR #33; refinado 2026-02-09: `apiClient.ts` + UI, PR #38)*
 - [ ] P2: Asegurar propagación de `x-request-id` entre Edge Functions (cron/scraper) y logs.
 - [ ] P2: Cache coherente multi‑instancia: estrategia (singleflight + TTL) para scraper y `api-proveedor` cache.
+- [x] P2: Agregar script de performance baseline (p50/p95) para endpoints principales. *(Completado 2026-02-09: `scripts/perf-baseline.mjs`, PR #42; evidencia en `docs/closure/BUILD_VERIFICATION.md`)*
 - [ ] P2: Verificar pooling/performance DB en PROD + ejecutar prueba de carga y registrar baseline.
 - [ ] P2: Actualizar `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` con evidencia de corrida 2026-02-06 (junit/coverage/smokes).
 - [ ] P2: Preparar release: correr suites en entorno limpio y actualizar `docs/closure/BUILD_VERIFICATION.md` con addendum 2026-02-06.

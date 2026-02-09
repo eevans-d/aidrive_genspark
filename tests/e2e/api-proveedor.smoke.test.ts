@@ -69,14 +69,9 @@ describe('E2E Smoke - api-proveedor', () => {
     expect(Array.isArray(body.data?.alertas)).toBe(true);
   });
 
-  test('GET /health responde success (public, no auth required)', async () => {
-    // /health is public — only send Origin + x-request-id (no Authorization)
-    const res = await fetch(`${baseUrl}/health`, {
-      headers: {
-        Origin: authHeaders.Origin,
-        'x-request-id': `smoke-health-${Date.now()}`
-      }
-    });
+  test('GET /health responde success (requires JWT)', async () => {
+    // NOTE: `api-proveedor` tiene `verify_jwt=true` en Supabase, por lo que /health requiere Authorization.
+    const res = await fetch(`${baseUrl}/health`, { headers: authHeaders });
     await expectOk(res, 'GET /health');
 
     const body = await res.json();

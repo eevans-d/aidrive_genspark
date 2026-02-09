@@ -32,6 +32,19 @@
 | #40 | /reservas integration | 15 unit (19 total con existentes) | ✅ PASS |
 | #42 | perf-baseline script | Validado (7 endpoints, p50/p95) | ✅ PASS |
 
+### Post-merge verification (Codex QA, 2026-02-09)
+
+Re-ejecucion local de quality gates sobre `main` post-merge (incluye PRs #38–#47):
+- `npm run test:unit`: ✅ PASS (46 files / 812 tests)
+- `npm run test:integration`: ✅ PASS (3 files / 38 tests)
+- `npm run test:e2e`: ✅ PASS (2 files / 5 tests)
+  - Nota: `api-proveedor` tiene `verify_jwt=true`; el smoke `/health` requiere `Authorization`.
+- `pnpm -C minimarket-system lint`: ✅ PASS
+- `pnpm -C minimarket-system build`: ✅ PASS
+- `pnpm -C minimarket-system test:components`: ✅ PASS (16 files / 110 tests)
+
+Evidencia: `docs/closure/SESSION_CLOSE_2026-02-09.md`.
+
 ### PRs creados
 
 | # | Branch | Tema | Estado |
