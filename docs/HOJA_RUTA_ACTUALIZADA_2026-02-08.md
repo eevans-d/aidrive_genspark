@@ -97,7 +97,7 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 - [x] Confirmar en SQL Editor si existen `pg_cron` y `pg_net`. **Resultado: NO instalados.** Extensiones disponibles: `pg_graphql`, `pg_stat_statements`, `pgcrypto`, `plpgsql`, `supabase_vault`, `uuid-ossp`. *(query: `select extname from pg_extension`)*
 - [N/A] Si `pg_cron` existe: no aplica (pg_cron no instalado).
 - [x] Si `pg_cron` NO existe: documentar operacion manual via RPC. **RPC `public.fn_refresh_stock_views()` EXISTE** (confirmado via `pg_proc`). Refresh queda manual: invocar via `service_role` o sincronizar con operaciones (ver migracion `20260208010000`).
-- [ ] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (seccion "MVs refresh"). *(pendiente)*
+- [x] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (seccion "Registro A4: pg_cron y MVs refresh").
 
 **Done**
 - `mv_stock_bajo` y `mv_productos_proximos_vencer` se refrescan periódicamente (o se documenta alternativa).
