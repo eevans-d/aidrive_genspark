@@ -31,7 +31,8 @@ export class ApiError extends Error {
                 public code: string,
                 message: string,
                 public status: number,
-                public details?: unknown
+                public details?: unknown,
+                public requestId?: string
         ) {
                 super(message);
                 this.name = 'ApiError';
@@ -44,10 +45,22 @@ export class ApiError extends Error {
 export class TimeoutError extends Error {
         constructor(
                 public timeoutMs: number,
-                public endpoint: string
+                public endpoint: string,
+                public requestId?: string
         ) {
                 super(`La solicitud a ${endpoint} excedió el tiempo límite (${timeoutMs / 1000}s). Por favor, intente de nuevo.`);
                 this.name = 'TimeoutError';
+        }
+}
+
+/**
+ * Generate a unique request ID for correlation across frontend and backend.
+ */
+function generateRequestId(): string {
+        try {
+                return crypto.randomUUID();
+        } catch {
+                return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
         }
 }
 
@@ -85,9 +98,12 @@ async function apiRequest<T>(
                 throw new ApiError('AUTH_REQUIRED', 'Authentication required', 401);
         }
 
+        const requestId = generateRequestId();
+
         const headers: Record<string, string> = {
                 'Content-Type': 'application/json',
                 'Authorization': `Bearer ${token}`,
+                'x-request-id': requestId,
                 ...(fetchOptions.headers as Record<string, string> || {}),
         };
 
@@ -112,6 +128,9 @@ async function apiRequest<T>(
                         signal: controller.signal,
                 });
 
+                // Prefer server's x-request-id (may differ if gateway regenerated)
+                const serverRequestId = response.headers.get('x-request-id') || requestId;
+
                 const json: ApiResponse<T> = await response.json();
 
                 if (!response.ok || !json.success) {
@@ -119,18 +138,23 @@ async function apiRequest<T>(
                                 json.error?.code || 'API_ERROR',
                                 json.error?.message || 'Request failed',
                                 response.status,
-                                json.error?.details
+                                json.error?.details,
+                                serverRequestId
                         );
                 }
 
                 return json.data as T;
         } catch (error) {
+                // Re-throw ApiError as-is (already has requestId)
+                if (error instanceof ApiError) {
+                        throw error;
+                }
                 // Handle abort/timeout
                 if (error instanceof Error && error.name === 'AbortError') {
                         if (externalSignal?.aborted) {
-                                throw new ApiError('REQUEST_CANCELLED', 'La solicitud fue cancelada', 0);
+                                throw new ApiError('REQUEST_CANCELLED', 'La solicitud fue cancelada', 0, undefined, requestId);
                         }
-                        throw new TimeoutError(timeoutMs, endpoint);
+                        throw new TimeoutError(timeoutMs, endpoint, requestId);
                 }
                 throw error;
         } finally {

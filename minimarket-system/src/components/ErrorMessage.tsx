@@ -12,6 +12,8 @@ interface ErrorMessageProps {
         isRetrying?: boolean;
         /** Tamaño del componente */
         size?: 'sm' | 'md' | 'lg';
+        /** x-request-id para correlación con logs del servidor */
+        requestId?: string;
 }
 
 const icons = {
@@ -62,6 +64,7 @@ export function ErrorMessage({
         type = 'generic',
         isRetrying = false,
         size = 'md',
+        requestId,
 }: ErrorMessageProps) {
         const Icon = icons[type];
         const sizeStyles = sizes[size];
@@ -81,6 +84,12 @@ export function ErrorMessage({
                                         {message}
                                 </span>
                         </div>
+
+                        {requestId && (
+                                <p className="text-xs text-gray-500 mb-2">
+                                        Ref: <code className="font-mono text-gray-600">{requestId}</code>
+                                </p>
+                        )}
 
                         {onRetry && (
                                 <button
