@@ -76,8 +76,9 @@ Pasos recomendados:
 1. Volver a un tag anterior en git.
 2. Re-deploy de funciones desde ese commit:
 ```bash
-supabase functions deploy api-minimarket
-supabase functions deploy api-proveedor
+# IMPORTANTE: api-minimarket SIEMPRE con --no-verify-jwt (ver D-056 en DECISION_LOG.md)
+supabase functions deploy api-minimarket --no-verify-jwt --use-api
+supabase functions deploy api-proveedor --use-api
 ```
 
 ### 4.3 Rollback Frontend

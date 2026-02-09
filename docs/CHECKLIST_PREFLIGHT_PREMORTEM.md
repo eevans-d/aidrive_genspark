@@ -135,3 +135,29 @@ Notas:
 - `psql` a `db.dqaygmjpzoqjjrywdsxi.supabase.co:5432` sigue fallando desde este host (IPv6 `Network is unreachable`). Para ejecutar SQL preflight usar host con IPv6 o forzar IPv4/pooler (si aplica).
 - `deno` no está disponible en PATH en este host; no se re-ejecutó `deno check` (última evidencia 2026-02-03).
 - Healthcheck `api-proveedor`: sigue devolviendo `status=unhealthy` (ver `docs/ESTADO_ACTUAL.md`).
+
+---
+
+## 10) Registro A4: pg_cron y MVs refresh (2026-02-09)
+
+**Metodo:** Supabase Management API (`POST /v1/projects/{ref}/database/query`).
+
+### Extensiones instaladas
+```
+pg_graphql, pg_stat_statements, pgcrypto, plpgsql, supabase_vault, uuid-ossp
+```
+**`pg_cron`: NO instalado. `pg_net`: NO instalado.**
+
+### RPC fn_refresh_stock_views
+```sql
+select n.nspname, p.proname from pg_proc p
+join pg_namespace n on n.oid=p.pronamespace
+where n.nspname='public' and p.proname='fn_refresh_stock_views';
+-- Resultado: [{"schema":"public","proname":"fn_refresh_stock_views"}]
+```
+**EXISTE** en schema `public` (creada por migracion `20260208010000`).
+
+### Conclusion
+- Sin `pg_cron`, no hay schedule automatico de refresh.
+- Refresh de `mv_stock_bajo` y `mv_productos_proximos_vencer` queda **manual**: invocar `select public.fn_refresh_stock_views()` via `service_role` (REST API o SQL Editor).
+- Alternativa futura: habilitar extension `pg_cron` desde Dashboard (Supabase → Database → Extensions) y crear schedule (`cron.schedule('refresh_stock_views','*/7 * * * *','select public.fn_refresh_stock_views()')`) previa confirmacion del owner.
