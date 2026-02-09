@@ -1,5 +1,59 @@
 # Build Verification Report
 
+## Addendum 2026-02-09 (Post-merge backlog session)
+
+**Branch:** `ops/a4-guardrail-20260209` (base), multiple feature branches
+**Estado:** EJECUTADO — 8 PRs creados (#38–#45), tests extendidos
+**Ejecutor:** Claude Code (Opus 4)
+
+**Entorno local:**
+- Node: v20.20.0
+- pnpm: 9.15.9
+
+### Test Revalidation (pre-backlog, desde session anterior)
+
+| Suite | Resultado | Tests |
+|-------|-----------|-------|
+| Unit tests | ✅ PASS | 785 |
+| Integration | ✅ PASS | 38 |
+| E2E backend smoke | ✅ PASS | 4 |
+| Component tests | ✅ PASS | 101 |
+| Security tests | ✅ PASS | 14 |
+| Frontend lint | ✅ PASS | — |
+| Frontend build | ✅ PASS | — |
+| API smoke (6 endpoints) | ✅ PASS | 6/6 |
+
+### Tests agregados en esta session
+
+| PR | Suite | Tests nuevos | Estado |
+|----|-------|-------------|--------|
+| #38 | apiClient x-request-id | 6 unit + 3 component | ✅ PASS |
+| #39 | api-proveedor /health | 12 unit + 1 E2E | ✅ PASS |
+| #40 | /reservas integration | 15 unit (19 total con existentes) | ✅ PASS |
+| #42 | perf-baseline script | Validado (7 endpoints, p50/p95) | ✅ PASS |
+
+### PRs creados
+
+| # | Branch | Tema | Estado |
+|---|--------|------|--------|
+| 38 | `feat/x-request-id-e2e-20260209` | x-request-id frontend E2E | Ready |
+| 39 | `feat/api-proveedor-health-tests-20260209` | /health endpoint tests | Ready |
+| 40 | `test/reservas-integration-20260209` | /reservas integration tests | Ready |
+| 41 | `test/smoke-reservas-20260209` | Smoke /reservas script | BLOCKED (no products in DB) |
+| 42 | `perf/baseline-20260209` | Performance baseline script | Ready |
+| 43 | `docs/secret-rotation-plan-20260209` | Secret rotation plan | Ready (doc-only) |
+| 44 | `docs/sendgrid-verification-20260209` | SendGrid verification | BLOCKED (requires dashboard) |
+| 45 | `docs/sentry-plan-20260209` | Sentry integration plan | Ready (doc-only) |
+
+### Hallazgos notables
+
+1. **SendGrid env var mismatch:** `cron-notifications` lee `EMAIL_FROM` pero el secret es `SMTP_FROM` — causa fallback a `noreply@minimarket.com`. Documentado en `docs/SENDGRID_VERIFICATION.md`.
+2. **Rate limiting confirmado:** `sp_check_rate_limit` retorna 429 tras ~60 requests secuenciales — comportamiento correcto.
+3. **Smoke /reservas bloqueado:** No hay productos en la base de datos; script creado pero no ejecutable hasta seed.
+4. **Performance baseline:** p50 ~700-900ms, p95 ~870-1350ms para 6/7 endpoints (7o endpoint rate-limited).
+
+---
+
 ## Addendum 2026-02-06 (Auditoría local)
 
 **Branch:** `chore/closure-prep-20260202`  
