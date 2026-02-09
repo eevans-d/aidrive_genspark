@@ -20,8 +20,8 @@ import {
   getErrorStatus,
   isAppError,
 } from '../_shared/errors.ts';
-import { FixedWindowRateLimiter, withRateLimitHeaders } from '../_shared/rate-limit.ts';
-import { getCircuitBreaker } from '../_shared/circuit-breaker.ts';
+import { FixedWindowRateLimiter, withRateLimitHeaders, buildRateLimitKey, checkRateLimitShared } from '../_shared/rate-limit.ts';
+import { getCircuitBreaker, checkCircuitBreakerShared, recordCircuitBreakerEvent } from '../_shared/circuit-breaker.ts';
 import { auditLog, extractAuditContext } from '../_shared/audit.ts';
 
 // Import modular helpers
@@ -59,6 +59,45 @@ import {
   getProductosDropdown,
   getProveedoresDropdown,
 } from './handlers/utils.ts';
+import { handleCreateReserva } from './handlers/reservas.ts';
+import {
+  handleListarPedidos,
+  handleObtenerPedido,
+  handleCrearPedido,
+  handleActualizarEstadoPedido,
+  handleMarcarItemPreparado,
+  handleActualizarPagoPedido,
+} from './handlers/pedidos.ts';
+import { handleGlobalSearch } from './handlers/search.ts';
+import {
+  handleInsightsArbitraje,
+  handleInsightsCompras,
+  handleInsightsProducto,
+} from './handlers/insights.ts';
+import {
+  handleCreateVentaPos,
+  handleListarVentas,
+  handleObtenerVenta,
+} from './handlers/ventas.ts';
+import {
+  handleListarClientes,
+  handleCrearCliente,
+  handleActualizarCliente,
+} from './handlers/clientes.ts';
+import {
+  handleResumenCC,
+  handleListarSaldosCC,
+  handleRegistrarPagoCC,
+} from './handlers/cuentas_corrientes.ts';
+import {
+  handleListarOfertasSugeridas,
+  handleAplicarOferta,
+  handleDesactivarOferta,
+} from './handlers/ofertas.ts';
+import {
+  handleCrearBitacora,
+  handleListarBitacora,
+} from './handlers/bitacora.ts';
 
 const logger = createLogger('api-minimarket');
 
@@ -72,11 +111,13 @@ const FUNCTION_BASE_PATH = '/api-minimarket';
 const rateLimiter = new FixedWindowRateLimiter(60, 60_000);
 
 // Circuit breaker for external service calls
-const circuitBreaker = getCircuitBreaker('api-minimarket-db', {
+const CIRCUIT_BREAKER_KEY = 'api-minimarket-db';
+const CIRCUIT_BREAKER_OPTIONS = {
   failureThreshold: 5,
   successThreshold: 2,
   openTimeoutMs: 30_000,
-});
+} as const;
+const circuitBreaker = getCircuitBreaker(CIRCUIT_BREAKER_KEY, CIRCUIT_BREAKER_OPTIONS);
 
 // ============================================================================
 // HELPER FUNCTIONS
@@ -162,38 +203,6 @@ Deno.serve(async (req) => {
     return preflightResponse;
   }
 
-  // ========================================================================
-  // RATE LIMITING
-  // ========================================================================
-  const rateLimitKey = clientIp;
-  const { result: rateLimitResult, headers: rateLimitHeaders } = rateLimiter.checkWithHeaders(rateLimitKey);
-  responseHeaders = withRateLimitHeaders(responseHeaders, rateLimitResult, rateLimiter.getLimit());
-
-  if (!rateLimitResult.allowed) {
-    logger.warn('RATE_LIMIT_EXCEEDED', { requestId, clientIp });
-    return fail(
-      'RATE_LIMIT_EXCEEDED',
-      'Too many requests. Please try again later.',
-      429,
-      responseHeaders,
-      { requestId },
-    );
-  }
-
-  // ========================================================================
-  // CIRCUIT BREAKER CHECK
-  // ========================================================================
-  if (!circuitBreaker.allowRequest()) {
-    logger.warn('CIRCUIT_BREAKER_OPEN', { requestId, state: circuitBreaker.getState() });
-    return fail(
-      'SERVICE_UNAVAILABLE',
-      'Service temporarily unavailable. Please try again later.',
-      503,
-      responseHeaders,
-      { requestId },
-    );
-  }
-
   const url = new URL(req.url);
   const path = normalizePathname(url.pathname);
   const method = req.method;
@@ -205,18 +214,60 @@ Deno.serve(async (req) => {
     timestamp: new Date().toISOString(),
   };
 
+  // Keep these in the outer scope so catch{} can make breaker decisions safely.
+  let supabaseUrl: string | undefined;
+  let supabaseAnonKey: string | undefined;
+  let serviceRoleKey: string | undefined;
+
   try {
     // ======================================================================
     // CONFIGURATION CHECK
     // ======================================================================
-    const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY');
+    supabaseUrl = Deno.env.get('SUPABASE_URL') || undefined;
+    supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY') || undefined;
+    serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || undefined;
 
     if (!supabaseUrl || !supabaseAnonKey) {
       throw toAppError(
         new Error('Configuración de Supabase faltante'),
         'CONFIG_ERROR',
         500,
+      );
+    }
+
+    // Freeze config values for use in nested helpers/closures (TS narrowing doesn't
+    // apply to captured mutable variables like `supabaseUrl`).
+    const supabaseUrlStr = supabaseUrl;
+    const supabaseAnonKeyStr = supabaseAnonKey;
+
+    // ======================================================================
+    // CIRCUIT BREAKER CHECK (semi-persistent via RPC, fallback in-memory)
+    // ======================================================================
+    const breakerStatus = serviceRoleKey
+      ? await checkCircuitBreakerShared(
+        CIRCUIT_BREAKER_KEY,
+        serviceRoleKey,
+        supabaseUrlStr,
+        circuitBreaker,
+        CIRCUIT_BREAKER_OPTIONS,
+      )
+      : (() => {
+        const stats = circuitBreaker.getStats();
+        return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
+      })();
+
+    // Avoid an extra RPC call on every successful request when breaker is healthy.
+    const shouldRecordCircuitSuccess =
+      Boolean(serviceRoleKey) && (breakerStatus.state !== 'closed' || breakerStatus.failures > 0);
+
+    if (!breakerStatus.allows) {
+      logger.warn('CIRCUIT_BREAKER_OPEN', { requestId, state: breakerStatus.state });
+      return fail(
+        'SERVICE_UNAVAILABLE',
+        'Service temporarily unavailable. Please try again later.',
+        503,
+        responseHeaders,
+        { requestId },
       );
     }
 
@@ -237,6 +288,29 @@ Deno.serve(async (req) => {
       }
     }
 
+    // ======================================================================
+    // RATE LIMITING (shared cross-instance via RPC, fallback in-memory)
+    // Key: user:{uid}:ip:{ip} > user:{uid} > ip:{ip}
+    // ======================================================================
+    const rateLimitKey = buildRateLimitKey(user?.id, clientIp);
+    const limit = rateLimiter.getLimit();
+    const rateLimitResult = serviceRoleKey
+      ? await checkRateLimitShared(rateLimitKey, limit, 60, serviceRoleKey, supabaseUrlStr, rateLimiter)
+      : rateLimiter.check(rateLimitKey);
+
+    responseHeaders = withRateLimitHeaders(responseHeaders, rateLimitResult, limit);
+
+    if (!rateLimitResult.allowed) {
+      logger.warn('RATE_LIMIT_EXCEEDED', { requestId, clientIp, key: rateLimitKey });
+      return fail(
+        'RATE_LIMIT_EXCEEDED',
+        'Too many requests. Please try again later.',
+        429,
+        responseHeaders,
+        { requestId },
+      );
+    }
+
     // Helper: Check role (throws if unauthorized)
     const checkRole = (allowedRoles: readonly string[]) => {
       requireRole(user, allowedRoles);
@@ -248,14 +322,32 @@ Deno.serve(async (req) => {
 
     // Create headers for PostgREST calls - uses user's JWT for RLS
     const requestHeaders = (extraHeaders: Record<string, string> = {}) =>
-      createRequestHeaders(token, supabaseAnonKey, requestId, extraHeaders);
+      createRequestHeaders(token ?? null, supabaseAnonKeyStr, requestId, extraHeaders);
+
+    const recordCircuitSuccess = () => {
+      if (shouldRecordCircuitSuccess && serviceRoleKey) {
+        void recordCircuitBreakerEvent(
+          CIRCUIT_BREAKER_KEY,
+          'success',
+          serviceRoleKey,
+          supabaseUrlStr,
+          circuitBreaker,
+          CIRCUIT_BREAKER_OPTIONS,
+        ).catch(() => {
+          // Best-effort: don't break request flow if RPC is unavailable/transiently failing.
+        });
+        return;
+      }
+
+      circuitBreaker.recordSuccess();
+    };
 
     const respondOk = <T>(
       data: T,
       status = 200,
       options: { message?: string; extra?: Record<string, unknown> } = {},
     ) => {
-      circuitBreaker.recordSuccess();
+      recordCircuitSuccess();
       return ok(data, status, responseHeaders, { requestId, ...options });
     };
 
@@ -292,14 +384,13 @@ Deno.serve(async (req) => {
 
     // Helper: Create Supabase client for audit logging (uses service role)
     const createAuditClient = async () => {
-      const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
       if (!serviceRoleKey) {
         logger.warn('AUDIT: No service role key available for audit logging');
         return null;
       }
       // Import dynamically to avoid circular dependencies
       const { createClient } = await import('jsr:@supabase/supabase-js@2');
-      return createClient(supabaseUrl, serviceRoleKey);
+      return createClient(supabaseUrlStr, serviceRoleKey);
     };
 
     // Helper: Log audit event for sensitive operations
@@ -326,19 +417,51 @@ Deno.serve(async (req) => {
     };
 
     // ====================================================================
+    // ENDPOINTS: GLOBAL SEARCH
+    // ====================================================================
+
+    // GET /search?q=texto&limit=10 - Global search across entities
+    if (path === '/search' && method === 'GET') {
+      checkRole(BASE_ROLES);
+
+      const q = url.searchParams.get('q');
+      if (!q || !q.trim()) {
+        return respondFail('VALIDATION_ERROR', 'Parametro q es requerido', 400);
+      }
+
+      const limitParam = url.searchParams.get('limit');
+      const limit = limitParam ? Math.min(Math.max(parseInt(limitParam, 10) || 10, 1), 20) : 10;
+
+      const res = await handleGlobalSearch(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        q.trim(),
+        limit
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // ====================================================================
     // ENDPOINTS: UTILS (Dropdowns)
     // ====================================================================
 
     // GET /productos/dropdown (Autenticado)
     if (path === '/productos/dropdown' && method === 'GET') {
       checkRole(BASE_ROLES);
-      return await getProductosDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+      const res = await getProductosDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+      recordCircuitSuccess();
+      return res;
     }
 
     // GET /proveedores/dropdown (Autenticado)
     if (path === '/proveedores/dropdown' && method === 'GET') {
       checkRole(BASE_ROLES);
-      return await getProveedoresDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+      const res = await getProveedoresDropdown(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+      recordCircuitSuccess();
+      return res;
     }
 
     // ====================================================================
@@ -1305,13 +1428,26 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
       }
 
+      const motivoValue =
+        typeof motivo === 'string' && motivo.trim()
+          ? motivo.trim()
+          : null;
       const origenValue =
         typeof origen === 'string' && origen.trim()
           ? origen.trim()
-          : typeof motivo === 'string' && motivo.trim()
-            ? motivo.trim()
-            : null;
+          : null;
       const destinoValue = typeof destino === 'string' && destino.trim() ? destino.trim() : null;
+
+      // FIX:
+      // - No derivar ubicacion desde `motivo` (evita contaminar stock_deposito.ubicacion).
+      // - Mantener Kardex util: sp_movimiento_inventario inserta p_origen en movimientos_deposito.motivo.
+      // Por eso:
+      // - p_origen => `motivo` (razon / motivo del movimiento)
+      // - p_destino => ubicacion estable (destino|origen|'Principal')
+      //
+      // Nota: sp_movimiento_inventario calcula v_ubicacion = COALESCE(p_destino,p_origen,'Principal').
+      // Si p_destino fuera null y p_origen tuviera texto libre, eso ensuciaria la ubicacion.
+      const destinoFinal = destinoValue ?? origenValue ?? 'Principal';
       let proveedorId: string | null = null;
       if (proveedor_id !== undefined && proveedor_id !== null) {
         if (typeof proveedor_id !== 'string' || !isUuid(proveedor_id)) {
@@ -1327,8 +1463,8 @@ Deno.serve(async (req) => {
         p_producto_id: producto_id,
         p_tipo: tipoMovimiento,
         p_cantidad: cantidadNumero,
-        p_origen: origenValue,
-        p_destino: destinoValue,
+        p_origen: motivoValue,
+        p_destino: destinoFinal,
         p_usuario: user!.id,
         p_proveedor_id: proveedorId,
         p_observaciones: observacionesValue,
@@ -1343,7 +1479,7 @@ Deno.serve(async (req) => {
           {
             tipo_movimiento: tipoMovimiento,
             cantidad: cantidadNumero,
-            motivo: origenValue
+            motivo: motivoValue
           },
           tipoMovimiento === 'ajuste' ? 'warning' : 'info'
         );
@@ -1466,48 +1602,18 @@ Deno.serve(async (req) => {
       const bodyResult = await parseJsonBody();
       if (bodyResult instanceof Response) return bodyResult;
 
-      const { producto_id, cantidad, referencia, deposito } = bodyResult as Record<string, unknown>;
-
-      if (typeof producto_id !== 'string' || !isUuid(producto_id)) {
-        return respondFail('VALIDATION_ERROR', 'producto_id invalido', 400);
-      }
-
-      const cantidadNumero = parsePositiveInt(cantidad);
-      if (cantidadNumero === null) {
-        return respondFail('VALIDATION_ERROR', 'cantidad debe ser un entero > 0', 400);
-      }
-
-      const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
-      const referenciaValue =
-        typeof referencia === 'string' && referencia.trim() ? referencia.trim() : null;
-
-      const stockInfo = await callFunction(supabaseUrl, 'fnc_stock_disponible', requestHeaders(), {
-        p_producto_id: producto_id,
-        p_deposito: depositoValue,
+      return await handleCreateReserva({
+        supabaseUrl,
+        userId: user!.id,
+        requestId,
+        clientIp,
+        body: bodyResult as Record<string, unknown>,
+        idempotencyKeyRaw: req.headers.get('idempotency-key'),
+        requestHeaders,
+        respondOk,
+        respondFail,
+        logger,
       });
-      const stockRow = Array.isArray(stockInfo) ? stockInfo[0] : stockInfo;
-      const disponible = Number((stockRow as Record<string, unknown>)?.stock_disponible ?? 0);
-      const disponibleNumero = Number.isFinite(disponible) ? disponible : 0;
-
-      if (disponibleNumero < cantidadNumero) {
-        return respondFail(
-          'INSUFFICIENT_STOCK',
-          'Stock disponible insuficiente para la reserva',
-          409,
-          { details: { disponible: disponibleNumero } },
-        );
-      }
-
-      const reserva = await insertTable(supabaseUrl, 'stock_reservado', requestHeaders(), {
-        producto_id,
-        cantidad: cantidadNumero,
-        estado: 'activa',
-        referencia: referenciaValue,
-        usuario: user!.id,
-        fecha_reserva: new Date().toISOString(),
-      });
-
-      return respondOk((reserva as unknown[])[0] || reserva, 201, { message: 'Reserva creada exitosamente' });
     }
 
     // 22. POST /reservas/:id/cancelar - Cancelar reserva
@@ -1592,6 +1698,434 @@ Deno.serve(async (req) => {
     }
 
     // ====================================================================
+    // ENDPOINTS: PEDIDOS (6 endpoints)
+    // ====================================================================
+
+    // 24. GET /pedidos - Listar pedidos con filtros
+	    if (path === '/pedidos' && method === 'GET') {
+	      checkRole(BASE_ROLES);
+
+      const pagination = getPaginationOrFail(50, 100);
+      if (pagination instanceof Response) return pagination;
+
+	      const res = await handleListarPedidos(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        {
+	          estado: url.searchParams.get('estado') || undefined,
+	          estado_pago: url.searchParams.get('estado_pago') || undefined,
+	          fecha_desde: url.searchParams.get('fecha_desde') || undefined,
+	          fecha_hasta: url.searchParams.get('fecha_hasta') || undefined,
+	          limit: pagination.limit,
+	          offset: pagination.offset,
+	        }
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 25. GET /pedidos/:id - Obtener pedido específico
+	    if (path.match(/^\/pedidos\/[a-f0-9-]+$/) && method === 'GET') {
+	      checkRole(BASE_ROLES);
+	      const id = path.split('/')[2];
+	      if (!isUuid(id)) {
+	        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+	      }
+	      const res = await handleObtenerPedido(supabaseUrl, requestHeaders(), responseHeaders, requestId, id);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 26. POST /pedidos - Crear nuevo pedido
+	    if (path === '/pedidos' && method === 'POST') {
+	      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+	      const res = await handleCrearPedido(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        bodyResult as unknown as Parameters<typeof handleCrearPedido>[4]
+	      );
+	      recordCircuitSuccess();
+	      return res;
+		    }
+
+    // 27. PUT /pedidos/:id/estado - Actualizar estado del pedido
+	    if (path.match(/^\/pedidos\/[a-f0-9-]+\/estado$/) && method === 'PUT') {
+	      checkRole(BASE_ROLES);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { estado } = bodyResult as { estado: string };
+
+	      const res = await handleActualizarEstadoPedido(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        id,
+	        estado,
+	        user!.id
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 28. PUT /pedidos/:id/pago - Registrar pago del pedido
+	    if (path.match(/^\/pedidos\/[a-f0-9-]+\/pago$/) && method === 'PUT') {
+      checkRole(['admin', 'deposito', 'jefe']);
+      const id = path.split('/')[2];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { monto_pagado } = bodyResult as { monto_pagado: number };
+
+      if (typeof monto_pagado !== 'number' || monto_pagado < 0) {
+        return respondFail('VALIDATION_ERROR', 'monto_pagado debe ser >= 0', 400);
+      }
+
+	      const res = await handleActualizarPagoPedido(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        id,
+	        monto_pagado
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 29. PUT /pedidos/items/:id - Marcar item como preparado/no preparado
+    // Back-compat: aceptar también /pedidos/items/:id/preparado (ruta anterior del frontend)
+	    if (path.match(/^\/pedidos\/items\/[a-f0-9-]+(\/preparado)?$/) && method === 'PUT') {
+      checkRole(BASE_ROLES);
+      const id = path.split('/')[3];
+      if (!isUuid(id)) {
+        return respondFail('VALIDATION_ERROR', 'id de item invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { preparado } = bodyResult as { preparado: boolean };
+
+      if (typeof preparado !== 'boolean') {
+        return respondFail('VALIDATION_ERROR', 'preparado debe ser boolean', 400);
+      }
+
+	      const res = await handleMarcarItemPreparado(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        id,
+	        preparado,
+	        user!.id
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // ====================================================================
+    // ENDPOINTS: INSIGHTS — Arbitraje de Precios (Fase 1)
+    // ====================================================================
+
+    // 30. GET /insights/arbitraje - Productos con riesgo de pérdida o margen bajo
+	    if (path === '/insights/arbitraje' && method === 'GET') {
+	      checkRole(BASE_ROLES);
+	      const res = await handleInsightsArbitraje(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 31. GET /insights/compras - Oportunidades de compra (stock bajo + caída costo)
+	    if (path === '/insights/compras' && method === 'GET') {
+	      checkRole(BASE_ROLES);
+	      const res = await handleInsightsCompras(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 32. GET /insights/producto/:id - Payload unificado de arbitraje para un producto
+	    if (path.match(/^\/insights\/producto\/[a-f0-9-]+$/) && method === 'GET') {
+	      checkRole(BASE_ROLES);
+	      const id = path.split('/')[3];
+	      if (!isUuid(id)) {
+	        return respondFail('VALIDATION_ERROR', 'id de producto invalido', 400);
+	      }
+	      const res = await handleInsightsProducto(supabaseUrl, requestHeaders(), responseHeaders, requestId, id);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // ====================================================================
+    // ENDPOINTS: CLIENTES + VENTAS POS + CUENTAS CORRIENTES (Fase 2)
+    // ====================================================================
+
+    // 33. GET /clientes - Listar clientes (incluye saldo CC)
+	    if (path === '/clientes' && method === 'GET') {
+	      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+	      const res = await handleListarClientes(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        {
+	          q: url.searchParams.get('q'),
+	          limit: pagination.limit,
+	          offset: pagination.offset,
+	        },
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 34. POST /clientes - Crear cliente
+	    if (path === '/clientes' && method === 'POST') {
+	      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+	      const res = await handleCrearCliente(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        bodyResult as Record<string, unknown>,
+	        { allowLimiteCredito: user?.role === 'admin' },
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 35. PUT /clientes/:id - Actualizar cliente
+	    if (path.match(/^\/clientes\/[a-f0-9-]+$/) && method === 'PUT') {
+      checkRole(['admin', 'ventas']);
+
+      const clienteId = path.split('/')[2];
+      if (!isUuid(clienteId)) {
+        return respondFail('VALIDATION_ERROR', 'id de cliente invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+	      const res = await handleActualizarCliente(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        clienteId,
+	        bodyResult as Record<string, unknown>,
+	        { allowLimiteCredito: user?.role === 'admin' },
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 36. GET /cuentas-corrientes/resumen - Resumen "dinero en la calle"
+	    if (path === '/cuentas-corrientes/resumen' && method === 'GET') {
+	      checkRole(['admin', 'ventas']);
+	      const res = await handleResumenCC(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 37. GET /cuentas-corrientes/saldos - Saldos por cliente
+	    if (path === '/cuentas-corrientes/saldos' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      const soloDeuda = url.searchParams.get('solo_deuda') === 'true';
+	      const res = await handleListarSaldosCC(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        {
+	          q: url.searchParams.get('q'),
+	          solo_deuda: soloDeuda,
+	          limit: pagination.limit,
+	          offset: pagination.offset,
+	        },
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 38. POST /cuentas-corrientes/pagos - Registrar pago
+	    if (path === '/cuentas-corrientes/pagos' && method === 'POST') {
+      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+	      const res = await handleRegistrarPagoCC(
+	        supabaseUrl,
+	        requestHeaders(),
+	        responseHeaders,
+	        requestId,
+	        bodyResult as Record<string, unknown>,
+	      );
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // 39. POST /ventas - Crear venta POS (idempotente)
+    if (path === '/ventas' && method === 'POST') {
+      checkRole(['admin', 'ventas']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      return await handleCreateVentaPos({
+        supabaseUrl,
+        userId: user!.id,
+        requestId,
+        clientIp,
+        body: bodyResult as Record<string, unknown>,
+        idempotencyKeyRaw: req.headers.get('idempotency-key'),
+        requestHeaders,
+        respondOk,
+        respondFail,
+        logger,
+      });
+    }
+
+    // 40. GET /ventas - Listar ventas
+    if (path === '/ventas' && method === 'GET') {
+      checkRole(['admin', 'ventas']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      const res = await handleListarVentas(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        { limit: pagination.limit, offset: pagination.offset },
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // 41. GET /ventas/:id - Obtener venta
+	    if (path.match(/^\/ventas\/[a-f0-9-]+$/) && method === 'GET') {
+	      checkRole(['admin', 'ventas']);
+	      const ventaId = path.split('/')[2];
+	      if (!isUuid(ventaId)) {
+	        return respondFail('VALIDATION_ERROR', 'id de venta invalido', 400);
+	      }
+	      const res = await handleObtenerVenta(supabaseUrl, requestHeaders(), responseHeaders, requestId, ventaId);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // ====================================================================
+    // ENDPOINTS: OFERTAS (Fase 4) — Anti-mermas
+    // ====================================================================
+
+    // 42. GET /ofertas/sugeridas - Lista sugerencias (<= 7 días, sin oferta activa)
+    if (path === '/ofertas/sugeridas' && method === 'GET') {
+      checkRole(BASE_ROLES);
+      const res = await handleListarOfertasSugeridas(supabaseUrl, requestHeaders(), responseHeaders, requestId);
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // 43. POST /ofertas/aplicar - Aplica oferta por stock_id (default 30% si no viene)
+    if (path === '/ofertas/aplicar' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const res = await handleAplicarOferta(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // 44. POST /ofertas/:id/desactivar - Desactiva oferta
+	    if (path.match(/^\/ofertas\/[a-f0-9-]+\/desactivar$/) && method === 'POST') {
+	      checkRole(BASE_ROLES);
+	      const ofertaId = path.split('/')[2];
+	      if (!isUuid(ofertaId)) {
+	        return respondFail('VALIDATION_ERROR', 'id de oferta invalido', 400);
+	      }
+	      const res = await handleDesactivarOferta(supabaseUrl, requestHeaders(), responseHeaders, requestId, ofertaId);
+	      recordCircuitSuccess();
+	      return res;
+	    }
+
+    // ====================================================================
+    // ENDPOINTS: BITÁCORA (Fase 5) — Notas de turno
+    // ====================================================================
+
+    // 45. POST /bitacora - Crear nota de turno (antes de logout)
+    if (path === '/bitacora' && method === 'POST') {
+      checkRole(BASE_ROLES);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const res = await handleCrearBitacora(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+        user ? { email: user.email, role: user.role } : null,
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // 46. GET /bitacora - Listar notas (admin)
+    if (path === '/bitacora' && method === 'GET') {
+      checkRole(['admin']);
+
+      const pagination = getPaginationOrFail(50, 200);
+      if (pagination instanceof Response) return pagination;
+
+      const res = await handleListarBitacora(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        { limit: pagination.limit, offset: pagination.offset },
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // ====================================================================
     // HEALTH CHECK - Public endpoint
     // ====================================================================
     if (path === '/health' && method === 'GET') {
@@ -1606,18 +2140,32 @@ Deno.serve(async (req) => {
     // RUTA NO ENCONTRADA
     // ====================================================================
 
-    return respondFail('NOT_FOUND', `Ruta no encontrada: ${method} ${path}`, 404);
-  } catch (error) {
-    // Record failure for circuit breaker
-    circuitBreaker.recordFailure();
+	    return respondFail('NOT_FOUND', `Ruta no encontrada: ${method} ${path}`, 404);
+	  } catch (error) {
+	    const appError = isAppError(error)
+	      ? error
+	      : toAppError(error, 'API_ERROR', getErrorStatus(error));
 
-    const appError = isAppError(error)
-      ? error
-      : toAppError(error, 'API_ERROR', getErrorStatus(error));
-
-    logger.error('API_MINIMARKET_ERROR', {
-      ...requestLog,
-      code: appError.code,
+	    // Circuit breaker should not open on normal 4xx (bad request / not found / auth).
+	    // Only count real failures (network/5xx).
+	    if (appError.status >= 500) {
+	      if (serviceRoleKey && supabaseUrl) {
+	        await recordCircuitBreakerEvent(
+	          CIRCUIT_BREAKER_KEY,
+	          'failure',
+	          serviceRoleKey,
+	          supabaseUrl,
+	          circuitBreaker,
+	          CIRCUIT_BREAKER_OPTIONS,
+	        );
+	      } else {
+	        circuitBreaker.recordFailure();
+	      }
+	    }
+	
+	    logger.error('API_MINIMARKET_ERROR', {
+	      ...requestLog,
+	      code: appError.code,
       message: appError.message,
       status: appError.status,
     });

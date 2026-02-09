@@ -1,10 +1,20 @@
 import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
-import { useTareas, TareaPendiente } from '../hooks/queries'
+import { useTareas, TareaPendiente, type TareasResult } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tareasApi, ApiError } from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { SkeletonList, SkeletonText } from '../components/Skeleton'
+
+function computeTareasMetrics(tareas: TareaPendiente[]) {
+  return {
+    total: tareas.length,
+    urgentes: tareas.filter((t) => t.prioridad === 'urgente').length,
+    pendientes: tareas.filter((t) => t.estado === 'pendiente').length,
+    completadas: tareas.filter((t) => t.estado === 'completada').length,
+  }
+}
 
 export default function Tareas() {
   const queryClient = useQueryClient()
@@ -30,8 +40,76 @@ export default function Tareas() {
         fecha_vencimiento: newTarea.fecha_vencimiento || null
       })
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['tareas'] })
+    onMutate: async (newTarea) => {
+      await queryClient.cancelQueries({ queryKey: ['tareas'] })
+      const previous = queryClient.getQueryData<TareasResult>(['tareas'])
+
+      const now = new Date().toISOString()
+      const tempId = `temp-${crypto.randomUUID()}`
+
+      const optimistic: TareaPendiente = {
+        id: tempId,
+        titulo: newTarea.titulo,
+        descripcion: newTarea.descripcion || null,
+        asignada_a_id: null,
+        asignada_a_nombre: newTarea.asignada_a_nombre || null,
+        prioridad: newTarea.prioridad,
+        estado: 'pendiente',
+        fecha_creacion: now,
+        fecha_vencimiento: newTarea.fecha_vencimiento || null,
+        fecha_completada: null,
+        completada_por_id: null,
+        completada_por_nombre: null,
+        fecha_cancelada: null,
+        cancelada_por_id: null,
+        cancelada_por_nombre: null,
+        razon_cancelacion: null,
+        creada_por_id: null,
+        creada_por_nombre: null,
+        created_at: now,
+        updated_at: now,
+      }
+
+      queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
+        const base = curr?.tareas ?? []
+        const next = [optimistic, ...base]
+        const metrics = computeTareasMetrics(next)
+        return { tareas: next, ...metrics }
+      })
+
+      return { previous, tempId }
+    },
+    onError: (_err, _newTarea, ctx) => {
+      if (ctx?.previous) {
+        queryClient.setQueryData(['tareas'], ctx.previous)
+      }
+    },
+    onSuccess: (server, _vars, ctx) => {
+      // Reemplazar tempId por el id real sin esperar refetch
+      queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
+        const base = curr?.tareas ?? []
+        const now = new Date().toISOString()
+        const mapped: Partial<TareaPendiente> = {
+          id: server.id,
+          titulo: server.titulo,
+          descripcion: server.descripcion ?? null,
+          estado: (server.estado as any) ?? 'pendiente',
+          prioridad: (server.prioridad as any) ?? 'normal',
+          asignada_a_nombre: server.asignada_a_nombre ?? null,
+          fecha_vencimiento: server.fecha_vencimiento ?? null,
+          fecha_creacion: server.created_at ?? now,
+          created_at: server.created_at ?? now,
+          updated_at: server.created_at ?? now,
+        }
+
+        const next = base.map((t) => {
+          if (ctx?.tempId && t.id === ctx.tempId) return { ...t, ...mapped }
+          return t
+        })
+        const metrics = computeTareasMetrics(next)
+        return { tareas: next, ...metrics }
+      })
+
       setShowForm(false)
       setFormData({
         titulo: '',
@@ -40,7 +118,10 @@ export default function Tareas() {
         prioridad: 'normal',
         fecha_vencimiento: ''
       })
-    }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['tareas'] })
+    },
   })
 
   // Mutación para completar tarea (via gateway)
@@ -48,9 +129,45 @@ export default function Tareas() {
     mutationFn: async (id: string) => {
       return tareasApi.completar(id)
     },
-    onSuccess: () => {
+    onMutate: async (id) => {
+      await queryClient.cancelQueries({ queryKey: ['tareas'] })
+      const previous = queryClient.getQueryData<TareasResult>(['tareas'])
+
+      queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
+        const base = curr?.tareas ?? []
+        const now = new Date().toISOString()
+        const next = base.map((t) =>
+          t.id === id
+            ? { ...t, estado: 'completada' as const, fecha_completada: now, completada_por_nombre: t.completada_por_nombre ?? '—' }
+            : t,
+        )
+        const metrics = computeTareasMetrics(next)
+        return { tareas: next, ...metrics }
+      })
+
+      return { previous }
+    },
+    onError: (_err, _id, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
+    },
+    onSuccess: (server, id) => {
+      queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
+        const base = curr?.tareas ?? []
+        const next = base.map((t) =>
+          t.id === id
+            ? {
+              ...t,
+              estado: (server.estado as any) ?? 'completada',
+            }
+            : t,
+        )
+        const metrics = computeTareasMetrics(next)
+        return { tareas: next, ...metrics }
+      })
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
-    }
+    },
   })
 
   // Mutación para cancelar tarea (via gateway)
@@ -58,9 +175,30 @@ export default function Tareas() {
     mutationFn: async ({ id, razon }: { id: string; razon: string }) => {
       return tareasApi.cancelar(id, razon)
     },
-    onSuccess: () => {
+    onMutate: async ({ id, razon }) => {
+      await queryClient.cancelQueries({ queryKey: ['tareas'] })
+      const previous = queryClient.getQueryData<TareasResult>(['tareas'])
+
+      queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
+        const base = curr?.tareas ?? []
+        const now = new Date().toISOString()
+        const next = base.map((t) =>
+          t.id === id
+            ? { ...t, estado: 'cancelada' as const, razon_cancelacion: razon, fecha_cancelada: now, cancelada_por_nombre: t.cancelada_por_nombre ?? '—' }
+            : t,
+        )
+        const metrics = computeTareasMetrics(next)
+        return { tareas: next, ...metrics }
+      })
+
+      return { previous }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
-    }
+    },
   })
 
   const handleCreateTarea = (e: React.FormEvent) => {
@@ -79,7 +217,14 @@ export default function Tareas() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-56" className="h-8" />
+        <div className="bg-white rounded-lg shadow p-6">
+          <SkeletonList />
+        </div>
+      </div>
+    )
   }
 
   if (isError) {

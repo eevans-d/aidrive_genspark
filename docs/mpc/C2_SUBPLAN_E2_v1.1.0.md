@@ -15,7 +15,7 @@
 
 ## 1) Estado actual
 
-- Unit tests: 722 definidos (backend 682 + frontend 40; conteo repo).
+- Unit tests: ver `docs/ESTADO_ACTUAL.md` (conteo vigente).
 - Integration tests: 38 definidos (gated por credenciales).
 - E2E backend smoke: 4 definidos (gated por Supabase local).
 - E2E frontend auth real: 10 definidos (2 skip; gated por credenciales).

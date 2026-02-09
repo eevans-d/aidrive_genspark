@@ -1,5 +1,84 @@
 # Build Verification Report
 
+## Addendum 2026-02-06 (Auditoría local)
+
+**Branch:** `chore/closure-prep-20260202`  
+**Estado:** EJECUTADO (gates + smokes OK; SQL directo DB sigue bloqueado por IPv6 en este host)
+
+**Entorno local:**
+- Node: v20.20.0
+- pnpm: 9.15.9
+- Deno: no disponible en PATH (no se re-ejecutó `deno check` en este host)
+
+**Quality Gates (2026-02-06):**
+- ✅ Unit: `npm run test:unit` → 38 files / 725 tests.
+- ✅ Coverage: `npm run test:coverage` → 69.39% lines.
+- ✅ Auxiliary: `npm run test:auxiliary` → 29 passed / 3 skipped (gated).
+- ✅ Integration: `npm run test:integration` → 38 tests (suite basada mayormente en mocks de fetch).
+- ✅ E2E backend smoke: `npm run test:e2e` → 4 tests (real network).
+- ✅ Smoke notificaciones: `node scripts/smoke-notifications.mjs` → 200 OK (`/channels`, `/templates`).
+- ✅ Frontend: `pnpm -C minimarket-system lint` / `build` / `test:components` → OK.
+
+**Evidencia local generada:**
+- `test-reports/junit.xml`
+- `test-reports/junit.auxiliary.xml`
+- `test-reports/junit.integration.xml`
+- `test-reports/junit.e2e.xml`
+- `coverage/`
+
+Notas:
+- `test-reports/` y `coverage/` están en `.gitignore` (evidencia por ejecución).
+- `psql` a `db.<ref>.supabase.co:5432` falla desde este host (IPv6 `Network is unreachable`); usar SQL Editor en Dashboard para checks SQL.
+
+## Pre-cierre 2026-02-03 (EJECUTADO)
+
+**Base Commit:** 8da9b6beca1442146e0b700da59e0ab5a8a1e8bc  
+**Branch:** chore/closure-prep-20260202  
+**Última actualización:** 2026-02-04  
+**Estado:** EJECUTADO (integration/E2E OK)  
+
+**Entorno local:**
+- Node: v20.20.0
+- pnpm: 9.15.9 (corepack)
+- Deno: 2.6.8
+
+**Notas clave:**
+- `pnpm build` ✅ OK tras ajuste de tipado en `minimarket-system/src/lib/apiClient.ts`.
+- `deno check --no-lock supabase/functions/**/index.ts` ✅ OK (se agregó `deno.json` con `nodeModulesDir: "auto"`).
+- `pnpm lint` y `npm run test:unit` re-ejecutados tras incluir `minimarket-system/src/lib/**` en el repo: ✅ OK (689 tests).
+- Integration/E2E ejecutados con `SUPABASE_URL` remoto desde `.env.test` (scripts omiten `supabase start` en ese modo).
+
+### Quality Gates (ejecutados)
+
+| Gate | Comando | Estado | Evidencia |
+|------|---------|--------|-----------|
+| Frontend Install | `cd minimarket-system && pnpm install --frozen-lockfile --prefer-offline --force` | ✅ OK | Instalación completa sin cambios en lockfile. |
+| Frontend Lint | `cd minimarket-system && pnpm lint` | ✅ OK | ESLint sin errores. |
+| Frontend Build | `cd minimarket-system && pnpm build` | ✅ OK | Build Vite completado y `dist/` generado. |
+| Frontend Typecheck | `cd minimarket-system && npx tsc --noEmit` | ✅ OK | Exit 0. |
+| Unit Tests | `npm run test:unit` | ✅ OK | 35 files / 689 tests; `test-reports/junit.xml`. |
+| Coverage | `npm run test:coverage` | ✅ OK | Lines 70.34%, Stmts 68.39%, Branch 61%, Funcs 70.76%. |
+| Integration Tests | `bash scripts/run-integration-tests.sh` | ✅ OK | PASS (38/38). |
+| E2E Tests | `bash scripts/run-e2e-tests.sh` | ✅ OK | PASS (4/4; junit en `test-reports/junit.e2e.xml`). |
+| Edge Functions Check | `deno check --no-lock supabase/functions/**/index.ts` | ✅ OK | Resuelto con `deno.json` (`nodeModulesDir: "auto"`). |
+
+### Addendum 2026-02-04 (Runtime Smoke)
+
+| Gate | Comando | Estado | Evidencia |
+|------|---------|--------|-----------|
+| API Smoke (real JWT) | `node scripts/smoke-efectividad-tareas.mjs` | ✅ OK | `/reportes/efectividad-tareas` devuelve **200** (sin exponer payload). |
+
+**Nota técnica:** para permitir JWT ES256 emitidos por Supabase Auth, `api-minimarket` fue redeployado con `--no-verify-jwt` (la validación queda en app con `/auth/v1/user` + roles). Ver `docs/ESTADO_ACTUAL.md`.
+
+### Artefactos generados en esta ejecución
+- `coverage/` (reporte coverage v8)
+- `test-reports/junit.xml` (unit + coverage)
+- `minimarket-system/dist/` (build frontend)
+
+---
+
+## Histórico (2026-01-28)
+
 **Template Version:** 1.0.0  
 **Base Commit:** 3b53a76  
 **Última actualización:** 2026-01-28 03:46 UTC

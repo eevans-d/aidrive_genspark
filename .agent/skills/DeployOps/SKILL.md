@@ -1,73 +1,119 @@
 ---
 name: DeployOps
-description: Procedimientos estandarizados para despliegues seguros y gestión de entornos.
+description: Despliegues seguros con pre-flight checks, dry-run y rollback automatico.
+role: CODEX->EXECUTOR
+impact: 2-3
+chain: [RealityCheck]
+pre_check: [TestMaster]
 ---
 
-# DeployOps Skill (Estándar Universal)
+# DeployOps Skill
 
-<objective>
-  Gestionar el ciclo de vida de despliegue (dev -> staging -> prod) asegurando que **código inseguro nunca llegue a producción**.
-  **Protocolo:** "Seguridad Blindada".
-</objective>
+**ROL:** CODEX (fases A-B: pre-flight, dry-run) + EXECUTOR (fase C: deploy real).
+**NIVEL DE IMPACTO:** 2-3 (siempre requiere rollback preparado).
 
-## 1. Configuración del Proyecto
-**⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
+## Reglas de Automatizacion
 
-## 2. Criterios de Activación
-<activation_rules>
-  <enable_if>
-    - Feature completada y probada (Ready for Staging).
-    - Verificación exitosa en Staging (Ready for Prod).
-    - Rotación de secretos o variables.
-    - Rollback de emergencia.
-  </enable_if>
-  <disable_if>
-    - Tests fallando (Ejecuta `TestMaster` primero).
-    - Rama no permitida (solo `main` o `staging`).
-    - Repo sucio (cambios sin commit).
-    - Falta archivo `.env` o script `deploy.sh` no ejecutable.
-  </disable_if>
-</activation_rules>
+1. Pre-flight check AUTOMATICO (tests, lint, branch).
+2. Dry-run AUTOMATICO antes de deploy real.
+3. **SI staging/impacto=2:** Deploy automatico + reporte.
+4. **SI production/impacto=3:** UNICO caso que pide confirmacion.
+5. Si deployment falla -> rollback AUTOMATICO + reporte.
 
-## 3. Protocolo de Ejecución
+## Activacion
+
+**Activar cuando:**
+- Feature completada y probada (Ready for Staging).
+- Verificacion exitosa en Staging (Ready for Prod).
+- Rotacion de secretos o variables.
+- Rollback de emergencia.
+
+**NO activar cuando:**
+- Tests fallando (ejecutar TestMaster primero).
+- Rama no permitida (solo `main` o `staging`).
+- Repo sucio (cambios sin commit).
+
+## Protocolo de Ejecucion
 
 ### FASE A: Pre-Flight Check
-<step>
-  1. **Branch Check:** Valida estar en `{{policies.allowed_branches}}`.
-  2. **TestMaster:** Ejecuta `TestMaster` (Modo Green Check). **SI FALLA, PROHIBIDO DESPLEGAR.**
-  3. **Lint:** Ejecuta `npm run lint`.
-</step>
 
-### FASE B: Dry Run (Simulación)
-<step>
-  Ejecuta el script de deploy en modo simulación:
-  ```bash
-  {{scripts.deploy_script}} <ENV> --dry-run
-  ```
-  *Analiza la salida:* ¿Se tocarán migraciones destructivas?
-</step>
+1. **Branch check:**
+   ```bash
+   BRANCH=$(git branch --show-current)
+   echo "Current branch: $BRANCH"
+   ```
+   Valida estar en `main` o `staging`.
+
+2. **Repo limpio:**
+   ```bash
+   git status --short
+   ```
+   Si hay cambios sin commit -> BLOQUEAR.
+
+3. **TestMaster:**
+   ```bash
+   npx vitest run tests/unit/
+   ```
+   SI FALLA -> PROHIBIDO DESPLEGAR.
+
+4. **Lint:**
+   ```bash
+   cd minimarket-system && pnpm lint
+   ```
+
+### FASE B: Dry Run
+
+1. **Edge Functions check:**
+   ```bash
+   supabase functions list
+   ```
+2. **Build frontend:**
+   ```bash
+   cd minimarket-system && pnpm build
+   ```
+3. **Verificar migraciones pendientes:**
+   ```bash
+   supabase db diff --linked 2>/dev/null || echo "No linked project"
+   ```
 
 ### FASE C: Execution
-<step>
-  1. **Deploy:**
-     ```bash
-     {{scripts.deploy_script}} <ENV>
-     ```
-  2. **Smoke Test:** Validar endpoint de Health Check (curl).
-</step>
 
-## 4. Emergency Rollback (Nivel 3)
-<instruction>
-  En caso de error crítico post-deploy:
-</instruction>
-1. **Identificar Previous Commit:** `git rev-parse HEAD~1`
-2. **Revertir Código:** `git revert HEAD`
-3. **Re-Deploy:** Ejecutar FASE C con la versión anterior.
+1. **Deploy Edge Functions:**
+   ```bash
+   supabase functions deploy <function_name>
+   ```
+2. **Deploy Migraciones (si aplica):**
+   ```bash
+   supabase db push
+   ```
+3. **Smoke Test:**
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}" https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health
+   ```
 
-## 5. Quality Gates
-<checklist>
-  <item>Tests pasan al 100%.</item>
-  <item>Dry Run aprobado.</item>
-  <item>Health Check responde 200 OK.</item>
-  <item>No hay secrets expuestos en logs.</item>
-</checklist>
+## Emergency Rollback (Nivel 3)
+
+1. Identificar commit previo: `git rev-parse HEAD~1`
+2. Revertir: `git revert HEAD`
+3. Re-deploy con version anterior.
+
+## Quality Gates
+
+- [ ] Tests pasan al 100%.
+- [ ] Dry run aprobado.
+- [ ] Health check responde 200 OK.
+- [ ] Sin secrets expuestos en logs.
+
+## Anti-Loop / Stop-Conditions
+
+**SI tests fallan en pre-flight:**
+1. BLOQUEAR deploy.
+2. Documentar que tests fallaron.
+3. NO intentar deploy sin tests verdes.
+
+**SI health check falla post-deploy:**
+1. Ejecutar rollback AUTOMATICO.
+2. Documentar en EVIDENCE.md.
+3. Generar SESSION_REPORT con analisis.
+
+**NUNCA:** Quedarse esperando confirmacion manual (excepto produccion).

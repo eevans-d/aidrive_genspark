@@ -43,28 +43,28 @@ npm run test:unit # Tests unitarios (Vitest)
 ├── supabase/
 │   ├── functions/         # Edge Functions (Deno)
 │   │   ├── _shared/       # Módulos compartidos
-│   │   ├── api-minimarket/# Gateway (26 endpoints)
+│   │   ├── api-minimarket/# Gateway (29 endpoints)
 │   │   ├── api-proveedor/ # API proveedor
 │   │   └── scraper-*/     # Scraping
 │   └── migrations/        # Migraciones SQL
 │
 ├── tests/                 # Tests (Vitest)
-│   └── unit/             # 689 tests
+│   └── unit/             # 725 tests (2026-02-06)
 │
-├── docs/                  # Documentación (48 archivos)
+├── docs/                  # Documentación
 ```
 
 ---
 
 ## 📚 Documentación
 
-> **Para Agentes IA:** Ver [docs/AGENTS.md](docs/AGENTS.md) para consultar los **Skills** activos (TestMaster, DeployOps, DocuGuard).
+> **Para Agentes IA:** Ver `docs/AGENTS.md` y `.agent/skills/project_config.yaml` para consultar los **Skills** activos (9).
 
 | Documento | Descripción |
 |-----------|-------------|
 | [docs/AGENTS.md](docs/AGENTS.md) | **Guía rápida para agentes IA** |
 | [docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md) | Fuente de verdad - estado actual |
-| [docs/ROADMAP.md](docs/ROADMAP.md) | Plan rolling 90 días |
+| [docs/HOJA_RUTA_MADRE_2026-01-31.md](docs/HOJA_RUTA_MADRE_2026-01-31.md) | Hoja de ruta vigente |
 | [docs/BACKLOG_PRIORIZADO.md](docs/BACKLOG_PRIORIZADO.md) | Prioridades |
 | [docs/ARCHITECTURE_DOCUMENTATION.md](docs/ARCHITECTURE_DOCUMENTATION.md) | Arquitectura |
 | [docs/API_README.md](docs/API_README.md) | Endpoints API |
@@ -79,7 +79,7 @@ npm run test:unit # Tests unitarios (Vitest)
 | Frontend | React 18, TypeScript, Vite, Tailwind, React Query |
 | Backend | Supabase (PostgreSQL + Edge Functions Deno) |
 | Auth | Supabase Auth con JWT |
-| Testing | Vitest (689 tests) |
+| Testing | Vitest (unit/integration/e2e) + Vitest (frontend) |
 | CI/CD | GitHub Actions |
 
 ---
@@ -90,8 +90,8 @@ npm run test:unit # Tests unitarios (Vitest)
 |---------|-------|
 | **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 90% (26 endpoints hardened) |
-| **Tests** | 689 passing |
+| **Gateway** | 90% (29 endpoints) |
+| **Tests** | ✅ Unit 725 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
 | **Build** | ✅ OK |
 
 ---
@@ -107,6 +107,9 @@ npx vitest run --coverage
 
 # E2E (requiere .env.test con credenciales)
 bash scripts/run-e2e-tests.sh
+# Smoke Test (Notificaciones)
+# Requiere .env.test con credenciales remotas
+node scripts/smoke-notifications.mjs
 ```
 
 ---
@@ -136,4 +139,4 @@ Ver [CHANGELOG.md](CHANGELOG.md) para historial de versiones.
 
 ---
 
-*Última actualización: 2026-01-28*
+*Última actualización: 2026-02-06*

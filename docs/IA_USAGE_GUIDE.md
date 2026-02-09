@@ -1,7 +1,7 @@
 # 🤖 Guía de Uso de IA para Sistema Mini Market
 
-**Versión:** 1.0.1  
-**Fecha:** 2026-01-26  
+**Versión:** 1.0.2  
+**Fecha:** 2026-02-06  
 **Basado en:** AGENTS.md y patrones reales del proyecto
 
 ---
@@ -101,8 +101,10 @@ aidrive_genspark/
 │   │   │   └── circuit-breaker.ts  # ✅ Circuit breaker pattern
 │   │   │
 │   │   ├── api-minimarket/         # ⚠️ CRÍTICO - Gateway principal
-│   │   │   ├── index.ts            # 29 endpoints, 1357 líneas
-│   │   │   └── helpers/            # Helpers modularizados
+│   │   │   ├── index.ts            # 29 endpoints (ver docs/API_README.md)
+│   │   │   ├── routers/            # Routers por dominio (productos/stock/deposito/tareas)
+│   │   │   ├── handlers/           # Handlers puntuales (ej: reservas)
+│   │   │   └── helpers/            # Helpers (auth/validation/pagination/supabase)
 │   │   │       ├── auth.ts         # JWT validation, roles
 │   │   │       ├── validation.ts   # UUID, dates, required fields
 │   │   │       ├── pagination.ts   # Pagination logic
@@ -114,7 +116,7 @@ aidrive_genspark/
 │   │   │   ├── schemas/            # Validation schemas
 │   │   │   └── utils/              # Cache, metrics, auth
 │   │   │
-│   │   ├── scraper-maxiconsumo/    # Scraper modular (9 módulos)
+│   │   ├── scraper-maxiconsumo/    # Scraper modular (10 módulos + utils/)
 │   │   │   ├── index.ts            # Orquestador
 │   │   │   ├── types.ts
 │   │   │   ├── config.ts
@@ -786,7 +788,7 @@ describe('miFuncion', () => {
 
 #### Jobs Obligatorios (siempre corren)
 1. **lint** - ESLint en frontend
-2. **test** - Unit tests (conteo repo: 722)
+2. **test** - Unit tests (conteo: ver `docs/ESTADO_ACTUAL.md`)
 3. **build** - Build de producción
 4. **typecheck** - TypeScript check
 5. **edge-functions-check** - Deno syntax check
@@ -801,7 +803,7 @@ describe('miFuncion', () => {
 ```
 Push a main → CI starts
   ├─ lint ✅
-  ├─ test ✅ (conteo repo: 722)
+  ├─ test ✅ (conteo: ver `docs/ESTADO_ACTUAL.md`)
   ├─ build ✅
   ├─ typecheck ✅
   └─ edge-functions-check ✅
@@ -830,12 +832,11 @@ En **GitHub Settings → Secrets and variables → Actions**:
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
 2. **HOJA_RUTA_MADRE_2026-01-31.md** - Checklist único vigente (plan maestro)
-3. **PROMPT_CONTEXT_NUEVA_VENTANA_IA.md** - Prompt base para nueva ventana IA
-4. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
-5. **API_README.md** - Todos los endpoints disponibles
-6. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
-7. **DECISION_LOG.md** - Decisiones técnicas registradas
-8. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
+3. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
+4. **API_README.md** - Todos los endpoints disponibles
+5. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
+6. **DECISION_LOG.md** - Decisiones técnicas registradas
+7. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
 
 ### APIs y Esquemas
 

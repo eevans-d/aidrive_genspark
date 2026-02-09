@@ -3,6 +3,7 @@ import { Package, AlertTriangle, Download } from 'lucide-react'
 import { useStock, StockConProducto } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { SkeletonTable, SkeletonText } from '../components/Skeleton'
 
 type FiltroStock = 'todos' | 'bajo' | 'critico'
 
@@ -80,7 +81,12 @@ export default function Stock() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-56" className="h-8" />
+        <SkeletonTable />
+      </div>
+    )
   }
 
   if (isError) {

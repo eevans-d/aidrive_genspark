@@ -102,26 +102,26 @@ describe('scraper-maxiconsumo alertas', () => {
         });
 
         it('sets tipo_cambio based on price direction', () => {
-            const aumentoRow: ComparacionRow = { 
+            const proveedorMasCaroRow: ComparacionRow = { 
                 producto_id: 'aumento', 
+                nombre_producto: 'Test', 
+                precio_actual: 80, 
+                precio_proveedor: 100,
+                diferencia_absoluta: 20,
+                diferencia_porcentual: 20
+            };
+            
+            const proveedorMasBaratoRow: ComparacionRow = { 
+                producto_id: 'disminucion', 
                 nombre_producto: 'Test', 
                 precio_actual: 100, 
                 precio_proveedor: 80,
                 diferencia_absoluta: 20,
                 diferencia_porcentual: 20
             };
-            
-            const disminucionRow: ComparacionRow = { 
-                producto_id: 'disminucion', 
-                nombre_producto: 'Test', 
-                precio_actual: 80, 
-                precio_proveedor: 100,
-                diferencia_absoluta: -20,
-                diferencia_porcentual: 20
-            };
 
-            const aumentoResult = buildAlertasDesdeComparaciones([aumentoRow], new Set());
-            const disminucionResult = buildAlertasDesdeComparaciones([disminucionRow], new Set());
+            const aumentoResult = buildAlertasDesdeComparaciones([proveedorMasCaroRow], new Set());
+            const disminucionResult = buildAlertasDesdeComparaciones([proveedorMasBaratoRow], new Set());
 
             expect(aumentoResult[0]?.tipo_cambio).toBe('aumento');
             expect(disminucionResult[0]?.tipo_cambio).toBe('disminucion');

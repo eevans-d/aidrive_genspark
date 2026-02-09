@@ -287,7 +287,7 @@ describe('🔒 SECURITY TESTS - Vitest', () => {
     
   });
   
-  describe('� Path Traversal Prevention', () => {
+  describe('Path Traversal Prevention', () => {
     
     const PATH_TRAVERSAL_PAYLOADS = [
       '../../../etc/passwd',
@@ -456,7 +456,7 @@ describe('🔒 SECURITY TESTS - Vitest', () => {
     
   });
   
-  describe('�🔗 Real Security Tests (requires credentials)', () => {
+  describe('Real Security Tests (requires credentials)', () => {
     
     SKIP_REAL('debe validar auth real contra Supabase', async () => {
       const url = process.env.SUPABASE_URL;

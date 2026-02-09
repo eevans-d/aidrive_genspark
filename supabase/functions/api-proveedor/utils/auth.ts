@@ -69,32 +69,52 @@ export function validateApiSecret(request: Request): { valid: boolean; error?: s
 }
 
 /**
- * Valida que el origen sea interno (gateway o cron jobs)
- * TODO: Implementar lista blanca de orígenes internos
+ * Default internal origins allowed for server-to-server calls.
+ * Can be extended via INTERNAL_ORIGINS_ALLOWLIST env var (comma-separated).
+ */
+const DEFAULT_INTERNAL_ORIGINS: readonly string[] = [
+    'http://localhost',
+    'http://127.0.0.1',
+    'http://host.docker.internal',
+];
+
+function getInternalAllowlist(): string[] {
+    const envList = Deno.env.get('INTERNAL_ORIGINS_ALLOWLIST');
+    const extra = envList
+        ? envList.split(',').map(o => o.trim().replace(/\/+$/, '')).filter(Boolean)
+        : [];
+    return [...DEFAULT_INTERNAL_ORIGINS, ...extra];
+}
+
+function originMatchesAllowlist(origin: string, allowlist: string[]): boolean {
+    const normalized = origin.replace(/\/+$/, '');
+    return allowlist.some(allowed => normalized === allowed || normalized.startsWith(allowed + ':'));
+}
+
+/**
+ * Valida que el origen sea interno (gateway o cron jobs).
+ * Server-to-server calls (no Origin header) are always allowed.
+ * Browser-originated calls (with Origin header) must match the allowlist.
  */
 export function validateInternalOrigin(request: Request): { valid: boolean; warning?: string } {
     const origin = request.headers.get('origin');
-    const referer = request.headers.get('referer');
-    const userAgent = request.headers.get('user-agent');
-    
-    // Server-to-server: no debería tener Origin (browsers lo envían)
-    if (origin) {
-        // Si tiene origin, es probablemente un browser → sospechoso para API interna
-        return { 
-            valid: true, // Permitir pero advertir
-            warning: `Request con Origin header: ${origin}. API proveedor es interna.`
-        };
+
+    // Server-to-server: no Origin header = allowed (Deno runtime, cron, gateway)
+    if (!origin) {
+        return { valid: true };
     }
-    
-    // Verificar User-Agent esperado (Deno runtime)
-    if (userAgent && !userAgent.includes('Deno')) {
-        return {
-            valid: true,
-            warning: `User-Agent inesperado: ${userAgent}`
-        };
+
+    // Has Origin header → must be in allowlist
+    const allowlist = getInternalAllowlist();
+    if (originMatchesAllowlist(origin, allowlist)) {
+        return { valid: true };
     }
-    
-    return { valid: true };
+
+    // Origin present but not in allowlist → block
+    return {
+        valid: false,
+        warning: `Origin '${origin}' not in internal allowlist. API proveedor is internal-only.`,
+    };
 }
 
 export function parseReadAuthMode(value: string | null | undefined): ReadAuthMode {

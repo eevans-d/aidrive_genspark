@@ -19,18 +19,11 @@ export type RateLimitHeaders = {
 /**
  * Builds standard rate limit headers from a RateLimitResult.
  * Follows IETF draft-ietf-httpapi-ratelimit-headers-07.
- *
- * Header semantics:
- * - RateLimit-Limit: Maximum requests allowed in window
- * - RateLimit-Remaining: Requests remaining in current window
- * - RateLimit-Reset: Seconds until window resets (delta-seconds, not epoch)
- * - Retry-After: Seconds to wait before retrying (only on 429)
  */
 export function buildRateLimitHeaders(
   result: RateLimitResult,
   limit: number,
 ): RateLimitHeaders {
-  // delta-seconds: time remaining until reset (per IETF draft)
   const resetDeltaSeconds = Math.max(0, Math.ceil((result.resetAt - Date.now()) / 1000));
 
   const headers: RateLimitHeaders = {
@@ -58,6 +51,20 @@ export function withRateLimitHeaders(
     ...headers,
     ...buildRateLimitHeaders(result, limit),
   };
+}
+
+/**
+ * Build rate limit key from user/ip context.
+ * Priority: user:{uid}:ip:{ip} > user:{uid} > ip:{ip}
+ */
+export function buildRateLimitKey(userId?: string | null, clientIp?: string | null): string {
+  if (userId && clientIp && clientIp !== 'unknown') {
+    return `user:${userId}:ip:${clientIp}`;
+  }
+  if (userId) {
+    return `user:${userId}`;
+  }
+  return `ip:${clientIp || 'unknown'}`;
 }
 
 export class FixedWindowRateLimiter {
@@ -107,6 +114,87 @@ export class FixedWindowRateLimiter {
       headers: buildRateLimitHeaders(result, this.max),
     };
   }
+}
+
+// ============================================================================
+// SHARED RATE LIMITER (RPC-backed with in-memory fallback)
+// ============================================================================
+
+/** RPC availability flag: undefined=unknown, true=available, false=missing */
+let rpcAvailable: boolean | undefined = undefined;
+
+/**
+ * Check rate limit using shared RPC (cross-instance).
+ * Falls back to in-memory if RPC is not available (404).
+ *
+ * @param key - Rate limit key (e.g. "user:uid:ip:1.2.3.4")
+ * @param limit - Max requests per window
+ * @param windowSeconds - Window size in seconds
+ * @param serviceRoleKey - Supabase service role key (NOT user JWT)
+ * @param supabaseUrl - Supabase project URL
+ * @param fallbackLimiter - In-memory limiter for fallback
+ */
+export async function checkRateLimitShared(
+  key: string,
+  limit: number,
+  windowSeconds: number,
+  serviceRoleKey: string,
+  supabaseUrl: string,
+  fallbackLimiter: FixedWindowRateLimiter,
+): Promise<RateLimitResult> {
+  // If we already know RPC is missing, use fallback directly
+  if (rpcAvailable === false) {
+    return fallbackLimiter.check(key);
+  }
+
+  try {
+    const response = await fetch(`${supabaseUrl}/rest/v1/rpc/sp_check_rate_limit`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+      },
+      body: JSON.stringify({
+        p_key: key,
+        p_limit: limit,
+        p_window_seconds: windowSeconds,
+      }),
+    });
+
+    if (response.status === 404) {
+      // RPC does not exist yet → fallback
+      rpcAvailable = false;
+      return fallbackLimiter.check(key);
+    }
+
+    if (!response.ok) {
+      // Transient error → fallback this time but don't disable RPC
+      return fallbackLimiter.check(key);
+    }
+
+    rpcAvailable = true;
+    const rows = await response.json();
+    const row = Array.isArray(rows) ? rows[0] : rows;
+
+    if (!row) {
+      return fallbackLimiter.check(key);
+    }
+
+    return {
+      allowed: row.allowed,
+      remaining: row.remaining,
+      resetAt: new Date(row.reset_at).getTime(),
+    };
+  } catch {
+    // Network error → fallback
+    return fallbackLimiter.check(key);
+  }
+}
+
+// Exported for testing
+export function _resetRpcAvailability(): void {
+  rpcAvailable = undefined;
 }
 
 type AdaptiveRateLimiterOptions = {

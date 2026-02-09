@@ -910,6 +910,10 @@ browser/user_data/
 !minimarket-system/e2e/
 !minimarket-system/e2e/**
 
+# Allow frontend lib sources (ignored by generic **/lib/ rule)
+!minimarket-system/src/lib/
+!minimarket-system/src/lib/**
+
 # Agent memory/state (sensitive)
 .memory/
 memory/

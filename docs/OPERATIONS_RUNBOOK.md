@@ -13,6 +13,8 @@ Fuentes de verdad:
 - `docs/HOJA_RUTA_MADRE_2026-01-31.md`
 - `docs/archive/ROADMAP.md` (histórico)
 - `docs/DEPLOYMENT_GUIDE.md`
+- `docs/C4_HANDOFF_MINIMARKET_TEC.md`
+- `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`
 - `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`
 
 ---
@@ -60,6 +62,9 @@ npm run test:unit
 scripts/run-integration-tests.sh --dry-run
 # Requiere .env.test real
 ```
+
+Nota:
+- `tests/integration/` hoy usa mayormente mocks de fetch; los checks real-network están en `tests/e2e/` y smoke scripts.
 
 ### E2E frontend (auth real)
 ```bash

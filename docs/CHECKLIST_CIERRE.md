@@ -1,7 +1,7 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-02-02  
-**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-02)  
+**Fecha:** 2026-02-04  
+**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-04)  
 **Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
 
 ---
@@ -9,7 +9,7 @@
 ## 🎉 Hitos Completados (2026-01-23)
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
-2. **16 migraciones versionadas en repo** (aplicación en PROD verificada para RLS v2 el 2026-01-31)
+2. **23 migraciones versionadas en repo** (incluye placeholders de historial remoto + hardening search_path (pedidos) + sistema de pedidos; aplicación en PROD verificada para RLS v2 el 2026-01-31)
 3. **13 Edge Functions en repo** (despliegue confirmado por usuario en panel, 2026-02-01)
 4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
@@ -29,9 +29,9 @@
 El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01, **histórico**; re‑abierto 2026-02-02). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **722 tests unitarios definidos** (Backend 682 + Frontend 40) ✅
+- **765 tests unitarios** (raíz 725 + frontend 40; última corrida 2026-02-06) ✅
 - **Suite de seguridad: 14 tests definidos** ✅
-- **Migraciones versionadas en repo (16 archivos)** ✅
+- **Migraciones versionadas en repo (23 archivos)** ✅
 - **13 Edge Functions en repo** ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
 - COMET 2026-02-02 (histórico): leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD (**resuelta 2026-02-02**).
@@ -42,11 +42,14 @@ El plan de ejecución de 6 semanas está **completado, sin pendientes críticos*
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
 
 Pendientes críticos (re‑abiertos por COMET 2026-02-02):
-- Habilitar leaked password protection (Auth) **requiere SMTP personalizado**.
+- Habilitar leaked password protection (Auth) **requiere plan Pro** (COMET reporta que no está disponible en Free; SMTP ya configurado).  
+  - **Decisión (usuario):** diferir hasta producción.
 - ✅ Mitigación Advisor aplicada en PROD (Antigravity 2026-02-02): search_path `sp_aplicar_precio` + REVOKE `tareas_metricas` + deploy `api-minimarket`.
-- ⚠️ Verificación manual pendiente: Security Advisor (WARN debería bajar a 1) + test real de `/reportes/efectividad-tareas` con JWT (**último intento 401 Invalid JWT**).
+- ✅ Security Advisor verificado 2026-02-04: WARN=1 (leaked password protection deshabilitada), ERROR=0, INFO=15.
+- ✅ Test real de `/reportes/efectividad-tareas` con JWT: **200 OK** (2026-02-04).
+  - Nota técnica: access_token ES256 era rechazado por `functions/v1` con `verify_jwt` activo (`401 Invalid JWT`). Se aplicó redeploy `api-minimarket` con `--no-verify-jwt` y la validación queda en app (`/auth/v1/user` + roles).
 - ✅ Reconciliar historial de migraciones y aplicar/registrar `20260202000000` en PROD. (resuelto 2026-02-02)
-- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado) — requiere DB URL/credenciales.
+- ✅ Conteo de políticas RLS verificado por COMET 2026-02-04: **33** en schema `public`.
 **Nota:** F1–F5 corresponden a E1–E5 definidos en C1 (Fundación → Cierre).
 
 ### F0: Gobierno y Baseline
@@ -57,7 +60,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
-- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 16 archivos)
+- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 23 archivos)
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
@@ -82,7 +85,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
-  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 16 archivos)
+  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 23 archivos)
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
@@ -111,9 +114,10 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - Logging: todos los handlers migrados a `_shared/logger`
   - Hardening: timing-safe comparison, validación origen interno
 
-- [x] **scraper-maxiconsumo** (3212 → 9 módulos) ✅ Verificado 2026-01-23
-  - types.ts, config.ts, cache.ts, anti-detection.ts
-  - parsing.ts, matching.ts, storage.ts, scraping.ts
+- [x] **scraper-maxiconsumo** (3212 → modular: 10 módulos + utils/) ✅ Verificado 2026-02-06
+  - index.ts, types.ts, config.ts, cache.ts, anti-detection.ts
+  - parsing.ts, matching.ts, alertas.ts, storage.ts, scraping.ts
+  - utils/ (helpers internos)
   - Tests: reales (imports de módulos) - 10+ tests parsing, 9+ matching
   - Logging: 8 módulos con `_shared/logger`
   - Validación runtime: implementada en alertas.ts (buildAlertasDesdeComparaciones)
@@ -129,7 +133,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - Validación runtime: implementada en validators.ts (38 tests)
 
 ### F4: Testing
-- [x] Framework: Vitest 4.0.16
+- [x] Framework: Vitest 4.0.18
 - [x] Coverage: @vitest/coverage-v8
 - [x] Runner/scripts: `package.json` y `test.sh` alineados con Vitest
 - [x] Tests reales: imports de módulos reales (parsing/matching/alertas/router/cron)
@@ -221,8 +225,8 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 | Métrica | Antes | Después (2026-02-01, conteo repo) |
 |---------|-------|---------|
 | Archivos monolíticos >2000 líneas | 3 | 0 (refactor hecho) |
-| Tests unitarios definidos | ~10 | **722** (Backend 682 + Frontend 40) ✅ |
-| Tests archivos (unit) | 5 | **47** (backend 35 + frontend 12) ✅ |
+| Tests unitarios | ~10 | **765** (raíz 725 + frontend 40; 2026-02-06) ✅ |
+| Tests archivos (unit) | 5 | **50** (raíz 38 + frontend 12; 2026-02-06) ✅ |
 | Framework testing | Jest+Vitest mezclados | Vitest unificado en suites activas |
 | CI/CD | Ninguno | Pipeline activo en `main` + jobs gated |
 | Shared libs | Dispersas | 7 módulos `_shared/` (adopción parcial) |
@@ -244,47 +248,27 @@ supabase/functions/
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
 ├── api-minimarket/       # Gateway principal (HARDENED)
-│   ├── index.ts          # 1357 líneas (refactorizado)
-│   └── helpers/          # NUEVO - Helpers modularizados
+│   ├── index.ts          # Gateway (29 endpoints)
+│   ├── handlers/         # Handlers puntuales (ej: reservas)
+│   ├── routers/          # Routers por dominio (productos/stock/deposito/tareas)
+│   └── helpers/          # Helpers modularizados
 │       ├── auth.ts       # JWT auth, roles
 │       ├── validation.ts # UUID, dates, required fields
 │       ├── pagination.ts # Parsing, range headers
 │       ├── supabase.ts   # Client creation, queries
 │       └── index.ts      # Barrel export
-├── api-proveedor/        # Modular (router + handlers + utils)
-├── scraper-maxiconsumo/  # Modular (9 módulos especializados)
+├── api-proveedor/        # Modular (router + handlers + schemas + utils)
+├── scraper-maxiconsumo/  # Modular (10 módulos TS + utils/)
 ├── cron-jobs-maxiconsumo/# Modular (4 jobs + orchestrator)
 └── [otras funciones]/    # Adoptan _shared progresivamente
 
-tests/unit/
-├── api-proveedor-routing.test.ts  # 17 tests
-├── scraper-parsing.test.ts        # 10 tests
-├── scraper-matching.test.ts       # 9 tests
-├── scraper-alertas.test.ts        # 3 tests
-├── scraper-cache.test.ts          # tests de cache
-├── scraper-config.test.ts         # tests de config
-├── scraper-cookie-jar.test.ts     # tests de cookies
-├── cron-jobs.test.ts              # 8 tests
-├── response-fail-signature.test.ts # tests de respuesta
-└── api-minimarket-gateway.test.ts # 46 tests (auth, validation, pagination, supabase, CORS, rate limit)
-
-tests/integration/        # (gated - requiere env vars)
-├── api-scraper.integration.test.ts
-└── database.integration.test.ts
-
-tests/e2e/                # (manual via workflow_dispatch)
-├── api-proveedor.smoke.test.ts
-└── cron.smoke.test.ts
-
-tests/performance/        # (Vitest mock)
-├── README.md             # Nota de estado
-└── load-testing.vitest.test.ts
-
-tests/security/           # (Vitest mock)
-├── README.md             # Nota de estado
-└── security.vitest.test.ts
-
-tests/api-contracts/      # (Vitest mock)
+tests/
+├── unit/                 # 38 archivos / 725 tests (2026-02-06)
+├── integration/          # 3 archivos / 38 tests (gated)
+├── e2e/                  # 2 archivos / 4 smoke tests
+├── security/             # suite auxiliar (gated)
+├── performance/          # suite auxiliar
+└── api-contracts/        # suite auxiliar
 ├── README.md             # Nota de estado
 └── openapi-compliance.vitest.test.ts
 

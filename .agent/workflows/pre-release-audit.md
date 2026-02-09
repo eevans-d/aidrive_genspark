@@ -1,59 +1,80 @@
 ---
-description: Auditoría completa pre-release usando RealityCheck
+description: Validacion completa pre-release. RealityCheck + TestMaster + SecurityAudit + PerformanceWatch.
+auto_execution: true
+skills: [RealityCheck, TestMaster, SecurityAudit, PerformanceWatch, DocuGuard]
 ---
 
 # Pre-Release Audit Workflow
 
-Workflow para validación completa antes de un release a producción.
+Workflow para validacion completa antes de un release a produccion.
+**Automatico excepto deploy final a produccion (impacto 3).**
 
-## Cuándo Usar
+## Cuando Usar
 
-- Antes de versión mayor/menor
-- Antes de demo a stakeholders
-- Después de sprint completion
+- Antes de version mayor/menor.
+- Antes de demo a stakeholders.
+- Despues de sprint completado.
 
 ## Pasos
 
-1. Ejecutar RealityCheck completo:
-```
-RealityCheck deep full, focus ux
-```
+### 1. RealityCheck Completo
 
-2. Revisar output y verificar:
-   - Score UX ≥ 8/10
-   - Todos los flujos críticos funcionan
-   - No hay blockers
+Ejecutar con parametros: `deep`, `full`, `all`
+```bash
+# El skill se ejecuta siguiendo .agent/skills/RealityCheck/SKILL.md
+# con Scope=full, Depth=deep, Focus=all
+```
+Verificar: Score UX >= 8/10.
 
-// turbo
-3. Ejecutar suite de tests completa:
+### 2. Suite de Tests Completa
+
 ```bash
 npm run test:all
 ```
+Verificar: 100% passing.
 
-4. Verificar build de producción:
+### 3. Security Audit
+
+Seguir `.agent/skills/SecurityAudit/SKILL.md`:
+- Verificar Score seguridad >= 8/10.
+- Sin hallazgos CRITICAL.
+
+### 4. Performance Check
+
+Seguir `.agent/skills/PerformanceWatch/SKILL.md`:
 ```bash
-cd minimarket-system && npm run build
+cd minimarket-system && pnpm build
 ```
+Verificar: Bundle < 200KB gzip.
 
-5. Revisar logs de Supabase Edge Functions:
+### 5. Build de Produccion
+
 ```bash
-supabase functions logs api-minimarket --tail
+cd minimarket-system && pnpm build
 ```
+Verificar: Sin errores ni warnings.
 
-6. Generar reporte final en `docs/RELEASE_NOTES.md`
+### 6. Sincronizacion de Docs
+
+Seguir `.agent/skills/DocuGuard/SKILL.md`:
+- Verificar `docs/ESTADO_ACTUAL.md` actualizado.
+- Verificar `docs/DECISION_LOG.md` al dia.
 
 ## Checklist Pre-Release
 
-- [ ] RealityCheck score ≥ 8
+- [ ] RealityCheck score >= 8
 - [ ] Tests 100% passing
-- [ ] Build production OK
-- [ ] No errores en logs
-- [ ] Documentación sincronizada
+- [ ] Security sin CRITICAL
+- [ ] Build produccion OK
+- [ ] Bundle < 200KB gzip
+- [ ] Documentacion sincronizada
 - [ ] DECISION_LOG actualizado
 
 ## Skills Relacionados
 
-- **RealityCheck**: Auditoría UX principal
-- **TestMaster**: Suite de tests completa
-- **DocuGuard**: Verificar sincronización docs
-- **DeployOps**: Ejecutar deploy final
+- **RealityCheck**: Auditoria UX
+- **TestMaster**: Suite de tests
+- **SecurityAudit**: Seguridad
+- **PerformanceWatch**: Rendimiento
+- **DocuGuard**: Documentacion
+- **DeployOps**: Deploy final

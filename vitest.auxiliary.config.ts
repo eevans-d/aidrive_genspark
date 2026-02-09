@@ -46,7 +46,7 @@ export default defineConfig({
     globals: true,
     
     // Reporter
-    reporters: ['verbose'],
+    reporters: ['verbose', 'junit'],
     outputFile: {
       junit: './test-reports/junit.auxiliary.xml'
     },

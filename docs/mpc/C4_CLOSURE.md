@@ -40,7 +40,7 @@
 
 | Métrica | Objetivo | Resultado | Estado |
 |---|---|---|---|
-| Tests | 100% passing | 722 definidos (conteo repo; ver `docs/ESTADO_ACTUAL.md`) | ✓ |
+| Tests | 100% passing | ver `docs/ESTADO_ACTUAL.md` (conteo vigente) | ✓ |
 | RLS audit | Ejecutado | 2026-01-23 | ✓ |
 | Logs estructurados | 100% handlers | Completo (logger _shared) | ✓ |
 

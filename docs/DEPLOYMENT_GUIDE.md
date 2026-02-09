@@ -1,7 +1,7 @@
 # DEPLOYMENT GUIDE - MINI MARKET SYSTEM
 
-**Fecha:** 2026-01-23  
-**Estado:** Documento operativo (rollback documentado, no probado en staging)
+**Fecha:** 2026-02-04  
+**Estado:** Documento operativo (rollback documentado y probado en staging 2026-01-30)
 
 ---
 
@@ -15,6 +15,7 @@
 ## 2) Prerrequisitos
 - Acceso al proyecto Supabase (staging/prod).
 - Secrets configurados (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
+- En producción: `NOTIFICATIONS_MODE=real` configurado en `.env` y Supabase Secrets.
 - Working tree limpio y tag de release.
 - Plan de backup/restore (PITR o snapshot).
 
@@ -31,11 +32,13 @@ supabase db push
 ### 3.2 Edge Functions
 ```bash
 # Deploy individual (ejemplo)
-supabase functions deploy api-minimarket
+supabase functions deploy api-minimarket --no-verify-jwt --use-api
 
 # Deploy completo (si aplica)
 supabase functions deploy
 ```
+
+**Nota:** `api-minimarket` requiere `--no-verify-jwt` (workaround JWT ES256). Ver `docs/ESTADO_ACTUAL.md`.
 
 ### 3.3 Frontend
 ```bash
@@ -52,7 +55,7 @@ npm run build
 
 ## 4) Rollback (procedimiento)
 
-> Checklist operativo: ver `docs/ROLLBACK_DRILL_STAGING.md` (OPS-SMART-1).
+> Checklist operativo: ver `docs/archive/ROLLBACK_DRILL_STAGING.md` (OPS-SMART-1).
 
 ### 4.1 Rollback DB (produccion/staging)
 **Opcion preferida:** Point-in-Time Recovery (PITR) o restore desde backup.

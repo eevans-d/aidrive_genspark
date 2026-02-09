@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-08  
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -21,7 +21,7 @@
 | D-014 | **CORS restrictivo en gateway**: bloquea requests browser sin `Origin`; requiere `ALLOWED_ORIGINS` env var | Aprobada | 2026-01-12 | Evita fallback permisivo; server-to-server sin Origin permitido. |
 | D-015 | **CI gated jobs**: integration/E2E solo corren con `workflow_dispatch` o `vars.RUN_*_TESTS=true` | Aprobada | 2026-01-12 | Evita fallos CI por falta de secrets; jobs obligatorios siguen corriendo. |
 | D-016 | **Carpetas Jest legacy** (`tests/performance/`, `tests/security/`, `tests/api-contracts/`) marcadas con README y desactivadas de CI | Aprobada | 2026-01-12 | Clarifica qué suites están activas vs legacy. |
-| D-017 | **API_PROVEEDOR_READ_MODE**: api-proveedor usa `anon` por defecto para lecturas; `service` solo para escrituras (sincronizar/cache persistente) | Aprobada | 2026-01-13 | Reduce exposición de service role key; hardening PROMPT 3. |
+| D-017 | **API_PROVEEDOR_READ_MODE**: api-proveedor usa `anon` por defecto para lecturas; `service` solo para escrituras (sincronizar/cache persistente) | Aprobada | 2026-01-13 | Reduce exposición de service role key; hardening de lectura/escritura por clave. |
 | D-018 | **SCRAPER_READ_MODE**: scraper-maxiconsumo usa `anon` por defecto para lecturas; `service` solo para escrituras | Aprobada | 2026-01-13 | Implementado: readKey/writeKey separados en index.ts y storage.ts. Fallback a service con warning si falta ANON_KEY. |
 | D-019 | **Auditoría RLS ejecutada**: checklist y scripts en `docs/AUDITORIA_RLS_CHECKLIST.md` y `scripts/rls_audit.sql` | Completada | 2026-01-23 | Tablas P0 verificadas y protegidas. |
 | D-020 | **Retiro Jest legacy**: eliminar deps Jest de `tests/package.json` y mantener el archivo como wrapper | Aprobada | 2026-01-15 | Vitest es runner único; Jest legacy desactivado. |
@@ -58,7 +58,25 @@
 | D-051 | **Leaked password protection bloqueado por SMTP** | Bloqueada | 2026-02-02 | El toggle no aparece sin SMTP personalizado; requiere credenciales externas. |
 | D-052 | **Mitigación Advisor WARN=3 (search_path + tareas_metricas)** | Completada | 2026-02-02 | Migración `20260202083000_security_advisor_followup.sql` aplicada en PROD + endpoint `/reportes/efectividad-tareas` usa `service_role` (deploy Antigravity 2026-02-02). |
 | D-053 | **Ejecución de mitigación en PROD (Antigravity)** | Completada | 2026-02-02 | `supabase db push --linked` + deploy `api-minimarket`; pendiente evidencia visual del Advisor y test JWT. |
-| D-054 | **Test endpoint con JWT (Invalid JWT)** | Bloqueada | 2026-02-02 | Intento con credenciales de `.env.test` devolvió **401 Invalid JWT**; requiere revisar credenciales/usuarios o configuración Auth/Keys. |
+| D-054 | **Test endpoint con JWT (Invalid JWT)** | Completada | 2026-02-04 | Resuelto: access_token **ES256** era rechazado por `functions/v1` con verify_jwt activo. Fix: redeploy `api-minimarket` con `--no-verify-jwt` + rol `admin` en `app_metadata`. Endpoint OK (200). |
+| D-055 | **Leaked Password Protection diferido** | Aprobada | 2026-02-04 | COMET reporta que requiere plan Pro; decisión usuario: no upgrade hasta producción. |
+| D-056 | **`api-minimarket` sin verify_jwt (workaround ES256)** | Completada | 2026-02-04 | Deploy con `--no-verify-jwt` para aceptar JWT ES256; la validación queda en app (`/auth/v1/user` + roles). |
+| D-057 | **Licencia definitiva** | Aprobada | 2026-02-04 | MIT; owner: `ORIGEN•AI`. |
+| D-058 | **Idempotency en reservas** | Parcial (función deploy, DB pendiente) | 2026-02-04 | Migración agrega `idempotency_key` + índice único; `/reservas` usa key y devuelve respuesta idempotente. **DB pendiente por red IPv6**. |
+| D-059 | **Locks distribuidos para cron jobs** | Parcial (función deploy, DB pendiente) | 2026-02-04 | Migración agrega `cron_jobs_locks` + RPC `sp_acquire_job_lock`/`sp_release_job_lock`; orquestador usa lock con TTL. **DB pendiente por red IPv6** (fallback sin lock). |
+| D-060 | **Reserva atómica vía RPC** | Parcial (función deploy, DB pendiente) | 2026-02-04 | `sp_reservar_stock` aplica lock + validación de stock y `/reservas` usa RPC. **DB pendiente por red IPv6** (endpoint devuelve 503 si RPC no existe). |
+| D-061 | **Fallback sin lock si RPC no existe** | Completada (deploy) | 2026-02-04 | `cron-jobs-maxiconsumo` continúa sin lock si `sp_acquire_job_lock` no está disponible (evita caída total por DB pendiente). |
+| D-062 | **503 explícito si RPC de reservas falta** | Completada (deploy) | 2026-02-04 | `/reservas` retorna 503 cuando `sp_reservar_stock` no existe, en vez de 500 silencioso. |
+| D-063 | **Store compartido para rate limit/breaker = Supabase tabla** | Aprobada | 2026-02-06 | Decisión: usar tabla `rate_limit_state` en Supabase en vez de Redis. Trade-offs: +Simplicidad (sin infra adicional), +Costo (incluido en plan), -Latencia (~20-50ms vs ~1ms Redis). Aceptable para volumen actual (<1K rps). Si escala, migrar a Redis. Ver detalle D-063 abajo. |
+| D-064 | **Permisos por rutas (frontend) = deny-by-default** | Completada | 2026-02-07 | `canAccessRoute()` retorna `false` para rutas no configuradas (evita bypass pegando URL). |
+| D-065 | **Roles coherentes FE/BE**: sincronizar `app_metadata.role` + `personal.rol` | Completada | 2026-02-07 | Script `scripts/supabase-admin-sync-role.mjs` alinea alta de empleados (evita 403 “a medias”). |
+| D-066 | **POS ventas idempotente**: `POST /ventas` requiere `Idempotency-Key` | Aprobada | 2026-02-07 | Evita duplicados por reintentos; RPC `sp_procesar_venta_pos` también es idempotente por key. |
+| D-067 | **Pocket Manager cámara**: ZXing (`@zxing/library`) + fallback manual | Aprobada | 2026-02-07 | Cámara requiere HTTPS/localhost; UX mobile-first. |
+| D-068 | **Anti-mermas**: oferta sugerida 30% OFF “sugerir + 1 clic” (no auto-aplicar) | Aprobada | 2026-02-07 | Tabla `ofertas_stock`; POS cobra `precio_oferta` si hay oferta activa (sin tocar precio base). |
+| D-069 | **Bitácora**: modal al logout + fail-open | Aprobada | 2026-02-07 | Guardar nota antes de `signOut()`. Si falla, permitir “Salir sin nota”. |
+| D-070 | **GlobalSearch “Scan & Action”**: producto abre modal de acciones | Aprobada | 2026-02-07 | Acciones: verificar precio (insights), imprimir etiqueta, navegar a POS/Depósito/Pocket según permisos. |
+| D-071 | **MVs requeridas por alertas**: asegurar `mv_stock_bajo` + `mv_productos_proximos_vencer` en DB | Completada | 2026-02-08 | Hotfix migración `20260206235900_create_stock_materialized_views_for_alertas.sql`. |
+| D-072 | **Refresh de MVs de stock**: RPC + cron opcional | Completada | 2026-02-08 | Migración `20260208010000_add_refresh_stock_views_rpc_and_cron.sql` crea `fn_refresh_stock_views()` y agenda `refresh_stock_views` si existe `pg_cron`. |
 
 ---
 
@@ -94,9 +112,9 @@
 
 | Prioridad | Tarea | Referencia | Estado |
 |-----------|-------|------------|--------|
-| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
-| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
-| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
+| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
+| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
+| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
 | P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
 
 ---
@@ -157,7 +175,7 @@
 
 ## Resumen de sesión (2026-01-13)
 
-**Ejecutado (4 PROMPTs sin credenciales):**
+**Ejecutado (4 tareas sin credenciales):**
 1. ✅ E2E frontend: 8 tests Playwright con mocks (`minimarket-system/e2e/`)
 2. ✅ CI/Runbook: documentación E2E en OPERATIONS_RUNBOOK.md
 3. ✅ Hardening api-proveedor/scraper: +46 tests unitarios (D-017, D-018)
@@ -239,3 +257,98 @@ Entonces migrar lecturas al gateway.
 ✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
 ⚠️ Excepción actual: `AuthContext.tsx` crea registro en `personal` al signUp (write directo)
 ✅ RLS verificada para tablas críticas (auditoría completa D-019)
+
+---
+
+## D-063: Store Compartido para Rate Limit y Circuit Breaker
+
+### Contexto
+
+Edge Functions de Deno son stateless. Cada request puede ejecutarse en una instancia diferente. La implementación actual de rate limit (`_shared/rate-limit.ts`) usa `Map` in-memory, lo que significa que:
+- **Cada instancia tiene su propio contador**
+- Un usuario puede hacer 60 req/min por instancia
+- Sin límite real en escenarios de alta concurrencia
+
+### Opciones Evaluadas
+
+| Criterio | Redis (Upstash) | Supabase Tabla |
+|----------|-----------------|----------------|
+| Latencia | ~1-5ms | ~20-50ms |
+| Costo | $0.20/100K ops | Incluido en plan |
+| Complejidad | +1 servicio, SDK | Solo SQL/RPC |
+| Escalabilidad | Excelente | Buena hasta ~10K rps |
+| Atomicidad | INCR nativo | RPC con SERIALIZABLE |
+| TTL automático | Sí (EXPIRE) | Manual (scheduled cleanup) |
+
+### Decisión
+
+**Usar tabla Supabase** para fase actual:
+
+1. **Simplicidad**: No requiere configurar Upstash ni agregar dependencias
+2. **Costo**: Ya incluido en el plan actual
+3. **Volumen**: El proyecto maneja <1K rps, latencia de 20-50ms es aceptable
+4. **Atomicidad**: Se implementa con RPC `sp_check_rate_limit` usando `SERIALIZABLE`
+
+### Implementación Propuesta
+
+```sql
+-- Tabla para rate limit compartido
+CREATE TABLE IF NOT EXISTS rate_limit_state (
+  key TEXT PRIMARY KEY,      -- 'user:{uid}' o 'ip:{ip}' o 'user:{uid}:ip:{ip}'
+  count INTEGER DEFAULT 0,
+  window_start TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- RPC atómico para check + increment
+CREATE OR REPLACE FUNCTION sp_check_rate_limit(
+  p_key TEXT,
+  p_limit INTEGER DEFAULT 60,
+  p_window_seconds INTEGER DEFAULT 60
+) RETURNS TABLE(allowed BOOLEAN, remaining INTEGER, reset_at TIMESTAMPTZ)
+LANGUAGE plpgsql SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  v_count INTEGER;
+  v_window_start TIMESTAMPTZ;
+BEGIN
+  -- UPSERT atómico
+  INSERT INTO rate_limit_state (key, count, window_start)
+  VALUES (p_key, 1, NOW())
+  ON CONFLICT (key) DO UPDATE SET
+    count = CASE
+      WHEN rate_limit_state.window_start + (p_window_seconds || ' seconds')::INTERVAL < NOW()
+      THEN 1  -- Reset window
+      ELSE rate_limit_state.count + 1
+    END,
+    window_start = CASE
+      WHEN rate_limit_state.window_start + (p_window_seconds || ' seconds')::INTERVAL < NOW()
+      THEN NOW()
+      ELSE rate_limit_state.window_start
+    END,
+    updated_at = NOW()
+  RETURNING count, window_start INTO v_count, v_window_start;
+
+  RETURN QUERY SELECT
+    v_count <= p_limit AS allowed,
+    GREATEST(0, p_limit - v_count) AS remaining,
+    v_window_start + (p_window_seconds || ' seconds')::INTERVAL AS reset_at;
+END;
+$$;
+```
+
+### Migración a Redis (futuro)
+
+Si el proyecto escala >10K rps:
+1. Configurar Upstash Redis
+2. Usar SDK `@upstash/redis` en Edge Functions
+3. Mantener tabla Supabase como fallback
+
+### Validación
+
+- [ ] Crear migración con tabla y RPC
+- [ ] Modificar `_shared/rate-limit.ts` para usar RPC
+- [ ] Tests de concurrencia para verificar atomicidad
+- [ ] Benchmark de latencia en producción
+

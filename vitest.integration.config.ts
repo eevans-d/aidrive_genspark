@@ -27,7 +27,10 @@ export default defineConfig({
     hookTimeout: 10000,
 
     // Reporting
-    reporters: ['default'],
+    reporters: ['default', 'junit'],
+    outputFile: {
+      junit: 'test-reports/junit.integration.xml',
+    },
   },
 
   resolve: {

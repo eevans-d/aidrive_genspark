@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-04  
 
 ---
 
@@ -10,7 +10,7 @@
 | Métrica | Valor |
 |---------|-------|
 | **Avance Global** | ⚠️ Cierre condicionado (pendientes re‑abiertos 2026-02-02) |
-| **Build** | Último reporte documentado 2026-01-28 (ver `docs/closure/BUILD_VERIFICATION.md`) |
+| **Build** | Último reporte documentado 2026-02-04 (ver `docs/closure/BUILD_VERIFICATION.md`) |
 | **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
 | **Gateway** | 29 endpoints en código (`api-minimarket`) |
@@ -74,7 +74,7 @@ aidrive_genspark/
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # 16 migraciones versionadas
+│   └── migrations/           # 23 migraciones versionadas
 ├── tests/                    # Unit, E2E, Performance, Security
 └── docs/                     # Documentación (ver HOJA_RUTA_MADRE)
 ```
@@ -88,7 +88,6 @@ aidrive_genspark/
 | `docs/ESTADO_ACTUAL.md` | **FUENTE DE VERDAD** - Estado y avance |
 | `docs/HOJA_RUTA_MADRE_2026-01-31.md` | **PLAN ACTUAL** - checklist único y ruta a 100% |
 | `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` | Evidencia RLS + Advisor (Partes 1-8) |
-| `docs/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Resumen Advisor + mitigación |
 | `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` | Plan operativo para WARN residual |
 | `docs/archive/ROADMAP.md` | Plan histórico (archivado) |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
@@ -115,10 +114,10 @@ git status && git add -A && git commit -m "msg" && git push origin main
 
 ## 🎯 Próximas Tareas Priorizadas
 
-- Verificación visual del Security Advisor (WARN debería quedar en 1).
-- Test real del endpoint `/reportes/efectividad-tareas` con JWT válido (último intento 401 Invalid JWT).
-- Habilitar leaked password protection (requiere SMTP personalizado).
-- Verificar conteo de políticas RLS (COMET reporta 18 vs 30 esperado; requiere DB URL/credenciales).
+- Licencia definitiva definida (MIT, `ORIGEN•AI`).
+- Leaked password protection (Auth) **requiere plan Pro** (decisión actual: diferir hasta producción).
+- Confirmar que el `From Email` de SMTP (Auth) sea un sender verificado real en SendGrid (si se usa en producción).
+- Mantener evidencia actualizada en `docs/ESTADO_ACTUAL.md` y `docs/closure/*`.
 
 ---
 

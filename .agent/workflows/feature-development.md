@@ -1,66 +1,91 @@
 ---
-description: Nueva feature con enfoque test-first usando CodeCraft
+description: Desarrollo de features completo - desde planificacion hasta documentacion. Usa CodeCraft + TestMaster + DocuGuard.
+auto_execution: true
+skills: [CodeCraft, TestMaster, DocuGuard]
 ---
 
 # Feature Development Workflow
 
-Workflow estandarizado para crear nuevas funcionalidades siguiendo el patrón test-first.
+Workflow estandarizado para crear nuevas funcionalidades con enfoque test-first.
+**100% automatico para impacto 0-1.** Sin pedir confirmacion.
 
-## Inputs Requeridos
+## Inputs
 
-- **Feature Name**: Nombre descriptivo (ej: `GestionProveedores`)
-- **Scope**: `frontend`, `backend`, o `fullstack`
-- **Requirements**: Lista de requisitos funcionales
+- **Feature Name**: Nombre descriptivo (ej: `GestionProveedores`). Inferir del contexto del usuario.
+- **Scope**: `frontend`, `backend`, o `fullstack`. Inferir del pedido.
+- **Requirements**: Lista de requisitos funcionales. Extraer del mensaje del usuario.
 
 ## Pasos
 
-// turbo-all
+### 1. Inicializacion
 
-1. Leer skill CodeCraft:
+Leer la configuracion del proyecto:
 ```bash
-cat .agent/skills/CodeCraft/SKILL.md
+cat .agent/skills/project_config.yaml
 ```
 
-2. Si es backend - crear archivo de test vacío:
+### 2. Planificacion (CODEX)
+
+- Analizar el pedido del usuario.
+- Identificar archivos existentes relevantes.
+- Determinar si es backend, frontend o fullstack.
+- SI hay nuevas tablas -> anotar para MigrationOps.
+
+### 3. Preparar Tests (Test-First)
+
+Si es backend:
 ```bash
 touch tests/unit/<feature>.test.ts
 ```
 
-3. Si es frontend - verificar estructura de hooks:
+Si es frontend:
 ```bash
-ls minimarket-system/src/hooks/queries/
+ls minimarket-system/src/hooks/
 ```
 
-4. Ejecutar TestMaster para verificar estado inicial:
+### 4. Verificar estado inicial
+
 ```bash
-npm run test:unit -- --passWithNoTests
+npx vitest run tests/unit/
+```
+Confirmar que tests existentes pasan antes de empezar.
+
+### 5. Implementar (CodeCraft)
+
+Seguir protocolo de `.agent/skills/CodeCraft/SKILL.md`:
+- Backend: handlers en `supabase/functions/api-minimarket/handlers/`
+- Frontend: paginas en `minimarket-system/src/pages/`, hooks en `src/hooks/`
+- Crear tests ANTES del codigo.
+
+### 6. Verificar (TestMaster)
+
+```bash
+npx vitest run tests/unit/
+cd minimarket-system && pnpm build
 ```
 
-5. Implementar la feature siguiendo CodeCraft skill.
+Si tests fallan -> arreglar automaticamente (max 2 intentos).
 
-6. Verificar que los tests pasen:
-```bash
-npm run test:unit
-```
+### 7. Documentar (DocuGuard)
 
-7. Ejecutar DocuGuard para actualizar documentación:
-   - Revisar ESTADO_ACTUAL.md si aplica
-   - Actualizar API_README.md si hay nuevos endpoints
+- Actualizar `docs/ESTADO_ACTUAL.md` si aplica.
+- Actualizar `docs/API_README.md` si hay nuevos endpoints.
+- Registrar en `docs/DECISION_LOG.md` si hubo decision arquitectonica.
 
-8. Ejecutar RealityCheck para validar UX:
-   - Verificar flujo de usuario
-   - Validar estados de carga y error
+### 8. Migraciones (si aplica)
+
+Si se crearon tablas nuevas -> seguir MigrationOps skill.
 
 ## Quality Gates
 
-- [ ] Tests creados antes de código
-- [ ] Build pasa sin errores
-- [ ] Documentación actualizada
-- [ ] UX validado con RealityCheck
+- [ ] Tests creados antes de codigo.
+- [ ] Build pasa sin errores.
+- [ ] Documentacion actualizada.
+- [ ] Sin console.log en codigo nuevo.
 
 ## Skills Relacionados
 
 - **CodeCraft**: Scaffold y patrones
-- **TestMaster**: Ejecución de tests
-- **DocuGuard**: Sincronización de documentación
-- **RealityCheck**: Validación UX
+- **TestMaster**: Ejecucion de tests
+- **DocuGuard**: Sincronizacion de documentacion
+- **MigrationOps**: Si hay tablas nuevas

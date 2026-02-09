@@ -1,6 +1,6 @@
 # Hoja de Ruta MADRE — Producción 100% (histórico) / Cierre condicionado (2026-02-02)
 
-**Última actualización:** 2026-02-02  
+**Última actualización:** 2026-02-04  
 **Alcance:** desde el estado actual real hasta cierre total (100%) del proyecto en producción.  
 **Fuente primaria:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` + `docs/ESTADO_ACTUAL.md` + `docs/DECISION_LOG.md` + `docs/CHECKLIST_CIERRE.md`.
 
@@ -22,13 +22,24 @@
 ## 0) Estado actual verificado (resumen)
 
 - ✅ RLS role-based v2 aplicada y verificada en PROD (10/10 tablas core).  
-- ⚠️ COMET reporta **18 políticas** en tablas críticas (esperado 30 según auditoría 2026-01-31) — requiere verificación.
-- ⚠️ Security Advisor (COMET 2026-02-02): ERROR=0, **WARN=3**, INFO=15.  
-  - WARN: search_path mutable en `public.sp_aplicar_precio` + vista materializada pública `tareas_metricas` + leaked password protection.
-  - Mitigación aplicada en PROD (Antigravity 2026-02-02). **Pendiente verificación visual** (WARN debería bajar a 1).
-- ❌ Leaked password protection **DESACTIVADO** (requiere **SMTP personalizado**; el toggle no aparece sin esto).
+- ✅ **RLS policies (public)** verificadas por COMET 2026-02-04: **33**.
+- ✅ **Security Advisor** verificado por COMET 2026-02-04: ERROR=0, **WARN=1**, INFO=15.  
+  - WARN único: leaked password protection deshabilitada.
+  - INFO: tablas con RLS habilitada sin políticas (no bloqueante si solo `service_role`).
+- ❌ Leaked password protection **NO DISPONIBLE** (COMET reporta que requiere **plan Pro**; SMTP ya está configurado).  
+  - **Decisión (usuario):** diferir upgrade hasta producción.
 - ✅ Migración `20260202000000` aplicada en PROD (2026-02-02) tras reconciliar historial.
 - ✅ Mitigación Advisor (WARN search_path + tareas_metricas) ejecutada en PROD (2026-02-02).
+
+### 0.1 Premortem operativo (nuevo)
+
+**Plan fuente:** `docs/PLAN_EJECUCION_PREMORTEM.md`  
+**Proximos pasos inmediatos (48–72h):**
+- Ejecutar Preflight y registrar evidencia en `docs/ESTADO_ACTUAL.md`.
+- WS1 hotfix: idempotency key en `/reservas` + constraint unico + bloqueo doble submit si aplica.
+- WS2 lock por job en `cron-jobs-maxiconsumo` para evitar solapamientos.
+- WS5 guardrail: bloquear deploy si `cron-notifications` queda en modo simulacion en PROD.
+- Confirmar si existe flujo UI de reservas; si no, cambios solo backend.
 
 ### ✅ Tareas ya cerradas (no repetir)
 - RLS role-based v2 aplicado y verificado en PROD.  
@@ -47,12 +58,12 @@
 > - **Observación**: notas críticas por paso.
 
 ### 1.1 Seguridad (P0/P1)
-- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere SMTP personalizado**). *(Re‑abierto 2026-02-02)*  
+- [ ] **Habilitar leaked password protection** en Dashboard → Auth → Settings (**requiere plan Pro según COMET**). *(Re‑abierto 2026-02-02; verificado 2026-02-04: SMTP OK, LPP no disponible; decisión: diferir hasta producción)*  
 - [x] **Evaluar rotación de secretos** si hubo exposición histórica.  
-- [ ] **Confirmar WARN residual** en Security Advisor (post‑mitigación; debería quedar WARN=1). *(Pendiente evidencia visual)*  
+- [x] **Confirmar WARN residual** en Security Advisor (post‑mitigación; WARN=1 por leaked password protection). *(Verificado COMET 2026-02-04)*  
 - ✅ **Mitigar WARN search_path** en `public.sp_aplicar_precio` (migración aplicada 2026-02-02).
 - ✅ **Mitigar WARN de vista materializada** `public.tareas_metricas` (endpoint migrado a `service_role` + REVOKE aplicado 2026-02-02).  
-- [ ] **Validar endpoint** `/reportes/efectividad-tareas` con JWT real (200 OK).
+- [x] **Validar endpoint** `/reportes/efectividad-tareas` con JWT real (**200 OK**, 2026-02-04). *(Requirió redeploy `api-minimarket` con `--no-verify-jwt` por JWT ES256; validación queda en app con `/auth/v1/user` + roles)*  
 - [x] **Plan operativo detallado (WARN residual):** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 - [x] **Aplicar/validar migración de mitigaciones** en entornos no‑PROD.  
 - [x] **Reconfirmar Advisor** (panel) y registrar evidencia de estado final.  
@@ -79,7 +90,7 @@
 
 ### 1.5 Documentación y gobernanza
 - [x] **Referencias legacy removidas** (ya no existen en repo).
-- [x] **Confirmar licencia oficial** (LICENSE verificado).
+- [x] **Confirmar licencia oficial** (MIT, `ORIGEN•AI`) — 2026-02-04.
 - [x] **Onboarding guide** para nuevos devs.
 - [x] **Runbook operacional expandido** (incidentes, rollback, soporte).
 - [x] **Postman collections**: confirmar vigencia / actualizar si cambió el API.
@@ -93,7 +104,8 @@
 
 ### 1.7 Backend / Scraper / Cron / Notificaciones (no bloqueante)
 - [x] Dividir `api-minimarket/index.ts` en routers.  
-- [x] Rate limit por usuario (además de IP).  
+- [x] Rate limit por usuario en `api-proveedor` (usa `x-user-id`/`authorization`).  
+- [ ] Rate limit por usuario en gateway `api-minimarket` (pendiente; ver `docs/PLAN_EJECUCION_PREMORTEM.md` WS3).  
 - [x] OpenAPI para endpoints nuevos.  
 - [x] Mejoras scraper (retry inteligente, métricas, headless si aplica).  
 - [x] Dashboard de cron + backoff + alertas por fallo.  
@@ -105,8 +117,8 @@
 
 ## 2) Ruta mínima hasta “100% Producción” (objetivo / pendiente de cierre)
 
-1) **Seguridad:** activar leaked password protection (panel) — **pendiente** (requiere SMTP personalizado).  
-2) **Verificación Advisor:** revisar WARN residual y capturar evidencia final — **pendiente** (verificación visual).  
+1) **Seguridad:** activar leaked password protection (panel) — **pendiente** (requiere plan Pro; decisión: diferir hasta producción).  
+2) **Verificación Advisor:** confirmar WARN=0 (o 1 si aún falta LPP) y capturar evidencia final — **pendiente** hasta activar LPP.  
 3) **DB Consistencia:** validar migraciones 20260131 + fix_constraints en staging/prod.  
 4) **CI/CD:** configurar secrets en GitHub y decidir integración/E2E en CI.  
 5) **Backups/DR:** documentar y probar procedimiento mínimo.  
@@ -119,8 +131,8 @@
 
 ## 3) Evidencia mínima capturada/confirmada (para cierre definitivo)
 
-- Captura/registro del Security Advisor sin alertas críticas relevantes — **pendiente** (verificación visual).  
-- Registro de leaked password protection habilitado — **pendiente** (requiere SMTP personalizado).  
+- Verificación Security Advisor (COMET 2026-02-04): ERROR=0, WARN=1, INFO=15.  
+- Registro de leaked password protection habilitado — **pendiente** (requiere plan Pro; decisión: diferir hasta producción).  
 - `migrate.sh status` o `supabase db push` confirmando migraciones 20260131 (confirmación usuario).  
 - Evidencia de revisión humana P0 (checklist firmado o log).  
 - Actualización en `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.

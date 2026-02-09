@@ -214,10 +214,17 @@ cd minimarket-system && VITE_USE_MOCKS=true pnpm dev
 
 ### Obtener Token JWT
 ```bash
-curl -X POST https://dqaygmjpzoqjjrywdsxi.supabase.co/auth/v1/token?grant_type=password \
+curl -X POST "$SUPABASE_URL/auth/v1/token?grant_type=password" \
   -H "Content-Type: application/json" \
-  -H "apikey: YOUR_ANON_KEY" \
-  -d '{"email":"admin@minimarket.com","password":"password123"}'
+  -H "apikey: $SUPABASE_ANON_KEY" \
+  -d "{\"email\":\"$TEST_USER_ADMIN\",\"password\":\"$TEST_PASSWORD\"}"
+```
+
+**Nota (Edge Functions / JWT ES256):** los access tokens emitidos por Supabase Auth pueden ser **ES256**.  
+Si al invocar una Function vía `.../functions/v1/...` recibes `401 Invalid JWT` (antes de entrar al handler), despliega la function con `--no-verify-jwt` y deja la validación en la app (ej: `api-minimarket` valida con `/auth/v1/user` + roles).
+
+```bash
+supabase functions deploy api-minimarket --no-verify-jwt --use-api
 ```
 
 ### Usar Token
@@ -300,12 +307,100 @@ PUT /tareas/{id}/completar         # Completar tarea
 PUT /tareas/{id}/cancelar          # Cancelar tarea
 ```
 
+### Pedidos (requiere autenticación) ✨ NUEVO
+```bash
+GET /pedidos                       # Listar pedidos (filtros: ?estado, ?estado_pago, ?fecha_desde, ?fecha_hasta)
+POST /pedidos                      # Crear pedido
+GET /pedidos/{id}                  # Detalle del pedido con items
+PUT /pedidos/{id}/estado           # Actualizar estado (pendiente → preparando → listo → entregado/cancelado)
+PUT /pedidos/{id}/pago             # Registrar pago (calcula estado_pago automáticamente)
+PUT /pedidos/items/{id}            # Marcar item como preparado/no preparado
+```
+
+**Request Body `/pedidos` (POST):**
+```json
+{
+  "cliente_nombre": "Juan Pérez",
+  "cliente_telefono": "+54 9 2262 123456",
+  "tipo_entrega": "domicilio",
+  "direccion_entrega": "Calle 123",
+  "edificio": "Torre A",
+  "piso": "2",
+  "departamento": "B",
+  "horario_entrega_preferido": "18:00-20:00",
+  "observaciones": "Llamar antes de entregar",
+  "items": [
+    {"producto_nombre": "Salchichas FELA x6", "cantidad": 2, "precio_unitario": 1500},
+    {"producto_nombre": "Queso cremoso 250g", "cantidad": 1, "precio_unitario": 2000}
+  ]
+}
+```
+
+**Estados de Pedido:** `pendiente` → `preparando` → `listo` → `entregado` | `cancelado`  
+**Estados de Pago:** `pendiente` | `parcial` | `pagado` (calculado automáticamente según monto_pagado vs monto_total)
+
+### Búsqueda Global (requiere autenticación) ✨ NUEVO
+```bash
+GET /search?q=texto&limit=10        # Busca en productos/proveedores/tareas/pedidos/clientes
+```
+
+**Notas `/search`:**
+- `q` es requerido (mínimo 2 caracteres).
+- `limit` es opcional (1–20). El límite real por entidad está capado para evitar payloads grandes.
+
+### Insights (Arbitraje / Comprar Ahora) ✨ NUEVO
+```bash
+GET /insights/arbitraje             # Riesgo de pérdida / margen bajo (por reposición proveedor)
+GET /insights/compras               # “Comprar ahora”: stock bajo + caída de costo >= 10%
+GET /insights/producto/{id}         # Payload unificado por producto (POS/Pocket)
+```
+
+### Clientes + Cuentas Corrientes (requiere rol `admin|ventas`) ✨ NUEVO
+```bash
+GET /clientes                       # Listar clientes (filtro: ?q, paginación: ?limit&offset)
+POST /clientes                      # Crear cliente
+PUT /clientes/{id}                  # Actualizar cliente
+
+GET /cuentas-corrientes/resumen     # “Dinero en la calle”
+GET /cuentas-corrientes/saldos      # Saldos por cliente (filtros: ?q, ?solo_deuda=true)
+POST /cuentas-corrientes/pagos      # Registrar pago (monto > 0) -> retorna saldo actualizado
+```
+
+### POS / Ventas (requiere rol `admin|ventas`) ✨ NUEVO
+```bash
+POST /ventas                        # Crear venta POS (idempotente)
+GET /ventas                         # Listado de ventas (paginación: ?limit&offset)
+GET /ventas/{id}                    # Detalle de venta + items
+```
+
+**Notas `/ventas` (idempotencia):**
+- `POST /ventas` requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
+- Error esperado: `409 LOSS_RISK_CONFIRM_REQUIRED` si el producto está en riesgo de pérdida y falta `confirmar_riesgo=true`.
+
+### Ofertas (Anti-mermas) ✨ NUEVO
+```bash
+GET /ofertas/sugeridas              # Stock con vencimiento <= 7 días (sugiere 30% OFF)
+POST /ofertas/aplicar               # Aplica oferta por stock_id (default 30%)
+POST /ofertas/{id}/desactivar       # Desactiva oferta
+```
+
+### Bitácora de Turno ✨ NUEVO
+```bash
+POST /bitacora                      # Crear nota (antes de logout)
+GET /bitacora                       # Listar notas (solo admin)
+```
+
 ### Reservas y Compras
 ```bash
 POST /reservas                     # Crear reserva
 POST /reservas/{id}/cancelar       # Cancelar reserva
 POST /compras/recepcion            # Registrar recepción de OC
 ```
+
+**Notas `/reservas` (hardening WS1):**
+- Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
+- La respuesta incluye campos top-level `idempotent` y `stock_disponible`.
+- Errores esperados: `400 IDEMPOTENCY_KEY_REQUIRED` si falta el header; `409 INSUFFICIENT_STOCK` si no hay stock disponible; `503 RESERVA_UNAVAILABLE` si el RPC `sp_reservar_stock` no está disponible.
 
 ### Reportes
 ```bash
@@ -328,6 +423,11 @@ GET /health                        # Healthcheck del gateway
 | Aplicar precios | ❌ | ❌ | ❌ | ✅ |
 | Movimientos depósito | ❌ | ❌ | ✅ | ✅ |
 | Eliminar productos | ❌ | ❌ | ❌ | ✅ |
+| POS / Ventas | ❌ | ✅ | ❌ | ✅ |
+| Clientes / Cuenta Corriente | ❌ | ✅ | ❌ | ✅ |
+| Ofertas anti-mermas | ❌ | ✅ | ✅ | ✅ |
+| Bitácora (crear) | ❌ | ✅ | ✅ | ✅ |
+| Bitácora (listar) | ❌ | ❌ | ❌ | ✅ |
 
 ---
 
@@ -456,4 +556,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-01-26*
+*Última actualización: 2026-02-06*

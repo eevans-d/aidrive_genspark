@@ -19,7 +19,9 @@ describe('scraper-maxiconsumo/alertas', () => {
     const alertas = buildAlertasDesdeComparaciones(comparaciones, new Set());
     expect(alertas.length).toBe(1);
     expect(alertas[0].severidad).toBe('critica');
-    expect(alertas[0].tipo_cambio).toBe('aumento');
+    // FIX (2026-02-07): tipo_cambio se deriva del signo de (precio_actual - precio_proveedor).
+    // Si el proveedor cobra menos (precio_proveedor < precio_actual), es "disminucion" (mejor precio).
+    expect(alertas[0].tipo_cambio).toBe('disminucion');
   });
 
   it('omite comparaciones ya alertadas', () => {

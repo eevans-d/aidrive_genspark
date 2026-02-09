@@ -1,67 +1,95 @@
 ---
 name: TestMaster
-description: Procedimientos estandarizados para ejecución, análisis y mantenimiento de tests en aidrive_genspark.
+description: Ejecucion, analisis y mantenimiento de tests. Centraliza la calidad del codigo.
+role: EXECUTOR
+impact: 0-1
+chain: []
 ---
 
-# TestMaster Skill (Estándar Universal)
+# TestMaster Skill
 
-<objective>
-  Centralizar la calidad del código mediante la ejecución férrea de pruebas.
-  **Objetivo:** "0 Regresiones".
-</objective>
+**ROL:** EXECUTOR (estado caliente). Ejecutar tests, analizar resultados, reportar.
+**AUTO-INVOCADO POR:** CodeCraft, DeployOps, DebugHound, session-workflow.
 
-## 1. Configuración
-**⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
+## Reglas de Automatizacion
 
-## 2. Criterios de Activación
-<activation_rules>
-  <enable_if>
-    - Código modificado.
-    - Antes de Deploy (Pre-Flight).
-    - Debugging de errores reportados.
-  </enable_if>
-  <disable_if>
-    - Solo cambios de documentación.
-    - Entorno caído (Docker no disponible).
-  </disable_if>
-</activation_rules>
+1. Ejecutar suite de tests sin pedir confirmacion.
+2. SI tests fallan -> analizar + reportar + NO esperar input.
+3. SI falla >2 veces mismo test -> generar reporte y DETENERSE.
+4. Guardar resultados en `test-reports/` automaticamente.
+5. Verificar que directorio de logs exista antes de ejecutar.
 
-## 3. Protocolo de Ejecución
+## Activacion
+
+**Activar cuando:**
+- Codigo modificado.
+- Antes de deploy (Pre-Flight).
+- Debugging de errores reportados.
+- Invocado automaticamente por otro skill.
+
+**NO activar cuando:**
+- Solo cambios de documentacion.
+- Entorno caido (Docker no disponible para integration tests).
+
+## Protocolo de Ejecucion
 
 ### FASE A: Environment Check
-<step>
-  1. Verifica que Docker esté corriendo si vas a correr tests de integración:
-     ```bash
-     docker ps
-     ```
-  2. Asegura que el directorio de logs exista:
-     ```bash
-     mkdir -p logs
-     ```
-</step>
+
+1. Asegurar directorios existen:
+   ```bash
+   mkdir -p logs test-reports
+   ```
+2. Si se necesitan integration tests, verificar Docker:
+   ```bash
+   docker ps 2>/dev/null || echo "Docker no disponible, solo unit tests"
+   ```
 
 ### FASE B: Execution Selector
-<step>
-  Selecciona el comando según la necesidad:
-  - **Unit Quick:** `{{scripts.test_script}} unit false false true`
-  - **Green Check (Full):** `{{scripts.test_script}} unit && {{scripts.test_script}} integration`
-  - **Single File:** `npx vitest run <File>`
-</step>
+
+Seleccionar comando segun necesidad:
+
+| Tipo | Comando |
+|------|---------|
+| Unit Quick | `npx vitest run tests/unit/` |
+| Unit + Coverage | `npx vitest run --coverage` |
+| Single File | `npx vitest run tests/unit/<archivo>.test.ts` |
+| Integration | `bash scripts/run-integration-tests.sh` |
+| Security | `npm run test:security` |
+| Full Suite | `npm run test:all` |
+| Frontend | `cd minimarket-system && pnpm test:components` |
 
 ### FASE C: Analysis
-<step>
-  Lee el reporte en `{{outputs.test_report}}`.
-  - **Si Pass:** Fin.
-  - **Si Fail:** Analiza el stack trace. ¿Es el código o el test lo que está mal?
-</step>
 
-## 4. Quality Gates
-<checklist>
-  <item>Exit Code 0.</item>
-  <item>100% Tests Passed.</item>
-  <item>Coverage > {{policies.coverage_min}}% (Nuevo código).</item>
-</checklist>
+1. Leer output del test runner.
+2. **Si Pass:** Registrar en EVIDENCE.md y continuar.
+3. **Si Fail:** Analizar stack trace:
+   - Es el codigo o el test lo que esta mal?
+   - Es un test flaky (pasa intermitentemente)?
+   - Es un error de entorno (conexion, Docker)?
 
-## 5. Anti-Loop
-- Si falla por "Connection Refused", levanta Supabase/Docker.
-- Si falla >2 veces, genera reporte y DETENTE.
+## Quality Gates
+
+- [ ] Exit code 0.
+- [ ] 100% tests passed.
+- [ ] Coverage >= 80% (codigo nuevo).
+- [ ] Sin tests deshabilitados/skipped sin justificacion.
+
+## Anti-Loop / Stop-Conditions
+
+**SI falla por "Connection Refused":**
+1. Verificar Docker: `docker ps`
+2. Si Docker caido -> ejecutar solo unit tests.
+3. Si falla despues de 2 intentos -> marcar sesion PARCIAL.
+
+**SI test falla >2 veces el mismo:**
+1. Generar reporte con stack trace.
+2. Clasificar: codigo roto o test flaky?
+3. Documentar hallazgo.
+4. DETENERSE y cerrar como PARCIAL.
+
+**SI coverage < 80%:**
+1. Documentar archivos sin cobertura.
+2. Continuar ejecucion (no bloquear).
+3. Reportar como warning.
+
+**NUNCA:** Quedarse esperando confirmacion manual.

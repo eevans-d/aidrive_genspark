@@ -1,18 +1,6 @@
 MIT License
 
-⚠️ **NOTA: SELECCIÓN DE LICENCIA PENDIENTE DE CONFIRMACIÓN**
-
-Este es un borrador de licencia MIT. El owner del repositorio (@eevans-d) debe confirmar
-la elección de licencia antes de considerar este archivo como oficial.
-
-Alternativas a considerar:
-- MIT License (permisiva, recomendada para proyectos comerciales)
-- Licencia Propietaria (si es uso interno exclusivo)
-- Apache 2.0 (similar a MIT con protección de patentes)
-
----
-
-Copyright (c) 2026 [OWNER PENDIENTE]
+Copyright (c) 2026 ORIGEN•AI
 
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
@@ -31,10 +19,3 @@ AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
 LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
-
----
-
-**ACCIÓN REQUERIDA:** 
-- Confirmar tipo de licencia (MIT, Apache 2.0, Propietaria)
-- Reemplazar [OWNER PENDIENTE] con nombre/organización correcta
-- Remover esta nota una vez confirmado

@@ -1,115 +1,134 @@
 ---
 name: RealityCheck
-description: Mentor ultra-realista que analiza el proyecto desde producción real. Detecta gaps entre documentación y código, valida flujos E2E, identifica production killers y evalúa viabilidad con ojo crítico.
+description: Mentor ultra-realista que audita UX, funcionalidad y produccion. Detecta gaps entre docs y codigo.
+role: CODEX
+impact: 0
+chain: [DocuGuard]
 ---
 
-# RealityCheck Skill (Mentor Ultra-Realista)
+# RealityCheck Skill
 
-<philosophy>
-  "Si el usuario no puede completar su tarea en 3 clicks o menos, algo está mal."
-  Este skill prioriza la **experiencia real del usuario** sobre la perfección técnica.
-  Un sistema técnicamente perfecto que nadie puede usar, es un fracaso.
-</philosophy>
+**ROL:** CODEX (estado frio). Auditar, validar, generar reportes. NO implementar cambios.
+**FILOSOFIA:** "Si el usuario no puede completar su tarea en 3 clicks o menos, algo esta mal."
 
-## 1. Objetivo Principal
-**Evaluar si el sistema es USABLE y FUNCIONAL en producción real**.
+## Reglas de Automatizacion
 
-<priorities>
-  <priority level="P0">**Flujos de Usuario**: ¿El usuario puede completar su tarea?</priority>
-  <priority level="P1">**Experiencia Frontend**: ¿Es ágil, simple, sin fricción?</priority>
-  <priority level="P2">**Confiabilidad Backend**: ¿Los datos fluyen correctamente?</priority>
-  <priority level="P3">**Seguridad**: ¿Es seguro sin sacrificar usabilidad?</priority>
-  <priority level="P4">**Documentación**: ¿Coincide con la realidad?</priority>
-</priorities>
+1. Ejecutar todas las fases en secuencia sin pedir confirmacion.
+2. Generar reporte automaticamente al finalizar.
+3. Clasificar TODOS los elementos como REAL/A CREAR/PROPUESTA FUTURA.
+4. Si encuentra blockers P0, reportar y continuar (no esperar input).
 
-## 2. Configuración del Proyecto
-**⚠️ OBLIGATORIO:** Lee `.agent/skills/project_config.yaml`.
+## Prioridades
 
-## 3. Criterios de Activación
-<activation_rules>
-  <enable_if>
-    - "¿Un empleado podría usar esto?"
-    - Pre-demo a cliente/stakeholder
-    - Validar flujo completo de usuario
-    - Verificar UX antes de release
-    - Post-implementación de feature grande
-  </enable_if>
-  <disable_if>
-    - Solo revisando código estático (Linting)
-    - Bug puntual aislado (Hotfix)
-    - Cambios solo en documentación
-    - Entorno local (`http://localhost`) no responde.
-  </disable_if>
-</activation_rules>
+- **P0:** Flujos de Usuario - puede el usuario completar su tarea?
+- **P1:** Experiencia Frontend - es agil, simple, sin friccion?
+- **P2:** Confiabilidad Backend - los datos fluyen correctamente?
+- **P3:** Seguridad - es seguro sin sacrificar usabilidad?
+- **P4:** Documentacion - coincide con la realidad?
 
-## 4. Inputs Requeridos
-| Input | Descripción | Default |
+## Activacion
+
+**Activar cuando:**
+- Validar si un empleado podria usar el sistema.
+- Pre-demo a cliente/stakeholder.
+- Validar flujo completo de usuario.
+- Post-implementacion de feature grande.
+
+**NO activar cuando:**
+- Solo revisando codigo estatico (usar lint).
+- Bug puntual aislado (usar DebugHound).
+- Solo cambios en documentacion.
+
+## Inputs
+
+| Input | Descripcion | Default |
 |-------|-------------|---------|
-| `Scope` | `full` (todo el sistema), `page:<name>`, `flow:<name>` | `full` |
-| `Depth` | `quick` (Smoke test), `standard` (Validación), `deep` (Auditoría) | `standard` |
-| `Focus` | `ux`, `completeness`, `security`, `all` | `ux` |
+| Scope | `full`, `page:<name>`, `flow:<name>` | `full` |
+| Depth | `quick`, `standard`, `deep` | `standard` |
+| Focus | `ux`, `completeness`, `security`, `all` | `ux` |
 
-## 5. Protocolo de Ejecución
+## Protocolo de Ejecucion
 
-### FASE A: Descubrimiento Dinámico
-*No asumas qué páginas existen. Descúbrelo.*
+### FASE A: Descubrimiento Dinamico
 
-1.  **Listar Páginas:** Ejecuta `ls {{paths.frontend_src}}/pages/` para obtener la verdad actual.
-2.  **Identificar Hooks:** Para cada página, busca su hook principal (ej: `Dashboard.tsx` -> `useDashboardStats`).
+No asumir que paginas existen. Descubrirlo:
 
-### FASE B: Checklist UX (Por cada página descubierta)
-<checklist_ux>
-  <item>¿Estados de Carga (`isLoading`) visibles?</item>
-  <item>¿Estados de Error (`isError`) amigables y con retry?</item>
-  <item>¿Estados Vacíos (`data.length === 0`) con instrucciones?</item>
-  <item>¿Feedback visual inmediato al usuario?</item>
-  <item>¿Navegación clara (Breadcrumbs, títulos)?</item>
-</checklist_ux>
+1. **Listar paginas:**
+   ```bash
+   ls minimarket-system/src/pages/
+   ```
+2. **Identificar hooks por pagina:**
+   ```bash
+   grep -r "use[A-Z]" minimarket-system/src/pages/ --include="*.tsx" -oh | sort -u
+   ```
+3. **Listar endpoints backend:**
+   ```bash
+   grep -E "(GET|POST|PUT|PATCH|DELETE)" supabase/functions/api-minimarket/index.ts
+   ```
 
-### FASE C: Simulación de Usuario Real (Roleplay)
-<instruction>
-  Adopta el rol de un usuario final (ej: Repositor, Cajero).
-  Intenta "mentalmente" ejecutar las tareas críticas detectadas en el código.
-</instruction>
+### FASE B: Checklist UX (por cada pagina)
 
-**Búsqueda de Fricción:**
-- Login → ¿Persiste la sesión?
-- Formularios → ¿Validan antes de enviar?
-- Errores → ¿Dicen qué hacer o solo "Error"?
+- [ ] Estados de carga (`isLoading`) visibles?
+- [ ] Estados de error (`isError`) amigables y con retry?
+- [ ] Estados vacios (`data.length === 0`) con instrucciones?
+- [ ] Feedback visual inmediato al usuario?
+- [ ] Navegacion clara (breadcrumbs, titulos)?
 
-### FASE D: Validación Técnica Backend
-<instruction>
-  Verifica que el Backend soporte la realidad del Frontend.
-</instruction>
+### FASE C: Simulacion de Usuario Real
 
-1.  **Match de Endpoints:** Revisa `{{paths.backend_src}}`. ¿Existen los endpoints que el Frontend llama?
-2.  **Production Killers Check:**
-    - `rg "(timeout|AbortController)" {{paths.backend_src}}`
-    - `rg "throw new Error" {{paths.backend_src}}` (Errores genéricos)
-    - `rg "console.log" {{paths.backend_src}}` (Logs basura)
+Adoptar rol de usuario final (Repositor, Cajero, Admin):
 
-## 6. Salida Requerida (Artefactos)
-Generar/Actualizar: `{{paths.docs}}/REALITY_CHECK_UX.md`
+**Busqueda de Friccion:**
+- Login -> Persiste la sesion?
+- Formularios -> Validan antes de enviar?
+- Errores -> Dicen que hacer o solo "Error"?
+- Navegacion -> Se puede volver atras?
 
-<report_template>
-# 🎯 RealityCheck Report
+### FASE D: Validacion Tecnica Backend
+
+1. **Match de endpoints:**
+   ```bash
+   grep -r "apiClient\.\|fetch(" minimarket-system/src/ --include="*.ts" --include="*.tsx" -l
+   ```
+2. **Production killers:**
+   ```bash
+   grep -r "console\.log" supabase/functions/ --include="*.ts" -l
+   grep -r "throw new Error(" supabase/functions/ --include="*.ts" -c
+   ```
+
+## Salida Requerida
+
+Generar/actualizar: `docs/REALITY_CHECK_UX.md`
+
+```markdown
+# RealityCheck Report
 **Fecha:** [Date] | **Scope:** [Scope] | **Score UX:** [1-10]
 
-## 🚨 Blockers (P0)
-- [ ] Problema A (Impacto Crítico)
+## Clasificacion de Estado
+| Elemento | Estado | Evidencia |
+|----------|--------|-----------|
+| [Modulo] | REAL/A CREAR/PROPUESTA | [Ruta] |
 
-## ⚠️ Fricciones (P1)
-- [ ] Problema B (Molestia visual/funcional)
+## Blockers (P0)
+- [ ] Problema A (impacto critico)
 
-## ✅ Ready
-- [ ] Módulo C verificado ok
-</report_template>
+## Fricciones (P1)
+- [ ] Problema B (molestia visual/funcional)
 
-## 7. Quality Gates
-- [ ] **Todos los Critical Paths** simulados.
-- [ ] **0 Console.logs** en código nuevo.
-- [ ] **Reporte generado** con plan de acción.
+## Ready
+- [x] Modulo C verificado ok
+```
 
-## 8. Anti-Loop / Stop-Conditions
-- Si hay >15 páginas, pide confirmación de prioridad.
-- Si no hay DB local/staging, **ABORTAR** (RealityCheck necesita datos).
+## Anti-Loop / Stop-Conditions
+
+**SI hay >15 paginas:**
+1. Priorizar: Login, Dashboard, flujos de compra/venta.
+2. Documentar priorizacion.
+3. Continuar SIN pedir confirmacion.
+
+**SI no hay DB local/staging:**
+1. Ejecutar analisis estatico del codigo.
+2. Documentar limitacion.
+3. Marcar como PARCIAL.
+
+**NUNCA:** Quedarse esperando input manual.

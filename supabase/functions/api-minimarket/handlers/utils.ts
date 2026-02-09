@@ -13,7 +13,7 @@ export const getProductosDropdown = async (
                 'productos',
                 requestHeaders,
                 { activo: true },
-                'id,nombre,codigo_barras',
+                'id,nombre,sku,codigo_barras,precio_actual',
                 { order: 'nombre' }
         );
 
