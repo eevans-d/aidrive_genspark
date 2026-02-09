@@ -1,7 +1,8 @@
 # Plan Ejecutable: Sentry para Observabilidad UI
 
 **Fecha:** 2026-02-09
-**Estado:** PLAN — sin DSN no se integra. Infraestructura local ya preparada.
+**Estado:** BLOQUEADO — sin DSN. Infraestructura local preparada (`observability.ts` + `ErrorBoundary` con placeholder).
+**Verificado:** 2026-02-09 (sesion 2) — no hay `VITE_SENTRY_DSN` en secrets ni en `.env.*`. NO instalar `@sentry/react` sin DSN real.
 
 ---
 
