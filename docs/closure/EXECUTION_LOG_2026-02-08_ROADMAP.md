@@ -364,7 +364,7 @@ pnpm test:components → 101 PASS (14 files)
 |------|---------|
 | 926513e | feat: FASE 1-2 hardening — auth resilience, shared rate limit, circuit breaker, api-proveedor allowlist |
 | dc57704 | feat: FASE 3 UX — alta producto, cambio precio, ajuste stock, acciones alertas |
-| (pending) | feat: FASE 4 release readiness — smoke tests, observabilidad, secretos checklist |
+| f909478 | feat: FASE 4 release readiness — smoke tests, observabilidad, secretos checklist |
 
 ### Estado final
 - Branch: `feat/roadmap-exec-20260208`
