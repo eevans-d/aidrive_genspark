@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-08  
+**Última actualización:** 2026-02-09
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -77,6 +77,39 @@
 | D-070 | **GlobalSearch “Scan & Action”**: producto abre modal de acciones | Aprobada | 2026-02-07 | Acciones: verificar precio (insights), imprimir etiqueta, navegar a POS/Depósito/Pocket según permisos. |
 | D-071 | **MVs requeridas por alertas**: asegurar `mv_stock_bajo` + `mv_productos_proximos_vencer` en DB | Completada | 2026-02-08 | Hotfix migración `20260206235900_create_stock_materialized_views_for_alertas.sql`. |
 | D-072 | **Refresh de MVs de stock**: RPC + cron opcional | Completada | 2026-02-08 | Migración `20260208010000_add_refresh_stock_views_rpc_and_cron.sql` crea `fn_refresh_stock_views()` y agenda `refresh_stock_views` si existe `pg_cron`. |
+| D-073 | **x-request-id E2E**: frontend genera UUID y lo envía al backend, extrae server-side ID de respuesta, propaga en `ApiError`/`TimeoutError` y muestra "Ref:" en `ErrorMessage` | Completada | 2026-02-09 | PR #38. `apiClient.ts` + `ErrorMessage.tsx`. Tests: 6 unit + 3 component. |
+| D-074 | **SendGrid env var mismatch**: `cron-notifications` lee `EMAIL_FROM` pero secret es `SMTP_FROM`; causa fallback a `noreply@minimarket.com` | Bloqueada | 2026-02-09 | PR #44. Fix: agregar `EMAIL_FROM` alias o cambiar código a leer `SMTP_FROM`. Requiere SendGrid Dashboard. |
+| D-075 | **Performance baseline establecida**: p50 ~700-900ms, p95 ~870-1350ms para endpoints api-minimarket | Completada | 2026-02-09 | PR #42. Script `scripts/perf-baseline.mjs`. Rate limiting (429) confirmado tras ~60 req secuenciales. |
+| D-076 | **Secret rotation plan documentado**: 3 secrets identificados para rotación (API_PROVEEDOR_SECRET, SENDGRID_API_KEY, SMTP_PASS) | Completada | 2026-02-09 | PR #43. `docs/SECRET_ROTATION_PLAN.md`. Procedimientos step-by-step con rollback. |
+| D-077 | **Sentry diferido hasta DSN**: plan de 6 pasos documentado, no instalar `@sentry/react` sin DSN | Aprobada | 2026-02-09 | PR #45. `docs/SENTRY_INTEGRATION_PLAN.md`. Bundle impact: +30KB gzip. |
+
+---
+
+## Siguientes Pasos (2026-02-09)
+
+### Post-backlog session — PRs pendientes de merge
+
+| PR | Tema | Estado | Bloqueador |
+|----|------|--------|------------|
+| #38 | x-request-id E2E (frontend) | Ready for review | — |
+| #39 | api-proveedor /health tests (12+1) | Ready for review | — |
+| #40 | /reservas integration tests (15 nuevos) | Ready for review | — |
+| #41 | Smoke /reservas script | BLOCKED | No products in DB |
+| #42 | Performance baseline script | Ready for review | — |
+| #43 | Secret rotation plan (doc) | Ready for review | — |
+| #44 | SendGrid verification (doc) | BLOCKED | Requires SendGrid Dashboard |
+| #45 | Sentry integration plan (doc) | Ready for review | — |
+| #46 | BUILD_VERIFICATION.md addendum | Ready for review | — |
+
+### Acciones owner requeridas
+
+| Prioridad | Acción | Referencia |
+|-----------|--------|------------|
+| P0 | Resolver `EMAIL_FROM` vs `SMTP_FROM` mismatch | D-074, `docs/SENDGRID_VERIFICATION.md` |
+| P0 | Verificar sender en SendGrid Dashboard | `docs/SENDGRID_VERIFICATION.md` §4 |
+| P1 | Seed productos en DB (desbloquea PR #41) | `scripts/smoke-reservas.mjs` |
+| P1 | Rotar secrets según plan | `docs/SECRET_ROTATION_PLAN.md` |
+| P2 | Obtener Sentry DSN cuando listo | `docs/SENTRY_INTEGRATION_PLAN.md` |
 
 ---
 
