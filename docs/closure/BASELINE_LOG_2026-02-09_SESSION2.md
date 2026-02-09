@@ -145,17 +145,32 @@ SUPABASE_URL
 
 **Total: 6/6 suites PASS. 0 fallos.**
 
-### 4) Estado final
+### 4) Performance Baseline
+
+Ejecutado: `node scripts/perf-baseline.mjs 5` (5 iteraciones, read-only)
+
+| Endpoint | OK | Err | 429 | Min | p50 | p95 | Max |
+|----------|-----|-----|-----|-----|-----|-----|-----|
+| health | 5 | 0 | 0 | 770ms | 839ms | 1973ms | 1973ms |
+| search | 5 | 0 | 0 | 924ms | 1168ms | 1658ms | 1658ms |
+| insights/arbitraje | 5 | 0 | 0 | 796ms | 875ms | 1174ms | 1174ms |
+| clientes | 5 | 0 | 0 | 829ms | 942ms | 1186ms | 1186ms |
+| cuentas-corrientes/resumen | 5 | 0 | 0 | 630ms | 887ms | 905ms | 905ms |
+| ofertas/sugeridas | 5 | 0 | 0 | 845ms | 920ms | 1061ms | 1061ms |
+| bitacora | 5 | 0 | 0 | 875ms | 895ms | 1218ms | 1218ms |
+
+**7/7 endpoints OK, 0 errores.** Detalle en `docs/closure/PERF_BASELINE_2026-02-09_SESSION2.md`.
+
+### 5) Estado final
 
 ```
 $ git rev-parse HEAD
-6dd0571 (main, post TypeScript 5.9 merge)
+aa31bd5 (main, post docs PR #54 merge)
 ```
 
 **Pendientes que NO se ejecutaron en esta sesion:**
 - Rotacion de secretos: requiere coordinacion manual (ver `docs/SECRET_ROTATION_PLAN.md`).
 - Sentry: sin DSN real (ver `docs/SENTRY_INTEGRATION_PLAN.md`).
 - Redeploy de `cron-notifications` para aplicar fix SMTP_FROM.
-- Performance baseline (`scripts/perf-baseline.mjs`): no se ejecuto.
-- Smoke reservas (`scripts/smoke-reservas.mjs`): no se ejecuto (requiere permiso de escritura en ambiente remoto).
+- Smoke reservas (`scripts/smoke-reservas.mjs`): pendiente evaluacion.
 - Major bumps (react 19, react-router-dom 7, recharts 3, react-resizable-panels 4): cerrados, requieren sesion de migracion dedicada.
