@@ -1,12 +1,18 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-08  
-**Estado:** ✅ OPERATIVO (Fases 0-6 + DB/Edge Functions sincronizados y verificados)
+**Última actualización:** 2026-02-09
+**Estado:** ✅ OPERATIVO — Roadmap Fases 1-4 mergeado a `main` (PR #33)
 
 **Hoja de ruta (post-plan):** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
 **Prompt ejecutor (Claude Code):** `docs/closure/CLAUDE_CODE_CONTEXT_PROMPT_EXECUTOR_2026-02-08.md`.
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
+
+**Nuevo (2026-02-09):**
+- ✅ **PR #33 mergeado a `main`** (`feat/roadmap-exec-20260208` → `main`): 175 archivos, +37,497 / -3,639 líneas.
+- ✅ **CI 100% verde:** Edge Functions Syntax Check PASS, Lint PASS, Type Check PASS, Unit Tests PASS, Build PASS.
+- ✅ **Fix Deno typecheck** aplicado (commit `c1dc33a`): `HeadersInit` → `Record<string,string>`, config freezing, explicit casts.
+- ✅ **Tests totales:** 785 unit (44 archivos) + 38 integration + 4 e2e smoke + 101 component tests.
 
 **Nuevo (2026-02-08):**
 - ✅ **FASE 1-2 revisadas/cerradas (QA + deploy remoto):** ver `docs/closure/REVIEW_LOG_FASE1_FASE2_2026-02-08.md`.
@@ -294,7 +300,7 @@
 |-----------|----------|---------|
 | Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
 | Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests unit (raíz)** | **725** | 38 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
+| **Tests unit (raíz)** | **785** | 44 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
 
 ### Frontend (minimarket-system)
 | Categoría | Cantidad | Detalle |
@@ -304,10 +310,10 @@
 | Componentes | 3 | Layout, ErrorBoundary, ErrorMessage |
 | Libs | 5 | apiClient, supabase, roles, observability, queryClient |
 | Contexts | 2 | AuthContext.tsx, auth-context.ts |
-| **Tests Frontend (unit)** | **40** | 12 archivos en `minimarket-system/src` |
+| **Tests Frontend (unit)** | **101** | componentes en `minimarket-system/src` |
 
 ### Totales (repo)
-- **Tests unitarios:** 765 (raíz 725 + frontend 40)
+- **Tests unitarios:** 886 (raíz 785 + frontend 101)
 - **Tests integración:** 38 (tests/integration)
 - **Tests seguridad:** 14 (tests/security)
 - **Tests performance:** 5 (tests/performance)
@@ -316,8 +322,8 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (vitest v8):** 69.39% lines (2026-02-06; `coverage/index.html`)
-- **Migraciones en repo:** 23 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
-- **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-06)
+- **Migraciones en repo:** 32 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
+- **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-09, CI green)
 
 ---
 
