@@ -1,7 +1,7 @@
 # Verificacion Sender/Dominio SendGrid
 
 **Fecha:** 2026-02-09
-**Estado:** BLOQUEADO — requiere acceso a SendGrid Dashboard
+**Estado:** PARCIALMENTE RESUELTO — fix de codigo aplicado (PR #53); falta redeploy + verificacion sender en SendGrid Dashboard
 
 ---
 
@@ -21,11 +21,11 @@ From Name:  Sistema MiniMarket
 |------------|-------------------|----------|
 | Supabase Auth SMTP | Configuracion Dashboard | — |
 | Supabase Secrets | `SMTP_FROM` | — |
-| `cron-notifications/index.ts` (linea 497) | `EMAIL_FROM` | `noreply@minimarket.com` |
+| `cron-notifications/index.ts` (linea 496) | `SMTP_FROM` -> `EMAIL_FROM` | `noreply@minimarket-system.com` |
 
-**Problema:** La Edge Function `cron-notifications` lee `EMAIL_FROM` pero el secret configurado es `SMTP_FROM`. Esto causa que use el fallback `noreply@minimarket.com` en vez de `noreply@minimarket-system.com`.
+**Estado actual (repo):** La Edge Function `cron-notifications` prioriza `SMTP_FROM` y usa `EMAIL_FROM` solo como fallback. Con el secret `SMTP_FROM` presente, el From queda alineado.
 
-**Accion requerida:** Agregar `EMAIL_FROM` como alias del secret, o cambiar el codigo a leer `SMTP_FROM`.
+**Accion recomendada:** Mantener `SMTP_FROM` como fuente de verdad. (Opcional) Definir `EMAIL_FROM` como alias para compatibilidad.
 
 ## 3) Verificacion de sender — BLOQUEADA
 
@@ -42,9 +42,8 @@ Para verificar que `noreply@minimarket-system.com` es un sender verificado en Se
 - [ ] Acceder a SendGrid Dashboard
 - [ ] Verificar si `noreply@minimarket-system.com` es sender verificado
   - Si NO: crear Single Sender Verification o Domain Authentication
-- [ ] Resolver discrepancia `EMAIL_FROM` vs `SMTP_FROM`:
-  - Opcion A: `supabase secrets set EMAIL_FROM=noreply@minimarket-system.com`
-  - Opcion B: cambiar `cron-notifications/index.ts` linea 497 a leer `SMTP_FROM`
+- [x] Resolver discrepancia `EMAIL_FROM` vs `SMTP_FROM`: **RESUELTO (PR #53)** — codigo ahora lee `SMTP_FROM` primero
+- [ ] Redeploy: `supabase functions deploy cron-notifications --use-api`
 - [ ] Enviar email de prueba (cambiar `NOTIFICATIONS_MODE` a `test`)
 - [ ] Verificar en SendGrid Activity que el email fue entregado
 - [ ] Registrar evidencia en `docs/closure/EXECUTION_LOG_*.md`
