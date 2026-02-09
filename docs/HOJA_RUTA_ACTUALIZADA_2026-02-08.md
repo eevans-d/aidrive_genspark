@@ -93,11 +93,11 @@ Pendientes importantes (no bloqueantes hoy, pero recomendados pre-producción):
 - En caída parcial de Auth, el sistema responde fail-fast con error consistente.
 
 #### A4) Cron jobs y refresh de MVs (verificación operativa)
-**Checklist**
-- [ ] Confirmar en SQL Editor si existen `pg_cron` y `pg_net` (si se usan) y listar jobs activos en `cron.job`.
-- [ ] Si `pg_cron` existe pero `refresh_stock_views` NO está scheduleado: crear schedule manual `cron.schedule('refresh_stock_views','7 * * * *','select public.fn_refresh_stock_views()');`.
-- [ ] Si `pg_cron` NO existe: documentar operación manual vía RPC `fn_refresh_stock_views()` (service_role) o plan alternativo (sincronizar con operaciones).
-- [ ] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (sección “MVs refresh”).
+**Checklist** *(VERIFICADO 2026-02-09 via Supabase Management API)*
+- [x] Confirmar en SQL Editor si existen `pg_cron` y `pg_net`. **Resultado: NO instalados.** Extensiones disponibles: `pg_graphql`, `pg_stat_statements`, `pgcrypto`, `plpgsql`, `supabase_vault`, `uuid-ossp`. *(query: `select extname from pg_extension`)*
+- [N/A] Si `pg_cron` existe: no aplica (pg_cron no instalado).
+- [x] Si `pg_cron` NO existe: documentar operacion manual via RPC. **RPC `public.fn_refresh_stock_views()` EXISTE** (confirmado via `pg_proc`). Refresh queda manual: invocar via `service_role` o sincronizar con operaciones (ver migracion `20260208010000`).
+- [ ] Documentar evidencia en `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (seccion "MVs refresh"). *(pendiente)*
 
 **Done**
 - `mv_stock_bajo` y `mv_productos_proximos_vencer` se refrescan periódicamente (o se documenta alternativa).
