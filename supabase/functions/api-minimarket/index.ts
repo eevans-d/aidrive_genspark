@@ -235,6 +235,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    // Freeze config values for use in nested helpers/closures (TS narrowing doesn't
+    // apply to captured mutable variables like `supabaseUrl`).
+    const supabaseUrlStr = supabaseUrl;
+    const supabaseAnonKeyStr = supabaseAnonKey;
+
     // ======================================================================
     // CIRCUIT BREAKER CHECK (semi-persistent via RPC, fallback in-memory)
     // ======================================================================
@@ -242,7 +247,7 @@ Deno.serve(async (req) => {
       ? await checkCircuitBreakerShared(
         CIRCUIT_BREAKER_KEY,
         serviceRoleKey,
-        supabaseUrl,
+        supabaseUrlStr,
         circuitBreaker,
         CIRCUIT_BREAKER_OPTIONS,
       )
@@ -290,7 +295,7 @@ Deno.serve(async (req) => {
     const rateLimitKey = buildRateLimitKey(user?.id, clientIp);
     const limit = rateLimiter.getLimit();
     const rateLimitResult = serviceRoleKey
-      ? await checkRateLimitShared(rateLimitKey, limit, 60, serviceRoleKey, supabaseUrl, rateLimiter)
+      ? await checkRateLimitShared(rateLimitKey, limit, 60, serviceRoleKey, supabaseUrlStr, rateLimiter)
       : rateLimiter.check(rateLimitKey);
 
     responseHeaders = withRateLimitHeaders(responseHeaders, rateLimitResult, limit);
@@ -317,7 +322,7 @@ Deno.serve(async (req) => {
 
     // Create headers for PostgREST calls - uses user's JWT for RLS
     const requestHeaders = (extraHeaders: Record<string, string> = {}) =>
-      createRequestHeaders(token, supabaseAnonKey, requestId, extraHeaders);
+      createRequestHeaders(token ?? null, supabaseAnonKeyStr, requestId, extraHeaders);
 
     const recordCircuitSuccess = () => {
       if (shouldRecordCircuitSuccess && serviceRoleKey) {
@@ -325,7 +330,7 @@ Deno.serve(async (req) => {
           CIRCUIT_BREAKER_KEY,
           'success',
           serviceRoleKey,
-          supabaseUrl,
+          supabaseUrlStr,
           circuitBreaker,
           CIRCUIT_BREAKER_OPTIONS,
         ).catch(() => {
@@ -385,7 +390,7 @@ Deno.serve(async (req) => {
       }
       // Import dynamically to avoid circular dependencies
       const { createClient } = await import('jsr:@supabase/supabase-js@2');
-      return createClient(supabaseUrl, serviceRoleKey);
+      return createClient(supabaseUrlStr, serviceRoleKey);
     };
 
     // Helper: Log audit event for sensitive operations
@@ -1745,11 +1750,11 @@ Deno.serve(async (req) => {
 	        requestHeaders(),
 	        responseHeaders,
 	        requestId,
-	        bodyResult as Parameters<typeof handleCrearPedido>[4]
+	        bodyResult as unknown as Parameters<typeof handleCrearPedido>[4]
 	      );
 	      recordCircuitSuccess();
 	      return res;
-	    }
+		    }
 
     // 27. PUT /pedidos/:id/estado - Actualizar estado del pedido
 	    if (path.match(/^\/pedidos\/[a-f0-9-]+\/estado$/) && method === 'PUT') {

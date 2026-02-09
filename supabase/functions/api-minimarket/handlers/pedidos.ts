@@ -121,7 +121,7 @@ export async function handleListarPedidos(
 
 export async function handleObtenerPedido(
         supabaseUrl: string,
-        headers: HeadersInit,
+        headers: Record<string, string>,
         responseHeaders: Record<string, string>,
         requestId: string,
         pedidoId: string
@@ -157,7 +157,7 @@ export async function handleObtenerPedido(
 
 export async function handleCrearPedido(
         supabaseUrl: string,
-        headers: HeadersInit,
+        headers: Record<string, string>,
         responseHeaders: Record<string, string>,
         requestId: string,
         payload: CreatePedidoPayload
@@ -238,7 +238,7 @@ export async function handleCrearPedido(
 
 export async function handleActualizarEstadoPedido(
         supabaseUrl: string,
-        headers: HeadersInit,
+        headers: Record<string, string>,
         responseHeaders: Record<string, string>,
         requestId: string,
         pedidoId: string,
@@ -297,7 +297,7 @@ export async function handleActualizarEstadoPedido(
 
 export async function handleMarcarItemPreparado(
         supabaseUrl: string,
-        headers: HeadersInit,
+        headers: Record<string, string>,
         responseHeaders: Record<string, string>,
         requestId: string,
         itemId: string,
@@ -339,7 +339,7 @@ export async function handleMarcarItemPreparado(
 
 export async function handleActualizarPagoPedido(
         supabaseUrl: string,
-        headers: HeadersInit,
+        headers: Record<string, string>,
         responseHeaders: Record<string, string>,
         requestId: string,
         pedidoId: string,
