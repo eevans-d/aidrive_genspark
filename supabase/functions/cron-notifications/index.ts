@@ -493,7 +493,7 @@ const NOTIFICATION_CHANNELS: Record<string, NotificationChannel> = {
             smtpPort: parseInt(Deno.env.get('SMTP_PORT') || '587'),
             smtpUser: Deno.env.get('SMTP_USER') || '',
             smtpPassword: Deno.env.get('SMTP_PASS') || '',
-            fromEmail: Deno.env.get('EMAIL_FROM') || 'noreply@minimarket.com',
+            fromEmail: Deno.env.get('SMTP_FROM') || Deno.env.get('EMAIL_FROM') || 'noreply@minimarket-system.com',
             fromName: 'Sistema MiniMarket'
         },
         isActive: true,
