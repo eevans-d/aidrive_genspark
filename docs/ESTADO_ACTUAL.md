@@ -11,6 +11,7 @@
 **Nuevo (2026-02-10, sesion 3):**
 - ✅ **Regla CI paths:** `scripts/validate-paths.sh` bloquea rutas con espacios o nombres genéricos (`Nueva carpeta`, `New folder`, `Untitled`, `temp`), integrada al job `lint`.
 - ✅ **Limpieza repo:** eliminado el directorio `Nueva carpeta` con archivos no versionables.
+- ✅ **DocuGuard (docs sync):** reporte de sincronización en `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-10.md`.
 
 **Nuevo (2026-02-09, sesion 2):**
 - ✅ **Dependabot PRs mergeados (7):** vitest 4.0.18, @vitest/coverage-v8 4.0.18, autoprefixer 10.4.23, cmdk 1.1.1, msw 2.12.9, @supabase/supabase-js 2.95.3, typescript 5.9.3.

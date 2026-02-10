@@ -69,6 +69,9 @@ jobs:
       - name: Validate doc links
         run: node scripts/validate-doc-links.mjs
 
+      - name: Validate METRICS up-to-date
+        run: node scripts/metrics.mjs --check
+
       - name: Install dependencies (frontend)
         working-directory: minimarket-system
         run: pnpm install --frozen-lockfile

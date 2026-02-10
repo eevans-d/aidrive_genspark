@@ -118,7 +118,7 @@ function getTestFilesByFolder() {
     .map(([folder, count]) => ({ folder, count }));
 }
 
-function renderMetrics() {
+function renderMetrics({ generatedAt }) {
   const apiMinimarketEndpoints = countApiMinimarketEndpoints();
   const apiProveedorEndpoints = countApiProveedorEndpoints();
   const totalEndpoints = apiMinimarketEndpoints + apiProveedorEndpoints;
@@ -129,14 +129,14 @@ function renderMetrics() {
   const pages = countPages();
   const testFilesByFolder = getTestFilesByFolder();
   const totalTestFiles = testFilesByFolder.reduce((sum, entry) => sum + entry.count, 0);
-  const generatedAt = new Date().toISOString();
+  const ts = generatedAt || new Date().toISOString();
 
   const testRows = testFilesByFolder
     .map((entry) => `| ${entry.folder} | ${entry.count} |`)
     .join('\n');
 
   return `# Métricas de Código (Fuente única)\n\n` +
-    `**Generado:** ${generatedAt} (UTC)\n` +
+    `**Generado:** ${ts} (UTC)\n` +
     `**Script:** \`scripts/metrics.mjs\`\n\n` +
     `## Definiciones\n\n` +
     `- **Edge Functions:** directorios en \`supabase/functions/*\` que contienen \`index.ts\` (excluye \`_shared\`).\n` +
@@ -162,9 +162,35 @@ function renderMetrics() {
     `${testRows}\n`;
 }
 
+function readExistingGeneratedAt(metricsPath) {
+  try {
+    const existing = fs.readFileSync(metricsPath, 'utf8');
+    const m = existing.match(/\*\*Generado:\*\*\s*([^\n]+?)\s*\(UTC\)/);
+    return m && m[1] ? m[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function main() {
   const metricsPath = path.join(repoRoot, 'docs/METRICS.md');
-  const content = renderMetrics();
+  const args = process.argv.slice(2);
+  const check = args.includes('--check');
+
+  if (check) {
+    const existingTs = readExistingGeneratedAt(metricsPath);
+    const expected = renderMetrics({ generatedAt: existingTs || 'UNKNOWN' });
+    const actual = fs.existsSync(metricsPath) ? fs.readFileSync(metricsPath, 'utf8') : '';
+    if (actual !== expected) {
+      console.error('docs/METRICS.md is out of date.');
+      console.error('Run: node scripts/metrics.mjs');
+      process.exit(1);
+    }
+    console.log('docs/METRICS.md OK.');
+    return;
+  }
+
+  const content = renderMetrics({ generatedAt: new Date().toISOString() });
   fs.writeFileSync(metricsPath, content);
   console.log(`Métricas generadas en ${path.relative(repoRoot, metricsPath)}`);
 }

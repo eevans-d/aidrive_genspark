@@ -26,6 +26,8 @@ run() {
 
 case "$SCOPE" in
   all)
+    run "docs:links" node scripts/validate-doc-links.mjs
+    run "docs:metrics" node scripts/metrics.mjs --check
     run "unit" npm run test:unit
     run "integration" npm run test:integration
     run "e2e" npm run test:e2e
@@ -34,11 +36,15 @@ case "$SCOPE" in
     run "frontend:test:components" pnpm -C minimarket-system test:components
     ;;
   backend)
+    run "docs:links" node scripts/validate-doc-links.mjs
+    run "docs:metrics" node scripts/metrics.mjs --check
     run "unit" npm run test:unit
     run "integration" npm run test:integration
     run "e2e" npm run test:e2e
     ;;
   frontend)
+    run "docs:links" node scripts/validate-doc-links.mjs
+    run "docs:metrics" node scripts/metrics.mjs --check
     run "frontend:lint" pnpm -C minimarket-system lint
     run "frontend:build" pnpm -C minimarket-system build
     run "frontend:test:components" pnpm -C minimarket-system test:components
