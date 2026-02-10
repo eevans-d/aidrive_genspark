@@ -5,6 +5,9 @@
 **Metodología:** Comparación directa entre afirmaciones en docs y evidencia en filesystem/código  
 **Autor:** Auditoría automatizada (GitHub Copilot Coding Agent)
 
+> Nota (actualización 2026-02-10): varias brechas detectadas aquí fueron resueltas posteriormente (CORS local, limpieza de paths, centralización de métricas, inventario de endpoints, etc.).  
+> Para conteos actuales, usar `docs/METRICS.md` como fuente única.
+
 ---
 
 ## 1) INVENTARIO DE DOCUMENTACIÓN REAL
@@ -133,7 +136,7 @@
 | **G01** | `README.md` línea 38 | "8 hooks React Query" | **9 hooks** en `minimarket-system/src/hooks/queries/`: useDashboardStats, useDeposito, useKardex, **usePedidos**, useProductos, useProveedores, useRentabilidad, useStock, useTareas | Bajo | Actualizar a "9 hooks React Query" |
 | **G02** | `README.md` línea 40 | "9 páginas" | **13 páginas** en `minimarket-system/src/pages/`: Dashboard, Login, Deposito, Kardex, Productos, Proveedores, Stock, Tareas, **Pedidos, Pocket, Pos, Clientes, Rentabilidad** | Medio | Actualizar a "13 páginas" |
 | **G03** | `README.md` línea 52 | "725 tests (2026-02-06)" | **785 unit tests** según ESTADO_ACTUAL.md (2026-02-09); **45 archivos** en `tests/unit/` | Medio | Actualizar conteo a 785 y fecha a 2026-02-09 |
-| **G04** | `README.md` línea 46 | "Gateway (29 endpoints)" | **52 rutas** definidas en `supabase/functions/api-minimarket/index.ts` (enumeradas #1–#46 en comentarios + routes adicionales) | Alto | Actualizar a conteo real de endpoints |
+| **G04** | `README.md` línea 46 | "Gateway (29 endpoints)" | **34 rutas** definidas en `supabase/functions/api-minimarket/index.ts` (bloques `if (path === ... && method === ...)`). Ver `docs/METRICS.md`. | Alto | Actualizar a conteo real de endpoints |
 | **G05** | `README.md` línea 91 | "Tests: Unit 725 + Integration 38 + E2E smoke 4 + Frontend 40" | **Unit 785 + Frontend 101** (no 40; ver ESTADO_ACTUAL.md línea 15) | Medio | Actualizar métricas a valores actuales |
 | **G06** | `README.md` línea 90 | "Avance Global: 95%" | Sin métrica verificable. No hay criterio formal de "100%" definido | Bajo | Eliminar o reemplazar con referencia a ESTADO_ACTUAL.md |
 | **G07** | `CLAUDE.md` (copilot-instructions) | "11 activas" edge functions | **13 funciones** listadas en `supabase/functions/` (excluyendo `_shared/`). Ver ESTADO_ACTUAL.md líneas 279–294 | Alto | Actualizar a "13 funciones" en copilot-instructions.md |
@@ -162,7 +165,7 @@
 | **G30** | `.env.example` línea 13 | `ALLOWED_ORIGINS=http://localhost:3000` | Frontend Vite corre en **puerto 5173** (ver `minimarket-system/vite.config.ts` y `.env.test.example` que dice `http://localhost:5173`) | Alto | Cambiar a `http://localhost:5173` |
 | **G31** | `ESTADO_ACTUAL.md` línea 279 | "Edge Functions en repo (13)" — lista 13 funciones | **13 funciones confirmadas** en `supabase/functions/` (excluyendo `_shared/`) — CORRECTO | — | Sin acción |
 | **G32** | `ESTADO_ACTUAL.md` línea 306 | "Módulos Compartidos: 7" en `_shared/` | **7 archivos** confirmados: cors.ts, response.ts, errors.ts, logger.ts, rate-limit.ts, audit.ts, circuit-breaker.ts — CORRECTO | — | Sin acción |
-| **G33** | `CHECKLIST_CIERRE.md` línea 246 | "Gateway (29 endpoints)" en estructura final | **52 rutas** en api-minimarket/index.ts (ver G04) | Alto | Actualizar conteo |
+| **G33** | `CHECKLIST_CIERRE.md` línea 246 | "Gateway (29 endpoints)" en estructura final | **34 rutas** en `api-minimarket/index.ts` (ver G04 y `docs/METRICS.md`) | Alto | Actualizar conteo |
 | **G34** | `ESQUEMA_BASE_DATOS_ACTUAL.md` | "14 tablas principales" + "3 Stored Procedures" | Repo tiene **32 migraciones** que crean muchas más tablas (clientes, pedidos, detalle_pedidos, rate_limit_state, circuit_breaker_state, etc.) y **5+ stored procedures** (sp_movimiento_inventario, sp_aplicar_precio, sp_reservar_stock, sp_acquire_job_lock, sp_release_job_lock, sp_check_rate_limit, etc.) | Alto | Actualizar schema doc con tablas/SPs faltantes |
 | **G35** | `DEPLOYMENT_GUIDE.md` línea 48 | `npm run build` para frontend | **Correcto** como alternativa, pero el CI usa `pnpm build` (ver `.github/workflows/ci.yml` línea 154). Docs deberían ser consistentes | Bajo | Alinear con `pnpm build` o documentar ambos |
 | **G36** | Directorio raíz | `Nueva carpeta/` existe en la raíz del repo | Contiene archivos de Word y markdown que parecen **accidentales** (Zone.Identifier files, .docx): `gemini.docx`, `de grok.docx`, `INFORME_DEFINITIVO_MEJORAS_MINIMARKET.md`, `PLAN_MEJORAS_UX_FRICTION_REDUCTION.md` | Alto | Eliminar directorio o mover contenido relevante a `docs/` |
@@ -276,10 +279,10 @@
 | Paso | Doc a actualizar | Acción | Evidencia |
 |------|-----------------|--------|-----------|
 | **1** | `.env.example` | Cambiar `ALLOWED_ORIGINS=http://localhost:3000` → `http://localhost:5173` | `.env.test.example` ya tiene `5173`; `minimarket-system/vite.config.ts` confirma puerto | 
-| **2** | `README.md` | Actualizar: "9 páginas" → "13 páginas", "8 hooks" → "9 hooks", "725 tests" → "785 unit + 101 component", "29 endpoints" → "52 rutas API", "Frontend 40" → "101 component tests" | Conteo directo de archivos en repo + ESTADO_ACTUAL.md |
+| **2** | `README.md` | Actualizar: "9 páginas" → "13 páginas", "8 hooks" → "9 hooks", "725 tests" → "785 unit + 101 component", "29 endpoints" → "34 rutas (gateway)", "Frontend 40" → "101 component tests" | Conteo directo de archivos en repo + ESTADO_ACTUAL.md |
 | **3** | `.github/copilot-instructions.md` | Actualizar "11 activas" → "13 funciones"; eliminar referencias a `PLAN_WS_DETALLADO.md`, `INVENTARIO_ACTUAL.md`, `BASELINE_TECNICO.md`; actualizar "12 versionadas" → "32 migraciones" | `ls supabase/functions/` + `ls supabase/migrations/` |
 | **4** | `CLAUDE.md` | Eliminar referencias a archivos inexistentes: `ROADMAP.md`, `PLAN_WS_DETALLADO.md`, `INVENTARIO_ACTUAL.md`, `BASELINE_TECNICO.md`, `CRON_JOBS_COMPLETOS.md`, `DOCUMENTACION_TECNICA_ACTUALIZADA.md`. Actualizar conteos: tests, migraciones, funciones | Filesystem del repo |
-| **5** | `docs/CHECKLIST_CIERRE.md` | Eliminar referencias a archivos inexistentes: `scripts/rls_audit.sql`, `supabase/seed/test-users.sql`, `C0_RISK_REGISTER_MINIMARKET_TEC.md`, `C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`, `OBJETIVOS_Y_KPIS.md`, `archive/ROADMAP.md`, `archive/ROLLBACK_DRILL_STAGING.md`. Eliminar líneas duplicadas (38–41). Actualizar conteos: migraciones (32), tests (785+101), endpoints (52) | Filesystem + ESTADO_ACTUAL.md |
+| **5** | `docs/CHECKLIST_CIERRE.md` | Eliminar referencias a archivos inexistentes: `scripts/rls_audit.sql`, `supabase/seed/test-users.sql`, `C0_RISK_REGISTER_MINIMARKET_TEC.md`, `C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`, `OBJETIVOS_Y_KPIS.md`, `archive/ROADMAP.md`, `archive/ROLLBACK_DRILL_STAGING.md`. Eliminar líneas duplicadas (38–41). Actualizar conteos: migraciones (32), tests (785+101), endpoints (gateway=34; total=43) | Filesystem + `docs/METRICS.md` |
 | **6** | `docs/ARCHITECTURE_DOCUMENTATION.md` | Actualizar "8 Edge Functions" → "13 funciones"; actualizar "8 pages" → "13 páginas" | `ls supabase/functions/` + `ls minimarket-system/src/pages/` |
 | **7** | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` | Agregar tablas faltantes: `clientes`, `pedidos`, `detalle_pedidos`, `rate_limit_state`, `circuit_breaker_state`, `cron_job_locks`, `stock_reservado_idempotency`, `ofertas`, `bitacora_turnos`, `ventas`, `cuenta_corriente`, etc. Agregar SPs faltantes | Archivos en `supabase/migrations/20260204*`, `20260206*`, `20260207*`, `20260208*` |
 
