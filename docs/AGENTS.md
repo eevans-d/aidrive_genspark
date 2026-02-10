@@ -13,7 +13,7 @@
 | **Build** | Último reporte documentado 2026-02-04 (ver `docs/closure/BUILD_VERIFICATION.md`) |
 | **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
 | **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
-| **Gateway** | 29 endpoints en código (`api-minimarket`) |
+| **Gateway** | 34 endpoints en código (`api-minimarket`) |
 | **Supabase** | Confirmaciones 2026-02-01 re‑abiertas 2026-02-02 (ver `docs/ESTADO_ACTUAL.md`) |
 | **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
 
@@ -69,7 +69,7 @@ aidrive_genspark/
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
 │   ├── functions/            # 13 Edge Functions en repo
-│   │   ├── api-minimarket/   # Gateway principal (29 endpoints)
+│   │   ├── api-minimarket/   # Gateway principal (34 endpoints)
 │   │   ├── api-proveedor/    # API proveedor (9 endpoints)
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados

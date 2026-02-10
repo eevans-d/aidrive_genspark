@@ -130,6 +130,9 @@ ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 API_PROVEEDOR_SECRET=secret-32-chars
 ```
 
+### Configuración local (CORS)
+En desarrollo, el frontend corre en Vite con el puerto 5173. Por eso `ALLOWED_ORIGINS` incluye `localhost` y `127.0.0.1` en ese puerto: algunos navegadores cambian entre ambos hosts y el backend rechaza orígenes no listados. Si usás otro puerto, actualizá `ALLOWED_ORIGINS` y `minimarket-system/vite.config.ts` para que coincidan.
+
 ---
 
 ## 📝 Changelog

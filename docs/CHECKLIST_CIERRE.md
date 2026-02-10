@@ -248,7 +248,7 @@ supabase/functions/
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
 ├── api-minimarket/       # Gateway principal (HARDENED)
-│   ├── index.ts          # Gateway (29 endpoints)
+│   ├── index.ts          # Gateway (34 endpoints)
 │   ├── handlers/         # Handlers puntuales (ej: reservas)
 │   ├── routers/          # Routers por dominio (productos/stock/deposito/tareas)
 │   └── helpers/          # Helpers modularizados
