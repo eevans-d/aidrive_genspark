@@ -1,0 +1,6 @@
+interface:
+  display_name: SecretRotationOps
+  short_description: Rotacion segura de secretos (API_PROVEEDOR_SECRET, SendGrid)
+    con rollback, redeploy y e...
+  default_prompt: Execute or plan secret rotation safely with rollback and evidence;
+    require confirmation for prod-impact steps.

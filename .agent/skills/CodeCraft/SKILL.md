@@ -11,6 +11,13 @@ chain: [TestMaster, DocuGuard, MigrationOps]
 **ROL:** EXECUTOR (estado caliente). Implementar codigo, crear tests, scaffolding.
 **PRE-REQUISITO:** Briefing aprobado (CODEX previo) o instruccion directa del usuario.
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
+3. Backend: NO usar `console.log` (usar `_shared/logger.ts`).
+4. Si se redeployea `api-minimarket`: mantener `verify_jwt=false` (flag `--no-verify-jwt`).
+
 ## Reglas de Automatizacion
 
 1. Ejecutar fases A->D en secuencia sin pedir confirmacion.

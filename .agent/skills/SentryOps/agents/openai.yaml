@@ -1,0 +1,6 @@
+interface:
+  display_name: SentryOps
+  short_description: Integracion Sentry (solo con DSN real) siguiendo el plan del
+    repo, midiendo impacto en...
+  default_prompt: Integrate Sentry only when a real DSN exists; keep bundle impact
+    measured and documented.

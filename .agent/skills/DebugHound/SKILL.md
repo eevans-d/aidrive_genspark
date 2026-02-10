@@ -11,6 +11,12 @@ chain: [TestMaster]
 **ROL:** CODEX (fases A-B: analizar, diagnosticar) + EXECUTOR (fase C: aplicar fix).
 **PROTOCOLO:** "Un error, un fix, una evidencia."
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+3. Max 3 iteraciones: si no hay progreso, cerrar como NEEDS_HUMAN_REVIEW con evidencia.
+
 ## Reglas de Automatizacion
 
 1. Ejecutar analisis completo sin pedir confirmacion.

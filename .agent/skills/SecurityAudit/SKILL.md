@@ -11,6 +11,12 @@ chain: [DocuGuard]
 **ROL:** CODEX (estado frio). Auditar, detectar vulnerabilidades, generar reporte. NO aplicar fixes directamente.
 **PROTOCOLO:** "Seguridad no es opcional."
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+3. Este skill NO aplica fixes: solo reporta con evidencia (rutas/comandos).
+
 ## Reglas de Automatizacion
 
 1. Ejecutar todas las fases en secuencia sin pedir confirmacion.

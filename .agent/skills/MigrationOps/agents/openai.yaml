@@ -1,0 +1,6 @@
+interface:
+  display_name: MigrationOps
+  short_description: Gestion segura de migraciones SQL. Valida, aplica y rollback
+    con verificacion pre/post.
+  default_prompt: Validate migrations, prepare rollback, apply safely, and verify
+    post-migration expectations.

@@ -1,0 +1,6 @@
+interface:
+  display_name: BaselineOps
+  short_description: Captura un baseline seguro (git + supabase) y genera un log en
+    docs/closure sin exponer...
+  default_prompt: Capture a safe baseline (git + supabase) into docs/closure without
+    exposing secrets.

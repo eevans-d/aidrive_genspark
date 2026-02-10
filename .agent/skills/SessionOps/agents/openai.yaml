@@ -1,0 +1,6 @@
+interface:
+  display_name: SessionOps
+  short_description: 'Arranque/cierre de sesion Protocol Zero: bootstrap + baseline
+    + extraccion + mega plan...'
+  default_prompt: 'Start/end a Protocol Zero session with evidence: kickoff (session-start
+    + extraction + mega-plan template) and archive on close.'

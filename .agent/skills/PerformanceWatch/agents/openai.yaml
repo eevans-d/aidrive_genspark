@@ -1,0 +1,6 @@
+interface:
+  display_name: PerformanceWatch
+  short_description: Monitoreo y optimizacion de rendimiento. Bundle size, queries
+    lentas, metricas UX.
+  default_prompt: Measure before optimizing; run perf baseline and produce a performance
+    report with actionable recommendations.
