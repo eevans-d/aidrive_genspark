@@ -43,7 +43,7 @@ npm run test:unit # Tests unitarios (Vitest)
 ├── supabase/
 │   ├── functions/         # Edge Functions (Deno)
 │   │   ├── _shared/       # Módulos compartidos
-│   │   ├── api-minimarket/# Gateway (29 endpoints)
+│   │   ├── api-minimarket/# Gateway (34 endpoints)
 │   │   ├── api-proveedor/ # API proveedor
 │   │   └── scraper-*/     # Scraping
 │   └── migrations/        # Migraciones SQL
@@ -90,7 +90,7 @@ npm run test:unit # Tests unitarios (Vitest)
 |---------|-------|
 | **Avance Global** | 95% |
 | **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 90% (29 endpoints) |
+| **Gateway** | 90% (34 endpoints) |
 | **Tests** | ✅ Unit 725 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
 | **Build** | ✅ OK |
 
