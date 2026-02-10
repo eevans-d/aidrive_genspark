@@ -1,20 +1,20 @@
 # Checklist de Cierre - Plan de Ejecución
 
-**Fecha:** 2026-02-04  
-**Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-04)  
-**Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
+**Fecha:** 2026-02-10  
+**Estado:** ✅ OPERATIVO (ver `docs/ESTADO_ACTUAL.md`)  
+**Plan vigente:** ver `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/DECISION_LOG.md`
 
 ---
 
 ## 🎉 Hitos Completados (2026-01-23)
 
 1. **Proyecto Supabase creado:** `minimarket-system` (ref: dqaygmjpzoqjjrywdsxi)
-2. **23 migraciones versionadas en repo** (incluye placeholders de historial remoto + hardening search_path (pedidos) + sistema de pedidos; aplicación en PROD verificada para RLS v2 el 2026-01-31)
-3. **13 Edge Functions en repo** (despliegue confirmado por usuario en panel, 2026-02-01)
+2. **Migraciones versionadas en repo** (ver `docs/METRICS.md`)
+3. **Edge Functions en repo** (ver `docs/METRICS.md`)
 4. **Suite de seguridad en repo:** 14 tests (ejecución real requiere credenciales)
 5. **Tag v0.3.1-rc.1** publicado
 
-**Nota:** métricas de ejecución son históricas; el conteo actual por código está en `docs/ESTADO_ACTUAL.md`.
+**Nota:** métricas de ejecución son históricas; el conteo actual por código está en `docs/METRICS.md` + `docs/ESTADO_ACTUAL.md`.
 
 ---
 
@@ -29,14 +29,11 @@
 El plan de ejecución de 6 semanas está **completado, sin pendientes críticos** (confirmación usuario 2026-02-01, **histórico**; re‑abierto 2026-02-02). Se logró:
 - Modularización completa de funciones críticas
 - **Gateway api-minimarket hardened** (auth JWT, CORS restrictivo, rate limit 60/min, circuit breaker) ✅
-- **765 tests unitarios** (raíz 725 + frontend 40; última corrida 2026-02-06) ✅
+- **Tests / Conteos:** ver `docs/METRICS.md` + evidencia en `docs/ESTADO_ACTUAL.md` ✅
 - **Suite de seguridad: 14 tests definidos** ✅
-- **Migraciones versionadas en repo (23 archivos)** ✅
-- **13 Edge Functions en repo** ✅
+- **Migraciones / Edge Functions:** ver `docs/METRICS.md` ✅
 - Tests reales con Vitest y runner alineado (unit + integration + e2e) — re‑ejecución 2026-02-02 OK (integration/e2e con `.env.test` remoto; ver `docs/ESTADO_ACTUAL.md`).
 - COMET 2026-02-02 (histórico): leaked password protection DESACTIVADO; Security Advisor WARN=3; migración `20260202000000` pendiente en PROD (**resuelta 2026-02-02**).
-- **CI con jobs gated** para integration/E2E ✅
-- **Frontend testing completo** con React Testing Library + MSW ✅
 - **CI con jobs gated** para integration/E2E ✅
 - **Frontend testing completo** con React Testing Library + MSW ✅
 - **Coverage en repo:** 69.91% lines (coverage/index.html) ✅
@@ -60,7 +57,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] Arquitectura actualizada a estado real (2026-01-15) → `docs/ARCHITECTURE_DOCUMENTATION.md`
 
 ### F1: Data/DB Alignment
-- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: 23 archivos)
+- [x] Migraciones versionadas aplicadas ✅ 2026-01-23 (conteo histórico: 10; repo actual: ver `docs/METRICS.md`)
 - [x] SQL suelto consolidado en migraciones
 - [x] RLS mínima configurada
 - [x] **Credenciales obtenidas** ✅ 2026-01-23
@@ -74,7 +71,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] **Usuarios de prueba** ✅ COMPLETADO 2026-01-23
   - 3 usuarios en Supabase Auth: admin, deposito, ventas
   - 3 registros en tabla `personal` con roles correspondientes
-  - Archivos: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
+  - Archivos: `.env.test`, `minimarket-system/e2e/helpers/auth.ts`
   - Nota: si se regenera `TEST_PASSWORD`, se debe resetear en Auth y revalidar.
 - [x] **E2E con auth real** ✅ COMPLETADO 2026-01-23
   - Spec `minimarket-system/e2e/auth.real.spec.ts`: 10 tests definidos (2 skip)
@@ -85,7 +82,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 
 ### E3: Datos y Seguridad
 - [x] WS3.1 Verificar migraciones en staging/prod ✅ 2026-01-23
-  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: 23 archivos)
+  - Migraciones aplicadas en producción (conteo histórico: 10; repo actual: ver `docs/METRICS.md`)
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
@@ -248,7 +245,7 @@ supabase/functions/
 │   ├── rate-limit.ts
 │   └── circuit-breaker.ts
 ├── api-minimarket/       # Gateway principal (HARDENED)
-│   ├── index.ts          # Gateway (34 endpoints)
+│   ├── index.ts          # Gateway (ver `docs/METRICS.md`)
 │   ├── handlers/         # Handlers puntuales (ej: reservas)
 │   ├── routers/          # Routers por dominio (productos/stock/deposito/tareas)
 │   └── helpers/          # Helpers modularizados
@@ -263,12 +260,12 @@ supabase/functions/
 └── [otras funciones]/    # Adoptan _shared progresivamente
 
 tests/
-├── unit/                 # 38 archivos / 725 tests (2026-02-06)
-├── integration/          # 3 archivos / 38 tests (gated)
-├── e2e/                  # 2 archivos / 4 smoke tests
-├── security/             # suite auxiliar (gated)
-├── performance/          # suite auxiliar
-└── api-contracts/        # suite auxiliar
+├── unit/                 # Ver `docs/METRICS.md`
+├── integration/          # Gated (requiere secrets)
+├── e2e/                  # Smoke tests (gated)
+├── security/             # Suite auxiliar (gated)
+├── performance/          # Suite auxiliar
+└── api-contracts/        # Suite auxiliar
 ├── README.md             # Nota de estado
 └── openapi-compliance.vitest.test.ts
 
@@ -312,19 +309,19 @@ tests/
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ✅ Vigente | Estado real reflejado (v2.1.0) |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 | [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
-| [HOJA_RUTA_MADRE_2026-01-31.md](HOJA_RUTA_MADRE_2026-01-31.md) | ✅ Vigente | Checklist único y ruta a 100% |
+| [HOJA_RUTA_ACTUALIZADA_2026-02-08.md](HOJA_RUTA_ACTUALIZADA_2026-02-08.md) | ✅ Vigente | Plan post-plan (ejecución actual) |
+| [HOJA_RUTA_MADRE_2026-01-31.md](HOJA_RUTA_MADRE_2026-01-31.md) | 📦 Histórico | Roadmap previo (referencia histórica) |
 | [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Histórico | Ejecución 2026-01-28 (ver detalles en el reporte) |
 
 ---
 
 **Nota:** 
-- Planes antiguos consolidados en Hoja de Ruta MADRE.
+- Plan vigente: `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
+- Plan histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/archive/ROADMAP.md`.
 - Archivos obsoletos movidos a `docs/archive/`: ROADMAP.md, ROLLBACK_DRILL_STAGING.md, COMET_*.md
 - Referencias legacy eliminadas: PLAN_EJECUCION.md, PLAN_WS_DETALLADO.md, INVENTARIO_ACTUAL.md, BASELINE_TECNICO.md
 
 ## ✍️ Estado de Cierre
 
-- **Cierre:** ✅ Completado (confirmación usuario; PITR N/A en plan Free)
-- **Última verificación:** 2026-02-01 (evidencia manual)
-- **Commit:** 3b53a760ec24864990a897b30e7e48616dd2156f (histórico; verificar si hay commit final adicional)
-- **Próxima revisión:** 2026-02-09
+- **Estado actual:** ver `docs/ESTADO_ACTUAL.md` (fuente de verdad)
+- **Evidencia histórica de cierre/rollback:** `docs/closure/*` y `docs/ROLLBACK_EVIDENCE_2026-01-29.md`

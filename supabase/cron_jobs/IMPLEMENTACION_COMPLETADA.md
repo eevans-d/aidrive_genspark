@@ -9,30 +9,33 @@ Se ha implementado exitosamente el **sistema completo de cron jobs automáticos*
 
 #### 1. Configuraciones de Cron Jobs
 ```
-/workspace/supabase/cron_jobs/
+supabase/cron_jobs/
 ├── job_daily_price_update.json          # Job diario (02:00 AM)
 ├── job_weekly_trend_analysis.json       # Job semanal (Domingos 03:00)
 ├── job_realtime_alerts.json             # Alertas tiempo real (15 min)
-├── deploy_all_cron_jobs.sql             # Script de implementación
+├── job_2.json                           # Invoca notificaciones-tareas
+├── job_3.json                           # Invoca alertas-stock
+├── job_4.json                           # Invoca reportes-automaticos
 ├── deploy_master.sh                     # Script maestro automatizado
+├── IMPLEMENTACION_COMPLETADA.md         # Este archivo
 └── README.md                            # Documentación completa
 ```
 
 #### 2. Base de Datos (ya implementado anteriormente)
 ```
-/workspace/supabase/migrations/
+supabase/migrations/
 └── *.sql                                # Migraciones Supabase aplicables con `supabase db push`
 ```
 
 #### 3. Función Edge (ya implementado anteriormente)
 ```
-/workspace/supabase/functions/
+supabase/functions/
 └── cron-jobs-maxiconsumo/index.ts       # Función principal
 ```
 
 #### 4. Documentación (ya implementado anteriormente)
 ```
-/workspace/docs/
+docs/
 └── CRON_JOBS_COMPLETOS.md               # Manual completo
 ```
 
@@ -99,7 +102,7 @@ Aplicar las migraciones del proyecto (recomendado):
 supabase db push
 ```
 
-Si no usás Supabase CLI, ejecutar los `.sql` relevantes desde Supabase Dashboard > SQL Editor (carpeta `/workspace/supabase/migrations/`).
+Si no usás Supabase CLI, ejecutar los `.sql` relevantes desde Supabase Dashboard > SQL Editor (carpeta `supabase/migrations/`).
 
 #### Paso 2: Desplegar Función Edge
 ```bash
@@ -109,21 +112,25 @@ supabase functions deploy cron-jobs-maxiconsumo
 
 #### Paso 3: Configurar Cron Jobs
 ```sql
--- Ejecutar script completo
-\i /workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql
+-- Opción recomendada (todo-en-uno):
+-- Ejecutar `supabase/cron_jobs/deploy_all_cron_jobs.sql` en Supabase Dashboard > SQL Editor.
+--
+-- Alternativa:
+-- Ejecutar el campo `raw_sql` de los archivos `supabase/cron_jobs/*.json`
+-- en Supabase Dashboard > SQL Editor.
 ```
 
 #### Paso 4: Script Automatizado
 ```bash
 # Script maestro automatizado
-bash /workspace/supabase/cron_jobs/deploy_master.sh
+bash supabase/cron_jobs/deploy_master.sh
 ```
 
 ### 🔑 VARIABLES DE ENTORNO REQUERIDAS
 
 ```bash
 # Supabase
-SUPABASE_URL=https://htvlwhisjpdagqkqnpxg.supabase.co
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 
 # Notificaciones
@@ -136,12 +143,12 @@ TWILIO_AUTH_TOKEN=<twilio_token>
 
 #### Health Check
 ```bash
-curl -X GET https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=health
+curl -X GET https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=health
 ```
 
 #### Estado de Jobs
 ```bash
-curl -X GET https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=status
+curl -X GET https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=status
 ```
 
 #### Verificación en BD
@@ -192,9 +199,9 @@ SELECT * FROM cron_jobs_config WHERE is_active = true;
 
 ### 📚 DOCUMENTACIÓN ADICIONAL
 
-- **Manual Completo**: `/workspace/docs/CRON_JOBS_COMPLETOS.md`
-- **README Cron Jobs**: `/workspace/supabase/cron_jobs/README.md`
-- **Scripts de Implementación**: `/workspace/supabase/cron_jobs/`
+- **Manual Completo**: `docs/CRON_JOBS_COMPLETOS.md`
+- **README Cron Jobs**: `supabase/cron_jobs/README.md`
+- **Scripts de Implementación**: `supabase/cron_jobs/`
 
 ### ✅ ESTADO ACTUAL
 

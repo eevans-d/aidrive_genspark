@@ -1,154 +1,62 @@
-# Copilot Instructions - Mini Market
+# Copilot Instructions - Mini Market (Protocol Zero)
 
-## Estructura del Proyecto
-```
-minimarket-system/     # Frontend React + Vite + TS
-├── src/lib/supabase.ts       # Cliente Supabase
-├── src/contexts/AuthContext.tsx  # Autenticación
-├── src/pages/                # Páginas (Dashboard, Stock, etc.)
-└── src/types/database.ts     # Tipos TS
+Este repo usa un workflow agentico llamado **Protocol Zero** bajo `.agent/`.
+Tratá `.agent/` y `AGENTS.md` (raíz) como **fuente de verdad** para cómo operar.
 
-supabase/functions/    # Edge Functions (Deno) - 11 activas, modularización parcial
-├── _shared/           # Utilidades compartidas
-│   ├── cors.ts        # Headers CORS unificados
-│   ├── response.ts    # Respuestas ok/fail estándar
-│   ├── errors.ts      # Tipos AppError/HttpError
-│   ├── logger.ts      # Logging estructurado
-│   └── rate-limit.ts  # Rate limiting (uso inconsistente)
-├── api-minimarket/    # API Gateway principal (1050 líneas)
-├── api-proveedor/     # API proveedor - MODULAR (router + handlers + utils)
-├── scraper-maxiconsumo/  # Scraper de precios - MODULAR (9 módulos)
-│   ├── types.ts, config.ts, cache.ts, anti-detection.ts
-│   ├── parsing.ts, matching.ts, alertas.ts, storage.ts, scraping.ts
-│   └── index.ts (orquestador)
-├── cron-jobs-maxiconsumo/ # Orquestador cron - MODULAR (4 jobs + orchestrator)
-│   ├── jobs/daily-price-update.ts
-│   ├── jobs/realtime-alerts.ts
-│   ├── jobs/weekly-analysis.ts
-│   ├── jobs/maintenance.ts
-│   └── orchestrator.ts
-├── cron-testing-suite/ # Suite de testing cron
-├── cron-notifications/ # Notificaciones cron
-├── cron-dashboard/     # Dashboard API
-├── cron-health-monitor/ # Health monitor
-├── alertas-stock/     # Alertas de inventario ✓
-├── reportes-automaticos/ # Reportes ✓
-└── notificaciones-tareas/ # Notificaciones ✓
+## Guardrails (no negociables)
 
-supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
-supabase/migrations/   # Migraciones SQL versionadas
-supabase/config.toml   # Configuracion Supabase local
+- **NO imprimir secretos/JWTs** (solo NOMBRES de variables/secretos).
+- **NO usar comandos destructivos** (`git reset --hard`, `git checkout -- <file>`, force-push).
+- Supabase Edge Function **`api-minimarket` debe permanecer `verify_jwt=false`**.  
+  Si se redeployea: `supabase functions deploy api-minimarket --no-verify-jwt`.
 
-tests/unit/            # Tests unitarios (Vitest) - imports de módulos reales
-├── api-proveedor-routing.test.ts  # 17 tests
-├── scraper-parsing.test.ts        # 10 tests
-├── scraper-matching.test.ts       # 9 tests
-├── scraper-alertas.test.ts        # 3 tests
-└── cron-jobs.test.ts              # 8 tests
+## Fuentes de Verdad (docs)
 
-.github/workflows/     # CI/CD
-└── ci.yml             # Pipeline: lint → test → build → typecheck
+- **Protocolo del repo:** `AGENTS.md` (raíz)
+- **Estado actual:** `docs/ESTADO_ACTUAL.md`
+- **Plan vigente:** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
+- **Decisiones:** `docs/DECISION_LOG.md`
+- **Conteos verificables:** `docs/METRICS.md` (generado por `scripts/metrics.mjs`)
+- **API:** `docs/API_README.md` (+ OpenAPI en `docs/*.yaml`)
+- **DB:** `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+- **Deploy/Rollback:** `docs/DEPLOYMENT_GUIDE.md`
+- **Operación:** `docs/OPERATIONS_RUNBOOK.md`
 
-docs/                  # 21 archivos de documentación + OpenAPI/Postman
-├── PLAN_EJECUCION.md           # Plan técnico (en progreso)
-├── CHECKLIST_CIERRE.md         # Estado del proyecto
-├── ESTADO_ACTUAL.md            # Progreso aproximado hacia producción
-├── ROADMAP.md                  # Plan vigente (rolling 90 días)
-├── PLAN_WS_DETALLADO.md         # (pendiente crear o retirar referencia)
-├── DECISION_LOG.md             # Decisiones vigentes
-├── OBJETIVOS_Y_KPIS.md
-├── INVENTARIO_ACTUAL.md         # (pendiente crear o retirar referencia)
-├── BASELINE_TECNICO.md          # (pendiente crear o retirar referencia)
-├── DB_GAPS.md
-├── API_README.md
-├── ARCHITECTURE_DOCUMENTATION.md
-├── CRON_JOBS_COMPLETOS.md
-├── DEPLOYMENT_GUIDE.md
-├── DOCUMENTACION_TECNICA_ACTUALIZADA.md
-├── ESQUEMA_BASE_DATOS_ACTUAL.md
-├── OPERATIONS_RUNBOOK.md
-├── api-openapi-3.1.yaml
-├── api-proveedor-openapi-3.1.yaml
-├── postman-collection.json
-└── postman-collection-proveedor.json
-```
+## Mapa del Repo
 
-## Comandos (desde raíz del proyecto)
+- `minimarket-system/`: Frontend (React/Vite/TS)
+- `supabase/functions/`: Edge Functions (Deno) + `_shared`
+- `supabase/migrations/`: Migraciones SQL
+- `tests/`: suites Vitest (unit/integration/e2e/security/performance/contracts)
+- `scripts/`: scripts utilitarios (métricas/auditorías/smokes)
+- `.agent/`: skills + workflows + CLI `p0.sh`
+
+## Comandos Útiles (desde la raíz)
+
 ```bash
-# Frontend (desde minimarket-system/)
-pnpm dev       # Desarrollo
-pnpm build     # Build
-pnpm lint      # Linter
+# Protocol Zero (skills + evidencia)
+.agent/scripts/p0.sh bootstrap
+.agent/scripts/p0.sh route "tu pedido"
+.agent/scripts/p0.sh baseline
+.agent/scripts/p0.sh gates all
 
-# Tests (desde raíz)
-npx vitest run              # Unit tests (según vitest.config.ts)
-npx vitest run tests/unit/  # Solo unit tests
-npx vitest --coverage       # Unit tests con coverage
+# Métricas (fuente única)
+node scripts/metrics.mjs
+
+# Frontend
+pnpm -C minimarket-system dev
+pnpm -C minimarket-system build
+pnpm -C minimarket-system lint
+
+# Tests
+npm run test:unit
+npm run test:integration  # requiere .env.test real
+npm run test:e2e          # requiere .env.test real
 ```
 
-## Patrones del Código
+## Notas de Implementación
 
-### Frontend
-- **Auth**: `useAuth()` de `AuthContext.tsx` → `user`, `signIn`, `signOut`
-- **Rutas protegidas**: `ProtectedRoute` en `App.tsx` redirige a `/login`
-- **Queries**: `supabase.from('tabla').select('*').eq('campo', valor)`
-- **Env requeridas**: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- No hardcodear conteos en docs: usar `docs/METRICS.md`.
+- Si un documento referencia un archivo, el archivo debe existir o la referencia se elimina.
+- Para cambios de arquitectura/guardrails: actualizar `docs/DECISION_LOG.md` y `docs/ESTADO_ACTUAL.md`.
 
-### Edge Functions (Deno)
-- Patrón: `Deno.serve` + CORS headers + responder OPTIONS
-- Env requeridas: `SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`
-- API Gateway: `api-minimarket/index.ts` → routing por path/method + roles
-
-### Base de Datos
-- Tabla `stock_deposito`: `cantidad_actual`, `stock_minimo`, `stock_maximo`
-- Cron jobs usan tablas: `cron_jobs_execution_log`, `cron_jobs_alerts`, `cron_jobs_metrics`, `cron_jobs_tracking`, `cron_jobs_notifications`, `cron_jobs_monitoring_history`, `cron_jobs_health_checks`
-- Vistas cron usadas por funciones: `vista_cron_jobs_dashboard`, `vista_cron_jobs_metricas_semanales`, `vista_cron_jobs_alertas_activas`
-
-## Fuentes de Verdad
-| Qué | Dónde |
-|-----|-------|
-| API endpoints | `docs/API_README.md` |
-| Schema BD | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
-| OpenAPI spec | `docs/api-openapi-3.1.yaml` |
-| Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
-| Deploy | `docs/DEPLOYMENT_GUIDE.md` |
-| Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
-| Plan vigente | `docs/HOJA_RUTA_MADRE_2026-01-31.md` |
-| Plan histórico | `docs/ROADMAP.md` |
-| Plan operativo | `docs/PLAN_WS_DETALLADO.md` (histórico) |
-| Decisiones | `docs/DECISION_LOG.md` |
-| Estado actual | `docs/ESTADO_ACTUAL.md` |
-| Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
-| Credenciales | `docs/OBTENER_SECRETOS.md` |
-
-## Estado Actual (Enero 2026 - verificado)
-
-### Proyecto Supabase ✅
-- **Nombre:** minimarket-system
-- **Ref:** dqaygmjpzoqjjrywdsxi
-- **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
-- **Edge Functions:** 13 desplegadas y funcionando
-- **Migraciones:** 12 versionadas (incluye 2 de 2026-01-31)
-
-### Funciones Modularizadas
-1. **api-proveedor**: Router + handlers + schemas + validators + utils
-2. **scraper-maxiconsumo**: 9 módulos (types, config, cache, anti-detection, parsing, matching, storage, scraping, index)
-3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
-
-### Testing
-- Framework: **Vitest 4.0.16**
-- Tests unitarios: 646 passing
-- Tests frontend: 40 passing
-- Tests seguridad: 15 passing (con credenciales reales)
-- Runner/scripts: `package.json` y `test.sh` alineados con Vitest
-
-### CI/CD
-- Pipeline: `.github/workflows/ci.yml`
-- Jobs: lint → test → build → typecheck → edge-functions-check
-- Nota: workflow activo en `main` y edge-check estricto
-
-### Pendientes (ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`)
-1. Habilitar leaked password protection (Auth settings)
-2. Confirmar WARN residual en Security Advisor
-3. Configurar secrets en GitHub (desbloquear CI integration/E2E)
-4. Revisión humana P0 de módulos críticos

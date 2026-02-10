@@ -360,4 +360,4 @@ Al ejecutar la auditoría, guardar:
 - Migración RLS: [20260104083000_add_rls_policies.sql](../supabase/migrations/20260104083000_add_rls_policies.sql)
 - Fix SECURITY DEFINER: [20260110100000_fix_rls_security_definer.sql](../supabase/migrations/20260110100000_fix_rls_security_definer.sql)
 - Esquema BD: [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md)
-- Plan de ejecución: [PLAN_TRES_PUNTOS.md](PLAN_TRES_PUNTOS.md) - FASE 2
+- Plan de ejecución: ver `docs/CHECKLIST_CIERRE.md` + `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
