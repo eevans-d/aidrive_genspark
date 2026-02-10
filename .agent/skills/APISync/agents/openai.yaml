@@ -1,0 +1,6 @@
+interface:
+  display_name: APISync
+  short_description: Sincronizacion de OpenAPI spec con codigo real. Detecta endpoints
+    sin documentar y docs...
+  default_prompt: Sync OpenAPI specs to the real code endpoints; validate YAML and
+    document changes.

@@ -1,21 +1,42 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-09
-**Estado:** ✅ OPERATIVO — Roadmap Fases 1-4 mergeado a `main` (PR #33)
+**Última actualización:** 2026-02-10 (sesion 3)
+**Estado:** ✅ OPERATIVO — Dependencias actualizadas, SendGrid fix aplicado
 
 **Hoja de ruta (post-plan):** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
 **Prompt ejecutor (Claude Code):** `docs/closure/CLAUDE_CODE_CONTEXT_PROMPT_EXECUTOR_2026-02-08.md`.
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
 
-**Nuevo (2026-02-09):**
+**Nuevo (2026-02-10, sesion 3):**
+- ✅ **Regla CI paths:** `scripts/validate-paths.sh` bloquea rutas con espacios o nombres genéricos (`Nueva carpeta`, `New folder`, `Untitled`, `temp`), integrada al job `lint`.
+- ✅ **Limpieza repo:** eliminado el directorio `Nueva carpeta` con archivos no versionables.
+
+**Nuevo (2026-02-09, sesion 2):**
+- ✅ **Dependabot PRs mergeados (7):** vitest 4.0.18, @vitest/coverage-v8 4.0.18, autoprefixer 10.4.23, cmdk 1.1.1, msw 2.12.9, @supabase/supabase-js 2.95.3, typescript 5.9.3.
+- ✅ **Dependabot PRs cerrados (5, major bumps):** react-resizable-panels 4, recharts 3, react 19, react-router-dom 7, react-dom 19. Requieren migracion dedicada.
+- ✅ **Fix `cron-notifications` (PR #53):** `SMTP_FROM` como fuente de verdad (antes leia `EMAIL_FROM`). Redeployado a v12.
+- ✅ **Bug fix: `sp_reservar_stock` ON CONFLICT** (migracion `20260209000000`): El `ON CONFLICT (idempotency_key)` no matcheaba el partial unique index. Corregido con `WHERE idempotency_key IS NOT NULL`. Aplicado en remoto.
+- ✅ **Seed de producto de prueba** en staging: `Coca Cola 2.25L` (SKU: SEED-CC-225) + stock 50 unidades en deposito Principal. Script: `scripts/seed-test-product.mjs`.
+- ✅ **Smoke reservas PASS:** `POST /reservas` → 201 Created (1ra), 200 Idempotent (2da). Endpoint `/reservas` 100% operativo.
+- ✅ **Performance baseline:** 7/7 endpoints OK, p50 839ms-1168ms, 0 errores. Ver `docs/closure/PERF_BASELINE_2026-02-09_SESSION2.md`.
+- ✅ **Quality gates 6/6 PASS:** conteos de tests en `docs/METRICS.md`; lint + build PASS.
+- ✅ **Tests totales actualizados:** ver `docs/METRICS.md`.
+- ✅ **Migraciones:** 33 en repo (32 + fix SP), todas sincronizadas local=remoto.
+- ✅ **Edge Functions:** 13 activas. `cron-notifications` actualizada a v12.
+- ⚠️ **Sentry:** BLOQUEADO sin DSN real. Plan documentado en `docs/SENTRY_INTEGRATION_PLAN.md`.
+- ⚠️ **Rotacion de secretos:** Plan listo (`docs/SECRET_ROTATION_PLAN.md`), requiere ejecucion manual por owner.
+- ⚠️ **Major bumps (React 19, react-router-dom 7, recharts 3, react-resizable-panels 4):** DIFERIDOS. Requieren sesion de migracion dedicada.
+
+**Nuevo (2026-02-09, sesion 1):**
 - ✅ **PR #33 mergeado a `main`** (`feat/roadmap-exec-20260208` → `main`): 175 archivos, +37,497 / -3,639 líneas.
 - ✅ **CI 100% verde:** Edge Functions Syntax Check PASS, Lint PASS, Type Check PASS, Unit Tests PASS, Build PASS.
 - ✅ **Fix Deno typecheck** aplicado (commit `c1dc33a`): `HeadersInit` → `Record<string,string>`, config freezing, explicit casts.
-- ✅ **Tests totales:** 785 unit (44 archivos) + 38 integration + 4 e2e smoke + 101 component tests.
+- ✅ **Tests totales:** ver `docs/METRICS.md` (snapshot 2026-02-09).
 - ✅ **Backlog post-merge completado (PRs #36–#48):** docs sincronizados, guardrails A4, evidencia de suites PASS, y PRs adicionales (#38–#42) con tests/scripts para `x-request-id`, `/health` y `/reservas` + perf baseline. Ver `docs/closure/EXECUTION_LOG_2026-02-09_NEXT_STEPS.md` y `docs/closure/BUILD_VERIFICATION.md` (Addendum 2026-02-09).
 - ✅ **Docs nuevas (planes/bloqueos, sin secrets):** `docs/SECRET_ROTATION_PLAN.md`, `docs/SENDGRID_VERIFICATION.md`, `docs/SENTRY_INTEGRATION_PLAN.md`.
 - ✅ **Scripts nuevos (operativos):** `scripts/perf-baseline.mjs` (read-only) y `scripts/smoke-reservas.mjs` (write, idempotente; puede quedar BLOCKED si no hay productos).
+- ✅ **Sistema Skills Agénticos (Protocol Zero) upgrade:** 19 skills en `.agent/skills/` + scripts de bootstrap/orquestacion/baseline/gates/env-audit/extraction + `AGENTS.md` root para auto-pickup.
 
 **Nuevo (2026-02-08):**
 - ✅ **FASE 1-2 revisadas/cerradas (QA + deploy remoto):** ver `docs/closure/REVIEW_LOG_FASE1_FASE2_2026-02-08.md`.
@@ -297,39 +318,9 @@
 
 ---
 
-## 📊 Métricas de Código (Verificadas en repo)
+## 📊 Métricas de Código (Fuente única)
 
-> Conteos verificados por ejecución de suites (última corrida: **2026-02-06**). Evidencia: `test-reports/` + logs CI.
-
-### Backend (Supabase Edge Functions)
-| Categoría | Cantidad | Detalle |
-|-----------|----------|---------|
-| Edge Functions | 13 | api-minimarket, api-proveedor, scraper, crons, alertas |
-| Módulos Compartidos | 7 | `_shared/` (logger, response, errors, cors, audit, rate-limit, circuit-breaker) |
-| **Tests unit (raíz)** | **785** | 44 archivos en `tests/unit` (`npm run test:unit`; incluye gateway/scraper/cron + helpers frontend) |
-
-### Frontend (minimarket-system)
-| Categoría | Cantidad | Detalle |
-|-----------|----------|---------|
-| Páginas | 9 | Dashboard, Login, Deposito, Kardex, Productos, etc. |
-| Hooks Query | 8 | useDashboardStats, useProductos, useTareas, etc. |
-| Componentes | 3 | Layout, ErrorBoundary, ErrorMessage |
-| Libs | 5 | apiClient, supabase, roles, observability, queryClient |
-| Contexts | 2 | AuthContext.tsx, auth-context.ts |
-| **Tests Frontend (unit)** | **101** | componentes en `minimarket-system/src` |
-
-### Totales (repo)
-- **Tests unitarios:** 886 (raíz 785 + frontend 101)
-- **Tests integración:** 38 (tests/integration)
-- **Tests seguridad:** 14 (tests/security)
-- **Tests performance:** 5 (tests/performance)
-- **Tests contratos API:** 10 (tests/api-contracts)
-- **Tests E2E backend smoke:** 4 (solo `tests/e2e/*.smoke.test.ts`; `edge-functions.test.js` es legacy/no ejecuta)
-- **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
-- **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
-- **Coverage (vitest v8):** 69.39% lines (2026-02-06; `coverage/index.html`)
-- **Migraciones en repo:** 32 archivos en `supabase/migrations` (incluye placeholders de historial remoto)
-- **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-09, CI green)
+Ver `docs/METRICS.md` (generado por `scripts/metrics.mjs` con timestamp). Evidencia de suites en `test-reports/` + logs CI.
 
 ---
 

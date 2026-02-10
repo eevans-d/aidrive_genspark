@@ -11,6 +11,11 @@ chain: []
 **ROL:** EXECUTOR (estado caliente). Ejecutar tests, analizar resultados, reportar.
 **AUTO-INVOCADO POR:** CodeCraft, DeployOps, DebugHound, session-workflow.
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+
 ## Reglas de Automatizacion
 
 1. Ejecutar suite de tests sin pedir confirmacion.
@@ -50,13 +55,18 @@ Seleccionar comando segun necesidad:
 
 | Tipo | Comando |
 |------|---------|
-| Unit Quick | `npx vitest run tests/unit/` |
-| Unit + Coverage | `npx vitest run --coverage` |
-| Single File | `npx vitest run tests/unit/<archivo>.test.ts` |
-| Integration | `bash scripts/run-integration-tests.sh` |
+| Quality Gates (All) | `.agent/scripts/quality_gates.sh all` |
+| Unit Quick | `npm run test:unit` |
+| Integration | `npm run test:integration` |
+| E2E | `npm run test:e2e` |
+| Unit + Coverage | `npm run test:coverage` |
 | Security | `npm run test:security` |
+| Contracts | `npm run test:contracts` |
 | Full Suite | `npm run test:all` |
-| Frontend | `cd minimarket-system && pnpm test:components` |
+| Single File | `npx vitest run tests/unit/<archivo>.test.ts` |
+| Frontend Lint | `pnpm -C minimarket-system lint` |
+| Frontend Build | `pnpm -C minimarket-system build` |
+| Frontend Components | `pnpm -C minimarket-system test:components` |
 
 ### FASE C: Analysis
 

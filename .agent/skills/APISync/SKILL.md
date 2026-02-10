@@ -11,6 +11,12 @@ chain: [DocuGuard]
 **ROL:** CODEX (fase A: detectar discrepancias) + EXECUTOR (fase B: sincronizar).
 **PROTOCOLO:** "Spec = Realidad."
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+3. CODIGO es fuente de verdad (spec se ajusta al codigo, no al reves).
+
 ## Reglas de Automatizacion
 
 1. Ejecutar analisis completo sin pedir confirmacion.
@@ -48,6 +54,10 @@ chain: [DocuGuard]
 3. **Extraer paths del OpenAPI spec:**
    ```bash
    grep -E "^\s+/" docs/api-openapi-3.1.yaml | head -30
+   ```
+   Repetir para proveedor si aplica:
+   ```bash
+   grep -E "^\\s+/" docs/api-proveedor-openapi-3.1.yaml | head -30
    ```
 
 4. **Comparar listas:**

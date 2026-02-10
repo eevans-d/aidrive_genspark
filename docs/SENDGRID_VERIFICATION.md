@@ -43,7 +43,7 @@ Para verificar que `noreply@minimarket-system.com` es un sender verificado en Se
 - [ ] Verificar si `noreply@minimarket-system.com` es sender verificado
   - Si NO: crear Single Sender Verification o Domain Authentication
 - [x] Resolver discrepancia `EMAIL_FROM` vs `SMTP_FROM`: **RESUELTO (PR #53)** — codigo ahora lee `SMTP_FROM` primero
-- [ ] Redeploy: `supabase functions deploy cron-notifications --use-api`
+- [x] Redeploy: `supabase functions deploy cron-notifications --use-api` **HECHO (2026-02-09, v12)**
 - [ ] Enviar email de prueba (cambiar `NOTIFICATIONS_MODE` a `test`)
 - [ ] Verificar en SendGrid Activity que el email fue entregado
 - [ ] Registrar evidencia en `docs/closure/EXECUTION_LOG_*.md`

@@ -1,0 +1,6 @@
+interface:
+  display_name: EnvAuditOps
+  short_description: Audita variables de entorno usadas vs documentadas (solo nombres).
+    Detecta mismatches c...
+  default_prompt: Audit env var NAMES used in code vs .env.example and (optionally)
+    Supabase secrets to catch mismatches early.

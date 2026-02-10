@@ -1,0 +1,6 @@
+interface:
+  display_name: MegaPlanner
+  short_description: 'Planificacion superior (hoja de ruta + mega plan): consolida
+    estado, riesgos y priorida...'
+  default_prompt: Produce a top-10, executable roadmap/mega-plan from the repo's source-of-truth
+    docs with clear DoD and gates.

@@ -1,0 +1,6 @@
+interface:
+  display_name: DeployOps
+  short_description: Despliegues seguros con pre-flight checks, dry-run y rollback
+    automatico.
+  default_prompt: Run pre-flight gates, ensure api-minimarket stays verify_jwt=false,
+    deploy safely, and verify health/smoke.

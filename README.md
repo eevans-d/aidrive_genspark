@@ -35,21 +35,20 @@ npm run test:unit # Tests unitarios (Vitest)
 │   ├── src/
 │   │   ├── components/    # Layout, ErrorBoundary
 │   │   ├── contexts/      # AuthContext
-│   │   ├── hooks/queries/ # 8 hooks React Query
+│   │   ├── hooks/queries/ # Hooks React Query (ver docs/METRICS.md)
 │   │   ├── lib/           # Supabase + apiClient
-│   │   └── pages/         # 9 páginas
+│   │   └── pages/         # Páginas (ver docs/METRICS.md)
 │   └── .env.example
 │
 ├── supabase/
 │   ├── functions/         # Edge Functions (Deno)
 │   │   ├── _shared/       # Módulos compartidos
-│   │   ├── api-minimarket/# Gateway (29 endpoints)
+│   │   ├── api-minimarket/# Gateway (ver docs/METRICS.md)
 │   │   ├── api-proveedor/ # API proveedor
 │   │   └── scraper-*/     # Scraping
 │   └── migrations/        # Migraciones SQL
 │
-├── tests/                 # Tests (Vitest)
-│   └── unit/             # 725 tests (2026-02-06)
+├── tests/                 # Tests (Vitest, ver docs/METRICS.md)
 │
 ├── docs/                  # Documentación
 ```
@@ -89,9 +88,9 @@ npm run test:unit # Tests unitarios (Vitest)
 | Métrica | Valor |
 |---------|-------|
 | **Avance Global** | 95% |
-| **Frontend** | 90% (React Query + Gateway) |
-| **Gateway** | 90% (29 endpoints) |
-| **Tests** | ✅ Unit 725 + Integration 38 + E2E smoke 4 + Frontend 40 (2026-02-06) |
+| **Frontend** | 90% (React Query + Gateway; ver docs/METRICS.md) |
+| **Gateway** | 90% (ver docs/METRICS.md) |
+| **Tests** | ✅ Ver docs/METRICS.md |
 | **Build** | ✅ OK |
 
 ---
@@ -130,6 +129,9 @@ SUPABASE_SERVICE_ROLE_KEY=eyJ...
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173
 API_PROVEEDOR_SECRET=secret-32-chars
 ```
+
+### Configuración local (CORS)
+En desarrollo, el frontend corre en Vite con el puerto 5173. Por eso `ALLOWED_ORIGINS` incluye `localhost` y `127.0.0.1` en ese puerto: algunos navegadores cambian entre ambos hosts y el backend rechaza orígenes no listados. Si usás otro puerto, actualizá `ALLOWED_ORIGINS` y `minimarket-system/vite.config.ts` para que coincidan.
 
 ---
 

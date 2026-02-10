@@ -12,6 +12,12 @@ pre_check: [TestMaster]
 **ROL:** CODEX (fases A-B: pre-flight, dry-run) + EXECUTOR (fase C: deploy real).
 **NIVEL DE IMPACTO:** 2-3 (siempre requiere rollback preparado).
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
+3. `api-minimarket` debe permanecer con `verify_jwt=false`. Si se redeployea, usar **siempre** `--no-verify-jwt`.
+
 ## Reglas de Automatizacion
 
 1. Pre-flight check AUTOMATICO (tests, lint, branch).
@@ -52,24 +58,25 @@ pre_check: [TestMaster]
 
 3. **TestMaster:**
    ```bash
-   npx vitest run tests/unit/
+   .agent/scripts/quality_gates.sh backend
    ```
    SI FALLA -> PROHIBIDO DESPLEGAR.
 
-4. **Lint:**
+4. **Frontend Gates (lint/build/tests):**
    ```bash
-   cd minimarket-system && pnpm lint
+   .agent/scripts/quality_gates.sh frontend
    ```
 
 ### FASE B: Dry Run
 
 1. **Edge Functions check:**
    ```bash
-   supabase functions list
+   supabase functions list --project-ref dqaygmjpzoqjjrywdsxi
    ```
+   Confirmar que `api-minimarket` figura con `verify_jwt=false`.
 2. **Build frontend:**
    ```bash
-   cd minimarket-system && pnpm build
+   pnpm -C minimarket-system build
    ```
 3. **Verificar migraciones pendientes:**
    ```bash
@@ -80,6 +87,10 @@ pre_check: [TestMaster]
 
 1. **Deploy Edge Functions:**
    ```bash
+   # Gateway principal (obligatorio mantener verify_jwt=false):
+   supabase functions deploy api-minimarket --no-verify-jwt
+
+   # Otras funciones (si aplica):
    supabase functions deploy <function_name>
    ```
 2. **Deploy Migraciones (si aplica):**
@@ -88,7 +99,14 @@ pre_check: [TestMaster]
    ```
 3. **Smoke Test:**
    ```bash
-   curl -s -o /dev/null -w "%{http_code}" https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health
+   # Public health (read-only):
+   curl -sS https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health | head -c 200
+
+   # Smoke autenticado (requiere env + credenciales; NO imprime JWT):
+   node .agent/scripts/verify_endpoint.js
+
+   # Alternativa (solo si esta permitido escribir en remoto y es idempotente):
+   # node scripts/smoke-reservas.mjs
    ```
 
 ## Emergency Rollback (Nivel 3)

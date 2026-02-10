@@ -1,0 +1,6 @@
+interface:
+  display_name: SendGridOps
+  short_description: Verifica y corrige configuracion SendGrid/Supabase SMTP (EMAIL_FROM
+    vs SMTP_FROM) con e...
+  default_prompt: Resolve EMAIL_FROM vs SMTP_FROM mismatch and validate SendGrid sender
+    setup (no secret values).
