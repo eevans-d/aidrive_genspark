@@ -51,6 +51,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate repository paths
+        run: scripts/validate-paths.sh
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
