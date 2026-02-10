@@ -1,6 +1,6 @@
 # DEPLOYMENT GUIDE - MINI MARKET SYSTEM
 
-**Fecha:** 2026-02-04  
+**Fecha:** 2026-02-10  
 **Estado:** Documento operativo (rollback documentado y probado en staging 2026-01-30)
 
 ---
@@ -42,8 +42,7 @@ supabase functions deploy
 
 ### 3.3 Frontend
 ```bash
-cd minimarket-system
-npm run build
+pnpm -C minimarket-system build
 ```
 
 ### 3.4 Verificacion post-deploy

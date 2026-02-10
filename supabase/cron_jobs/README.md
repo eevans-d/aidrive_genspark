@@ -43,10 +43,14 @@
 
 ## Implementación en Supabase
 
-### Paso 1: Crear el Job en la Base de Datos
+### Paso 1: Crear los Jobs en la Base de Datos
 ```sql
--- Ejecutar el raw_sql de cada archivo JSON en Supabase SQL Editor
--- El raw_sql contiene la creación del procedimiento y el schedule
+-- Opción recomendada (todo-en-uno):
+-- Ejecutar `supabase/cron_jobs/deploy_all_cron_jobs.sql` en Supabase SQL Editor.
+--
+-- Alternativa:
+-- Ejecutar el `raw_sql` de cada archivo JSON en Supabase SQL Editor.
+-- El `raw_sql` contiene la creación del procedimiento + el schedule.
 ```
 
 ### Paso 2: Verificar el Estado de los Jobs
@@ -80,7 +84,7 @@ La función `cron-jobs-maxiconsumo` debe estar desplegada en Supabase con las si
 ## Variables de Entorno Requeridas
 
 ```bash
-SUPABASE_URL=https://htvlwhisjpdagqkqnpxg.supabase.co
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 SENDGRID_API_KEY=<sendgrid_key>
 TWILIO_ACCOUNT_SID=<twilio_sid>
@@ -110,7 +114,7 @@ SELECT cron.unschedule('daily_price_update');
 
 - **Email**: Para jobs completados/fallidos y cambios significativos
 - **SMS**: Solo para alertas críticas (>15% cambio de precio)
-- **Dashboard**: Monitoreo en tiempo real en `/workspace/docs/CRON_JOBS_COMPLETOS.md`
+- **Dashboard**: Monitoreo en tiempo real en `docs/CRON_JOBS_COMPLETOS.md`
 
 ## Resolución de Problemas
 

@@ -249,7 +249,7 @@ El frontend necesita decidir cómo acceder a los datos:
 
 ```
 minimarket-system/src/
-├── hooks/queries/         # Lecturas directas (8 hooks)
+├── hooks/queries/         # Lecturas directas (ver `docs/METRICS.md`)
 │   ├── useStock.ts        → supabase.from('stock_deposito')
 │   ├── useProductos.ts    → supabase.from('productos')
 │   └── ...
@@ -286,7 +286,7 @@ Entonces migrar lecturas al gateway.
 
 ### Validación
 
-✅ 8 hooks de lectura usan Supabase directo
+✅ Hooks de lectura usan Supabase directo (ver `docs/METRICS.md`)
 ✅ `apiClient.ts` tiene métodos para escrituras (stock.ajustar, movimientos.registrar, etc.)
 ⚠️ Excepción actual: `AuthContext.tsx` crea registro en `personal` al signUp (write directo)
 ✅ RLS verificada para tablas críticas (auditoría completa D-019)
@@ -384,4 +384,3 @@ Si el proyecto escala >10K rps:
 - [ ] Modificar `_shared/rate-limit.ts` para usar RPC
 - [ ] Tests de concurrencia para verificar atomicidad
 - [ ] Benchmark de latencia en producción
-

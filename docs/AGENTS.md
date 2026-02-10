@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-02-04  
+**Última actualización:** 2026-02-10  
 
 ---
 
@@ -9,19 +9,19 @@
 
 | Métrica | Valor |
 |---------|-------|
-| **Avance Global** | ⚠️ Cierre condicionado (pendientes re‑abiertos 2026-02-02) |
-| **Build** | Último reporte documentado 2026-02-04 (ver `docs/closure/BUILD_VERIFICATION.md`) |
-| **Tests** | Conteos en repo en `docs/ESTADO_ACTUAL.md` |
-| **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
-| **Gateway** | 34 endpoints en código (`api-minimarket`) |
-| **Supabase** | Confirmaciones 2026-02-01 re‑abiertas 2026-02-02 (ver `docs/ESTADO_ACTUAL.md`) |
-| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
+| **Avance Global** | ✅ Operativo (ver `docs/ESTADO_ACTUAL.md`) |
+| **Build** | CI verde en `main` + evidencia en `docs/closure/BUILD_VERIFICATION.md` |
+| **Tests / Conteos** | Fuente única: `docs/METRICS.md` |
+| **Frontend** | Ver `docs/METRICS.md` (páginas + hooks) |
+| **Gateway** | Ver `docs/METRICS.md` + inventario en `docs/API_README.md` |
+| **Supabase** | Ver `docs/ESTADO_ACTUAL.md` (ref, deploys, migraciones) |
+| **Agent Workflow** | `AGENTS.md` (raíz) + `.agent/scripts/p0.sh` + skills en `.agent/skills/` |
 
 ---
 
 ## 🎯 Próximos Pasos
 
-Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (cierre condicionado).  
+Plan vigente: `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.  
 Estado consolidado: `docs/ESTADO_ACTUAL.md`.  
 Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).  
 Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OPERATIONS_RUNBOOK.md`.
@@ -30,12 +30,12 @@ Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OP
 
 ## 🚀 Inicio Rápido (futuras sesiones)
 
-1) **Leer estado actual:** `docs/ESTADO_ACTUAL.md`  
-2) **Leer plan vigente:** `docs/HOJA_RUTA_MADRE_2026-01-31.md`  
-3) **Auditoría RLS/Advisor:** `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`  
+1) **Leer protocolo de agente:** `AGENTS.md` (raíz)  
+2) **Leer estado actual:** `docs/ESTADO_ACTUAL.md`  
+3) **Leer plan vigente:** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`  
 4) **Decisiones vigentes:** `docs/DECISION_LOG.md`  
-5) **Checklist de cierre:** `docs/CHECKLIST_CIERRE.md`  
-6) **Si toca Security Advisor WARN:** `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`  
+5) **API / contratos:** `docs/API_README.md` y `docs/CONTRATOS_FRONTEND_BACKEND.md`  
+6) **Checklist de cierre:** `docs/CHECKLIST_CIERRE.md`  
 
 ---
 
@@ -57,26 +57,26 @@ Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OP
 
 - Usar skills **solo si el agente lo soporta** y **solo cuando la tarea lo requiere**.  
 - Si se requiere crear/instalar skills, documentar en `docs/DECISION_LOG.md` y actualizar `docs/ESTADO_ACTUAL.md`.  
-- Si el entorno no soporta skills, proceder con los documentos base (Hoja de Ruta MADRE).
+- Si el entorno no soporta skills, proceder con los documentos base: `docs/ESTADO_ACTUAL.md` + `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
 
 ## 📂 Estructura del Proyecto
 
 ```
 aidrive_genspark/
 ├── minimarket-system/        # Frontend React + Vite + TypeScript
-│   ├── src/pages/            # 9 páginas (Rentabilidad, Kardex, etc.)
-│   ├── src/hooks/queries/    # 8 custom hooks
+│   ├── src/pages/            # Páginas (ver docs/METRICS.md)
+│   ├── src/hooks/queries/    # Hooks (ver docs/METRICS.md)
 │   └── src/lib/apiClient.ts  # Cliente para gateway
 ├── supabase/
-│   ├── functions/            # 13 Edge Functions en repo
-│   │   ├── api-minimarket/   # Gateway principal (34 endpoints)
-│   │   ├── api-proveedor/    # API proveedor (9 endpoints)
+│   ├── functions/            # Edge Functions (ver docs/METRICS.md)
+│   │   ├── api-minimarket/   # Gateway principal (ver docs/API_README.md)
+│   │   ├── api-proveedor/    # API proveedor (ver docs/API_README.md)
 │   │   ├── scraper-maxiconsumo/
 │   │   ├── cron-*/           # Jobs programados
 │   │   └── _shared/          # Módulos compartidos
-│   └── migrations/           # 23 migraciones versionadas
+│   └── migrations/           # Migraciones (ver docs/METRICS.md)
 ├── tests/                    # Unit, E2E, Performance, Security
-└── docs/                     # Documentación (ver HOJA_RUTA_MADRE)
+└── docs/                     # Documentación (ver docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md)
 ```
 
 ---
@@ -86,13 +86,14 @@ aidrive_genspark/
 | Archivo | Propósito |
 |---------|-----------|
 | `docs/ESTADO_ACTUAL.md` | **FUENTE DE VERDAD** - Estado y avance |
-| `docs/HOJA_RUTA_MADRE_2026-01-31.md` | **PLAN ACTUAL** - checklist único y ruta a 100% |
+| `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` | **PLAN ACTUAL** - ruta de ejecución post-plan |
 | `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` | Evidencia RLS + Advisor (Partes 1-8) |
 | `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` | Plan operativo para WARN residual |
 | `docs/archive/ROADMAP.md` | Plan histórico (archivado) |
 | `docs/OBTENER_SECRETOS.md` | Credenciales Supabase |
 | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | Inventario y validación de secretos |
 | `docs/ARCHITECTURE_DOCUMENTATION.md` | Arquitectura técnica |
+| `docs/METRICS.md` | Conteos verificables (fuente única) |
 
 ---
 
@@ -100,14 +101,15 @@ aidrive_genspark/
 
 ```bash
 # Frontend
-cd minimarket-system && npm run dev    # Desarrollo
-cd minimarket-system && npm run build  # Build producción
+pnpm -C minimarket-system dev    # Desarrollo
+pnpm -C minimarket-system build  # Build producción
+pnpm -C minimarket-system lint   # Lint
 
 # Tests
 npm run test:unit                      # Tests unitarios
 
 # Git
-git status && git add -A && git commit -m "msg" && git push origin main
+git status && git add -A && git commit -m "msg" && git push -u origin HEAD
 ```
 
 ---
@@ -124,7 +126,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 ## 🧭 Cómo obtener contexto en una nueva sesión
 
 1. Leer `docs/ESTADO_ACTUAL.md` (fuente de verdad).
-2. Leer `docs/HOJA_RUTA_MADRE_2026-01-31.md` (plan vigente).
+2. Leer `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (plan vigente).
 3. Leer `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` (RLS + Advisor).
 4. Confirmar checklist final en `docs/CHECKLIST_CIERRE.md`.
 5. Revisar decisiones vigentes en `docs/DECISION_LOG.md`.
@@ -142,7 +144,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 1. **NO crear archivos duplicados** - Verificar si ya existe
 2. **NO usar console.log en supabase/functions** - Usar `createLogger()` de `_shared/logger.ts`
 3. **Writes via Gateway** - Frontend NO escribe directo a Supabase, **excepto** alta inicial en `personal` durante `signUp` (AuthContext)
-4. **Verificar build** - Siempre ejecutar `npm run build` después de cambios
+4. **Verificar build** - Siempre ejecutar `pnpm -C minimarket-system build` después de cambios
 5. **Documentar decisiones** - Actualizar `DECISION_LOG.md`
 
 ---
@@ -152,7 +154,7 @@ git status && git add -A && git commit -m "msg" && git push origin main
 ```bash
 # Producción
 SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=eyJ...
+SUPABASE_ANON_KEY=<anon_key>
 ALLOWED_ORIGINS=http://localhost:5173,http://127.0.0.1:5173 # ejemplo local; en producción usar dominio real (confirmación usuario 2026-02-01, valor no expuesto)
 API_PROVEEDOR_SECRET=secret-here
 

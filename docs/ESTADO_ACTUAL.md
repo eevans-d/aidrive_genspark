@@ -11,6 +11,7 @@
 **Nuevo (2026-02-10, sesion 3):**
 - ✅ **Regla CI paths:** `scripts/validate-paths.sh` bloquea rutas con espacios o nombres genéricos (`Nueva carpeta`, `New folder`, `Untitled`, `temp`), integrada al job `lint`.
 - ✅ **Limpieza repo:** eliminado el directorio `Nueva carpeta` con archivos no versionables.
+- ✅ **DocuGuard (docs sync):** reporte de sincronización en `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-10.md`.
 
 **Nuevo (2026-02-09, sesion 2):**
 - ✅ **Dependabot PRs mergeados (7):** vitest 4.0.18, @vitest/coverage-v8 4.0.18, autoprefixer 10.4.23, cmdk 1.1.1, msw 2.12.9, @supabase/supabase-js 2.95.3, typescript 5.9.3.
@@ -283,7 +284,7 @@
 - Migración versionada aplicada en PROD y verificada (04:06–04:15 UTC): `supabase/migrations/20260131000000_rls_role_based_policies_v2.sql`.
 - Security Advisor (PROD) mitigado: 5 ERROR y 5 WARN eliminadas; anon grants internos revocados (0). Quedaban 2 WARN (leaked password protection + 1 WARN residual) y 15 INFO (tablas internas sin policies) — **resuelto 2026-02-01 por confirmación usuario (histórico; re‑abierto 2026-02-02)**. Ver Parte 8 y Addendum en `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`.
 - Migración recomendada para mitigar Advisor: `supabase/migrations/20260131020000_security_advisor_mitigations.sql` (validada en no‑PROD por confirmación usuario 2026-02-01).
-- Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (planes antiguos retirados).
+- Planificación consolidada en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (histórico; planes antiguos retirados). Plan vigente (post-plan): `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
 
 ## 🎯 Proyecto Supabase
 
@@ -329,7 +330,7 @@ Ver `docs/METRICS.md` (generado por `scripts/metrics.mjs` con timestamp). Eviden
 - ✅ API Gateway con rate limiting + circuit breaker
 - ✅ Alertas de stock bajo y vencimientos
 - ✅ Roles validados server-side via `app_metadata` (sin fallback a `user_metadata`); frontend verifica rol en tabla `personal`
-- ✅ React Query: 7 páginas usan hooks (`Dashboard`, `Kardex`, `Productos`, `Proveedores`, `Rentabilidad`, `Stock`, `Tareas`); `Deposito` usa `useQuery` inline; `Login` sin hook
+- ✅ React Query: páginas + hooks ver `docs/METRICS.md` (fuente única)
 - ✅ Exportación CSV de productos/stock
 - ✅ **Proyecto Supabase configurado**
 - ✅ **Migraciones versionadas en repo**
@@ -341,8 +342,8 @@ Ver `docs/METRICS.md` (generado por `scripts/metrics.mjs` con timestamp). Eviden
 - Usuarios de prueba en Supabase Auth + tabla `personal`: ✅
 - E2E con auth real (Playwright): spec define 10 tests (2 skip); última revalidación documentada 2026-01-27 (7/7 PASS; histórico)
 
-> **Hoja de ruta madre (vigente):** `docs/HOJA_RUTA_MADRE_2026-01-31.md`
+> **Plan vigente (post-plan):** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
 
-> **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
+> **Plan maestro (histórico):** `docs/HOJA_RUTA_MADRE_2026-01-31.md` + `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
 > **Nota:** rollback PITR no disponible (plan Free Supabase). Backups diarios disponibles.

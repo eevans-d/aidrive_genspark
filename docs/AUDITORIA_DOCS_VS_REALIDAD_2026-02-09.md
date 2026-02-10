@@ -8,6 +8,12 @@
 > Nota (actualización 2026-02-10): varias brechas detectadas aquí fueron resueltas posteriormente (CORS local, limpieza de paths, centralización de métricas, inventario de endpoints, etc.).  
 > Para conteos actuales, usar `docs/METRICS.md` como fuente única.
 
+## Estado de remediación (2026-02-10)
+
+- ✅ `ALLOWED_ORIGINS` local actualizado a puerto Vite (5173) en `.env.example` y `_shared/cors.ts` (ver `docs/ESTADO_ACTUAL.md`).
+- ✅ Archivos faltantes referenciados creados: `docs/OBJETIVOS_Y_KPIS.md`, `docs/C0_RISK_REGISTER_MINIMARKET_TEC.md`, `docs/C0_STAKEHOLDERS_MINIMARKET_TEC.md`, `docs/C0_COMMUNICATION_PLAN_MINIMARKET_TEC.md`, `docs/CRON_JOBS_COMPLETOS.md`.
+- ✅ Scripts SQL operativos versionados: `scripts/rls_audit.sql` y `supabase/cron_jobs/deploy_all_cron_jobs.sql`.
+
 ---
 
 ## 1) INVENTARIO DE DOCUMENTACIÓN REAL
@@ -47,8 +53,8 @@
 | E2E_SETUP.md | `docs/E2E_SETUP.md` | Setup de tests E2E |
 | ESQUEMA_BASE_DATOS_ACTUAL.md | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` | Schema de BD |
 | ESTADO_ACTUAL.md | `docs/ESTADO_ACTUAL.md` | **Fuente de verdad** — estado actual |
-| HOJA_RUTA_MADRE_2026-01-31.md | `docs/HOJA_RUTA_MADRE_2026-01-31.md` | Hoja de ruta vigente |
-| HOJA_RUTA_ACTUALIZADA_2026-02-08.md | `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` | Roadmap actualizado |
+| HOJA_RUTA_ACTUALIZADA_2026-02-08.md | `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` | Plan vigente (post-plan) |
+| HOJA_RUTA_MADRE_2026-01-31.md | `docs/HOJA_RUTA_MADRE_2026-01-31.md` | Plan maestro (histórico) |
 | IA_USAGE_GUIDE.md | `docs/IA_USAGE_GUIDE.md` | Guía IA (copia de raíz) |
 | INFORME_PREMORTEM_OPERATIVO.md | `docs/INFORME_PREMORTEM_OPERATIVO.md` | Informe premortem |
 | OBTENER_SECRETOS.md | `docs/OBTENER_SECRETOS.md` | Cómo obtener credenciales |

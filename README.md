@@ -57,13 +57,14 @@ npm run test:unit # Tests unitarios (Vitest)
 
 ## 📚 Documentación
 
-> **Para Agentes IA:** Ver `docs/AGENTS.md` y `.agent/skills/project_config.yaml` para consultar los **Skills** activos (9).
+> **Para Agentes IA:** Ver `docs/AGENTS.md` y `.agent/skills/project_config.yaml` para consultar los **Skills** activos.
 
 | Documento | Descripción |
 |-----------|-------------|
 | [docs/AGENTS.md](docs/AGENTS.md) | **Guía rápida para agentes IA** |
 | [docs/ESTADO_ACTUAL.md](docs/ESTADO_ACTUAL.md) | Fuente de verdad - estado actual |
-| [docs/HOJA_RUTA_MADRE_2026-01-31.md](docs/HOJA_RUTA_MADRE_2026-01-31.md) | Hoja de ruta vigente |
+| [docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md](docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md) | Plan vigente (post-plan) |
+| [docs/HOJA_RUTA_MADRE_2026-01-31.md](docs/HOJA_RUTA_MADRE_2026-01-31.md) | Plan maestro (histórico) |
 | [docs/BACKLOG_PRIORIZADO.md](docs/BACKLOG_PRIORIZADO.md) | Prioridades |
 | [docs/ARCHITECTURE_DOCUMENTATION.md](docs/ARCHITECTURE_DOCUMENTATION.md) | Arquitectura |
 | [docs/API_README.md](docs/API_README.md) | Endpoints API |

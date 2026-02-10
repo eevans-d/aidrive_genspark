@@ -72,6 +72,36 @@ function countPages() {
   }).length;
 }
 
+function countEdgeFunctions() {
+  const functionsDir = path.join(repoRoot, 'supabase/functions');
+  if (!fs.existsSync(functionsDir)) return 0;
+  const entries = fs.readdirSync(functionsDir, { withFileTypes: true });
+  return entries.filter((entry) => {
+    if (!entry.isDirectory()) return false;
+    if (entry.name === '_shared') return false;
+    return fs.existsSync(path.join(functionsDir, entry.name, 'index.ts'));
+  }).length;
+}
+
+function countSharedModules() {
+  const sharedDir = path.join(repoRoot, 'supabase/functions/_shared');
+  if (!fs.existsSync(sharedDir)) return 0;
+  const files = walkDir(sharedDir);
+  return files.filter((file) => {
+    const base = path.basename(file);
+    if (!base.endsWith('.ts')) return false;
+    if (base.includes('.test.')) return false;
+    return true;
+  }).length;
+}
+
+function countMigrations() {
+  const migrationsDir = path.join(repoRoot, 'supabase/migrations');
+  if (!fs.existsSync(migrationsDir)) return 0;
+  const files = walkDir(migrationsDir);
+  return files.filter((file) => file.endsWith('.sql')).length;
+}
+
 function getTestFilesByFolder() {
   const files = walkDir(repoRoot);
   const testRegex = /\.(test|spec)\.[jt]sx?$/;
@@ -88,24 +118,30 @@ function getTestFilesByFolder() {
     .map(([folder, count]) => ({ folder, count }));
 }
 
-function renderMetrics() {
+function renderMetrics({ generatedAt }) {
   const apiMinimarketEndpoints = countApiMinimarketEndpoints();
   const apiProveedorEndpoints = countApiProveedorEndpoints();
   const totalEndpoints = apiMinimarketEndpoints + apiProveedorEndpoints;
+  const edgeFunctions = countEdgeFunctions();
+  const sharedModules = countSharedModules();
+  const migrations = countMigrations();
   const hooks = countHooks();
   const pages = countPages();
   const testFilesByFolder = getTestFilesByFolder();
   const totalTestFiles = testFilesByFolder.reduce((sum, entry) => sum + entry.count, 0);
-  const generatedAt = new Date().toISOString();
+  const ts = generatedAt || new Date().toISOString();
 
   const testRows = testFilesByFolder
     .map((entry) => `| ${entry.folder} | ${entry.count} |`)
     .join('\n');
 
   return `# Métricas de Código (Fuente única)\n\n` +
-    `**Generado:** ${generatedAt} (UTC)\n` +
+    `**Generado:** ${ts} (UTC)\n` +
     `**Script:** \`scripts/metrics.mjs\`\n\n` +
     `## Definiciones\n\n` +
+    `- **Edge Functions:** directorios en \`supabase/functions/*\` que contienen \`index.ts\` (excluye \`_shared\`).\n` +
+    `- **Migraciones:** archivos \`.sql\` en \`supabase/migrations\`.\n` +
+    `- **Shared modules:** archivos \`.ts\` en \`supabase/functions/_shared\`, excluye tests.\n` +
     `- **Endpoints:** rutas contadas en \`supabase/functions/api-minimarket/index.ts\` (\"path === ... && method === ...\") + lista \`endpointList\` en \`supabase/functions/api-proveedor/schemas.ts\`.\n` +
     `- **Hooks:** archivos \`use*.ts/tsx\` en \`minimarket-system/src/hooks/queries\`, excluye \`index.ts\` y tests.\n` +
     `- **Páginas:** archivos \`.tsx\` en \`minimarket-system/src/pages\`, excluye tests.\n` +
@@ -113,6 +149,9 @@ function renderMetrics() {
     `## Resumen\n\n` +
     `| Métrica | Total | Detalle |\n` +
     `|---|---:|---|\n` +
+    `| Edge Functions | ${edgeFunctions} | \`supabase/functions\` |\n` +
+    `| Migraciones SQL | ${migrations} | \`supabase/migrations\` |\n` +
+    `| Shared modules (_shared) | ${sharedModules} | \`supabase/functions/_shared\` |\n` +
     `| Endpoints | ${totalEndpoints} | api-minimarket: ${apiMinimarketEndpoints}, api-proveedor: ${apiProveedorEndpoints} |\n` +
     `| Hooks (React Query) | ${hooks} | \`minimarket-system/src/hooks/queries\` |\n` +
     `| Páginas | ${pages} | \`minimarket-system/src/pages\` |\n` +
@@ -123,9 +162,35 @@ function renderMetrics() {
     `${testRows}\n`;
 }
 
+function readExistingGeneratedAt(metricsPath) {
+  try {
+    const existing = fs.readFileSync(metricsPath, 'utf8');
+    const m = existing.match(/\*\*Generado:\*\*\s*([^\n]+?)\s*\(UTC\)/);
+    return m && m[1] ? m[1].trim() : null;
+  } catch {
+    return null;
+  }
+}
+
 function main() {
   const metricsPath = path.join(repoRoot, 'docs/METRICS.md');
-  const content = renderMetrics();
+  const args = process.argv.slice(2);
+  const check = args.includes('--check');
+
+  if (check) {
+    const existingTs = readExistingGeneratedAt(metricsPath);
+    const expected = renderMetrics({ generatedAt: existingTs || 'UNKNOWN' });
+    const actual = fs.existsSync(metricsPath) ? fs.readFileSync(metricsPath, 'utf8') : '';
+    if (actual !== expected) {
+      console.error('docs/METRICS.md is out of date.');
+      console.error('Run: node scripts/metrics.mjs');
+      process.exit(1);
+    }
+    console.log('docs/METRICS.md OK.');
+    return;
+  }
+
+  const content = renderMetrics({ generatedAt: new Date().toISOString() });
   fs.writeFileSync(metricsPath, content);
   console.log(`Métricas generadas en ${path.relative(repoRoot, metricsPath)}`);
 }

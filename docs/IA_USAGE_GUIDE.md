@@ -1,7 +1,7 @@
 # 🤖 Guía de Uso de IA para Sistema Mini Market
 
-**Versión:** 1.0.2  
-**Fecha:** 2026-02-06  
+**Versión:** 1.0.3  
+**Fecha:** 2026-02-10  
 **Basado en:** AGENTS.md y patrones reales del proyecto
 
 ---
@@ -38,7 +38,8 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 
 ### Estado Actual (fuente de verdad)
 Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.  
-Plan vigente y checklist único: `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
+Plan vigente: `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (post-plan).  
+Plan maestro (histórico): `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
 Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
 
 ### Contexto Importante
@@ -56,7 +57,7 @@ Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_S
 aidrive_genspark/
 ├── minimarket-system/              # Frontend React + Vite + TypeScript
 │   ├── src/
-│   │   ├── pages/                  # 9 páginas (data via React Query)
+│   │   ├── pages/                  # Páginas (ver docs/METRICS.md)
 │   │   │   ├── Dashboard.tsx
 │   │   │   ├── Login.tsx
 │   │   │   ├── Deposito.tsx
@@ -65,18 +66,23 @@ aidrive_genspark/
 │   │   │   ├── Proveedores.tsx
 │   │   │   ├── Kardex.tsx
 │   │   │   ├── Tareas.tsx
+│   │   │   ├── Pedidos.tsx
+│   │   │   ├── Pocket.tsx
+│   │   │   ├── Pos.tsx
+│   │   │   ├── Clientes.tsx
 │   │   │   └── Rentabilidad.tsx
 │   │   ├── hooks/
-│   │   │   └── queries/            # 8 custom hooks React Query
+│   │   │   └── queries/            # Hooks React Query (ver docs/METRICS.md)
 │   │   │       ├── useDashboardStats.ts
 │   │   │       ├── useDeposito.ts
 │   │   │       ├── useKardex.ts
+│   │   │       ├── usePedidos.ts
 │   │   │       ├── useProductos.ts
 │   │   │       ├── useProveedores.ts
 │   │   │       ├── useStock.ts
 │   │   │       ├── useTareas.ts
 │   │   │       └── useRentabilidad.ts
-│   │   ├── components/             # 3 componentes compartidos
+│   │   ├── components/             # Componentes compartidos (ver carpeta)
 │   │   │   ├── Layout.tsx
 │   │   │   ├── ErrorBoundary.tsx
 │   │   │   └── ErrorMessage.tsx
@@ -97,11 +103,12 @@ aidrive_genspark/
 │   │   │   ├── response.ts         # ✅ respondOk, respondFail
 │   │   │   ├── cors.ts             # ✅ Headers CORS unificados
 │   │   │   ├── errors.ts           # ✅ AppError, HttpError
+│   │   │   ├── audit.ts            # ✅ Audit logging
 │   │   │   ├── rate-limit.ts       # ✅ Rate limiting
 │   │   │   └── circuit-breaker.ts  # ✅ Circuit breaker pattern
 │   │   │
 │   │   ├── api-minimarket/         # ⚠️ CRÍTICO - Gateway principal
-│   │   │   ├── index.ts            # 29 endpoints (ver docs/API_README.md)
+│   │   │   ├── index.ts            # Endpoints: ver docs/API_README.md + docs/METRICS.md
 │   │   │   ├── routers/            # Routers por dominio (productos/stock/deposito/tareas)
 │   │   │   ├── handlers/           # Handlers puntuales (ej: reservas)
 │   │   │   └── helpers/            # Helpers (auth/validation/pagination/supabase)
@@ -156,7 +163,9 @@ aidrive_genspark/
 │
 ├── docs/                           # Documentación del proyecto
 │   ├── ESTADO_ACTUAL.md            # ⭐ FUENTE DE VERDAD - Estado y avance
-│   ├── HOJA_RUTA_MADRE_2026-01-31.md # Checklist único vigente
+│   ├── HOJA_RUTA_ACTUALIZADA_2026-02-08.md # Plan vigente (post-plan)
+│   ├── HOJA_RUTA_MADRE_2026-01-31.md # Plan maestro (histórico)
+│   ├── METRICS.md                  # Conteos verificables (fuente única)
 │   ├── archive/ROADMAP.md          # Plan rolling 90 días (histórico)
 │   ├── ARCHITECTURE_DOCUMENTATION.md # Arquitectura técnica
 │   ├── API_README.md               # Documentación de endpoints
@@ -503,7 +512,8 @@ npm run test:unit           # En raíz
 
 1. **SIEMPRE leer documentación existente primero**
    - `docs/ESTADO_ACTUAL.md` - Estado del proyecto (fuente de verdad)
-   - `docs/HOJA_RUTA_MADRE_2026-01-31.md` - Plan vigente y checklist único
+   - `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` - Plan vigente (post-plan)
+   - `docs/HOJA_RUTA_MADRE_2026-01-31.md` - Plan maestro (histórico)
    - `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` - Evidencia RLS + Advisor
    - `docs/ARCHITECTURE_DOCUMENTATION.md` - Arquitectura
    - `docs/API_README.md` - Endpoints disponibles
@@ -533,7 +543,7 @@ npm run test:unit           # En raíz
 1. **Entender el contexto**
    ```
    - Leer docs/ESTADO_ACTUAL.md
-   - Revisar docs/HOJA_RUTA_MADRE_2026-01-31.md
+   - Revisar docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md
    - Verificar docs/DECISION_LOG.md y docs/CHECKLIST_CIERRE.md
    ```
 
@@ -627,7 +637,7 @@ A: `tests/unit/`. Nombrar archivo como `mi-modulo.test.ts`.
 A: NO. Las escrituras van via Gateway (`api-minimarket`), **excepto** alta inicial en `personal` durante `signUp`.
 
 **Q: ¿Cómo sé qué está pendiente?**  
-A: Ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/CHECKLIST_CIERRE.md`. (El roadmap histórico está en `docs/archive/ROADMAP.md`).
+A: Ver `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/CHECKLIST_CIERRE.md`. (Histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/archive/ROADMAP.md`).
 
 **Q: ¿Hay alguna decisión técnica que deba conocer?**  
 A: Revisar `docs/DECISION_LOG.md` antes de proponer cambios arquitectónicos.
@@ -831,12 +841,14 @@ En **GitHub Settings → Secrets and variables → Actions**:
 ### Documentación Técnica Esencial
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
-2. **HOJA_RUTA_MADRE_2026-01-31.md** - Checklist único vigente (plan maestro)
-3. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
-4. **API_README.md** - Todos los endpoints disponibles
-5. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
-6. **DECISION_LOG.md** - Decisiones técnicas registradas
-7. **archive/ROADMAP.md** - Plan rolling 90 días (histórico)
+2. **HOJA_RUTA_ACTUALIZADA_2026-02-08.md** - Plan vigente (post-plan)
+3. **HOJA_RUTA_MADRE_2026-01-31.md** - Plan maestro (histórico)
+4. **METRICS.md** - Conteos verificables (fuente única)
+5. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
+6. **API_README.md** - Todos los endpoints disponibles
+7. **CHECKLIST_CIERRE.md** - Estado de tareas de cierre
+8. **DECISION_LOG.md** - Decisiones técnicas registradas
+9. **archive/ROADMAP.md** - Roadmap histórico (archivado)
 
 ### APIs y Esquemas
 

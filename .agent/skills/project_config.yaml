@@ -191,7 +191,7 @@ skill_orchestrator:
       keywords: ["deploy", "despliega", "sube a staging", "sube a prod", "publica", "release"]
       intent: "Desplegar a un entorno"
     DocuGuard:
-      keywords: ["actualiza docs", "sincroniza documentacion", "documenta", "update docs", "revisa docs"]
+      keywords: ["actualiza docs", "sincroniza documentacion", "documenta", "update docs", "revisa docs", "alinear docs", "docs = codigo", "documentación = código", "documentacion = codigo", "docs vs realidad"]
       intent: "Mantener documentacion"
     MigrationOps:
       keywords: ["aplica migracion", "crear tabla", "modificar esquema", "migrar", "db push", "supabase db", "migration", "nueva columna"]

@@ -1,6 +1,7 @@
 interface:
   display_name: DocuGuard
-  short_description: Guardian de documentacion. Sincroniza docs con codigo, detecta
-    desincronizaciones.
-  default_prompt: Keep documentation synced with reality; block forbidden patterns;
-    update source-of-truth docs.
+  short_description: Sincroniza docs con el codigo real; regenera metricas, valida
+    links y deja evidencia/PR.
+  default_prompt: Sync docs with repo reality. Regenerate docs/METRICS.md, validate
+    internal links, block forbidden patterns, update source-of-truth docs, and leave
+    closure evidence.

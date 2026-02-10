@@ -1317,7 +1317,7 @@ interface TestReport {
 export async function runCompleteTestSuite(): Promise<TestReport> {
     const config: TestConfig = {
         environment: (Deno.env.get('TEST_ENVIRONMENT') as any) || 'development',
-        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://htvlwhisjpdagqkqnpxg.supabase.co',
+        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://dqaygmjpzoqjjrywdsxi.supabase.co',
         timeout: 30000,
         retries: 2,
         parallel: true,
@@ -1339,7 +1339,7 @@ export async function runCompleteTestSuite(): Promise<TestReport> {
 export async function runTestCategory(category: 'unit' | 'integration' | 'performance' | 'recovery'): Promise<TestReport> {
     const config: TestConfig = {
         environment: 'development',
-        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://htvlwhisjpdagqkqnpxg.supabase.co',
+        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://dqaygmjpzoqjjrywdsxi.supabase.co',
         timeout: 45000,
         retries: 1,
         parallel: false,

@@ -1,10 +1,13 @@
 # Métricas de Código (Fuente única)
 
-**Generado:** 2026-02-09T23:22:14.901Z (UTC)
+**Generado:** 2026-02-10T05:33:24.748Z (UTC)
 **Script:** `scripts/metrics.mjs`
 
 ## Definiciones
 
+- **Edge Functions:** directorios en `supabase/functions/*` que contienen `index.ts` (excluye `_shared`).
+- **Migraciones:** archivos `.sql` en `supabase/migrations`.
+- **Shared modules:** archivos `.ts` en `supabase/functions/_shared`, excluye tests.
 - **Endpoints:** rutas contadas en `supabase/functions/api-minimarket/index.ts` ("path === ... && method === ...") + lista `endpointList` en `supabase/functions/api-proveedor/schemas.ts`.
 - **Hooks:** archivos `use*.ts/tsx` en `minimarket-system/src/hooks/queries`, excluye `index.ts` y tests.
 - **Páginas:** archivos `.tsx` en `minimarket-system/src/pages`, excluye tests.
@@ -14,6 +17,9 @@
 
 | Métrica | Total | Detalle |
 |---|---:|---|
+| Edge Functions | 13 | `supabase/functions` |
+| Migraciones SQL | 33 | `supabase/migrations` |
+| Shared modules (_shared) | 7 | `supabase/functions/_shared` |
 | Endpoints | 43 | api-minimarket: 34, api-proveedor: 9 |
 | Hooks (React Query) | 9 | `minimarket-system/src/hooks/queries` |
 | Páginas | 13 | `minimarket-system/src/pages` |

@@ -595,6 +595,8 @@
 **/*.backup
 **/*.sql
 !supabase/migrations/*.sql
+!scripts/*.sql
+!supabase/cron_jobs/*.sql
 
 # MongoDB
 **/dump/
@@ -929,6 +931,8 @@ workspace.json
 
 # Archive folder (deprecated)
 archive/
+!docs/archive/
+!docs/archive/**
 
 # Session reports (use CHANGELOG.md instead)
 REPORTE_*.md

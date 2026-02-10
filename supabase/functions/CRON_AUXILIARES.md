@@ -4,12 +4,12 @@
 
 Las siguientes funciones cron auxiliares están activas:
 
-| Función | Líneas | Propósito |
-|---------|--------|-----------|
-| `cron-testing-suite` | 1413 | Suite de testing para validar jobs |
-| `cron-notifications` | 1246 | Sistema de notificaciones (email/SMS/slack) |
-| `cron-dashboard` | 1130 | API para dashboard de monitoreo |
-| `cron-health-monitor` | 898 | Health checks y métricas del sistema |
+| Función | Propósito | `_shared/` |
+|---------|-----------|------------|
+| `cron-testing-suite` | Suite de testing para validar jobs | `logger.ts` |
+| `cron-notifications` | Sistema de notificaciones (email/SMS/slack) | `rate-limit.ts`, `logger.ts`, `cors.ts` |
+| `cron-dashboard` | API para dashboard de monitoreo | `logger.ts`, `cors.ts` |
+| `cron-health-monitor` | Health checks y métricas del sistema | `logger.ts`, `cors.ts` |
 
 ## Decisión de Arquitectura
 
@@ -32,17 +32,9 @@ Los siguientes módulos en `_shared/` están disponibles para uso:
 - `response.ts` - Helpers para respuestas HTTP
 - `rate-limit.ts` - Rate limiters adaptativos
 - `circuit-breaker.ts` - Circuit breakers
+- `audit.ts` - Helpers de auditoría (eventos, trazabilidad)
 
-**Estado de adopción actual:**
-
-| Función | Usa `_shared/`? | Módulos |
-|---------|-----------------|---------|
-| `cron-notifications` | ⚠️ Parcial | Solo `rate-limit.ts` |
-| `cron-testing-suite` | ❌ No | Pendiente migración |
-| `cron-dashboard` | ❌ No | Pendiente migración |
-| `cron-health-monitor` | ❌ No | Pendiente migración |
-
-> **PENDIENTE:** Migrar las funciones que aún no usan `_shared/` para unificar patrones.
+**Estado de adopción actual:** ✅ Las funciones listadas arriba usan módulos de `_shared/` (ver tabla).
 
 ## Integración Recomendada
 
@@ -85,5 +77,5 @@ Las funciones comparten tablas de la base de datos:
 
 1. ✅ Módulos compartidos creados en `_shared/`
 2. ✅ Patrones documentados
-3. 🔄 Migrar funciones para usar módulos compartidos (incremental)
-4. 📊 Agregar dashboards de observabilidad
+3. 🔄 (Propuesta futura) Estandarizar `errors.ts`/`response.ts` y agregar eventos con `audit.ts` en todas las funciones
+4. 📊 (Propuesta futura) Mejorar dashboards de observabilidad (métricas + alertas accionables)
