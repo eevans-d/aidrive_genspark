@@ -12,6 +12,12 @@ requires: [TestMaster]
 **ROL:** CODEX (fase A: validacion) + EXECUTOR (fase B-C: aplicacion).
 **NIVEL DE IMPACTO:** 2-3 (siempre requiere rollback preparado).
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+3. Impacto >= 2: siempre preparar rollback (ver `docs/ROLLBACK_SQL_TEMPLATE.md`).
+
 ## Reglas de Automatizacion
 
 1. Validar SQL antes de aplicar (verificar tablas, nombres, sintaxis).
@@ -39,6 +45,10 @@ requires: [TestMaster]
 1. **Listar migraciones:**
    ```bash
    ls -la supabase/migrations/
+   ```
+   Y estado de link:
+   ```bash
+   supabase migration list --linked 2>/dev/null || echo "No linked project"
    ```
 2. **Analizar SQL para riesgos:**
    ```bash

@@ -1,0 +1,6 @@
+interface:
+  display_name: DependabotOps
+  short_description: Revisar y mergear PRs de Dependabot (o updates de dependencias)
+    con quality gates, evid...
+  default_prompt: 'Process Dependabot PRs one-by-one: inspect diff, run quality gates,
+    merge or comment with evidence.'

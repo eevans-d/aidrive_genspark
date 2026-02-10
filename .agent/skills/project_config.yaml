@@ -20,14 +20,30 @@ paths:
   api_handlers: "supabase/functions/api-minimarket/handlers"
 
 scripts:
-  test_unit: "npx vitest run tests/unit/"
+  skills_sync: ".agent/scripts/sync_codex_skills.py"
+  skills_lint: ".agent/scripts/lint_skills.py"
+  skill_orchestrator: ".agent/scripts/skill_orchestrator.py"
+  baseline_capture: ".agent/scripts/baseline_capture.sh"
+  curated_skills_install: ".agent/scripts/install_curated_skills.py"
+  bootstrap: ".agent/scripts/bootstrap.sh"
+  quality_gates: ".agent/scripts/quality_gates.sh"
+  session_start: ".agent/scripts/session_start.sh"
+  session_end: ".agent/scripts/session_end.sh"
+  kickoff: ".agent/scripts/kickoff.sh"
+  mega_plan_template: ".agent/scripts/mega_plan_template.py"
+  generate_agents_yaml: ".agent/scripts/generate_agents_yaml.py"
+  env_audit: ".agent/scripts/env_audit.py"
+  dependabot_autopilot: ".agent/scripts/dependabot_autopilot.sh"
+  p0: ".agent/scripts/p0.sh"
+  extract_reports: ".agent/scripts/extract_reports.py"
+  test_unit: "npm run test:unit"
   test_all: "npm run test:all"
-  test_coverage: "npx vitest run --coverage"
-  test_integration: "bash scripts/run-integration-tests.sh"
-  test_e2e: "bash scripts/run-e2e-tests.sh"
+  test_coverage: "npm run test:coverage"
+  test_integration: "npm run test:integration"
+  test_e2e: "npm run test:e2e"
   test_security: "npm run test:security"
-  build_frontend: "cd minimarket-system && pnpm build"
-  lint: "cd minimarket-system && pnpm lint"
+  build_frontend: "pnpm -C minimarket-system build"
+  lint: "pnpm -C minimarket-system lint"
   deploy: "./deploy.sh"
   migrate: "supabase db push"
   functions_deploy: "supabase functions deploy"
@@ -135,9 +151,36 @@ skill_orchestrator:
   default_skill: "RealityCheck"
 
   trigger_patterns:
+    BaselineOps:
+      keywords: ["baseline", "baseline inmediato", "estado del repo", "estado del repositorio", "snapshot", "captura baseline", "baseline log", "git status", "supabase functions list", "supabase secrets list"]
+      intent: "Capturar baseline seguro y evidencia operativa"
+    SessionOps:
+      keywords: ["nueva sesion", "nueva sesión", "arranquemos", "kickoff", "empezar", "iniciar sesion", "iniciar sesión", "session start", "session end", "session-end", "cerrar sesion", "cerrar sesión", "cierre de sesion", "cierre de sesión", "archivar sesion", "archivar sesión"]
+      intent: "Arranque/cierre de sesion con evidencia (push-button)"
+    ExtractionOps:
+      keywords: ["analisis tecnico completo", "análisis técnico completo", "reconocimiento completo", "extraccion de informacion", "extracción de información", "inventario de recursos", "inventory report", "technical analysis", "production readiness report"]
+      intent: "Extraccion completa (analisis tecnico + inventario) para planificar produccion"
     CodeCraft:
       keywords: ["crea endpoint", "agrega pantalla", "implementa feature", "nueva funcion", "nuevo componente", "crea la pagina", "agrega el endpoint", "crea la funcionalidad"]
       intent: "Crear codigo nuevo"
+    DependabotOps:
+      keywords: ["dependabot", "renovate", "actualiza dependencias", "update dependencies", "deps", "merge dependabot", "pr dependabot", "pull request", "package-lock", "pnpm-lock", "lockfile"]
+      intent: "Revisar y mergear PRs de dependencias"
+    SendGridOps:
+      keywords: ["sendgrid", "smtp", "smtp_from", "email_from", "notificaciones email", "from email", "sender", "verified sender"]
+      intent: "Verificar/corregir configuracion SendGrid/SMTP"
+    SecretRotationOps:
+      keywords: ["rotacion de secretos", "rotar secretos", "secret rotation", "rotate secrets", "api_proveedor_secret", "sendgrid_api_key", "smtp_pass", "service_role_key", "anon_key"]
+      intent: "Rotacion segura de secretos con rollback"
+    SentryOps:
+      keywords: ["sentry", "dsn", "observability", "observabilidad", "error tracking", "captureException"]
+      intent: "Integracion Sentry UI (solo con DSN real)"
+    EnvAuditOps:
+      keywords: ["env", "dotenv", "variables de entorno", "environment variables", "env audit", "drift", "faltan variables", "missing env var"]
+      intent: "Auditar drift de env vars (codigo vs docs vs secrets)"
+    MegaPlanner:
+      keywords: ["mega plan", "hoja de ruta", "roadmap", "planificacion", "planificación", "prioridades", "next steps", "plan de ejecucion", "plan de ejecución"]
+      intent: "Planificacion superior y priorizacion"
     TestMaster:
       keywords: ["ejecuta tests", "corre pruebas", "verifica tests", "run tests", "test suite", "coverage"]
       intent: "Ejecutar pruebas"
@@ -170,9 +213,36 @@ skill_orchestrator:
 
 skill_graph:
   chains:
+    BaselineOps:
+      on_complete: []
+      description: "Baseline es terminal: produce evidencia y no dispara ejecucion"
+    SessionOps:
+      on_complete: [ExtractionOps, MegaPlanner]
+      description: "Arranque/cierre de sesion; tras kickoff, extraer evidencia y planificar"
+    ExtractionOps:
+      on_complete: [MegaPlanner]
+      description: "Despues de extraer info: planificar (Top-10) basado en evidencia"
     CodeCraft:
       on_complete: [TestMaster, DocuGuard, MigrationOps]
       description: "Despues de implementar: probar, documentar, y migrar si hay tablas nuevas"
+    DependabotOps:
+      on_complete: [TestMaster, DocuGuard]
+      description: "Despues de actualizar deps: correr gates y documentar evidencia"
+    SendGridOps:
+      on_complete: [DocuGuard]
+      description: "Despues de corregir config SMTP/SendGrid: documentar evidencia"
+    SecretRotationOps:
+      on_complete: [DocuGuard]
+      description: "Despues de rotar secretos: documentar evidencia y actualizar inventario"
+    SentryOps:
+      on_complete: [TestMaster, PerformanceWatch, DocuGuard]
+      description: "Despues de integrar Sentry: gates + perf + docs"
+    EnvAuditOps:
+      on_complete: [DocuGuard]
+      description: "Despues de auditar env: actualizar docs/inventario si aplica"
+    MegaPlanner:
+      on_complete: [DocuGuard]
+      description: "Despues de planificar: consolidar evidencia/doc (si aplica)"
     TestMaster:
       on_complete: []
       description: "Tests son terminales, no disparan otros skills"

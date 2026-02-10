@@ -11,6 +11,11 @@ chain: []
 **ROL:** CODEX (fase 0-A: verificar) + EXECUTOR (fase B-C: sincronizar, actualizar).
 **REGLA DE ORO:** "Si no esta documentado, no existe."
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+
 ## Reglas de Automatizacion
 
 1. Ejecutar TODAS las fases automaticamente en secuencia.
@@ -50,8 +55,8 @@ Antes de documentar CUALQUIER cosa, verificar:
 
 Buscar patrones prohibidos:
 ```bash
-grep -r "console\.log" supabase/functions/ --include="*.ts" -l
-grep -rE "ey[A-Za-z0-9\-_=]{20,}" supabase/functions/ --include="*.ts" -l
+rg -l "console\\.log" supabase/functions/ --glob="*.ts"
+rg -l -e "ey[A-Za-z0-9\\-_=]{20,}" supabase/functions/ --glob="*.ts"
 ```
 Si encuentra algo -> BLOQUEAR y reportar.
 
@@ -61,6 +66,10 @@ Si encuentra algo -> BLOQUEAR y reportar.
 2. **API Docs:** Si cambio `supabase/functions/` -> verificar `docs/API_README.md`.
 3. **Decision Log:** Si hubo cambio arquitectonico -> registrar en `docs/DECISION_LOG.md`.
 4. **Estado Actual:** Verificar que `docs/ESTADO_ACTUAL.md` refleje cambios.
+5. **Env Drift (nombres):** Si hay cambios de variables o secretos -> correr auditoria:
+   ```bash
+   .agent/scripts/env_audit.py --format markdown
+   ```
 
 ### FASE C: Verificacion
 

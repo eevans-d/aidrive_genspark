@@ -1,0 +1,6 @@
+interface:
+  display_name: DebugHound
+  short_description: Analisis y resolucion sistematica de errores. Traza, diagnostica
+    y aplica fixes con evi...
+  default_prompt: Diagnose and fix errors systematically with evidence and a strict
+    anti-loop limit.

@@ -1,0 +1,6 @@
+interface:
+  display_name: ExtractionOps
+  short_description: Genera reportes de extraccion para produccion (analisis tecnico
+    + inventario) en docs/c...
+  default_prompt: Generate shareable technical + inventory extraction reports under
+    docs/closure for production planning.
