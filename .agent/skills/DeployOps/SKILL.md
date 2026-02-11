@@ -2,9 +2,26 @@
 name: DeployOps
 description: Despliegues seguros con pre-flight checks, dry-run y rollback automatico.
 role: CODEX->EXECUTOR
-impact: 2-3
-chain: [RealityCheck]
-pre_check: [TestMaster]
+version: 1.0.0
+impact: CRITICAL
+impact_legacy: 2-3
+triggers:
+  automatic:
+  - orchestrator keyword match (DeployOps)
+  - 'after completion of: TestMaster'
+  manual:
+  - DeployOps
+  - deploy
+  - despliega
+  - sube a staging
+chain:
+  receives_from:
+  - TestMaster
+  sends_to:
+  - RealityCheck
+  required_before:
+  - TestMaster
+priority: 7
 ---
 
 # DeployOps Skill
@@ -66,6 +83,25 @@ pre_check: [TestMaster]
    ```bash
    .agent/scripts/quality_gates.sh frontend
    ```
+
+5. **HC-2 — deploy.sh Safety Check (CRITICO):**
+   Si se usa `deploy.sh` para el despliegue:
+   ```bash
+   # Verificar que filtra _shared/:
+   grep -q "_shared" deploy.sh || echo "BLOQUEANTE: deploy.sh no filtra _shared/"
+   # Verificar --no-verify-jwt para api-minimarket:
+   grep -q "no-verify-jwt" deploy.sh || echo "BLOQUEANTE: deploy.sh sin --no-verify-jwt"
+   ```
+   Si alguno falla -> **PROHIBIDO USAR deploy.sh**. Deployar manualmente cada funcion.
+
+6. **HC-1 — Cron Jobs Auth Check:**
+   ```bash
+   grep -A10 "net.http_post" supabase/migrations/ --include="*.sql" -r | grep -c "Authorization"
+   ```
+   Si hay cron jobs sin header Authorization -> advertir que fallaran con 401.
+
+7. **Supabase Free-Tier Warning:**
+   Cold start en Free plan es ~2-5s. Si api-minimarket esta inactiva, la primera request post-deploy sera lenta. Considerar un health check inmediato post-deploy.
 
 ### FASE B: Dry Run
 

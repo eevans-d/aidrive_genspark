@@ -1,9 +1,26 @@
 ---
 name: DependabotOps
-description: Revisar y mergear PRs de Dependabot (o updates de dependencias) con quality gates, evidencia y cero sorpresas.
+description: Revisar y mergear PRs de Dependabot (o updates de dependencias) con quality
+  gates, evidencia y cero sorpresas.
 role: EXECUTOR
-impact: 1-2
-chain: [TestMaster, DocuGuard]
+version: 1.0.0
+impact: MEDIUM
+impact_legacy: 1-2
+triggers:
+  automatic:
+  - orchestrator keyword match (DependabotOps)
+  manual:
+  - DependabotOps
+  - dependabot
+  - renovate
+  - actualiza dependencias
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  - TestMaster
+  required_before: []
+priority: 6
 ---
 
 # DependabotOps Skill

@@ -1,5 +1,17 @@
 ---
+name: feature-development
 description: Desarrollo de features completo - desde planificacion hasta documentacion. Usa CodeCraft + TestMaster + DocuGuard.
+version: 1.0.0
+trigger:
+  automatic:
+    - solicitud de implementación de feature
+    - inicio de tarea con cambios funcionales nuevos
+  manual:
+    - feature development
+    - nueva funcionalidad
+  schedule: []
+priority: 3
+timeout: 60
 auto_execution: true
 skills: [CodeCraft, TestMaster, DocuGuard]
 ---

@@ -11,7 +11,7 @@
 
 ### 1. BACKEND — Stack de Errores
 
-#### 1.1 `_shared/errors.ts` (228 líneas)
+#### 1.1 `_shared/errors.ts` (227 líneas)
 
 **Clases:**
 - `AppError(message, code, status, details)` — clase base (extends Error)
@@ -40,7 +40,7 @@
 
 **Veredicto:** Robusto y bien diseñado. Buena cobertura de SQLSTATE y PGRST.
 
-#### 1.2 `_shared/response.ts` (197 líneas)
+#### 1.2 `_shared/response.ts` (196 líneas)
 
 - `ok<T>(data, status, headers, options)` → `{success: true, data, message?, requestId?}`
 - `fail(code, message, status, ...)` → `{success: false, error: {code, message, details?}}`
@@ -52,13 +52,13 @@
 |---------|----------------|
 | api-minimarket | SÍ |
 | api-proveedor | SÍ |
-| scraper-maxiconsumo | SÍ |
-| cron-jobs-maxiconsumo | SÍ |
 | alertas-stock | SÍ |
+| alertas-vencimientos | SÍ |
 | notificaciones-tareas | SÍ |
 | reportes-automaticos | SÍ |
-| alertas-vencimientos | NO |
-| reposicion-sugerida | NO |
+| reposicion-sugerida | SÍ |
+| scraper-maxiconsumo | NO |
+| cron-jobs-maxiconsumo | NO |
 | cron-notifications | NO |
 | cron-dashboard | NO |
 | cron-health-monitor | NO |
@@ -66,7 +66,7 @@
 
 **7/13 adopción. 6 funciones (cron/NO-PROD) sin response estandarizado.**
 
-#### 1.3 `api-minimarket/helpers/auth.ts` (345 líneas)
+#### 1.3 `api-minimarket/helpers/auth.ts` (344 líneas)
 
 **Mecanismos de resiliencia:**
 - Cache in-memory (TTL 30s) con SHA-256 hash del token como key
@@ -128,22 +128,22 @@
 
 ### 3. TABLA C1 — ESCENARIOS DE ERROR END-TO-END
 
-| # | Escenario | Backend | Frontend (apiClient) | UI (Página) | Mensaje operador | Veredicto |
-|---|-----------|---------|---------------------|-------------|-----------------|-----------|
-| 1 | JWT expirado/inválido | auth.ts → 401 "Token inválido o expirado" | ApiError(UNAUTHORIZED, msg, 401) | ErrorMessage: "Sesión expirada" (7pp); toast.error genérico (4pp); console.error (1pp Pedidos) | Varía por página | **PARCIAL** |
-| 2 | Sin sesión (no logueado) | N/A (no llega al backend) | Throws ApiError('AUTH_REQUIRED', 'Authentication required', 401) | Depende de página: no hay interceptor global | Solo en dev; en prod: "Ocurrió un error" | **MAL** |
-| 3 | Sin rol requerido (403) | auth.ts → "Acceso denegado - requiere rol: X" (403) | ApiError(FORBIDDEN, msg, 403) | ErrorMessage: "No tienes permisos" (7pp); toast con msg técnico (4pp) | 7/13 OK, 4/13 técnico | **PARCIAL** |
-| 4 | Network error (sin red) | N/A | TypeError → no capturado como TimeoutError | ErrorMessage: "No se pudo conectar" (7pp); toast genérico (4pp) | Parcial | **PARCIAL** |
-| 5 | Timeout (>30s) | N/A | TimeoutError: "La solicitud a X excedió el tiempo límite (30s)" | ErrorMessage/toast con msg | En español, accionable | **OK** |
-| 6 | Server error (500) | errors.ts → AppError con SQLSTATE mapping → response.ts fail() | ApiError con code/message | ErrorMessage: "Error del servidor" (7pp) | Accionable donde hay ErrorMessage | **PARCIAL** |
-| 7 | Duplicate key (23505) | errors.ts → DUPLICATE_KEY, 409 | ApiError con message del backend | toast/ErrorMessage con msg | Backend msg pasa; no traducido a español amigable | **PARCIAL** |
-| 8 | FK violation (23503) | errors.ts → FOREIGN_KEY_VIOLATION, 409 | ApiError | toast/ErrorMessage | Técnico para operador | **MAL** |
-| 9 | Validación (campo requerido) | Handler retorna fail('VALIDATION_ERROR', msg, 400) | ApiError con msg | toast.error(msg) en Pos/Deposito/Clientes | Depende del handler | **OK** (donde implementado) |
-| 10 | RLS/Permission denied (42501) | errors.ts → PERMISSION_DENIED, status original | ApiError | ErrorMessage/toast | Técnico | **MAL** |
-| 11 | Auth breaker open (503) | auth.ts → "Auth service temporarily unavailable" | ApiError(AUTH_BREAKER_OPEN, msg, 503) | ErrorMessage: "Error del servidor" | No menciona temporalidad | **PARCIAL** |
-| 12 | Pedidos.tsx mutación falla | Backend retorna error normalmente | ApiError propagado | `console.error()` SOLAMENTE — operador ve NADA | **Sin feedback visual** | **MAL** (P0) |
-| 13 | Rate limited (429) | response.ts fail('RATE_LIMITED', msg, 429) | ApiError(RATE_LIMITED, msg, 429) | ErrorMessage genérico | No dice "espere" ni cuánto | **PARCIAL** |
-| 14 | Circuit breaker DB (503) | api-minimarket returns 503 | ApiError | ErrorMessage: "Error del servidor" | Genérico, no dice "temporal" | **PARCIAL** |
+| # | Escenario | Backend | Frontend (apiClient) | UI (Página) | Mensaje operador | Veredicto | Evidencia |
+|---|-----------|---------|---------------------|-------------|-----------------|-----------|-----------|
+| 1 | JWT expirado/inválido | auth.ts → 401 "Token inválido o expirado" | ApiError(UNAUTHORIZED, msg, 401) | ErrorMessage: "Sesión expirada" (7pp); toast.error genérico (4pp); console.error (1pp Pedidos) | Varía por página | **PARCIAL** | `supabase/functions/api-minimarket/helpers/auth.ts`, `minimarket-system/src/components/errorMessageUtils.ts` |
+| 2 | Sin sesión (no logueado) | N/A (no llega al backend) | Throws ApiError('AUTH_REQUIRED', 'Authentication required', 401) | Depende de página: no hay interceptor global | Solo en dev; en prod: "Ocurrió un error" | **MAL** | `minimarket-system/src/lib/apiClient.ts` |
+| 3 | Sin rol requerido (403) | auth.ts → "Acceso denegado - requiere rol: X" (403) | ApiError(FORBIDDEN, msg, 403) | ErrorMessage: "No tienes permisos" (7pp); toast con msg técnico (4pp) | 7/13 OK, 4/13 técnico | **PARCIAL** | `supabase/functions/api-minimarket/helpers/auth.ts`, `minimarket-system/src/components/errorMessageUtils.ts` |
+| 4 | Network error (sin red) | N/A | TypeError → no capturado como TimeoutError | ErrorMessage: "No se pudo conectar" (7pp); toast genérico (4pp) | Parcial | **PARCIAL** | `minimarket-system/src/lib/apiClient.ts`, `minimarket-system/src/components/errorMessageUtils.ts` |
+| 5 | Timeout (>30s) | N/A | TimeoutError: "La solicitud a X excedió el tiempo límite (30s)" | ErrorMessage/toast con msg | En español, accionable | **OK** | `minimarket-system/src/lib/apiClient.ts` |
+| 6 | Server error (500) | errors.ts → AppError con SQLSTATE mapping → response.ts fail() | ApiError con code/message | ErrorMessage: "Error del servidor" (7pp) | Accionable donde hay ErrorMessage | **PARCIAL** | `supabase/functions/_shared/errors.ts`, `supabase/functions/_shared/response.ts` |
+| 7 | Duplicate key (23505) | errors.ts → DUPLICATE_KEY, 409 | ApiError con message del backend | toast/ErrorMessage con msg | Backend msg pasa; no traducido a español amigable | **PARCIAL** | `supabase/functions/_shared/errors.ts` |
+| 8 | FK violation (23503) | errors.ts → FOREIGN_KEY_VIOLATION, 409 | ApiError | toast/ErrorMessage | Técnico para operador | **MAL** | `supabase/functions/_shared/errors.ts` |
+| 9 | Validación (campo requerido) | Handler retorna fail('VALIDATION_ERROR', msg, 400) | ApiError con msg | toast.error(msg) en Pos/Deposito/Clientes | Depende del handler | **OK** (donde implementado) | `supabase/functions/api-minimarket/helpers/validation.ts`, páginas con mutaciones |
+| 10 | RLS/Permission denied (42501) | errors.ts → PERMISSION_DENIED, status original | ApiError | ErrorMessage/toast | Técnico | **MAL** | `supabase/functions/_shared/errors.ts` |
+| 11 | Auth breaker open (503) | auth.ts → "Auth service temporarily unavailable" | ApiError(AUTH_BREAKER_OPEN, msg, 503) | ErrorMessage: "Error del servidor" | No menciona temporalidad | **PARCIAL** | `supabase/functions/api-minimarket/helpers/auth.ts` |
+| 12 | Pedidos.tsx mutación falla | Backend retorna error normalmente | ApiError propagado | `console.error()` SOLAMENTE — operador ve NADA | **Sin feedback visual** | **MAL** (P0) | `minimarket-system/src/pages/Pedidos.tsx` |
+| 13 | Rate limited (429) | response.ts fail('RATE_LIMITED', msg, 429) | ApiError(RATE_LIMITED, msg, 429) | ErrorMessage genérico | No dice "espere" ni cuánto | **PARCIAL** | `supabase/functions/_shared/response.ts`, `minimarket-system/src/components/errorMessageUtils.ts` |
+| 14 | Circuit breaker DB (503) | api-minimarket returns 503 | ApiError | ErrorMessage: "Error del servidor" | Genérico, no dice "temporal" | **PARCIAL** | `supabase/functions/_shared/circuit-breaker.ts`, `supabase/functions/api-minimarket/index.ts` |
 
 ### 4. RESUMEN C1
 
@@ -192,7 +192,7 @@
 | 7 | MovimientoDeposito | id, producto_id, tipo_movimiento ('entrada'|'salida'|'ajuste'), cantidad | useDeposito, useKardex |
 | 8 | ProductoFaltante | id, producto_id, producto_nombre, resuelto | — |
 | 9 | TareaPendiente | id, titulo, descripcion, prioridad, estado, asignada_a_nombre | useTareas |
-| 10 | NotificacionTarea | id, tarea_id, tipo, mensaje, leido | useDashboardStats |
+| 10 | NotificacionTarea | id, tarea_id, tipo, mensaje, leido | — |
 | 11 | Personal | id, nombre, email, rol, departamento, activo | — |
 
 ### 2. ENTIDADES FALTANTES EN `database.ts`
@@ -209,6 +209,8 @@
 - Duplicación de definiciones de tipo
 - Riesgo de divergencia si las columnas DB cambian
 - Imposibilidad de compartir tipos entre hooks que leen de supabase directo vs apiClient
+
+**Nota de precisión:** el único tipo funcionalmente ausente en ambos lados (sin contrato explícito en `database.ts` ni en `apiClient.ts`) es **Categorías** como entidad dedicada.
 
 ### 3. DATA ACCESS PATTERN — DUAL PATH
 
@@ -354,6 +356,24 @@
 
 **Gate 14 global: FAIL (3/6 criterios pasan)**
 
+### 7. TABLA C3 — CONSOLIDADO POR PÁGINA (SALIDA REQUERIDA)
+
+| Página | Español | Formato $ | Skeleton | Empty state | Mobile | Veredicto | Evidencia |
+|--------|---------|-----------|----------|-------------|--------|-----------|-----------|
+| Dashboard | SÍ | OK (`es-AR`) | SÍ | SÍ | PARCIAL | **OK** | `minimarket-system/src/pages/Dashboard.tsx` |
+| Pos | SÍ | OK (`es-AR`) | NO | SÍ | SÍ | **PARCIAL** | `minimarket-system/src/pages/Pos.tsx` |
+| Pocket | SÍ | OK (`es-AR`) | NO (texto cargando) | SÍ | SÍ | **PARCIAL** | `minimarket-system/src/pages/Pocket.tsx` |
+| Pedidos | SÍ | **MAL** (`toLocaleString()` sin locale) | SÍ | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Pedidos.tsx` |
+| Tareas | SÍ | N/A | SÍ | SÍ | PARCIAL | **OK** | `minimarket-system/src/pages/Tareas.tsx` |
+| Deposito | SÍ | N/A | NO | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Deposito.tsx` |
+| Productos | SÍ | **MAL** (`toFixed`) | SÍ | NO | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Productos.tsx` |
+| Kardex | SÍ | N/A | NO | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Kardex.tsx` |
+| Stock | SÍ | N/A | SÍ | SÍ | PARCIAL | **OK** | `minimarket-system/src/pages/Stock.tsx` |
+| Rentabilidad | SÍ | **MAL** (`toFixed`) | NO | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Rentabilidad.tsx` |
+| Proveedores | SÍ | **MAL** (`toFixed`) | NO | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Proveedores.tsx` |
+| Clientes | SÍ | OK (`es-AR`) | NO | SÍ | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Clientes.tsx` |
+| Login | SÍ | N/A | NO | N/A | PARCIAL | **PARCIAL** | `minimarket-system/src/pages/Login.tsx` |
+
 ---
 
 ## C4 — DEPENDENCIAS EXTERNAS
@@ -453,6 +473,12 @@ Módulo dedicado con: rotación User-Agents (7 agentes), headers aleatorios (Sec
 | Vitest | ^4.0.17 | ^4.0.18 | Micro-gap |
 | Tailwind | 3.4.16 | — | v4 disponible |
 
+#### 3.3 `npm audit` (resumen)
+
+- Root (`/`): `npm audit --json --omit=dev` -> **0 vulnerabilidades prod**.
+- Frontend (`minimarket-system/`): `npm audit --json --omit=dev` -> **1 vulnerabilidad moderada** (transitiva `lodash` 4.17.21, advisory GHSA-xxjr-mmjv-4gpg).
+- Impacto observado: dependencia transitiva, fix disponible en la cadena de dependencias.
+
 ### 4. Rate-Limit y Circuit-Breaker — Efectividad Real
 
 #### 4.1 Resumen de Efectividad
@@ -490,6 +516,7 @@ Las otras 3-4 funciones usan `Map` in-memory que:
 | 10 | React major gap | 18.3.1, React 19 disponible | BAJA | BAJO | N/A | Planificar migración | `package.json:95` |
 | 11 | Scraper sin Plan B (datos stale) | Sin fallback BD si scraper falla | MEDIA | ALTO | Cache in-memory 5min | Tabla scraper_last_result en BD | `scraper/index.ts:131` |
 | 12 | Import methods inconsistentes | esm.sh@2.39.3 vs jsr:@2 en mismo deploy | MEDIA | MEDIO | N/A | Estandarizar un solo método | `deno.json:3`, `index.ts:392` |
+| 13 | Dependencia transitiva vulnerable (`lodash`) | 1 moderada en frontend (`npm audit`) | BAJA | BAJO | Ninguna específica | Actualizar cadena que trae `lodash` | `minimarket-system` audit JSON |
 
 ### 6. Resumen Ejecutivo C4
 

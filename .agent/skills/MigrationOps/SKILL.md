@@ -1,10 +1,29 @@
 ---
 name: MigrationOps
-description: Gestion segura de migraciones SQL. Valida, aplica y rollback con verificacion pre/post.
+description: Gestion segura de migraciones SQL. Valida, aplica y rollback con verificacion
+  pre/post.
 role: CODEX->EXECUTOR
-impact: 2-3
-chain: [DocuGuard]
-requires: [TestMaster]
+version: 1.0.0
+impact: CRITICAL
+impact_legacy: 2-3
+triggers:
+  automatic:
+  - orchestrator keyword match (MigrationOps)
+  - 'after completion of: CodeCraft, TestMaster'
+  manual:
+  - MigrationOps
+  - aplica migracion
+  - crear tabla
+  - modificar esquema
+chain:
+  receives_from:
+  - CodeCraft
+  - TestMaster
+  sends_to:
+  - DocuGuard
+  required_before:
+  - TestMaster
+priority: 5
 ---
 
 # MigrationOps Skill

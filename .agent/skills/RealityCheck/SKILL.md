@@ -1,9 +1,27 @@
 ---
 name: RealityCheck
-description: Mentor ultra-realista que audita UX, funcionalidad y produccion. Detecta gaps entre docs y codigo.
+description: Mentor ultra-realista que audita UX, funcionalidad y produccion. Detecta
+  gaps entre docs y codigo.
 role: CODEX
-impact: 0
-chain: [DocuGuard]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 0
+triggers:
+  automatic:
+  - orchestrator keyword match (RealityCheck)
+  - 'after completion of: DeployOps'
+  manual:
+  - RealityCheck
+  - audita
+  - verifica ux
+  - revisa usabilidad
+chain:
+  receives_from:
+  - DeployOps
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 9
 ---
 
 # RealityCheck Skill
@@ -101,6 +119,36 @@ Adoptar rol de usuario final (Repositor, Cajero, Admin):
    grep -r "console\.log" supabase/functions/ --include="*.ts" -l
    grep -r "throw new Error(" supabase/functions/ --include="*.ts" -c
    ```
+
+### FASE E: Patrones de Auditoria (HC-1/HC-2/HC-3)
+
+Verificar patrones criticos descubiertos en auditoria forense:
+
+1. **HC-1 — Cron jobs sin Authorization header:**
+   ```bash
+   grep -A5 "net.http_post" supabase/migrations/ --include="*.sql" -r | grep -v "Authorization"
+   ```
+   Si hay cron jobs sin header `Authorization` -> **CRITICAL**.
+
+2. **HC-2 — deploy.sh seguridad:**
+   ```bash
+   grep "_shared" deploy.sh 2>/dev/null || echo "WARN: deploy.sh no filtra _shared/"
+   grep "no-verify-jwt" deploy.sh 2>/dev/null || echo "WARN: deploy.sh sin --no-verify-jwt para api-minimarket"
+   ```
+   Si `deploy.sh` no filtra `_shared/` ni usa `--no-verify-jwt` -> **CRITICAL**.
+
+3. **HC-3 — Mutaciones sin feedback al usuario:**
+   ```bash
+   grep -B5 "console.error" minimarket-system/src/pages/ --include="*.tsx" -r | grep -v "toast\.\|ErrorMessage"
+   ```
+   Si hay mutaciones que solo hacen `console.error()` sin `toast.error()` -> bug UX P0.
+
+4. **Post-Audit Cross-Reference:**
+   Si existen archivos `docs/audit/EVIDENCIA_SP-*.md`:
+   ```bash
+   ls docs/audit/EVIDENCIA_SP-*.md 2>/dev/null
+   ```
+   Comparar hallazgos actuales con evidencia de auditorias previas para detectar regresiones.
 
 ## Salida Requerida
 

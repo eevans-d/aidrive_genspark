@@ -1,9 +1,25 @@
 ---
 name: DebugHound
-description: Analisis y resolucion sistematica de errores. Traza, diagnostica y aplica fixes con evidencia.
+description: Analisis y resolucion sistematica de errores. Traza, diagnostica y aplica
+  fixes con evidencia.
 role: CODEX->EXECUTOR
-impact: variable
-chain: [TestMaster]
+version: 1.0.0
+impact: HIGH
+impact_legacy: variable
+triggers:
+  automatic:
+  - orchestrator keyword match (DebugHound)
+  manual:
+  - DebugHound
+  - debug
+  - error
+  - falla
+chain:
+  receives_from: []
+  sends_to:
+  - TestMaster
+  required_before: []
+priority: 5
 ---
 
 # DebugHound Skill
@@ -89,6 +105,20 @@ chain: [TestMaster]
    **Verificacion:** [como se verifico]
    ```
 
+### FASE D: Production-Path Cross-check
+
+Antes de cerrar el fix como DONE, verificar impacto en el camino a produccion:
+
+1. **¿Requiere migracion SQL?** Si el fix toca schema/tablas -> invocar MigrationOps.
+2. **¿Requiere redeploy?** Si el fix toca Edge Functions -> documentar que funcion redeployar.
+3. **¿Afecta OpenAPI spec?** Si cambio endpoint/response -> invocar APISync.
+4. **¿Introduce patron HC-3?** Verificar que el fix NO agrega `console.error` sin feedback visual:
+   ```bash
+   grep -n "console.error" <archivo_modificado> | grep -v "toast\|ErrorMessage"
+   ```
+5. **¿Afecta cron jobs?** Si toca funciones invocadas por cron -> verificar Authorization header (HC-1).
+6. **Cross-reference con auditoria:** Si existen `docs/audit/EVIDENCIA_SP-*.md`, verificar que el fix no reintroduce un hallazgo P0.
+
 ## Quality Gates
 
 - [ ] Error original reproducido y entendido.
@@ -96,6 +126,7 @@ chain: [TestMaster]
 - [ ] Fix aplicado y verificado con tests.
 - [ ] No se introdujeron nuevos errores.
 - [ ] Evidencia documentada.
+- [ ] Production-path cross-check completado (Fase D).
 
 ## Anti-Loop / Stop-Conditions
 

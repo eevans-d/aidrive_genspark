@@ -1,9 +1,25 @@
 ---
 name: SendGridOps
-description: Verifica y corrige configuracion SendGrid/Supabase SMTP (EMAIL_FROM vs SMTP_FROM) con evidencia y sin exponer secretos.
+description: Verifica y corrige configuracion SendGrid/Supabase SMTP (EMAIL_FROM vs
+  SMTP_FROM) con evidencia y sin exponer secretos.
 role: CODEX->EXECUTOR
-impact: 1-2
-chain: [DocuGuard]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 1-2
+triggers:
+  automatic:
+  - orchestrator keyword match (SendGridOps)
+  manual:
+  - SendGridOps
+  - sendgrid
+  - smtp
+  - smtp_from
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 8
 ---
 
 # SendGridOps Skill

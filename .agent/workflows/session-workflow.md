@@ -1,5 +1,18 @@
 ---
+name: session-workflow
 description: Workflow estructurado para sesiones de trabajo con Protocol Zero. AUTOMATICO - sin intervencion manual.
+version: 1.0.0
+trigger:
+  automatic:
+    - inicio de sesión detectado por SESSION_ACTIVE
+    - transición entre estado frío (CODEX) y estado caliente (EXECUTOR)
+  manual:
+    - session workflow
+    - flujo de sesion
+  schedule:
+    - cada sesión
+priority: 3
+timeout: 45
 auto_execution: true
 ---
 

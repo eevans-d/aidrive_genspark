@@ -1,9 +1,25 @@
 ---
 name: APISync
-description: Sincronizacion de OpenAPI spec con codigo real. Detecta endpoints sin documentar y docs obsoletas.
+description: Sincronizacion de OpenAPI spec con codigo real. Detecta endpoints sin
+  documentar y docs obsoletas.
 role: CODEX->EXECUTOR
-impact: 1
-chain: [DocuGuard]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 1
+triggers:
+  automatic:
+  - orchestrator keyword match (APISync)
+  manual:
+  - APISync
+  - openapi
+  - swagger
+  - api spec
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 6
 ---
 
 # APISync Skill

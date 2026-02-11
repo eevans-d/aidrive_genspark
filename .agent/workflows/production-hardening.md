@@ -1,5 +1,18 @@
 ---
+name: production-hardening
 description: "Workflow go-live/hardening: extraccion -> plan -> ejecucion -> cierre (guiado, sistematico)."
+version: 1.0.0
+trigger:
+  automatic:
+    - iniciativa de hardening pre-producción
+    - ejecución de gates con foco go-live
+  manual:
+    - production hardening
+    - hardening
+    - go live
+  schedule: []
+priority: 4
+timeout: 120
 auto_execution: true
 skills: [ExtractionOps, MegaPlanner, DependabotOps, SendGridOps, SecretRotationOps, SentryOps, TestMaster, PerformanceWatch, SecurityAudit, DeployOps, DocuGuard]
 ---
@@ -58,4 +71,3 @@ Ejecución "1 cosa a la vez", en orden:
   ```bash
   .agent/scripts/p0.sh session-end
   ```
-

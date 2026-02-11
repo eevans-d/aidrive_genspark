@@ -89,7 +89,10 @@ def _parse_frontmatter(skill_md: Path) -> dict[str, Any]:
 
 def _impact_max(impact_field: Any) -> int | None:
     """
-    Impact can be `0`, `1`, `2`, `3`, or a range string like `1-2` / `0-1`.
+    Impact can be:
+    - numeric (`0`, `1`, `2`, `3`)
+    - numeric ranges (`1-2`, `0-1`)
+    - enums (`LOW`, `MEDIUM`, `HIGH`, `CRITICAL`)
     Returns the maximum as int, or None if unknown.
     """
     if impact_field is None:
@@ -100,6 +103,14 @@ def _impact_max(impact_field: Any) -> int | None:
         s = impact_field.strip()
         if s.isdigit():
             return int(s)
+        enum_map = {
+            "LOW": 1,
+            "MEDIUM": 2,
+            "HIGH": 3,
+            "CRITICAL": 3,
+        }
+        if s.upper() in enum_map:
+            return enum_map[s.upper()]
         # Common patterns: "1-2", "2-3", "variable"
         parts = [p.strip() for p in s.replace("–", "-").split("-") if p.strip()]
         nums = [int(p) for p in parts if p.isdigit()]

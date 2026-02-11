@@ -1,9 +1,27 @@
 ---
 name: SentryOps
-description: Integracion Sentry (solo con DSN real) siguiendo el plan del repo, midiendo impacto en bundle y dejando evidencia.
+description: Integracion Sentry (solo con DSN real) siguiendo el plan del repo, midiendo
+  impacto en bundle y dejando evidencia.
 role: CODEX->EXECUTOR
-impact: 1-2
-chain: [TestMaster, PerformanceWatch, DocuGuard]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 1-2
+triggers:
+  automatic:
+  - orchestrator keyword match (SentryOps)
+  manual:
+  - SentryOps
+  - sentry
+  - dsn
+  - observability
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  - PerformanceWatch
+  - TestMaster
+  required_before: []
+priority: 8
 ---
 
 # SentryOps Skill

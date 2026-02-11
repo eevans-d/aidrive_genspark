@@ -1,9 +1,32 @@
 ---
 name: TestMaster
-description: Ejecucion, analisis y mantenimiento de tests. Centraliza la calidad del codigo.
+description: Ejecucion, analisis y mantenimiento de tests. Centraliza la calidad del
+  codigo.
 role: EXECUTOR
-impact: 0-1
-chain: []
+version: 1.0.0
+impact: MEDIUM
+impact_legacy: 0-1
+triggers:
+  automatic:
+  - orchestrator keyword match (TestMaster)
+  - 'after completion of: CodeCraft, CronFixOps, DebugHound, DependabotOps, SentryOps,
+    UXFixOps'
+  manual:
+  - TestMaster
+  - ejecuta tests
+  - corre pruebas
+  - verifica tests
+chain:
+  receives_from:
+  - CodeCraft
+  - CronFixOps
+  - DebugHound
+  - DependabotOps
+  - SentryOps
+  - UXFixOps
+  sends_to: []
+  required_before: []
+priority: 6
 ---
 
 # TestMaster Skill
@@ -81,8 +104,31 @@ Seleccionar comando segun necesidad:
 
 - [ ] Exit code 0.
 - [ ] 100% tests passed.
-- [ ] Coverage >= 80% (codigo nuevo).
+- [ ] Coverage >= 80% (codigo nuevo). **Nota:** cobertura actual del proyecto es ~69.39%, por debajo del target de 80%.
 - [ ] Sin tests deshabilitados/skipped sin justificacion.
+- [ ] Legacy test suites integradas en CI (verificar que no hay suites orphans).
+
+## Audit-Discovered Patterns
+
+### Coverage Gap Awareness
+La auditoria detecto coverage de 69.39% < 80% target. Al ejecutar tests:
+1. Reportar coverage actual vs target.
+2. Listar los 5 archivos con menor cobertura.
+3. No bloquear por coverage < 80% (generar WARNING, no FAIL).
+
+### Legacy Test Suites
+La auditoria encontro ~3 suites legacy (~1,072 lineas) migradas a Vitest pero NO integradas en CI:
+```bash
+find tests/ -name "*.test.ts" -newer tests/unit/ -type f | head -10
+```
+Verificar que todas las test suites esten incluidas en el comando de test.
+
+### WSL Docker Fallback
+En entorno WSL, Docker puede no estar disponible:
+```bash
+docker ps 2>/dev/null || echo "Docker no disponible"
+```
+Si Docker no esta disponible -> ejecutar solo unit tests. Documentar integration/e2e tests como BLOCKED.
 
 ## Anti-Loop / Stop-Conditions
 

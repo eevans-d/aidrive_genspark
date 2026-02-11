@@ -1,9 +1,27 @@
 ---
 name: PerformanceWatch
-description: Monitoreo y optimizacion de rendimiento. Bundle size, queries lentas, metricas UX.
+description: Monitoreo y optimizacion de rendimiento. Bundle size, queries lentas,
+  metricas UX.
 role: CODEX
-impact: 0-1
-chain: [DocuGuard]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 0-1
+triggers:
+  automatic:
+  - orchestrator keyword match (PerformanceWatch)
+  - 'after completion of: SentryOps'
+  manual:
+  - PerformanceWatch
+  - performance
+  - rendimiento
+  - lento
+chain:
+  receives_from:
+  - SentryOps
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 6
 ---
 
 # PerformanceWatch Skill
@@ -55,7 +73,7 @@ chain: [DocuGuard]
    ```
    Si no usa `React.lazy()` -> sugerir.
 
-### FASE B: Query Analysis (Backend)
+### FASE B: Query Analysis (Backend + Frontend)
 
 1. **Detectar N+1 potenciales:**
    ```bash
@@ -68,8 +86,28 @@ chain: [DocuGuard]
    ```
 3. **Buscar queries sin filtro:**
    ```bash
-   grep -r "\.select(\"\*\")" supabase/functions/ --include="*.ts" -l
+   grep -r "\.select(\"*\")" supabase/functions/ --include="*.ts" -l
    ```
+4. **Anti-patron: select('*') en frontend hooks (audit finding):**
+   ```bash
+   grep -rn "\.select('\*')" minimarket-system/src/hooks/ --include="*.ts" --include="*.tsx"
+   ```
+   Hooks con `select('*')` cargan todas las columnas innecesariamente. Reemplazar con columnas especificas.
+
+5. **Materialized Views sin refresh:**
+   ```bash
+   grep -r "MATERIALIZED VIEW" supabase/migrations/ --include="*.sql" -l
+   grep -r "REFRESH MATERIALIZED VIEW" supabase/migrations/ --include="*.sql" -l
+   ```
+   Si hay MVs sin cron de refresh -> datos desactualizados silenciosamente.
+
+6. **Supabase Free-Tier Timeout Check:**
+   El Free plan tiene timeout de **60 segundos**. Verificar funciones que pueden excederlo:
+   ```bash
+   # Funciones con scraping, loops, o procesamiento pesado:
+   grep -rn "for.*of\|while\|forEach" supabase/functions/scraper-maxiconsumo/ --include="*.ts" | wc -l
+   ```
+   Si una funcion tiene loops complejos sobre datos externos -> riesgo de timeout en Free plan.
 
 ### FASE C: UX Performance Metrics
 

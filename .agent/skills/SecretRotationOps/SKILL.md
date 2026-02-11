@@ -1,9 +1,25 @@
 ---
 name: SecretRotationOps
-description: Rotacion segura de secretos (API_PROVEEDOR_SECRET, SendGrid) con rollback, redeploy y evidencia. Nunca expone valores.
+description: Rotacion segura de secretos (API_PROVEEDOR_SECRET, SendGrid) con rollback,
+  redeploy y evidencia. Nunca expone valores.
 role: CODEX->EXECUTOR
-impact: 2-3
-chain: [DocuGuard]
+version: 1.0.0
+impact: CRITICAL
+impact_legacy: 2-3
+triggers:
+  automatic:
+  - orchestrator keyword match (SecretRotationOps)
+  manual:
+  - SecretRotationOps
+  - rotacion de secretos
+  - rotar secretos
+  - secret rotation
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 8
 ---
 
 # SecretRotationOps Skill

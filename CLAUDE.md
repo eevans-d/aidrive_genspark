@@ -59,20 +59,14 @@ SI NO existe → ROL: CODEX
 - **CODEX:** Planifica, audita, genera briefings. NO implementa codigo profundo.
 - **EXECUTOR:** Ejecuta tareas, implementa, registra evidencia. NO debate.
 
-### Skills Disponibles (10)
+### Skills Disponibles (22)
 
-| Skill | Archivo | Funcion |
-|-------|---------|---------|
-| CodeCraft | `.agent/skills/CodeCraft/SKILL.md` | Implementar features (TDD) |
-| TestMaster | `.agent/skills/TestMaster/SKILL.md` | Ejecutar y analizar tests |
-| RealityCheck | `.agent/skills/RealityCheck/SKILL.md` | Auditar UX/funcionalidad |
-| DeployOps | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros |
-| DocuGuard | `.agent/skills/DocuGuard/SKILL.md` | Sincronizar documentacion |
-| MigrationOps | `.agent/skills/MigrationOps/SKILL.md` | Migraciones SQL seguras |
-| DebugHound | `.agent/skills/DebugHound/SKILL.md` | Diagnostico y fix de errores |
-| PerformanceWatch | `.agent/skills/PerformanceWatch/SKILL.md` | Analisis de rendimiento |
-| APISync | `.agent/skills/APISync/SKILL.md` | Sincronizar OpenAPI spec |
-| SecurityAudit | `.agent/skills/SecurityAudit/SKILL.md` | Auditoria de seguridad |
+Skills instalados en `.agent/skills/*` (fuente real del sistema):
+
+- APISync, BaselineOps, CodeCraft, CronFixOps, DebugHound, DependabotOps
+- DeployOps, DocuGuard, EnvAuditOps, ExtractionOps, MegaPlanner, MigrationOps
+- PerformanceWatch, ProductionGate, RealityCheck, SecretRotationOps, SecurityAudit
+- SendGridOps, SentryOps, SessionOps, TestMaster, UXFixOps
 
 ### Auto-Seleccion de Skill
 
@@ -90,6 +84,24 @@ Selecciona automaticamente segun palabras clave del usuario:
 | performance/rendimiento/lento | PerformanceWatch | -> DocuGuard |
 | openapi/swagger/api spec | APISync | -> DocuGuard |
 | seguridad/rls/vulnerabilidad | SecurityAudit | -> DocuGuard |
+
+### Sistema de Workflows Autónomos
+
+Este proyecto usa workflows automáticos en `.agent/workflows/`.
+
+Referencias canónicas:
+- Router: `.agent/workflows/ROUTER.md`
+- Inicio: `.agent/workflows/session-start.md`
+- Cambio de código: `.agent/workflows/code-change.md`
+- Recuperación de errores: `.agent/workflows/error-recovery.md`
+- Auditoría integral: `.agent/workflows/full-audit.md`
+- Cierre: `.agent/workflows/session-end.md`
+
+Regla obligatoria del agente:
+1. Al iniciar sesión, ejecutar `session-start`.
+2. Tras cambios de código, ejecutar `code-change`.
+3. Si falla un comando/test/build, ejecutar `error-recovery`.
+4. Antes de respuesta final/cierre, ejecutar `session-end` (no se omite).
 
 ### Reglas de Automatizacion
 
@@ -110,6 +122,7 @@ Selecciona automaticamente segun palabras clave del usuario:
 | Schema BD | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Decisiones | `docs/DECISION_LOG.md` |
+| Constitución agéntica | `docs/CONSTITUCION_UNIVERSAL_SKILLS_WORKFLOWS_v1.0.0.md` |
 
 ### Politicas
 

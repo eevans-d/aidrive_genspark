@@ -1,5 +1,17 @@
 ---
+name: audit-codebase
 description: Auditoria profunda de UX y consistencia documental. Usa RealityCheck + DocuGuard + SecurityAudit.
+version: 1.0.0
+trigger:
+  automatic:
+    - ejecución de full-audit
+    - detección de deriva documental significativa
+  manual:
+    - audit codebase
+    - auditar repositorio
+  schedule: []
+priority: 5
+timeout: 40
 auto_execution: true
 skills: [RealityCheck, DocuGuard, SecurityAudit]
 ---

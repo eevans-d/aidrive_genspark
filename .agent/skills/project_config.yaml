@@ -67,11 +67,54 @@ outputs:
   performance_report: "docs/PERFORMANCE_REPORT.md"
   session_report: ".agent/sessions/current/SESSION_REPORT.md"
   evidence: ".agent/sessions/current/EVIDENCE.md"
+  audit_evidence: "docs/audit/EVIDENCIA_SP-*.md"
   required_dirs:
     - "logs"
     - "test-reports"
     - ".agent/sessions/current"
     - ".agent/sessions/archive"
+
+# === AUDIT-DISCOVERED PATTERNS (2026-02-11) ===
+# Cross-reference for all skills that check for known critical issues
+
+audit_patterns:
+  HC-1_cron_auth:
+    description: "3 cron jobs (alertas-stock, notificaciones-tareas, reportes-automaticos) no envian Authorization header pero sus Edge Functions requieren JWT"
+    severity: CRITICAL
+    detection: "grep -A5 'net.http_post' supabase/migrations/ --include='*.sql' -r | grep -v 'Authorization'"
+    skills: [SecurityAudit, DeployOps, RealityCheck]
+  HC-2_deploy_script:
+    description: "deploy.sh no filtra _shared/ ni usa --no-verify-jwt para api-minimarket"
+    severity: CRITICAL
+    detection: "grep '_shared' deploy.sh && grep 'no-verify-jwt' deploy.sh"
+    skills: [SecurityAudit, DeployOps, RealityCheck]
+  HC-3_mutation_feedback:
+    description: "Pedidos.tsx mutaciones solo hacen console.error() sin feedback visual al usuario"
+    severity: HIGH
+    detection: "grep -B5 'console.error' minimarket-system/src/pages/ --include='*.tsx' -r | grep -v 'toast'"
+    skills: [RealityCheck, CodeCraft, DebugHound]
+  select_star_hooks:
+    description: "3 hooks (useAlertas, useDashboardStats, useDeposito) usan select('*') en frontend"
+    severity: MEDIUM
+    detection: "grep -rn \".select('*')\" minimarket-system/src/hooks/"
+    skills: [PerformanceWatch, CodeCraft]
+
+supabase_constraints:
+  plan: "Free"
+  timeout_seconds: 60
+  cold_start_seconds: "2-5"
+  functions_deployed: 13
+  cron_jobs_configured: 6
+  note: "4/7 cron jobs exceden timeout 60s del Free plan (scraping probablemente nunca completa)"
+
+quality_metrics:
+  coverage_target: 80
+  coverage_current: 69.39
+  coverage_date: "2026-02-11"
+  test_files_total: 71
+  error_message_pages: "9/13"
+  skeleton_pages: "5/13"
+  skills_total: 22
 
 # === PROTOCOL ZERO V4.0: Sistema Agentico Dual ===
 
@@ -208,6 +251,15 @@ skill_orchestrator:
     SecurityAudit:
       keywords: ["seguridad", "security", "rls", "vulnerabilidad", "auditoria seguridad", "penetration", "xss", "injection"]
       intent: "Auditar seguridad del sistema"
+    UXFixOps:
+      keywords: ["fix ux", "mejorar ux", "agregar skeleton", "feedback al usuario", "error handling ux", "console.error", "ErrorMessage", "empty state", "estado vacio"]
+      intent: "Detectar y corregir gaps UX sistematicamente (HC-3, Skeleton, ErrorMessage)"
+    ProductionGate:
+      keywords: ["production gate", "go-live", "pre-produccion", "pre-producción", "ready for prod", "checklist produccion", "checklist producción", "go no-go", "readiness"]
+      intent: "Ejecutar checklist unificado pre-produccion con 18 gates y score"
+    CronFixOps:
+      keywords: ["fix cron", "cron jobs", "arreglar cron", "verificar cron", "cron auth", "cron schedule", "pg_cron", "maintenance_cleanup"]
+      intent: "Validar y corregir configuraciones de cron jobs (HC-1 + scheduling)"
 
 # === SKILL GRAPH: Dependencias y Cadenas Automaticas ===
 
@@ -271,6 +323,15 @@ skill_graph:
     SecurityAudit:
       on_complete: [DocuGuard]
       description: "Despues de auditoria, documentar hallazgos"
+    UXFixOps:
+      on_complete: [TestMaster, DocuGuard]
+      description: "Despues de corregir UX: verificar build con tests y documentar"
+    ProductionGate:
+      on_complete: [DocuGuard]
+      description: "Despues de evaluar gates: documentar reporte y score"
+    CronFixOps:
+      on_complete: [TestMaster, DocuGuard]
+      description: "Despues de generar SQL de cron fix: verificar y documentar"
 
   dependencies:
     DeployOps:

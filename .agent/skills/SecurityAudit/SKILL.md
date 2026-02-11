@@ -2,8 +2,23 @@
 name: SecurityAudit
 description: Auditoria de seguridad del sistema. RLS, secrets, OWASP, permisos y vulnerabilidades.
 role: CODEX
-impact: 0
-chain: [DocuGuard]
+version: 1.0.0
+impact: CRITICAL
+impact_legacy: 0
+triggers:
+  automatic:
+  - orchestrator keyword match (SecurityAudit)
+  manual:
+  - SecurityAudit
+  - seguridad
+  - security
+  - rls
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  required_before: []
+priority: 6
 ---
 
 # SecurityAudit Skill
@@ -119,6 +134,41 @@ chain: [DocuGuard]
    ```bash
    cat .env.example
    ```
+
+### FASE F: Cron Jobs Auth Verification (HC-1)
+
+1. **Buscar cron jobs SQL:**
+   ```bash
+   grep -r "cron.schedule\|net.http_post" supabase/migrations/ --include="*.sql" -l
+   ```
+2. **Verificar Authorization header en cada cron job:**
+   ```bash
+   grep -B2 -A10 "net.http_post" supabase/migrations/ --include="*.sql" -r | grep -c "Authorization"
+   ```
+3. **Comparar con funciones que requieren JWT:**
+   - Si la funcion objetivo tiene `verify_jwt=true` (Supabase default) y el cron job NO envia `Authorization: Bearer ...` -> **CRITICAL**: el job falla silenciosamente con 401.
+
+### FASE G: Deploy Script Safety (HC-2)
+
+1. **Verificar filtro de _shared/:**
+   ```bash
+   cat deploy.sh 2>/dev/null | grep -E "_shared|shared"
+   ```
+   Si el script itera `supabase/functions/*/` sin excluir `_shared/` -> **CRITICAL**: `set -e` abortara todo el deployment.
+
+2. **Verificar --no-verify-jwt para api-minimarket:**
+   ```bash
+   cat deploy.sh 2>/dev/null | grep "no-verify-jwt"
+   ```
+   Si api-minimarket se deploya sin `--no-verify-jwt` -> **CRITICAL**: resetea el Gateway a `verify_jwt=true`, rompiendo todo el frontend.
+
+### FASE H: Supabase Free-Tier Constraints
+
+1. **Timeout de funciones:** El Free plan tiene timeout de 60s. Verificar funciones que pueden excederlo:
+   ```bash
+   grep -r "timeout\|setTimeout\|sleep\|delay" supabase/functions/ --include="*.ts" -l
+   ```
+2. **Cold start:** Las funciones inactivas tienen cold start de ~2-5s en Free plan. Funciones criticas (api-minimarket) pueden verse afectadas.
 
 ## Severidad de Hallazgos
 

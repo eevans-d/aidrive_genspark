@@ -1,5 +1,17 @@
 ---
+name: test-before-deploy
 description: Suite completa de tests antes de deploy. Gate obligatorio.
+version: 1.0.0
+trigger:
+  automatic:
+    - antes de ejecutar DeployOps
+    - cambio relevante en backend/frontend previo a release
+  manual:
+    - test before deploy
+    - validar antes de deploy
+  schedule: []
+priority: 2
+timeout: 45
 auto_execution: true
 skills: [TestMaster, DeployOps]
 ---

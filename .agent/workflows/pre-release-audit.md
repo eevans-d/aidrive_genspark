@@ -1,5 +1,17 @@
 ---
+name: pre-release-audit
 description: Validacion completa pre-release. RealityCheck + TestMaster + SecurityAudit + PerformanceWatch.
+version: 1.0.0
+trigger:
+  automatic:
+    - antes de release a producción/staging
+    - cierre de sprint con intención de entrega
+  manual:
+    - pre release audit
+    - auditoria pre release
+  schedule: []
+priority: 4
+timeout: 90
 auto_execution: true
 skills: [RealityCheck, TestMaster, SecurityAudit, PerformanceWatch, DocuGuard]
 ---

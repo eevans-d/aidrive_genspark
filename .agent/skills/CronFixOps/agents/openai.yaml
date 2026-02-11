@@ -1,0 +1,6 @@
+interface:
+  display_name: CronFixOps
+  short_description: Validar y corregir configuraciones de cron jobs. Detecta HC-1
+    (auth faltante), timeouts...
+  default_prompt: Use the CronFixOps skill for this repository. Follow SKILL.md and
+    respect guardrails.

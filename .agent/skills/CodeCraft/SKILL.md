@@ -1,9 +1,27 @@
 ---
 name: CodeCraft
-description: Implementar nuevas features (Frontend y Backend) con enfoque TDD y calidad primero.
+description: Implementar nuevas features (Frontend y Backend) con enfoque TDD y calidad
+  primero.
 role: EXECUTOR
-impact: 1-2
-chain: [TestMaster, DocuGuard, MigrationOps]
+version: 1.0.0
+impact: HIGH
+impact_legacy: 1-2
+triggers:
+  automatic:
+  - orchestrator keyword match (CodeCraft)
+  manual:
+  - CodeCraft
+  - crea endpoint
+  - agrega pantalla
+  - implementa feature
+chain:
+  receives_from: []
+  sends_to:
+  - DocuGuard
+  - MigrationOps
+  - TestMaster
+  required_before: []
+priority: 5
 ---
 
 # CodeCraft Skill
@@ -17,6 +35,8 @@ chain: [TestMaster, DocuGuard, MigrationOps]
 2. NO usar comandos destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
 3. Backend: NO usar `console.log` (usar `_shared/logger.ts`).
 4. Si se redeployea `api-minimarket`: mantener `verify_jwt=false` (flag `--no-verify-jwt`).
+5. **HC-3 ENFORCEMENT:** Al crear mutaciones (`useMutation`), OBLIGATORIO usar `toast.error()` o `ErrorMessage` para errores. PROHIBIDO usar solo `console.error()` — el operador DEBE recibir feedback visual.
+6. **UX MINIMOS:** Toda pagina nueva DEBE incluir: `ErrorMessage` (errores), `Skeleton` (carga), estado vacio (datos vacíos).
 
 ## Reglas de Automatizacion
 
@@ -69,6 +89,16 @@ chain: [TestMaster, DocuGuard, MigrationOps]
 2. **API Client:** Actualizar `minimarket-system/src/lib/apiClient.ts` si hay endpoints nuevos.
 3. **UI:** Crear pagina/componente en `minimarket-system/src/`.
 4. **Routing:** Registrar ruta en `minimarket-system/src/App.tsx`.
+5. **UX Checklist (OBLIGATORIO para cada pagina nueva):**
+   - [ ] `ErrorMessage` component para estado de error (NO solo `toast.error`)
+   - [ ] `Skeleton` component para estado de carga
+   - [ ] Estado vacio: mensaje instructivo cuando `data.length === 0`
+   - [ ] Mutaciones (`useMutation`): `onError` usa `toast.error(err.message)` minimo
+   - [ ] Verificar:
+     ```bash
+     grep -n "console.error" minimarket-system/src/pages/<NuevaPagina>.tsx
+     ```
+     Si hay `console.error` sin `toast.error` en la misma funcion -> FIX OBLIGATORIO.
 
 ### FASE D: Integration y Verify
 
@@ -89,6 +119,9 @@ chain: [TestMaster, DocuGuard, MigrationOps]
 - [ ] Backend usa utilidades compartidas (`_shared`).
 - [ ] Build exitoso sin errores.
 - [ ] Sin `console.log` en codigo nuevo.
+- [ ] Sin `console.error` como unico manejo de error en mutaciones (HC-3).
+- [ ] Pagina nueva tiene ErrorMessage + Skeleton + empty state.
+- [ ] Si se creo backend nuevo: verificar endpoint en OpenAPI spec (`docs/api-openapi-3.1.yaml`).
 
 ## Anti-Loop / Stop-Conditions
 

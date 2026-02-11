@@ -1,0 +1,6 @@
+interface:
+  display_name: UXFixOps
+  short_description: Detector y corrector sistematico de gaps UX. Reemplaza console.error
+    por toast/ErrorMes...
+  default_prompt: Use the UXFixOps skill for this repository. Follow SKILL.md and
+    respect guardrails.

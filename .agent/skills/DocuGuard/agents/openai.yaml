@@ -1,6 +1,7 @@
 interface:
   display_name: DocuGuard
-  short_description: Guardian de documentacion. Sincroniza docs con codigo, detecta
-    desincronizaciones.
+  short_description: Guardian de documentacion. Sincroniza docs con codigo real, detecta
+    desincronizaciones, elimina referencias fantasma, y genera reportes de estado.
   default_prompt: Keep documentation synced with reality; block forbidden patterns;
-    update source-of-truth docs.
+    classify findings (REAL/DOC_FANTASMA/CODE_HUERFANO/DESINCRONIZADO); generate structured
+    sync report; update source-of-truth docs.

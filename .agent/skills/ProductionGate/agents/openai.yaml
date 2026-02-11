@@ -1,0 +1,6 @@
+interface:
+  display_name: ProductionGate
+  short_description: Checklist unificado pre-produccion. Ejecuta 18 gates en un solo
+    pass y genera Productio...
+  default_prompt: Use the ProductionGate skill for this repository. Follow SKILL.md
+    and respect guardrails.

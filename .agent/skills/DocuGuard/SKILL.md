@@ -1,14 +1,61 @@
 ---
 name: DocuGuard
-description: >
-  Guardian de documentacion del proyecto. Sincroniza docs con codigo real,
+description: 'Guardian de documentacion del proyecto. Sincroniza docs con codigo real,
   detecta desincronizaciones, elimina referencias fantasma, y genera reportes de estado.
   Opera como fase terminal obligatoria de cualquier sesion de trabajo.
+
+  '
 role: CODEX->EXECUTOR
 version: 2.0.0
-impact: 1
-chain: []
-triggered_by: [CodeCraft, MigrationOps, RealityCheck, SecurityAudit, PerformanceWatch, APISync, EnvAuditOps, MegaPlanner, SendGridOps, SecretRotationOps, SentryOps, DependabotOps, UXFixOps, ProductionGate, CronFixOps]
+impact: MEDIUM
+impact_legacy: 1
+triggers:
+  automatic:
+  - orchestrator keyword match (DocuGuard)
+  - 'after completion of: APISync, CodeCraft, CronFixOps, DependabotOps, EnvAuditOps,
+    MegaPlanner, MigrationOps, PerformanceWatch, ProductionGate, RealityCheck, SecretRotationOps,
+    SecurityAudit, SendGridOps, SentryOps, UXFixOps'
+  manual:
+  - DocuGuard
+  - actualiza docs
+  - sincroniza documentacion
+  - documenta
+chain:
+  receives_from:
+  - APISync
+  - CodeCraft
+  - CronFixOps
+  - DependabotOps
+  - EnvAuditOps
+  - MegaPlanner
+  - MigrationOps
+  - PerformanceWatch
+  - ProductionGate
+  - RealityCheck
+  - SecretRotationOps
+  - SecurityAudit
+  - SendGridOps
+  - SentryOps
+  - UXFixOps
+  sends_to: []
+  required_before: []
+priority: 10
+triggered_by:
+- CodeCraft
+- MigrationOps
+- RealityCheck
+- SecurityAudit
+- PerformanceWatch
+- APISync
+- EnvAuditOps
+- MegaPlanner
+- SendGridOps
+- SecretRotationOps
+- SentryOps
+- DependabotOps
+- UXFixOps
+- ProductionGate
+- CronFixOps
 ---
 
 # DocuGuard Skill v2.0

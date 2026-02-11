@@ -2,9 +2,17 @@
  
 **Última actualización:** 2026-02-11
 **Estado:** ⚠️ OPERATIVO CON RIESGOS — `NO LISTO (Piloto)` en snapshot final de auditoría (2026-02-11).
+**Sistema agéntico (canónico):** 23 skills-docs en `.agent/skills` (22 skills ejecutables + `ORCHESTRATOR`) y 12 workflows documentados (6 canónicos + 6 legacy controlados).
 
 **Hoja de ruta (post-plan):** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
 **Prompt ejecutor (Claude Code):** `docs/closure/CLAUDE_CODE_CONTEXT_PROMPT_EXECUTOR_AUDITORIA_2026-02-10.md`.
+**Constitución agéntica (Ley Madre):** `docs/CONSTITUCION_UNIVERSAL_SKILLS_WORKFLOWS_v1.0.0.md`.
+
+**Cierre de sesión (2026-02-11):**
+- ✅ Verificación final del sistema agéntico completada: `docs/closure/VERIFICACION_FINAL_SKILLS_WORKFLOWS_2026-02-11.md` (6/6 checks en PASS).
+- ✅ Workflows y orquestadores normalizados con metadata y encadenamiento sin huérfanos.
+- ✅ Sesión archivada vía Protocol Zero: `.agent/sessions/archive/20260211-075216`.
+- 🔜 Prioridades para próxima sesión: Gate 16 (monitoreo real), Gate 15 (backup/restore operativo), Gate 18 (legacy CI hardening).
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
 **Arranque recomendado de nuevas sesiones:** `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md`.
