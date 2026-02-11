@@ -16,6 +16,10 @@ CUANDO ACTIVA: No existe SESSION_ACTIVE
 
 **Skills en modo CODEX:**
 - RealityCheck (100% CODEX)
+- MegaPlanner (100% CODEX)
+- SessionOps (100% CODEX)
+- BaselineOps (100% CODEX)
+- ExtractionOps (100% CODEX)
 - PerformanceWatch (100% CODEX)
 - SecurityAudit (100% CODEX)
 - DocuGuard (FASE 0-A)
@@ -23,6 +27,10 @@ CUANDO ACTIVA: No existe SESSION_ACTIVE
 - MigrationOps (FASE A)
 - DebugHound (FASE A-B)
 - APISync (FASE A)
+- SendGridOps (FASE A-B)
+- SecretRotationOps (FASE A-B)
+- SentryOps (FASE A-B)
+- EnvAuditOps (100% CODEX)
 
 ### EXECUTOR (Estado Caliente)
 ```
@@ -35,11 +43,15 @@ CUANDO ACTIVA: Existe SESSION_ACTIVE
 **Skills en modo EXECUTOR:**
 - CodeCraft (100% EXECUTOR)
 - TestMaster (100% EXECUTOR)
+- DependabotOps (100% EXECUTOR)
 - DocuGuard (FASE B-C)
 - DeployOps (FASE C)
 - MigrationOps (FASE B-C)
 - DebugHound (FASE C)
 - APISync (FASE B)
+- SendGridOps (FASE C)
+- SecretRotationOps (FASE C)
+- SentryOps (FASE C)
 
 ---
 
@@ -62,9 +74,18 @@ El sistema selecciona automaticamente que skill ejecutar segun el contexto:
 
 | Contexto del Usuario | Skill Activado | Cadena Automatica |
 |---------------------|----------------|-------------------|
+| "arranquemos/nueva sesion/cierre" | **SessionOps** | -> ExtractionOps -> MegaPlanner |
+| "baseline/estado/snapshot" | **BaselineOps** | (terminal) |
+| "analisis tecnico/inventario/reconocimiento" | **ExtractionOps** | -> MegaPlanner |
 | "crea endpoint/pantalla" | **CodeCraft** | -> TestMaster -> DocuGuard |
+| "dependabot/pr dependencias" | **DependabotOps** | -> TestMaster -> DocuGuard |
+| "env/.env/variables entorno" | **EnvAuditOps** | -> DocuGuard |
+| "sendgrid/smtp/from email" | **SendGridOps** | -> DocuGuard |
+| "rotacion secretos/rotate secrets" | **SecretRotationOps** | -> DocuGuard |
+| "sentry/dsn/observabilidad" | **SentryOps** | -> TestMaster -> PerformanceWatch -> DocuGuard |
 | "deploy a staging/prod" | **DeployOps** | TestMaster (pre) -> RealityCheck (post) |
 | "ejecuta tests" | **TestMaster** | - |
+| "plan/hoja de ruta/mega plan" | **MegaPlanner** | -> DocuGuard |
 | "audita/verifica ux" | **RealityCheck** | -> DocuGuard |
 | "actualiza docs" | **DocuGuard** | - |
 | "aplica migracion/crear tabla" | **MigrationOps** | -> DocuGuard |
@@ -163,6 +184,7 @@ EXECUTOR ----------------> CODEX
 │   ├── CodeCraft/SKILL.md    <- EXECUTOR
 │   ├── TestMaster/SKILL.md   <- EXECUTOR
 │   ├── RealityCheck/SKILL.md <- CODEX
+│   ├── SessionOps/SKILL.md   <- CODEX
 │   ├── DeployOps/SKILL.md    <- CODEX->EXECUTOR
 │   ├── DocuGuard/SKILL.md    <- CODEX->EXECUTOR
 │   ├── MigrationOps/SKILL.md <- CODEX->EXECUTOR

@@ -1,7 +1,7 @@
 # Prompt de Contexto para Proxima Sesion
 
 **Generado:** 2026-02-09 (sesion 2)
-**HEAD:** pendiente commit final (post-session2)
+**HEAD:** `3b1a8b0` (main) — Merge PR #57 (session 2 final)
 **Branch:** `main`
 
 ---
@@ -35,6 +35,39 @@ Este es el repo `aidrive_genspark` — sistema Mini Market con React/Vite/TS (fr
 - **Edge Functions:** 13 activas, `api-minimarket` v20 (`verify_jwt=false`), `cron-notifications` v12
 - **Secrets:** 13 confirmados en remoto
 - **DB staging:** tiene 1 producto de prueba (SEED-CC-225 Coca Cola 2.25L, stock 50)
+- **Smoke reservas:** PASS (201 Created + 200 Idempotent)
+
+## Estado GitHub (PRs)
+
+- **Abiertos:** solo `#55` (DRAFT, documentación). No bloquea ejecución.
+- **Dependabot:** 0 PRs abiertos (sesión 2 ya procesó todos los bump no-break).
+
+### PRs mergeados en sesión 2 (resumen)
+
+| PR | Tipo | Contenido |
+|----|------|----------|
+| #53 | fix | `cron-notifications`: priorizar `SMTP_FROM` como fuente de verdad (sender) |
+| #54 | docs | baseline log + SendGrid + `OPEN_ISSUES.md` |
+| #56 | docs | perf baseline + actualización de conteos de tests |
+| #57 | chore/feat | final sesión 2: migración `20260209000000` (fix `sp_reservar_stock`) + seed staging + cierre |
+
+### Dependabot (sesión 2)
+
+- **Mergeados (7, no-break):** #20, #21, #22, #26, #27, #50, #52
+- **Cerrados (5, major bumps diferidos):** #25, #28, #29, #31, #51 (ver plan en `docs/closure/OPEN_ISSUES.md`)
+
+## Performance baseline (resumen)
+
+- Resultado: 7/7 endpoints OK (0 errores / 0 rate limits)
+- p50 típico: 839ms - 1168ms
+- worst p95: 1973ms (cold start probable)
+- Evidencia: `docs/closure/PERF_BASELINE_2026-02-09_SESSION2.md`
+
+## Quick Start (1 comando)
+
+```bash
+.agent/scripts/p0.sh kickoff "<objetivo>" --with-gates --with-supabase
+```
 
 ## Dependencias Actuales (post bumps sesion 2)
 

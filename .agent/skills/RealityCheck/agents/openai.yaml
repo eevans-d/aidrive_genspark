@@ -1,0 +1,6 @@
+interface:
+  display_name: RealityCheck
+  short_description: Mentor ultra-realista que audita UX, funcionalidad y produccion.
+    Detecta gaps entre doc...
+  default_prompt: Audit UX/flows realistically; classify REAL/A CREAR/PROPUESTA with
+    evidence; output report.

@@ -1,7 +1,7 @@
 # 🤖 Guía para Agentes IA
 
 **Proyecto:** Mini Market System  
-**Última actualización:** 2026-02-04  
+**Última actualización:** 2026-02-09  
 
 ---
 
@@ -15,7 +15,7 @@
 | **Frontend** | 9 páginas, 8 hooks React Query (Depósito usa useQuery inline; Login sin hook) |
 | **Gateway** | 29 endpoints en código (`api-minimarket`) |
 | **Supabase** | Confirmaciones 2026-02-01 re‑abiertas 2026-02-02 (ver `docs/ESTADO_ACTUAL.md`) |
-| **Agent Skills** | ✅ TestMaster, DeployOps, DocuGuard, CodeCraft, RealityCheck activos |
+| **Agent Skills** | ✅ Protocol Zero activo (19 skills en `.agent/skills/` + skills OpenAI curados en `~/.codex/skills/`) |
 
 ---
 
@@ -25,6 +25,25 @@ Plan vigente: **Hoja de Ruta MADRE** en `docs/HOJA_RUTA_MADRE_2026-01-31.md` (ci
 Estado consolidado: `docs/ESTADO_ACTUAL.md`.  
 Plan modular: `docs/mpc/C1_MEGA_PLAN_v1.1.0.md` (histórico).  
 Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OPERATIONS_RUNBOOK.md`.
+
+---
+
+## 🧭 Proceso Guiado a Producción (3 Pasos)
+
+Pensado para usuarios sin conocimientos técnicos avanzados: ejecutar comandos y compartir reportes.
+
+1) **Extracción (evidencia compartible)**:
+```bash
+.agent/scripts/p0.sh extract --with-gates --with-supabase
+```
+Genera 2 reportes en `docs/closure/`: `TECHNICAL_ANALYSIS_*.md` + `INVENTORY_REPORT_*.md`.
+
+2) **Análisis y Plan**:
+- Usar `MegaPlanner` para convertir evidencia en un Top-10 con DoD + gates (archivo `docs/closure/MEGA_PLAN_*.md`).
+
+3) **Ejecución Estructurada**:
+- Ejecutar tareas 1 a 1 usando skills (`DependabotOps`, `SendGridOps`, `SecretRotationOps`, `DeployOps`, etc.).
+- Validar con `.agent/scripts/p0.sh gates all` y dejar evidencia en `docs/closure/`.
 
 ---
 
@@ -58,6 +77,7 @@ Siguiente enfoque: cerrar pendientes críticos y luego monitoreo según `docs/OP
 - Usar skills **solo si el agente lo soporta** y **solo cuando la tarea lo requiere**.  
 - Si se requiere crear/instalar skills, documentar en `docs/DECISION_LOG.md` y actualizar `docs/ESTADO_ACTUAL.md`.  
 - Si el entorno no soporta skills, proceder con los documentos base (Hoja de Ruta MADRE).
+- **Auto-orquestación recomendada:** usar `.agent/skills/project_config.yaml` + `.agent/scripts/skill_orchestrator.py` para seleccionar skill y cadena sin intervención manual.
 
 ## 📂 Estructura del Proyecto
 
@@ -166,13 +186,106 @@ VITE_API_GATEWAY_URL=/api-minimarket
 
 El proyecto cuenta con "Skills" estandarizados para agentes, ubicados en `.agent/skills/`. **Debes usarlos obligatoriamente**.
 
+### Auto-Setup (1 vez por máquina / por repo)
+
+Wrapper unificado (recomendado):
+```bash
+.agent/scripts/p0.sh bootstrap
+.agent/scripts/p0.sh route "<pedido del usuario>"
+.agent/scripts/p0.sh extract --with-gates --with-supabase
+```
+
+Kickoff (push-button: sesion + evidencia + mega plan template):
+```bash
+.agent/scripts/p0.sh kickoff "<objetivo>" --with-gates --with-supabase
+```
+
+Mega plan template (solo plantilla):
+```bash
+.agent/scripts/p0.sh mega-plan --objective "<objetivo>"
+```
+
+Sincronizar skills del repo hacia Codex (symlinks, no copia):
+```bash
+.agent/scripts/sync_codex_skills.py
+```
+
+Bootstrap completo (skills + curated + lint):
+```bash
+.agent/scripts/bootstrap.sh
+```
+
+Seleccionar skill automáticamente para un pedido:
+```bash
+.agent/scripts/skill_orchestrator.py "<pedido del usuario>"
+```
+
+Baseline seguro (sin secretos) para arrancar sesión:
+```bash
+.agent/scripts/baseline_capture.sh
+```
+
+Quality gates unificados:
+```bash
+.agent/scripts/quality_gates.sh all
+```
+
+Sesiones (evidencia + archive):
+```bash
+.agent/scripts/session_start.sh "objetivo"
+.agent/scripts/session_end.sh
+```
+
+Env audit (nombres solamente):
+```bash
+.agent/scripts/env_audit.py --format markdown
+```
+
+Dependabot autopilot (1 PR a la vez):
+```bash
+.agent/scripts/dependabot_autopilot.sh
+```
+
 | Skill | Ubicación | Propósito |
 |-------|-----------|-----------|
+| **SessionOps** | `.agent/skills/SessionOps/SKILL.md` | Push-button: arranque/cierre de sesión con evidencia (kickoff + archive). |
+| **BaselineOps** | `.agent/skills/BaselineOps/SKILL.md` | Snapshot seguro (git+supabase) con evidencia en `docs/closure/`. |
 | **TestMaster** | `.agent/skills/TestMaster/SKILL.md` | Ejecución de tests, debugging inteligente y cobertura. |
 | **DeployOps** | `.agent/skills/DeployOps/SKILL.md` | Despliegues seguros en Supabase (Edge Functions/DB) y gestión de secretos. |
 | **DocuGuard** | `.agent/skills/DocuGuard/SKILL.md` | Mantenimiento de documentación y reglas del proyecto. |
 | **CodeCraft** | `.agent/skills/CodeCraft/SKILL.md` | Estandarización de Features (Scaffold, Tests, Patterns). |
 | **RealityCheck** | `.agent/skills/RealityCheck/SKILL.md` | Mentor ultra-realista: valida flujos UX, detecta gaps doc↔código, audita pre-release. |
+| **DebugHound** | `.agent/skills/DebugHound/SKILL.md` | Diagnóstico y fixes sistemáticos con evidencia (loop limitado). |
+| **MigrationOps** | `.agent/skills/MigrationOps/SKILL.md` | Migraciones SQL seguras con validación + rollback. |
+| **APISync** | `.agent/skills/APISync/SKILL.md` | Sincroniza OpenAPI specs con endpoints reales. |
+| **PerformanceWatch** | `.agent/skills/PerformanceWatch/SKILL.md` | Medición y reporte de performance (bundle/query/UX). |
+| **SecurityAudit** | `.agent/skills/SecurityAudit/SKILL.md` | Auditoría de seguridad (RLS, secrets, OWASP) sin tocar código. |
+| **DependabotOps** | `.agent/skills/DependabotOps/SKILL.md` | Revisar/mergear PRs de dependencias con quality gates. |
+| **MegaPlanner** | `.agent/skills/MegaPlanner/SKILL.md` | Hoja de ruta y mega plan ejecutable con gates. |
+| **SendGridOps** | `.agent/skills/SendGridOps/SKILL.md` | Mismatch SMTP/From + verificación SendGrid con evidencia (sin secretos). |
+| **SecretRotationOps** | `.agent/skills/SecretRotationOps/SKILL.md` | Rotación segura de secretos con rollback y evidencia. |
+| **SentryOps** | `.agent/skills/SentryOps/SKILL.md` | Integración Sentry UI solo con DSN real, midiendo impacto. |
+| **EnvAuditOps** | `.agent/skills/EnvAuditOps/SKILL.md` | Auditoría de env vars (nombres) para detectar drift/mismatches. |
+| **ExtractionOps** | `.agent/skills/ExtractionOps/SKILL.md` | Extracción completa (análisis técnico + inventario) para planificar producción. |
+
+### Skills extra (OpenAI curated, opcional)
+
+Instaladas en `~/.codex/skills/`:
+- `doc` (documentación)
+- `gh-fix-ci` (arreglar CI en PRs)
+- `gh-address-comments` (responder/iterar comentarios de PR)
+- `playwright` (E2E con Playwright)
+- `sentry` (integración Sentry)
+- `openai-docs` (referencia oficial OpenAI)
+- `security-best-practices`, `security-threat-model` (seguridad)
+- `vercel-deploy`, `render-deploy`, `netlify-deploy`, `cloudflare-deploy` (deploy)
+
+Nota: reiniciar Codex para que detecte skills nuevas instaladas/sincronizadas.
+
+Opcional (instalar extras curados de deploy/docs):
+```bash
+P0_CURATED_TIER=full .agent/scripts/p0.sh bootstrap
+```
 
 ---
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: TestMaster
+  short_description: Ejecucion, analisis y mantenimiento de tests. Centraliza la calidad
+    del codigo.
+  default_prompt: Run the appropriate test suite(s), analyze failures, and produce
+    a concise actionable report.

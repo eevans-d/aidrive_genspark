@@ -27,7 +27,17 @@ SI NO existe -> ROL: CODEX
    mkdir -p .agent/sessions/current .agent/sessions/archive
    ```
 
-2. **Generar BRIEFING.md** en `.agent/sessions/current/`:
+2. **Auto-setup (recomendado, 1 comando):**
+   ```bash
+   .agent/scripts/p0.sh kickoff "<objetivo>" --with-gates --with-supabase
+   ```
+
+   Alternativa mínima (solo sesión + baseline):
+   ```bash
+   .agent/scripts/session_start.sh "<objetivo>"
+   ```
+
+3. **Generar BRIEFING.md** en `.agent/sessions/current/`:
    ```markdown
    # Briefing de Sesion
    **Fecha:** YYYY-MM-DD HH:MM
@@ -49,7 +59,7 @@ SI NO existe -> ROL: CODEX
    - [Comandos de reversion]
    ```
 
-3. **Transicion automatica a EXECUTOR:**
+4. **Transicion automatica a EXECUTOR:**
    - Si impacto <= 1 -> crear SESSION_ACTIVE sin pedir confirmacion.
    - Si impacto >= 2 -> preparar rollback primero, luego crear SESSION_ACTIVE.
 

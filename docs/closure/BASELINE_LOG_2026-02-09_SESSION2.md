@@ -174,3 +174,19 @@ aa31bd5 (main, post docs PR #54 merge)
 - Redeploy de `cron-notifications` para aplicar fix SMTP_FROM.
 - Smoke reservas (`scripts/smoke-reservas.mjs`): pendiente evaluacion.
 - Major bumps (react 19, react-router-dom 7, recharts 3, react-resizable-panels 4): cerrados, requieren sesion de migracion dedicada.
+
+---
+
+## Addendum (post-session2-final)
+
+Este baseline se generó durante el transcurso de la sesión 2. El cierre final quedó consolidado después (PR #57 mergeado a `main`).
+
+- **HEAD final (main):** `3b1a8b0` (Merge PR #57)
+- **cron-notifications:** redeploy confirmado en remoto (v12)
+- **Migración aplicada:** `20260209000000` (fix `sp_reservar_stock`)
+- **DB staging:** seed de 1 producto de prueba (permite smoke `/reservas`)
+- **Smoke reservas:** PASS (201 Created + 200 Idempotent)
+
+Fuente de verdad para el estado final y próximos pasos:
+- `docs/closure/NEXT_SESSION_CONTEXT_2026-02-09.md`
+- `docs/closure/OPEN_ISSUES.md`

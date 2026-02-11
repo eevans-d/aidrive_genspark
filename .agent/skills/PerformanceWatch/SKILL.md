@@ -11,6 +11,11 @@ chain: [DocuGuard]
 **ROL:** CODEX (estado frio). Analizar, medir, reportar. Proponer optimizaciones.
 **PROTOCOLO:** "Medir antes de optimizar."
 
+## Guardrails (Obligatorio)
+
+1. NO imprimir secretos/JWTs (solo nombres).
+2. NO usar comandos destructivos.
+
 ## Reglas de Automatizacion
 
 1. Ejecutar analisis de bundle automaticamente post-build.
@@ -80,6 +85,13 @@ chain: [DocuGuard]
    ```bash
    grep -r "useMemo\|useCallback\|React.memo" minimarket-system/src/ --include="*.tsx" -c
    ```
+
+### FASE D: Baseline p50/p95 (Repo Script)
+
+Ejecutar baseline de baja friccion (read-only) y registrar salida:
+```bash
+node scripts/perf-baseline.mjs 5
+```
 
 ## Metricas y Umbrales
 

@@ -1,0 +1,6 @@
+interface:
+  display_name: DocuGuard
+  short_description: Guardian de documentacion. Sincroniza docs con codigo, detecta
+    desincronizaciones.
+  default_prompt: Keep documentation synced with reality; block forbidden patterns;
+    update source-of-truth docs.

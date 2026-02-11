@@ -1,0 +1,6 @@
+interface:
+  display_name: SecurityAudit
+  short_description: Auditoria de seguridad del sistema. RLS, secrets, OWASP, permisos
+    y vulnerabilidades.
+  default_prompt: Perform a code-first security audit (RLS, secrets, OWASP) and output
+    a severity-ranked report.

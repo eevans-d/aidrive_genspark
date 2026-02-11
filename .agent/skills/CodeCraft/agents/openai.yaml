@@ -1,0 +1,6 @@
+interface:
+  display_name: CodeCraft
+  short_description: Implementar nuevas features (Frontend y Backend) con enfoque
+    TDD y calidad primero.
+  default_prompt: Implement features using this repo's patterns (TDD, shared libs,
+    no console.log) and leave evidence.

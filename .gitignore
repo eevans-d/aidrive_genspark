@@ -595,6 +595,8 @@
 **/*.backup
 **/*.sql
 !supabase/migrations/*.sql
+!scripts/*.sql
+!supabase/cron_jobs/*.sql
 
 # MongoDB
 **/dump/

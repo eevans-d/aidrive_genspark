@@ -15,7 +15,31 @@ Reglas:
 - NO usar comandos destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
 - `api-minimarket` debe permanecer con `verify_jwt=false` (si se redeployea usar `--no-verify-jwt`).
 
+### 0) Skills (auto)
+Sincroniza skills del repo hacia Codex (symlinks) y usa el orquestador:
+```bash
+cd /home/eevan/ProyectosIA/aidrive_genspark
+.agent/scripts/p0.sh bootstrap
+.agent/scripts/p0.sh route "<pedido del usuario>"
+```
+
+Extracción completa para planificar producción (genera reportes en `docs/closure/`):
+```bash
+.agent/scripts/p0.sh extract --with-gates --with-supabase
+```
+
+Kickoff (push-button: sesion + extraccion + mega plan template):
+```bash
+.agent/scripts/p0.sh kickoff "objetivo" --with-gates --with-supabase
+```
+
+Opcional: iniciar sesion Protocol Zero (solo baseline + briefing + evidencia):
+```bash
+.agent/scripts/p0.sh session-start "objetivo"
+```
+
 ### 1) Leer primero (fuente de verdad)
+- `docs/closure/NEXT_SESSION_CONTEXT_2026-02-09.md` (punto de entrada recomendado)
 - `docs/ESTADO_ACTUAL.md`
 - `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
 - `docs/closure/SESSION_CLOSE_2026-02-09.md`
@@ -33,19 +57,10 @@ Scripts nuevos:
 - `scripts/smoke-reservas.mjs` (write, idempotente; puede quedar BLOCKED si no hay productos)
 
 ### 2) Baseline inmediato (no secrets)
-Ejecuta y pega en un log en `docs/closure/`:
+Ejecuta baseline seguro (crea automaticamente un log en `docs/closure/`):
 ```bash
 cd /home/eevan/ProyectosIA/aidrive_genspark
-date
-git status --porcelain=v1
-git rev-parse --abbrev-ref HEAD
-git rev-parse HEAD
-git log -n 10 --oneline --decorate
-supabase --version
-
-supabase migration list --linked
-supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json | jq -r '.[] | "\(.name)\tv\(.version)\tverify_jwt=\(.verify_jwt)"' | sort
-supabase secrets list --project-ref dqaygmjpzoqjjrywdsxi --output json | jq -r '.[].name' | sort
+.agent/scripts/baseline_capture.sh
 ```
 
 ### 3) Prioridades recomendadas (proxima sesion)
@@ -65,4 +80,3 @@ pnpm -C minimarket-system lint
 pnpm -C minimarket-system build
 pnpm -C minimarket-system test:components
 ```
-
