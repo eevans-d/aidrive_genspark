@@ -230,11 +230,11 @@ Verificación puntual ejecutada:
 ### Revalidación SP-E (Codex, 2026-02-11)
 
 - `pnpm -C minimarket-system exec tsc --noEmit` -> PASS.
-- `supabase migration list --linked` -> PASS (33/33 local=remoto).
+- `supabase migration list --linked` -> PASS (snapshot intermedio pre-push final; estado consolidado final: 36/36).
 - `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` -> 13/13 ACTIVE, `api-minimarket verify_jwt=false`.
 - `supabase secrets list --project-ref dqaygmjpzoqjjrywdsxi --output json` -> inventario backend por nombre confirmado.
 - `curl https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health` -> `success:true` (200).
-- `ALLOWED_ORIGINS` quedó en FAIL operativo para producción: response header actual devuelve `http://localhost:5173`.
+- `ALLOWED_ORIGINS` en estado final PASS: origen productivo `https://aidrive-genspark.vercel.app` responde 200 con ACAO correcto; origen no permitido bloquea 403/null.
 
 ---
 
@@ -326,7 +326,7 @@ Comandos de verificación ejecutados:
 |---|-----|---------------------|-------------|
 | 1 | **HC-1: Authorization header en 3 cron jobs** | `supabase/cron_jobs/deploy_all_cron_jobs.sql` (3 procedures actualizados) | `grep Authorization` → 7/7 `net.http_post` con auth header |
 | 2 | **HC-1: maintenance_cleanup cron semanal** | `supabase/cron_jobs/deploy_all_cron_jobs.sql` (Job 8 agregado) | Domingo 04:00, retención 30d, 120s timeout |
-| 3 | **HC-1: Migración aplicada en remoto** | `20260211055140_fix_cron_jobs_auth_and_maintenance.sql` (via MCP) | 4 cron jobs activos en remoto. URLs corregidas `htvlwhisjpdagqkqnpxg` → `dqaygmjpzoqjjrywdsxi`. pg_cron 1.6.4 + pg_net 0.19.5 habilitadas. ⚠️ `app.service_role_key` no configurado. |
+| 3 | **HC-1: Migración aplicada en remoto** | `20260211055140_fix_cron_jobs_auth_and_maintenance.sql` (via MCP) | 4 cron jobs activos en remoto. URLs corregidas `htvlwhisjpdagqkqnpxg` → `dqaygmjpzoqjjrywdsxi`. pg_cron 1.6.4 + pg_net 0.19.5 habilitadas. ✅ Runtime auth resuelto luego con Vault (`20260211062617`). |
 | 4 | **HC-2: deploy.sh seguro** | `deploy.sh` (loop de Edge Functions refactorizado) | Dry-run: 13 funciones target, `_shared` skip, `api-minimarket` con `--no-verify-jwt` |
 | 5 | **HC-3: Pedidos.tsx toast.error** | `minimarket-system/src/pages/Pedidos.tsx` (import + 3 catches) | `toast.error` en L52, L62, L72. Build PASS. |
 | 6 | **HC-3: Interceptor 401 global** | `minimarket-system/src/lib/authEvents.ts` (nuevo), `apiClient.ts` (2 emit points), `AuthContext.tsx` (listener) | Observer pattern. Build PASS (5.48s, 27 PWA entries). |
@@ -350,8 +350,8 @@ Comandos de verificación ejecutados:
 | ❌ FALLA | 4, 5, 6, 13, 16 (5) | 5, 6, 16 (3) |
 
 **Gates mejorados:**
-- Gate 4 (Alertas stock): ❌→⚠️ (cron auth fijado, **migración aplicada en remoto 2026-02-11** — `app.service_role_key` pendiente)
-- Gate 13 (ErrorMessage): ❌→⚠️ (Pedidos P0 resuelto, aún 7/13 con ErrorMessage)
+- Gate 4 (Alertas stock): ❌→⚠️ (cron auth fijado y runtime validado vía Vault; persiste pendiente de canal real al operador).
+- Gate 13 (ErrorMessage): ❌→⚠️ (snapshot intermedio post-P0; ver consolidado final en Addendum Codex).
 
 ### Veredicto post-fix
 
@@ -385,7 +385,7 @@ Se ejecutó una verificación independiente para confirmar que la corrida P0 no 
 
 ### Impacto de estado
 
-- Gate 13 (ErrorMessage en páginas): mejora factual de **7/13 → 8/13**.
+- Gate 13 (ErrorMessage en páginas): mejora factual intermedia de **7/13 → 8/13** (consolidado final posterior: **9/13**).
 - Veredicto general no cambia: **⚠️ NO LISTO (Piloto)** hasta cerrar gates 3, 4, 7 y 18.
 
 ---
@@ -440,7 +440,7 @@ Se ejecutó una verificación independiente para confirmar que la corrida P0 no 
 
 - **Gate 4** (Alertas stock): Mejora a ⚠️ PARCIAL (mejorado) — DDL + Vault auth funcional. Test E2E HTTP 200. Falta canal push/email.
 - **Gate 10** (Cron jobs): Mejora a ⚠️ PARCIAL (mejorado) — 4 jobs con Vault auth funcional. Runtime verificado.
-- **Gate 11** (Migraciones): ✅ OK — 35/35 sincronizadas local=remoto (incluye `20260211062617`)
+- **Gate 11** (Migraciones): ✅ OK — snapshot intermedio 35/35 (consolidado final posterior: 36/36).
 - Veredicto general: **⚠️ NO LISTO (Piloto)** — pero bloqueador runtime cron ELIMINADO. Pendientes: canal push (Gate 4), RLS tablas nuevas (Gate 7).
 
 ---

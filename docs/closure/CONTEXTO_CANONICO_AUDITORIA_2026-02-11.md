@@ -61,6 +61,7 @@
 3. `docs/audit/EVIDENCIA_SP-E.md`
 4. `docs/audit/EXECUTION_LOG_AUDITORIA_2026-02-10.md` (ver último addendum)
 5. `docs/closure/OPEN_ISSUES.md`
+6. `docs/closure/PROMPTS_PARALELOS_COPILOT_ANTIGRAVITY_2026-02-11.md` (para ejecución delegada)
 
 ---
 
@@ -91,4 +92,3 @@ Para pasar de `NO LISTO (Piloto)` a estado defendible:
 2. Gate 4: canal real de alertas de stock bajo activo y probado.
 3. Gate 16: monitoreo real activo (Sentry con DSN real + alerting).
 4. Gate 18: legacy tests con política CI verificable (no solo opcional tolerante).
-

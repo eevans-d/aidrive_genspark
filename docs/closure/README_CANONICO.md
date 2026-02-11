@@ -6,6 +6,7 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 2. `docs/closure/OPEN_ISSUES.md`
 3. `docs/audit/EVIDENCIA_SP-OMEGA.md`
 4. `docs/ESTADO_ACTUAL.md`
+5. `docs/closure/PROMPTS_PARALELOS_COPILOT_ANTIGRAVITY_2026-02-11.md` (si se delega ejecución a otro agente)
 
 ## Estado operativo
 
