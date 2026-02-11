@@ -4,6 +4,7 @@
  */
 
 import { supabase } from './supabase';
+import { authEvents } from './authEvents';
 
 const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL || '/api-minimarket';
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || import.meta.env.VITE_USE_MOCKS === '1';
@@ -95,6 +96,7 @@ async function apiRequest<T>(
         const token = await getAuthToken();
 
         if (!token) {
+                authEvents.emit('auth_required');
                 throw new ApiError('AUTH_REQUIRED', 'Authentication required', 401);
         }
 
@@ -134,6 +136,9 @@ async function apiRequest<T>(
                 const json: ApiResponse<T> = await response.json();
 
                 if (!response.ok || !json.success) {
+                        if (response.status === 401) {
+                                authEvents.emit('auth_required');
+                        }
                         throw new ApiError(
                                 json.error?.code || 'API_ERROR',
                                 json.error?.message || 'Request failed',

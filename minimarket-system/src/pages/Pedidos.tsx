@@ -19,7 +19,10 @@ import {
         DropdownItem
 } from '../lib/apiClient';
 import { useQuery } from '@tanstack/react-query';
+import ErrorMessage from '../components/ErrorMessage';
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
+import { toast } from 'sonner';
 
 // ============================================================================
 // Componente principal
@@ -30,7 +33,7 @@ export default function Pedidos() {
         const [showForm, setShowForm] = useState(false);
         const [selectedPedido, setSelectedPedido] = useState<PedidoResponse | null>(null);
 
-        const { data, isLoading, error, refetch } = usePedidos(filters);
+        const { data, isLoading, isFetching, error, refetch } = usePedidos(filters);
         const createMutation = useCreatePedido();
         const updateEstadoMutation = useUpdateEstadoPedido();
         const updateItemMutation = useUpdateItemPreparado();
@@ -48,6 +51,7 @@ export default function Pedidos() {
                         refetch();
                 } catch (err) {
                         console.error('Error creando pedido:', err);
+                        toast.error(err instanceof Error ? err.message : 'Error al crear pedido');
                 }
         };
 
@@ -57,6 +61,7 @@ export default function Pedidos() {
                         refetch();
                 } catch (err) {
                         console.error('Error actualizando estado:', err);
+                        toast.error(err instanceof Error ? err.message : 'Error al actualizar estado del pedido');
                 }
         };
 
@@ -66,6 +71,7 @@ export default function Pedidos() {
                         refetch();
                 } catch (err) {
                         console.error('Error actualizando item:', err);
+                        toast.error(err instanceof Error ? err.message : 'Error al actualizar item del pedido');
                 }
         };
 
@@ -81,9 +87,12 @@ export default function Pedidos() {
 
         if (error) {
                 return (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-                                Error cargando pedidos: {error.message}
-                        </div>
+                        <ErrorMessage
+                                message={parseErrorMessage(error)}
+                                type={detectErrorType(error)}
+                                onRetry={refetch}
+                                isRetrying={isFetching}
+                        />
                 );
         }
 

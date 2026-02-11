@@ -93,7 +93,47 @@ VITE_USE_MOCKS=false pnpm exec playwright test auth.real
 
 ---
 
-## 8) Seguridad basica
+## 8) Monitoreo y Observabilidad
+
+### Health Checks
+- **Endpoint**: `https://[PROJECT_REF].supabase.co/functions/v1/api-minimarket/health`
+- **Respuesta esperada**: `200 OK` `{ "success": true }`
+- **Configuración recomendada**: Utilizar servicio externo (UptimeRobot, Better Stack) para pings cada 5 minutos.
+
+### Sentry (Frontend)
+- **Estado**: Integración lista pero inactiva (falta DSN).
+- **Activación**: Ver `docs/SENTRY_INTEGRATION_PLAN.md`.
+
+---
+
+## 9) Respaldo y Recuperación (Backup/Restore)
+
+### Backup Manual
+El proyecto incluye un script para realizar backups lógicos de la base de datos.
+**Requisito**: `postgresql-client` instalado y `SUPABASE_DB_URL` configurado en `.env`.
+
+```bash
+# Ejecutar backup (genera archivo con timestamp)
+./scripts/db-backup.sh
+
+# Salida ejemplo: backup_20260211_120000.sql
+```
+
+### Restauración
+⚠️ **Peligro**: Esta operación sobrescribe la base de datos actual.
+
+```bash
+# Restaurar desde archivo SQL
+psql "$SUPABASE_DB_URL" < backup_20260211_120000.sql
+```
+
+### Backup Automático
+- **Plan Free**: No incluido. Se recomienda configurar un cron job local que ejecute `./scripts/db-backup.sh` y suba el archivo a un storage seguro (S3, GDrive).
+- **Plan Pro**: Activar PITR (Point-in-Time Recovery) en el dashboard de Supabase.
+
+---
+
+## 10) Seguridad basica
 - No exponer `SERVICE_ROLE_KEY` en frontend.
 - Rotar secretos si hay sospecha de exposure.
 - Mantener `ALLOWED_ORIGINS` en la lista vigente por entorno (local/prod) y registrar cambios en `docs/DECISION_LOG.md`.

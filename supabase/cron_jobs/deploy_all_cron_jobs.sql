@@ -18,8 +18,11 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/notificaciones-tareas',
-    headers:=jsonb_build_object('Content-Type', 'application/json'),
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/notificaciones-tareas',
+    headers:=jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+    ),
     body:='{"edge_function_name":"notificaciones-tareas"}',
     timeout_milliseconds:=10000
   );
@@ -41,8 +44,11 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/alertas-stock',
-    headers:=jsonb_build_object('Content-Type', 'application/json'),
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/alertas-stock',
+    headers:=jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+    ),
     body:='{"edge_function_name":"alertas-stock"}',
     timeout_milliseconds:=10000
   );
@@ -64,8 +70,11 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/reportes-automaticos',
-    headers:=jsonb_build_object('Content-Type', 'application/json'),
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/reportes-automaticos',
+    headers:=jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+    ),
     body:='{"edge_function_name":"reportes-automaticos"}',
     timeout_milliseconds:=10000
   );
@@ -87,10 +96,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo',
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key')
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
     ),
     body:=jsonb_build_object(
       'action', 'execute',
@@ -121,10 +130,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo',
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key')
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
     ),
     body:=jsonb_build_object(
       'action', 'execute',
@@ -156,10 +165,10 @@ LANGUAGE plpgsql
 AS $$
 BEGIN
   PERFORM net.http_post(
-    url:='https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo',
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo',
     headers:=jsonb_build_object(
       'Content-Type', 'application/json',
-      'Authorization', 'Bearer ' || current_setting('app.service_role_key')
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
     ),
     body:=jsonb_build_object(
       'action', 'execute',
@@ -182,4 +191,38 @@ SELECT cron.schedule(
   'realtime_change_alerts',
   '*/15 * * * *',
   'CALL realtime_change_alerts_5a9b4c2d()'
+);
+
+-- ----------------------------------------------------------------
+-- Job 8: maintenance_cleanup (Domingos 04:00) - limpieza semanal
+-- ----------------------------------------------------------------
+CREATE OR REPLACE PROCEDURE maintenance_cleanup_7b3e9d1f()
+LANGUAGE plpgsql
+AS $$
+BEGIN
+  PERFORM net.http_post(
+    url:='https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo',
+    headers:=jsonb_build_object(
+      'Content-Type', 'application/json',
+      'Authorization', 'Bearer ' || (SELECT decrypted_secret FROM vault.decrypted_secrets WHERE name = 'service_role_key')
+    ),
+    body:=jsonb_build_object(
+      'action', 'execute',
+      'job_id', 'maintenance_cleanup',
+      'parameters', jsonb_build_object(
+        'retention_days', 30,
+        'vacuum_tables', true,
+        'clean_execution_logs', true
+      )
+    ),
+    timeout_milliseconds:=120000
+  );
+  COMMIT;
+END;
+$$;
+
+SELECT cron.schedule(
+  'maintenance_cleanup',
+  '0 4 * * 0',
+  'CALL maintenance_cleanup_7b3e9d1f()'
 );

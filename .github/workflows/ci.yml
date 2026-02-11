@@ -22,6 +22,11 @@ on:
         required: false
         default: 'false'
         type: boolean
+      run_legacy:
+        description: 'Run legacy tests (performance, security, contracts)'
+        required: false
+        default: 'false'
+        type: boolean
 
 env:
   NODE_VERSION: '20'
@@ -404,3 +409,41 @@ jobs:
           name: e2e-results
           path: test-reports/junit.e2e.xml
           retention-days: 7
+
+  # ===========================================================================
+  # OPTIONAL: Legacy Tests (migrated but not main suite)
+  # ===========================================================================
+  legacy-tests:
+    name: Legacy Tests (Auxiliary)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch' && github.event.inputs.run_legacy == 'true'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Performance Tests
+        run: npx vitest run tests/performance --config vitest.auxiliary.config.ts
+        continue-on-error: true
+
+      - name: Run Security Tests
+        run: npx vitest run tests/security --config vitest.auxiliary.config.ts
+        continue-on-error: true
+
+      - name: Run API Contract Tests
+        run: npx vitest run tests/api-contracts --config vitest.auxiliary.config.ts
+        continue-on-error: true
+

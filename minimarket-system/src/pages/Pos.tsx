@@ -15,6 +15,9 @@ import {
   type CreateVentaParams,
 } from '../lib/apiClient'
 import { supabase } from '../lib/supabase'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { SkeletonTable } from '../components/Skeleton'
 
 type CartItem = {
   producto_id: string
@@ -57,7 +60,7 @@ export default function Pos() {
 
   const total = useMemo(() => calcTotal(cart), [cart])
 
-  const { data: productos = [], isLoading: productosLoading } = useQuery({
+  const { data: productos = [], isLoading: productosLoading, isError: productosIsError, error: productosError, refetch: refetchProductos, isFetching: productosIsFetching } = useQuery({
     queryKey: ['productos', 'dropdown'],
     queryFn: () => productosApi.dropdown(),
   })
@@ -299,6 +302,29 @@ export default function Pos() {
     )
   }
 
+  if (productosLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 p-4">
+        <SkeletonTable />
+      </div>
+    )
+  }
+
+  if (productosIsError) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+        <div className="w-full max-w-md">
+          <ErrorMessage
+            message={parseErrorMessage(productosError)}
+            type={detectErrorType(productosError)}
+            onRetry={() => refetchProductos()}
+            isRetrying={productosIsFetching}
+          />
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" richColors />
@@ -415,9 +441,8 @@ export default function Pos() {
           <div className="grid grid-cols-3 gap-2">
             <button
               onClick={() => setMetodoPago('efectivo')}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
-                metodoPago === 'efectivo' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'efectivo' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               title="F1"
             >
               <Banknote className="w-5 h-5" />
@@ -425,18 +450,16 @@ export default function Pos() {
             </button>
             <button
               onClick={() => setMetodoPago('tarjeta')}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
-                metodoPago === 'tarjeta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
             >
               <CreditCard className="w-5 h-5" />
               Tarjeta
             </button>
             <button
               onClick={() => { setMetodoPago('cuenta_corriente'); setClientePickerOpen(true) }}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${
-                metodoPago === 'cuenta_corriente' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-              }`}
+              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'cuenta_corriente' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
               title="F2"
             >
               <User className="w-5 h-5" />

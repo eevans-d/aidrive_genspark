@@ -1,12 +1,56 @@
 # 🟢 ESTADO ACTUAL DEL PROYECTO
  
-**Última actualización:** 2026-02-09 (sesion 2)
-**Estado:** ✅ OPERATIVO — Dependencias actualizadas, SendGrid fix aplicado
+**Última actualización:** 2026-02-11
+**Estado:** ⚠️ OPERATIVO CON RIESGOS — `NO LISTO (Piloto)` en snapshot final de auditoría (2026-02-11).
 
 **Hoja de ruta (post-plan):** `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`.
-**Prompt ejecutor (Claude Code):** `docs/closure/CLAUDE_CODE_CONTEXT_PROMPT_EXECUTOR_2026-02-08.md`.
+**Prompt ejecutor (Claude Code):** `docs/closure/CLAUDE_CODE_CONTEXT_PROMPT_EXECUTOR_AUDITORIA_2026-02-10.md`.
 
 **Handoff (Antigravity / Planning):** ver `docs/C4_HANDOFF_MINIMARKET_TEC.md` y `docs/closure/ANTIGRAVITY_PLANNING_RUNBOOK.md`.
+**Arranque recomendado de nuevas sesiones:** `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md`.
+**Índice rápido de cierre/auditoría:** `docs/closure/README_CANONICO.md`.
+
+**Nuevo (2026-02-11, Cierre final Copilot + Antigravity + Codex):**
+- ✅ **Gate 3 (POS UX):** `Pos.tsx` mejorado con `ErrorMessage` + `Skeleton`; `pnpm -C minimarket-system lint` y `build` en PASS.
+- ℹ️ **Gate 7 (RLS, histórico pre-ejecución):** la migración `20260211100000_audit_rls_new_tables.sql` estuvo pendiente antes del push remoto.
+- ✅ **Gate 7 (RLS) - ejecución remota:** `20260211100000` aplicada vía `supabase db push --linked` con validaciones de policies/grants.
+- ⚠️ **Gate 18 (CI legacy):** `legacy-tests` agregado como job opcional (`workflow_dispatch`) con `continue-on-error` (defendible pero no gate duro).
+- ⚠️ **Gate 15 (Backup):** `scripts/db-backup.sh` + runbook manual disponibles; sin automatización/PITR.
+- ❌ **Gate 16 (Monitoreo real):** sigue pendiente canal activo (Sentry requiere DSN real; no hay alerting productivo confirmado).
+- ✅ **HC-1/HC-2/HC-3:** resueltos (cron auth via Vault, hardening deploy, feedback UX en Pedidos).
+- ✅ **Migraciones:** local=remoto `36/36` tras aplicar `20260211100000`.
+- ✅ **CORS productivo:** `ALLOWED_ORIGINS` actualizado; origen productivo esperado responde `200` con header correcto y origen no permitido bloquea `403/null`.
+- ⚠️ **Snapshot Piloto:** 5/9 gates en ✅ y 4/9 en ⚠️.
+
+**Nuevo (2026-02-11, Fixes P0 ejecutados por Claude Code Opus 4):**
+- ✅ **HC-1 RESUELTO:** 3 cron jobs (`notificaciones-tareas`, `alertas-stock`, `reportes-automaticos`) ahora incluyen `Authorization: Bearer` con Vault (`vault.decrypted_secrets`). 7/7 `net.http_post` con auth. Secret almacenado vía `vault.create_secret()`.
+- ✅ **HC-2 RESUELTO:** `deploy.sh` ahora excluye `_shared/`, valida `index.ts`, y usa `--no-verify-jwt` para `api-minimarket`. Dry-run verificado: 13 funciones target.
+- ✅ **HC-3 RESUELTO:** `Pedidos.tsx` ahora tiene `toast.error()` en 3 mutaciones (crear, actualizar estado, toggle item). `console.error` retenido para debug.
+- ✅ **Pedidos con ErrorMessage persistente:** error de carga migrado a componente estándar con retry (`parseErrorMessage` + `detectErrorType`). Adopción actualizada tras cierre A1: **9/13 páginas** con `ErrorMessage`.
+- ✅ **Interceptor 401 global:** `authEvents.ts` (observer) + `apiClient.ts` (emit) + `AuthContext.tsx` (listener → signOut). Sesión expirada redirige a login.
+- ✅ **maintenance_cleanup cron:** Job 8 agregado (Domingos 04:00, retención 30 días).
+- ✅ **Migración `20260211055140` APLICADA EN REMOTO** (2026-02-11 vía MCP): Cron jobs auth (HC-1) + maintenance_cleanup. 4 jobs activos. URLs corregidas `htvlwhisjpdagqkqnpxg` → `dqaygmjpzoqjjrywdsxi`. Extensiones `pg_cron` 1.6.4 + `pg_net` 0.19.5 habilitadas.
+- ✅ **Migración `20260211062617` APLICADA EN REMOTO** (2026-02-11 vía MCP): Vault pattern — 4 procedures migrados de `current_setting('app.service_role_key')` a `vault.decrypted_secrets`. `service_role_key` almacenado en Supabase Vault. Test E2E: `CALL alertas_stock_38c42a40()` → HTTP 200.
+- ✅ **Build frontend PASS:** 5.48s, 27 entradas PWA precache, 0 errores TS.
+- ⚠️ **Gates recalculados (snapshot final):** ✅ 5/18, ⚠️ 10/18, ❌ 3/18. Piloto: 5/9 ✅, 4/9 ⚠️.
+- ⚠️ **Veredicto post-cierre:** NO LISTO (Piloto) formalmente, con riesgo operativo reducido respecto al baseline.
+- ⚠️ **Pendientes clave:** completar E2E POS (Gate 3), canal real alertas operador (Gate 4), endurecer legacy CI (Gate 18), activar monitoreo real (Gate 16).
+
+**Nuevo (2026-02-11, pre-fix):**
+- ✅ **Skills System Overhaul (19→22):** 4 skills optimizados (CodeCraft, DebugHound, DocuGuard, MegaPlanner) con HC pattern enforcement. 3 nuevos skills creados:
+  - **UXFixOps:** Detector/corrector sistemático de gaps UX (HC-3, ErrorMessage, Skeleton, empty states).
+  - **ProductionGate:** Checklist unificado pre-producción con 18 gates ponderados y score GO/NO-GO.
+  - **CronFixOps:** Validación y corrección de cron jobs (HC-1 auth + scheduling + timeouts).
+- ✅ **project_config.yaml actualizado:** trigger_patterns, skill_graph.chains, quality_metrics.skills_total: 22.
+- ✅ **Auditoría SP-B completada:** `docs/audit/EVIDENCIA_SP-B.md` (220+ líneas). B1 (13 tareas operador), B2 (5 flujos E2E), B3 (11 utilidades), B4 (7 condiciones adversas).
+- ✅ **Hallazgos P0 confirmados:** HC-1 (3 cron jobs sin auth), HC-3 (3× `console.error` en Pedidos.tsx), timeout 60s vs multi-category scraping.
+- ⚠️ **P1 pendientes:** 4 páginas sin ErrorMessage, maintenance_cleanup sin schedule, notificaciones sin canal, WhatsApp recibo incompleto.
+- ✅ **Revalidación Codex SP-B→SP-Ω aplicada (2026-02-11):** corrección de conteos factuales en evidencias (`auth.ts` 344, `validation.ts` 130, `Pedidos.tsx` 708, funciones huérfanas con líneas reales) y ajuste de criterio de gates en SP-Ω.
+- ❌ **Veredicto de auditoría actualizado:** `NO LISTO` según criterio formal del Plan Maestro (gates obligatorios del perfil Piloto no están todos en ✅).
+- ✅ **Paso 1 completado:** prompts P0 breves para ejecución externa creados en `docs/closure/PROMPTS_P0_DESBLOQUEO_GATES_2026-02-11.md`.
+- ✅ **Paso 2 completado (SP-E segunda pasada):** `EVIDENCIA_SP-E` revalidada con checks reales (TS compile, migration list linked, functions list, secrets list por nombre, healthcheck remoto). `BLOCKED` de E1 baja de **12 → 8**.
+- ℹ️ **Gate 11 (histórico pre-fix):** en una pasada previa figuraba 34/34; luego 35/35 con drift local. Estado actual consolidado: `36/36` local=remoto.
+- ℹ️ **Gap de producción (histórico pre-fix):** `ALLOWED_ORIGINS` estuvo desalineado antes del ajuste remoto del 2026-02-11.
 
 **Nuevo (2026-02-09, sesion 2):**
 - ✅ **Dependabot PRs mergeados (7):** vitest 4.0.18, @vitest/coverage-v8 4.0.18, autoprefixer 10.4.23, cmdk 1.1.1, msw 2.12.9, @supabase/supabase-js 2.95.3, typescript 5.9.3.
@@ -18,7 +62,7 @@
 - ✅ **Performance baseline:** 7/7 endpoints OK, p50 839ms-1168ms, 0 errores. Ver `docs/closure/PERF_BASELINE_2026-02-09_SESSION2.md`.
 - ✅ **Quality gates 6/6 PASS:** 812 unit + 38 integration + 5 e2e + 110 components + lint + build.
 - ✅ **Tests totales actualizados:** 812 unit (46 archivos) + 38 integration + 5 e2e smoke + 110 component tests.
-- ✅ **Migraciones:** 33 en repo (32 + fix SP), todas sincronizadas local=remoto.
+- ✅ **Migraciones:** 35 en repo (33 + cron fix `20260211055140` + vault `20260211062617`), todas sincronizadas local=remoto.
 - ✅ **Edge Functions:** 13 activas. `cron-notifications` actualizada a v12.
 - ⚠️ **Sentry:** BLOQUEADO sin DSN real. Plan documentado en `docs/SENTRY_INTEGRATION_PLAN.md`.
 - ⚠️ **Rotacion de secretos:** Plan listo (`docs/SECRET_ROTATION_PLAN.md`), requiere ejecucion manual por owner.
@@ -32,7 +76,7 @@
 - ✅ **Backlog post-merge completado (PRs #36–#48):** docs sincronizados, guardrails A4, evidencia de suites PASS, y PRs adicionales (#38–#42) con tests/scripts para `x-request-id`, `/health` y `/reservas` + perf baseline. Ver `docs/closure/EXECUTION_LOG_2026-02-09_NEXT_STEPS.md` y `docs/closure/BUILD_VERIFICATION.md` (Addendum 2026-02-09).
 - ✅ **Docs nuevas (planes/bloqueos, sin secrets):** `docs/SECRET_ROTATION_PLAN.md`, `docs/SENDGRID_VERIFICATION.md`, `docs/SENTRY_INTEGRATION_PLAN.md`.
 - ✅ **Scripts nuevos (operativos):** `scripts/perf-baseline.mjs` (read-only) y `scripts/smoke-reservas.mjs` (write, idempotente; puede quedar BLOCKED si no hay productos).
-- ✅ **Sistema Skills Agénticos (Protocol Zero) upgrade:** 19 skills en `.agent/skills/` + scripts de bootstrap/orquestacion/baseline/gates/env-audit/extraction + `AGENTS.md` root para auto-pickup.
+- ✅ **Sistema Skills Agénticos (Protocol Zero) upgrade:** 22 skills en `.agent/skills/` + scripts de bootstrap/orquestacion/baseline/gates/env-audit/extraction + `AGENTS.md` root para auto-pickup.
 
 **Nuevo (2026-02-08):**
 - ✅ **FASE 1-2 revisadas/cerradas (QA + deploy remoto):** ver `docs/closure/REVIEW_LOG_FASE1_FASE2_2026-02-08.md`.
@@ -345,7 +389,7 @@
 - **Tests E2E frontend (Playwright):** 18 definidos (4 skip)
 - **Tests E2E auth real (Playwright):** 10 definidos (2 skip) — incluido en el total anterior
 - **Coverage (vitest v8):** 69.39% lines (2026-02-06; `coverage/index.html`)
-- **Migraciones en repo:** 33 archivos en `supabase/migrations` (incluye placeholders + fix SP 20260209000000)
+- **Migraciones en repo:** 34 archivos en `supabase/migrations` (incluye cron fix `20260211055140`)
 - **Build frontend:** ✅ `pnpm -C minimarket-system build` (2026-02-09, CI green)
 
 ---
@@ -371,4 +415,4 @@
 
 > **Plan modular actualizado:** ver `docs/mpc/C1_MEGA_PLAN_v1.1.0.md`
 
-> **Nota:** rollback PITR no disponible (plan Free Supabase). Backups diarios disponibles.
+> **Nota:** rollback PITR no disponible (plan Free Supabase). Backups manuales vía script disponibles. Plan Free no incluye backups automáticos recuperables.

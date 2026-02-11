@@ -303,19 +303,44 @@ deploy_to_supabase() {
     # Deploy de edge functions
     if [ -d "supabase/functions" ]; then
         log_info "Deploying edge functions..."
-        
+
         for func_dir in supabase/functions/*/; do
             if [ -d "$func_dir" ]; then
                 func_name=$(basename "$func_dir")
+
+                # Skip _shared/ directory (not a deployable function)
+                if [ "$func_name" = "_shared" ]; then
+                    log_info "Skipping shared module: $func_name"
+                    continue
+                fi
+
+                # Skip directories without an index.ts (not a valid Edge Function)
+                if [ ! -f "$func_dir/index.ts" ]; then
+                    log_info "Skipping non-function directory: $func_name"
+                    continue
+                fi
+
                 log_deploy "Deploying function: $func_name"
-                
+
                 if [ "$DRY_RUN" != "true" ]; then
-                    supabase functions deploy "$func_name" || {
-                        log_error "Error deploying function $func_name"
-                        exit 1
-                    }
+                    # api-minimarket requires --no-verify-jwt (custom auth in app)
+                    if [ "$func_name" = "api-minimarket" ]; then
+                        supabase functions deploy "$func_name" --no-verify-jwt || {
+                            log_error "Error deploying function $func_name"
+                            exit 1
+                        }
+                    else
+                        supabase functions deploy "$func_name" || {
+                            log_error "Error deploying function $func_name"
+                            exit 1
+                        }
+                    fi
                 else
-                    log_info "[DRY-RUN] Would deploy function: $func_name"
+                    if [ "$func_name" = "api-minimarket" ]; then
+                        log_info "[DRY-RUN] Would deploy function: $func_name (--no-verify-jwt)"
+                    else
+                        log_info "[DRY-RUN] Would deploy function: $func_name"
+                    fi
                 fi
             fi
         done

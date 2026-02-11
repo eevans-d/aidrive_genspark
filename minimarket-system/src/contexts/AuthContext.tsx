@@ -1,11 +1,20 @@
-import { useEffect, useState, ReactNode } from 'react'
+import { useEffect, useState, useCallback, ReactNode } from 'react'
 import { supabase } from '../lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { AuthContext } from './auth-context'
+import { authEvents } from '../lib/authEvents'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
   const [loading, setLoading] = useState(true)
+
+  const handleSignOut = useCallback(async () => {
+    try {
+      await supabase.auth.signOut()
+    } catch (error) {
+      console.error('Error signing out:', error)
+    }
+  }, [])
 
   useEffect(() => {
     // Cargar usuario al iniciar
@@ -19,7 +28,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setLoading(false)
       }
     }
-    
+
     loadUser()
 
     // Escuchar cambios de autenticación
@@ -29,8 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    return () => subscription.unsubscribe()
-  }, [])
+    // Global 401 interceptor: signOut on AUTH_REQUIRED from apiClient
+    const unsubscribeAuth = authEvents.on(() => {
+      handleSignOut()
+    })
+
+    return () => {
+      subscription.unsubscribe()
+      unsubscribeAuth()
+    }
+  }, [handleSignOut])
 
   async function signIn(email: string, password: string) {
     const { data, error } = await supabase.auth.signInWithPassword({
