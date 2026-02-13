@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-09
+**Última actualización:** 2026-02-13
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -82,6 +82,17 @@
 | D-075 | **Performance baseline establecida**: p50 ~700-900ms, p95 ~870-1350ms para endpoints api-minimarket | Completada | 2026-02-09 | PR #42. Script `scripts/perf-baseline.mjs`. Rate limiting (429) confirmado tras ~60 req secuenciales. |
 | D-076 | **Secret rotation plan documentado**: 3 secrets identificados para rotación (API_PROVEEDOR_SECRET, SENDGRID_API_KEY, SMTP_PASS) | Completada | 2026-02-09 | PR #43. `docs/SECRET_ROTATION_PLAN.md`. Procedimientos step-by-step con rollback. |
 | D-077 | **Sentry diferido hasta DSN**: plan de 6 pasos documentado, no instalar `@sentry/react` sin DSN | Aprobada | 2026-02-09 | PR #45. `docs/SENTRY_INTEGRATION_PLAN.md`. Bundle impact: +30KB gzip. |
+| D-078 | **Camino canónico restante a producción consolidado** | Aprobada | 2026-02-12 | Fuente operativa: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` + `docs/closure/OPEN_ISSUES.md`. |
+| D-079 | **Hardening mini plan 5 pasos cerrado y verificado** | Completada | 2026-02-12 | Evidencia en `scripts/verify_5steps.sh` + `docs/closure/CIERRE_5PASOS_2026-02-12.md`. |
+| D-080 | **Gate 3: E2E POS con Playwright route interception** | Completada | 2026-02-12 | 8/8 tests. Dataset determinista (3 productos). Mock gateway via `page.route()`. Fix: `getSession()` agregado a mock supabase. Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md`. |
+| D-081 | **Gate 4: Notificaciones reales vía SendGrid HTTP API** | Completada | 2026-02-12 | `sendEmail()` usa SendGrid REST API, `sendSlack()` usa webhook real, `sendWebhook()` POST real. Modo controlado por `NOTIFICATIONS_MODE`. Función desplegada. MessageIds reales confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md`. |
+| D-082 | **Gate 16: Sentry integrado, DSN pendiente del owner** | Parcial | 2026-02-12 | `@sentry/react@10.38.0` instalado. `Sentry.init()` en `main.tsx` condicional a `VITE_SENTRY_DSN`. `captureException()` en `observability.ts`. Sin DSN no tiene efecto. Build PASS. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-12.md`. |
+| D-083 | **Gate 18: Security tests como gate CI bloqueante** | Completada | 2026-02-12 | Nuevo job `security-tests` obligatorio en CI (sin `continue-on-error`). Security tests removidos de `legacy-tests`. Política GO/NO-GO documentada en YAML. 14/14 tests PASS. Evidencia: `docs/closure/EVIDENCIA_GATE18_2026-02-12.md`. |
+| D-084 | **Gate 15: Backup automatizado con retención + restore drill** | Completada | 2026-02-12 | `db-backup.sh` mejorado (gzip, retención 7d, rotación). `db-restore-drill.sh` creado. `backup.yml` GitHub Actions (cron 03:00 UTC). RPO 24h, RTO <15 min. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
+| D-085 | **Veredicto producción: CON RESERVAS** | Aprobada | 2026-02-12 | 4/5 gates cerrados, 1 parcial (Gate 16 DSN Sentry). Sistema defendible para producción piloto. Única acción del owner: configurar `VITE_SENTRY_DSN` + `SUPABASE_DB_URL` (backup). |
+| D-086 | **Policy verify_jwt (Edge Functions)**: solo `api-minimarket` puede tener `verify_jwt=false`. `cron-notifications` y `cron-testing-suite` deben permanecer `verify_jwt=true`. | Aprobada | 2026-02-12 | Fix aplicado: redeploy `cron-notifications` v15 (`verify_jwt=true`) y `cron-testing-suite` v12 (`verify_jwt=true`). Baseline actualizado (ver `docs/closure/BASELINE_LOG_2026-02-12_161515.md`). |
+| D-087 | **RLS fine validation (P1)**: alinear policies a roles canónicos + endurecer `personal` (RLS self + unique `user_auth_id`) + `vista_cc_*` con `security_invoker=true` + `jefe` tratado como alias legacy de `admin` | Completada | 2026-02-12 | Migración `20260212130000_rls_fine_validation_lockdown.sql` aplicada. Batería `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y 0 FAIL. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. |
+| D-088 | **Revalidación RLS remota por pooler (workaround IPv6)**: cuando `psql $DATABASE_URL` falla contra `db.<ref>.supabase.co:5432`, ejecutar auditoría/validación con conexión pooler (`supabase/.temp/pooler-url`) y credenciales locales sin exponer secretos. | Completada | 2026-02-13 | Revalidación 2026-02-13: `scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` (`write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencias: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`. |
 
 ---
 
@@ -384,4 +395,3 @@ Si el proyecto escala >10K rps:
 - [ ] Modificar `_shared/rate-limit.ts` para usar RPC
 - [ ] Tests de concurrencia para verificar atomicidad
 - [ ] Benchmark de latencia en producción
-

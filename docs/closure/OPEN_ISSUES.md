@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-13 (ejecución pendientes reales)
+**Última actualización:** 2026-02-13 (revalidación SQL RLS cerrada)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ---
@@ -21,7 +21,7 @@
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
 | ~~Backup automatizado + restore probado~~ | ✅ CERRADO (Gate 15) | `db-backup.sh` con gzip/retención + `db-restore-drill.sh` + `backup.yml` GitHub Actions cron diario. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
-| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Revalidación operativa 2026-02-13 (smoke por rol): `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`. Bloqueo técnico local para `psql` documentado en `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`. |
+| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Revalidación 2026-02-13 completada en este host: smoke por rol + SQL remota (`60/60 PASS`). Evidencias: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`. |
 | Rotación preventiva de secretos pre-producción | ⚠️ PARCIAL | `API_PROVEEDOR_SECRET` rotado y validado (2026-02-13): `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`. Pendiente owner: rotar `SENDGRID_API_KEY`/`SMTP_PASS` y validar delivery real. |
 
 ---
@@ -34,7 +34,7 @@
 - `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
-- Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`); SQL directo `psql` bloqueado por IPv6 desde este host.
+- Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`) y SQL fina remota en PASS (`60/60`, `0 FAIL`).
 - **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)

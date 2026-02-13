@@ -34,7 +34,7 @@ check_no_match "password123|admin@minimarket.com" "minimarket-system/src/pages/L
 # Historical closure evidence can mention legacy strings as part of audit narrative.
 check_no_match "PLAN_TRES_PUNTOS\.md" "docs/AUDITORIA_RLS_CHECKLIST.md"
 check_no_match "file:///mpc/SUB_PLAN" "docs/mpc/MEGA_PLAN_CONSOLIDADO.md"
-check_match "api-minimarket\s*\|\s*v21\s*\|\s*false" "docs/ESTADO_ACTUAL.md"
+check_match "api-minimarket\s*\|\s*v[0-9]+\s*\|\s*false" "docs/ESTADO_ACTUAL.md"
 check_match "EVIDENCIA_PLAN_OPTIMIZACION_PRECIOS_2026-02-13\.md" "docs/ESTADO_ACTUAL.md"
 
 if [[ $fail -ne 0 ]]; then

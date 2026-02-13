@@ -4,17 +4,17 @@
 **Estado global:** `CON RESERVAS` (defendible para producción piloto)  
 **Objetivo:** cerrar lo pendiente (principalmente Gate 16) y dejar checklist operativo sin ambigüedades.
 
-## 1) Estado real confirmado (base 2026-02-12)
+## 1) Estado real confirmado (base 2026-02-13)
 
-- Baseline remoto: 13 Edge Functions activas, `api-minimarket v21 verify_jwt=false`.
-  Evidencia: `docs/ESTADO_ACTUAL.md`, `docs/closure/BASELINE_LOG_2026-02-12_161515.md`.
+- Baseline remoto: 13 Edge Functions activas, `api-minimarket v22 verify_jwt=false`.
+  Evidencia: `docs/ESTADO_ACTUAL.md`, `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
 - Revalidacion remota en vivo (2026-02-13): `supabase migration list --linked` y `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi` confirman `39/39` y versiones vigentes.
 - Mini plan de hardening 5/5 cerrado (credenciales, links, fallback cron, baseline, ErrorMessage 13/13).
   Evidencia: `scripts/verify_5steps.sh`, `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
 - Quality gates locales en PASS (unit + frontend tests + build).
   Evidencia: `test-reports/quality-gates_20260212-032946.log`.
 - Validación fina de RLS por rol (P1) cerrada: `supabase/migrations/20260212130000_rls_fine_validation_lockdown.sql` + `scripts/rls_fine_validation.sql` ejecutado (`write_tests=1`) con **0 FAIL**.
-  Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`.
+  Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
 - Rotación de `API_PROVEEDOR_SECRET` completada con éxito y rollback controlado.
   Evidencia: `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`.
 - Smoke por rol revalidado en gateway (admin/ventas/deposito).

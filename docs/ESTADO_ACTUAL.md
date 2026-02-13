@@ -45,28 +45,28 @@
 - ✅ **Migraciones remotas sincronizadas:** `supabase db push --linked` aplicó `20260213030000_drop_legacy_columns_precios_historicos.sql`; estado actual `39/39` local=remoto.
 - ✅ **Snapshot remoto actualizado (2026-02-13):** ver `docs/closure/BASELINE_LOG_2026-02-13_031900.md` (funciones activas y versiones corrientes).
 - ✅ **RLS smoke por rol revalidado:** `/clientes` (admin/ventas 200, depósito 403) y `/pedidos` (admin/ventas/depósito 200). Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
-- ⚠️ **SQL directa RLS en este host:** `psql` sigue bloqueado por conectividad IPv6 hacia `db.<project-ref>.supabase.co:5432`. Evidencia: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
+- ✅ **SQL directa RLS revalidada en este host:** ejecución remota por pooler (`scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` con `write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencia: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`.
 - ⚠️ **Pendientes owner:** `VITE_SENTRY_DSN` (Gate 16) y rotación SendGrid (`SENDGRID_API_KEY`/`SMTP_PASS`).
 
-### Estado remoto vigente (baseline 2026-02-12)
+### Estado remoto vigente (baseline 2026-02-13)
 
 | Edge Function | Version | verify_jwt |
 |---|---|---|
-| alertas-stock | v11 | true |
-| alertas-vencimientos | v11 | true |
-| api-minimarket | v21 | false |
-| api-proveedor | v12 | true |
-| cron-dashboard | v11 | true |
-| cron-health-monitor | v11 | true |
-| cron-jobs-maxiconsumo | v13 | true |
-| cron-notifications | v15 | true |
-| cron-testing-suite | v12 | true |
-| notificaciones-tareas | v11 | true |
-| reportes-automaticos | v11 | true |
-| reposicion-sugerida | v11 | true |
-| scraper-maxiconsumo | v12 | true |
+| alertas-stock | v12 | true |
+| alertas-vencimientos | v12 | true |
+| api-minimarket | v22 | false |
+| api-proveedor | v14 | true |
+| cron-dashboard | v12 | true |
+| cron-health-monitor | v12 | true |
+| cron-jobs-maxiconsumo | v14 | true |
+| cron-notifications | v16 | true |
+| cron-testing-suite | v13 | true |
+| notificaciones-tareas | v12 | true |
+| reportes-automaticos | v12 | true |
+| reposicion-sugerida | v12 | true |
+| scraper-maxiconsumo | v14 | true |
 
-Fuente: `docs/closure/BASELINE_LOG_2026-02-12_161515.md` + revalidación CLI en vivo (2026-02-12).
+Fuente: `docs/closure/BASELINE_LOG_2026-02-13_031900.md` + `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` (2026-02-13).
 
 ### Camino restante a producción (actualizado 2026-02-12 post-ejecución)
 
@@ -448,7 +448,7 @@ Detalle operativo: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 | reportes-automaticos | v5 | `true` | Cron-triggered |
 | reposicion-sugerida | v5 | `true` | Análisis stock |
 
-> Nota: este snapshot se preserva por trazabilidad histórica. El baseline vigente 2026-02-12 es el de la sección superior “Estado remoto vigente (baseline 2026-02-12)” y coincide con `docs/closure/BASELINE_LOG_2026-02-12_161515.md`.
+> Nota: este snapshot se preserva por trazabilidad histórica. El baseline vigente 2026-02-13 es el de la sección superior “Estado remoto vigente (baseline 2026-02-13)” y coincide con `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
 
 ---
 
