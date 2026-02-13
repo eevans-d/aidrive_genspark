@@ -1,7 +1,7 @@
 # Auditoría RLS - Checklist y Scripts
 
 **Estado:** ✅ **COMPLETADO (P0) 2026-01-23 + REVALIDADO (P1) 2026-02-12**  
-**Fecha actualización:** 2026-02-12  
+**Fecha actualización:** 2026-02-13  
 **Propósito:** Auditoría RLS del sistema Mini Market  
 **Resultado:** ✅ TODAS LAS TABLAS PROTEGIDAS
 
@@ -20,6 +20,19 @@ Se cerró el pendiente P1 “Validación fina de RLS por reglas de negocio/rol�
   - `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log` (**0 FAIL**, `write_tests=1`)
 - Script reproducible:
   - `scripts/rls_fine_validation.sql`
+
+### Addendum 2026-02-13 — Revalidación operativa (staging)
+
+- Smoke funcional por rol (gateway):
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`
+  - Resultado: **3/3 PASS** (`admin`, `ventas`, `deposito`) en `/clientes` y `/pedidos`.
+- Alineación previa de usuarios de prueba:
+  - Script ejecutado: `scripts/supabase-admin-sync-role.mjs` (`admin`, `ventas`, `deposito`).
+  - Objetivo: alinear `auth.users.app_metadata.role` y `public.personal.rol`.
+- Revalidación SQL (no destructiva) pendiente por entorno:
+  - Intentos ejecutados: `scripts/rls_audit.sql` y `scripts/rls_fine_validation.sql` (`write_tests=1`).
+  - Bloqueo real del host actual: conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`).
+  - Acción: re-ejecutar ambos scripts desde runner con salida IPv6 (o conexión DB alternativa válida) y anexar evidencia fechada.
 
 ### Resultado de la Auditoría
 - **Tablas P0 verificadas:** 7/7 protegidas ✅

@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-12 (post-ejecución gates)
+**Última actualización:** 2026-02-13 (revalidación operativa)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ---
@@ -21,7 +21,7 @@
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
 | ~~Backup automatizado + restore probado~~ | ✅ CERRADO (Gate 15) | `db-backup.sh` con gzip/retención + `db-restore-drill.sh` + `backup.yml` GitHub Actions cron diario. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
-| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. |
+| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Evidencia canónica: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. Revalidación operativa por rol (gateway) 2026-02-13: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md` (**3/3 PASS**). |
 | Rotación preventiva de secretos pre-producción | ⚠️ PARCIAL | Ejecutar plan de `docs/SECRET_ROTATION_PLAN.md` con evidencia sin exponer valores. |
 
 ---
@@ -33,6 +33,8 @@
 - `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
+- Revalidación SQL en este host (2026-02-13) quedó bloqueada por conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`); re-ejecutar `scripts/rls_audit.sql` y `scripts/rls_fine_validation.sql` en runner con salida IPv6.
+- Referencias a `checkRole(['admin','deposito','jefe'])` en logs históricos/worktrees se consideran **no canónicas**; rol operativo vigente: `admin|deposito|ventas` con alias legacy `jefe -> admin`.
 - **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)
