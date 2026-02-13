@@ -1,53 +1,27 @@
 # Evidencia Revalidación RLS - 2026-02-13
 
-## Alcance
-- Plan definitivo pre-producción: Control de Acceso (Roles + RLS Fine Validation).
-- Ejecución enfocada en pasos operativos A-D (sin cambios de contrato HTTP).
+## Resumen
+Se completó la revalidación RLS en remoto con evidencia SQL reproducible y smoke funcional por rol.
 
-## Paso A — Revalidación técnica SQL (staging)
+La limitación previa de `psql` hacia `db.<project-ref>.supabase.co:5432` (IPv6) se resolvió usando conexión pooler (`supabase/.temp/pooler-url`) con credenciales de `DATABASE_URL` local, sin exponer secretos.
 
-### Comandos intentados
-```bash
-supabase migration list --db-url "$DATABASE_URL"
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 -f scripts/rls_audit.sql
-psql "$DATABASE_URL" -v ON_ERROR_STOP=1 \
-  -c "select set_config('rls_fine.write_tests','1',false);" \
-  -f scripts/rls_fine_validation.sql
-```
+## Verificaciones ejecutadas
+1. `supabase migration list --linked`
+   - ✅ sincronizado local/remoto (`39/39`), incluyendo `20260213030000_drop_legacy_columns_precios_historicos.sql`.
+2. `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi`
+   - ✅ 13 funciones activas (snapshot vigente en `docs/closure/BASELINE_LOG_2026-02-13_031900.md`).
+3. Smoke por rol (gateway)
+   - ✅ PASS en `/clientes` y `/pedidos`.
+   - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
+4. Auditoría SQL RLS (remoto)
+   - ✅ `scripts/rls_audit.sql` ejecutado.
+   - Log: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`.
+5. Validación fina RLS (remoto, `write_tests=1`)
+   - ✅ `scripts/rls_fine_validation.sql` ejecutado.
+   - Resultado: `total=60`, `passed=60`, `failed=0`.
+   - Log: `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`.
 
-### Resultado
-- Estado: **BLOCKED (entorno)**.
-- Causa real: el host ejecutor no tiene salida IPv6 a `db.<project-ref>.supabase.co:5432`.
-- Error observado: `Network is unreachable`.
-
-### Acción pendiente
-- Re-ejecutar los 3 comandos desde runner con conectividad IPv6 (o conexión DB alternativa válida) y guardar:
-  - `docs/closure/EVIDENCIA_RLS_AUDIT_YYYY-MM-DD.log`
-  - `docs/closure/EVIDENCIA_RLS_FINE_YYYY-MM-DD.log`
-
-## Paso B — Smoke funcional por rol (app + gateway)
-
-### Preparación ejecutada
-```bash
-node scripts/supabase-admin-sync-role.mjs "$TEST_USER_ADMIN" admin
-node scripts/supabase-admin-sync-role.mjs "$TEST_USER_VENTAS" ventas
-node scripts/supabase-admin-sync-role.mjs "$TEST_USER_DEPOSITO" deposito
-```
-
-### Verificación ejecutada
-- Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`
-- Resultado: **3/3 PASS**
-  - `admin`: `/clientes` 200, `/pedidos` 200
-  - `ventas`: `/clientes` 200, `/pedidos` 200
-  - `deposito`: `/clientes` 403, `/pedidos` 200
-
-## Paso C — Higiene de consistencia
-- Se documentó explícitamente que referencias históricas a `checkRole(['admin','deposito','jefe'])` en logs/worktrees son **no canónicas**.
-- Canon operativo vigente: `admin|deposito|ventas` + alias de compatibilidad `jefe -> admin`.
-
-## Paso D — Cierre documental mínimo
-- Actualizado `docs/AUDITORIA_RLS_CHECKLIST.md` con addendum de revalidación 2026-02-13.
-- Actualizado `docs/closure/OPEN_ISSUES.md` con:
-  - estado de smoke por rol 2026-02-13;
-  - bloqueo técnico de revalidación SQL por IPv6;
-  - nota de canon/histórico para `jefe`.
+## Estado resultante
+- RLS operativa por rol: ✅ validada por smoke de gateway.
+- Batería SQL fina: ✅ 0 FAIL en este host.
+- Pendientes de RLS: **ninguno**.

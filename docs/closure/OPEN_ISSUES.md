@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-13 (revalidación operativa)
+**Última actualización:** 2026-02-13 (revalidación SQL RLS cerrada)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 **Limpieza de restos:** `docs/closure/RESTOS_CIERRE_2026-02-13.md` (13/15 cerrados, 2/15 abiertos por owner/infra)
 
@@ -22,21 +22,20 @@
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
 | ~~Backup automatizado + restore probado~~ | ✅ CERRADO (Gate 15) | `db-backup.sh` con gzip/retención + `db-restore-drill.sh` + `backup.yml` GitHub Actions cron diario. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
-| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Evidencia canónica: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. Revalidación operativa por rol (gateway) 2026-02-13: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md` (**3/3 PASS**). |
-| Rotación preventiva de secretos pre-producción | ⚠️ PARCIAL | Ejecutar plan de `docs/SECRET_ROTATION_PLAN.md` con evidencia sin exponer valores. |
+| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Revalidación 2026-02-13 completada en este host: smoke por rol + SQL remota (`60/60 PASS`). Evidencias: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`. |
+| Rotación preventiva de secretos pre-producción | ⚠️ PARCIAL | `API_PROVEEDOR_SECRET` rotado y validado (2026-02-13): `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`. Pendiente owner: rotar `SENDGRID_API_KEY`/`SMTP_PASS` y validar delivery real. |
 
 ---
 
 ## Notas operativas
 
-- Migraciones: baseline histórico 2026-02-12 reportó `38/38` remoto; conteo versionado local actual: `35` migraciones SQL.
-- Baseline remoto vigente: 13 funciones activas; `api-minimarket v21` con `verify_jwt=false`.
+- Migraciones: `39/39` local=remoto (actualización 2026-02-13, incluye `20260213030000`).
+- Baseline histórico 2026-02-12: 13 funciones activas; `api-minimarket v21` con `verify_jwt=false`.
+- Snapshot remoto actual 2026-02-13: `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
 - `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
-- Hardening 5 pasos: cerrado (en estado vigente: `ErrorMessage` 12/13 páginas no-test).
-- Estado actual UI: `ErrorMessage` en 12/13 páginas (`Pos.tsx` mantiene feedback por toast orientado a operación rápida).
-- Revalidación SQL en este host (2026-02-13) quedó bloqueada por conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`); re-ejecutar `scripts/rls_audit.sql` y `scripts/rls_fine_validation.sql` en runner con salida IPv6.
-- Referencias a `checkRole(['admin','deposito','jefe'])` en logs históricos/worktrees se consideran **no canónicas**; rol operativo vigente: `admin|deposito|ventas` con alias legacy `jefe -> admin`.
+- Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
+- Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`) y SQL fina remota en PASS (`60/60`, `0 FAIL`).
 - **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)
@@ -49,4 +48,4 @@
 - ✅ Enlaces rotos documentales reparados.
 - ✅ Fallback legacy en cron-testing-suite removido.
 - ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
-- ✅ Adopción `ErrorMessage` elevada a 12/13 páginas funcionales y estandarizada en `Login`, `Clientes`, `Deposito`, `Pocket`, `Pedidos`.
+- ✅ Adopción `ErrorMessage` completada en 13/13 páginas funcionales.

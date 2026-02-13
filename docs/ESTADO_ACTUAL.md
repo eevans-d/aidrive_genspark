@@ -28,38 +28,46 @@
 **Nuevo (2026-02-12, RealityCheck + DocuGuard):**
 - ✅ Auditoría de realidad ejecutada end-to-end (frontend/backend/docs/remoto) con reporte actualizado en `docs/REALITY_CHECK_UX.md`.
 - ✅ Extracción técnica+inventario regenerada (post-ajustes finales): `docs/closure/TECHNICAL_ANALYSIS_2026-02-12_160211.md` y `docs/closure/INVENTORY_REPORT_2026-02-12_160305.md`.
-- ✅ Baseline remoto histórico (2026-02-12): `api-minimarket v21` con `verify_jwt=false`; 13 funciones activas; snapshot de ese momento `38/38` (`docs/closure/BASELINE_LOG_2026-02-12_161515.md`).
+- ✅ Baseline remoto validado (post-migraciones 2026-02-12): `api-minimarket v21` con `verify_jwt=false`; 13 funciones activas; migraciones local=remoto `38/38` (`docs/closure/BASELINE_LOG_2026-02-12_161515.md`).
 - ✅ Quality gates en PASS en ejecución del 2026-02-12 (`test-reports/quality-gates_20260212-032946.log`).
-- ⚠️ Revalidación remota actual pendiente en este host por conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`). Ver detalle en `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
+- ✅ Revalidación remota en vivo (CLI, 2026-02-12): `supabase migration list --linked` y `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi` confirman `38/38` y versiones vigentes de 13 functions.
 - ✅ HC-1 / HC-2 / HC-3 revalidados en código actual (cron con auth, deploy seguro, feedback UX en mutaciones de Pedidos).
 - ✅ Hallazgos de alto impacto cerrados: fallback legacy en `cron-testing-suite` eliminado, enlaces rotos corregidos y snapshot documental actualizado con baseline vigente.
 - ✅ `supabase/cron_jobs/*` normalizado al project ref vigente (evita drift operativo al redeploy de cron jobs).
-- ✅ **Mini Plan 5 Pasos CERRADO:** credenciales removidas, 8 links reparados, baseline normalizado, `ErrorMessage` estandarizado en 12/13 páginas operativas. Reporte (versionable): `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
+- ✅ **Mini Plan 5 Pasos CERRADO:** credenciales removidas, 8 links reparados, baseline normalizado, `ErrorMessage` 13/13 páginas (100%). Reporte (versionable): `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
 - ✅ **RLS fine validation (P1) CERRADO:** migración `20260212130000_rls_fine_validation_lockdown.sql` aplicada + `scripts/rls_fine_validation.sql` ejecutado (`write_tests=1`) con **0 FAIL**. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`.
 - ✅ **Plan de optimización de precios (T1..T8) revalidado:** T1-T7 verificados en código/migraciones + T8 endurecido con validación de auth interna (`service_role`) en `notificaciones-tareas`, `alertas-stock` y `reportes-automaticos`. Evidencia: `docs/closure/EVIDENCIA_PLAN_OPTIMIZACION_PRECIOS_2026-02-13.md`.
 - 🧭 **Camino restante a producción (vigente):** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` (paso por paso, tarea por tarea).
 - 🚀 **Prompt único para nueva ventana (sin prompts complejos adicionales):** `docs/closure/PROMPT_UNICO_EJECUCION_RESTANTE_2026-02-12.md`.
 - ✅ **Limpieza de restos (2026-02-13):** barrido y cierre de 15 restos (13 cerrados, 2 abiertos por owner/infra) en `docs/closure/RESTOS_CIERRE_2026-02-13.md`.
 
-### Estado remoto vigente (baseline 2026-02-12)
+**Nuevo (2026-02-13, ejecución de pendientes reales):**
+- ✅ **Rotación de secreto P1 ejecutada:** `API_PROVEEDOR_SECRET` rotado en remoto + redeploy `api-proveedor` y `scraper-maxiconsumo` + validación nuevo secreto 200 / secreto anterior 401. Evidencia: `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`.
+- ✅ **Migraciones remotas sincronizadas:** `supabase db push --linked` aplicó `20260213030000_drop_legacy_columns_precios_historicos.sql`; estado actual `39/39` local=remoto.
+- ✅ **Snapshot remoto actualizado (2026-02-13):** ver `docs/closure/BASELINE_LOG_2026-02-13_031900.md` (funciones activas y versiones corrientes).
+- ✅ **RLS smoke por rol revalidado:** `/clientes` (admin/ventas 200, depósito 403) y `/pedidos` (admin/ventas/depósito 200). Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
+- ✅ **SQL directa RLS revalidada en este host:** ejecución remota por pooler (`scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` con `write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencia: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`.
+- ⚠️ **Pendientes owner:** `VITE_SENTRY_DSN` (Gate 16) y rotación SendGrid (`SENDGRID_API_KEY`/`SMTP_PASS`).
+
+### Estado remoto vigente (baseline 2026-02-13)
 
 | Edge Function | Version | verify_jwt |
 |---|---|---|
-| alertas-stock | v11 | true |
-| alertas-vencimientos | v11 | true |
-| api-minimarket | v21 | false |
-| api-proveedor | v12 | true |
-| cron-dashboard | v11 | true |
-| cron-health-monitor | v11 | true |
-| cron-jobs-maxiconsumo | v13 | true |
-| cron-notifications | v15 | true |
-| cron-testing-suite | v12 | true |
-| notificaciones-tareas | v11 | true |
-| reportes-automaticos | v11 | true |
-| reposicion-sugerida | v11 | true |
-| scraper-maxiconsumo | v12 | true |
+| alertas-stock | v12 | true |
+| alertas-vencimientos | v12 | true |
+| api-minimarket | v22 | false |
+| api-proveedor | v14 | true |
+| cron-dashboard | v12 | true |
+| cron-health-monitor | v12 | true |
+| cron-jobs-maxiconsumo | v14 | true |
+| cron-notifications | v16 | true |
+| cron-testing-suite | v13 | true |
+| notificaciones-tareas | v12 | true |
+| reportes-automaticos | v12 | true |
+| reposicion-sugerida | v12 | true |
+| scraper-maxiconsumo | v14 | true |
 
-Fuente: `docs/closure/BASELINE_LOG_2026-02-12_161515.md` + revalidación CLI en vivo (2026-02-12).
+Fuente: `docs/closure/BASELINE_LOG_2026-02-13_031900.md` + `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi --output json` (2026-02-13).
 
 ### Camino restante a producción (actualizado 2026-02-12 post-ejecución)
 
@@ -441,7 +449,7 @@ Detalle operativo: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 | reportes-automaticos | v5 | `true` | Cron-triggered |
 | reposicion-sugerida | v5 | `true` | Análisis stock |
 
-> Nota: este snapshot se preserva por trazabilidad histórica. El baseline vigente 2026-02-12 es el de la sección superior “Estado remoto vigente (baseline 2026-02-12)” y coincide con `docs/closure/BASELINE_LOG_2026-02-12_161515.md`.
+> Nota: este snapshot se preserva por trazabilidad histórica. El baseline vigente 2026-02-13 es el de la sección superior “Estado remoto vigente (baseline 2026-02-13)” y coincide con `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
 
 ---
 

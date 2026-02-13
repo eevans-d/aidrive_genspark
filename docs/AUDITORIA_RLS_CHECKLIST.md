@@ -21,18 +21,14 @@ Se cerró el pendiente P1 “Validación fina de RLS por reglas de negocio/rol�
 - Script reproducible:
   - `scripts/rls_fine_validation.sql`
 
-### Addendum 2026-02-13 — Revalidación operativa (staging)
+### Addendum 2026-02-13 — Revalidación operativa
 
-- Smoke funcional por rol (gateway):
-  - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`
-  - Resultado: **3/3 PASS** (`admin`, `ventas`, `deposito`) en `/clientes` y `/pedidos`.
-- Alineación previa de usuarios de prueba:
-  - Script ejecutado: `scripts/supabase-admin-sync-role.mjs` (`admin`, `ventas`, `deposito`).
-  - Objetivo: alinear `auth.users.app_metadata.role` y `public.personal.rol`.
-- Revalidación SQL (no destructiva) pendiente por entorno:
-  - Intentos ejecutados: `scripts/rls_audit.sql` y `scripts/rls_fine_validation.sql` (`write_tests=1`).
-  - Bloqueo real del host actual: conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`).
-  - Acción: re-ejecutar ambos scripts desde runner con salida IPv6 (o conexión DB alternativa válida) y anexar evidencia fechada.
+- Smoke por rol en gateway (`/clientes`, `/pedidos`) en PASS:
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
+- Revalidación SQL remota completada en este host usando pooler:
+  - `scripts/rls_audit.sql` ejecutado: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`.
+  - `scripts/rls_fine_validation.sql` ejecutado con `write_tests=1`: `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log` (**60/60 PASS, 0 FAIL**).
+  - Evidencia de procedimiento: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
 
 ### Resultado de la Auditoría
 - **Tablas P0 verificadas:** 7/7 protegidas ✅
@@ -227,8 +223,10 @@ supabase db dump --schema public --data-only=false | grep -A5 "CREATE POLICY"
 # Opción 1: Via psql directo
 psql $DATABASE_URL -f scripts/rls_audit.sql
 
-# Opción 2: Via Supabase CLI
-supabase db execute --file scripts/rls_audit.sql
+# Opción 2: Via psql + pooler (si DATABASE_URL por host db.* falla en IPv6)
+# - user/host/port desde supabase/.temp/pooler-url
+# - password desde DATABASE_URL local
+# (ver ejemplo completo en docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md)
 
 # Opción 3: Via Supabase Studio (Dashboard)
 # SQL Editor → Pegar queries → Run
