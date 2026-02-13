@@ -1783,7 +1783,7 @@ Deno.serve(async (req) => {
 
     // 28. PUT /pedidos/:id/pago - Registrar pago del pedido
 	    if (path.match(/^\/pedidos\/[a-f0-9-]+\/pago$/) && method === 'PUT') {
-      checkRole(['admin', 'deposito', 'jefe']);
+      checkRole(['admin', 'deposito']);
       const id = path.split('/')[2];
       if (!isUuid(id)) {
         return respondFail('VALIDATION_ERROR', 'id de pedido invalido', 400);

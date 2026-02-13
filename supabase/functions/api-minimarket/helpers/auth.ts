@@ -242,7 +242,11 @@ export async function fetchUserInfo(
 
     // Extract role from app_metadata ONLY (more secure)
     const appRole = userData.app_metadata?.role;
-    const role = typeof appRole === 'string' ? appRole.toLowerCase() : null;
+    let role = typeof appRole === 'string' ? appRole.toLowerCase().trim() : null;
+    // Legacy aliases are normalized to canonical roles.
+    if (role === 'jefe' || role === 'administrador' || role === 'administrator') {
+      role = 'admin';
+    }
 
     const user: UserInfo = {
       id: userData.id,
