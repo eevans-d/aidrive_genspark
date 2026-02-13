@@ -1,9 +1,9 @@
 # Plan de Rotacion de Secretos
 
 **Fecha:** 2026-02-09
-**Estado:** PLAN LISTO — procedimientos documentados, requiere ejecucion manual por owner
+**Estado:** PARCIALMENTE EJECUTADO — `API_PROVEEDOR_SECRET` rotado (2026-02-13), pendiente SendGrid
 **Riesgo:** SIN VALORES — este documento NO contiene secrets, solo nombres y procedimiento.
-**Ultima verificacion:** 2026-02-09 (sesion 2) — 13 secrets confirmados en remoto via `supabase secrets list`.
+**Ultima verificacion:** 2026-02-13 — 13 secrets confirmados + rotación P1 parcial aplicada.
 
 ---
 
@@ -32,6 +32,16 @@
 | **P1** | `API_PROVEEDOR_SECRET` | Cada 90 dias o ante leak | Ver seccion 3.1 |
 | **P1** | `SENDGRID_API_KEY` + `SMTP_PASS` + `SMTP_USER` | Cada 90 dias o ante leak | Ver seccion 3.2 |
 | **P2** | `SUPABASE_DB_URL` | Solo si hay leak | Via Dashboard, requiere redeploy |
+
+### Addendum 2026-02-13 (ejecutado)
+
+- ✅ `API_PROVEEDOR_SECRET` rotado en remoto con `supabase secrets set`.
+- ✅ Redeploy ejecutado: `api-proveedor`, `scraper-maxiconsumo`.
+- ✅ Validación post-rotación:
+  - `api-proveedor/status` con secreto nuevo -> 200
+  - `api-proveedor/status` con secreto anterior -> 401
+- Evidencia: `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`.
+- ⚠️ Pendiente owner: rotación de `SENDGRID_API_KEY`/`SMTP_PASS` desde SendGrid Dashboard.
 
 ## 3) Procedimientos de rotacion
 

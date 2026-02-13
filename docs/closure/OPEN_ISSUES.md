@@ -1,7 +1,7 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-11
-**Fuente principal:** `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md`
+**Última actualización:** 2026-02-13 (ejecución pendientes reales)
+**Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ---
 
@@ -9,10 +9,10 @@
 
 | Pendiente | Gate | Estado | Evidencia actual | Siguiente acción |
 |-----------|------|--------|------------------|------------------|
-| E2E completo de POS (flujo venta end-to-end) | 3 | ⚠️ PARCIAL | UX POS mejorada, falta corrida E2E integral documentada. | Ejecutar smoke/flujo completo y registrar evidencia reproducible. |
-| Canal real de alertas stock bajo al operador | 4 | ⚠️ PARCIAL | Cron auth + runtime mejorados; no hay canal final push/email/acción clara. | Activar canal operativo y validar recepción end-user. |
-| Monitoreo real en producción | 16 | ❌ FALLA | Sentry bloqueado por DSN; sin alerting real activo. | Configurar DSN real + alerta y verificar evento de prueba. |
-| Endurecimiento CI legacy suites | 18 | ⚠️ PARCIAL | Job opcional legacy con `continue-on-error`. | Definir política de gate verificable (al menos en scheduled/manual sin tolerar fallo). |
+| ~~E2E completo de POS (flujo venta end-to-end)~~ | 3 | ✅ CERRADO | 8/8 tests E2E Playwright PASS. `minimarket-system/e2e/pos.e2e.spec.ts`. Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md`. | — |
+| ~~Canal real de alertas stock bajo al operador~~ | 4 | ✅ CERRADO | `cron-notifications` envía emails reales vía SendGrid, Slack vía webhook, webhooks genéricos. SendGrid messageIds confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md`. | — |
+| Monitoreo real en producción | 16 | ⚠️ PARCIAL | `@sentry/react@10.38.0` integrado, `Sentry.init()` + `Sentry.captureException()` funcional. Build PASS. DSN pendiente del owner. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-12.md`. | Owner: crear proyecto Sentry, obtener DSN, configurar `VITE_SENTRY_DSN` en Vercel/env. |
+| ~~Endurecimiento CI legacy suites~~ | 18 | ✅ CERRADO | Job `security-tests` obligatorio/bloqueante en CI. Política GO/NO-GO documentada. Evidencia: `docs/closure/EVIDENCIA_GATE18_2026-02-12.md`. | — |
 
 ---
 
@@ -20,15 +20,31 @@
 
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
-| Validación fina de RLS por reglas de negocio/rol | ⚠️ PARCIAL | Ejecutar batería SQL de validación de acceso por roles reales sobre tablas nuevas. |
-| Backup automatizado (hoy manual) | ⚠️ PARCIAL | Definir scheduler externo + retención + prueba de restore periódica. |
-| UX error coverage total (13/13 páginas) | ⚠️ PARCIAL | Completar páginas faltantes con ErrorMessage/Skeleton según criterio SP-D. |
+| ~~Backup automatizado + restore probado~~ | ✅ CERRADO (Gate 15) | `db-backup.sh` con gzip/retención + `db-restore-drill.sh` + `backup.yml` GitHub Actions cron diario. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
+| ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Revalidación operativa 2026-02-13 (smoke por rol): `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`. Bloqueo técnico local para `psql` documentado en `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`. |
+| Rotación preventiva de secretos pre-producción | ⚠️ PARCIAL | `API_PROVEEDOR_SECRET` rotado y validado (2026-02-13): `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`. Pendiente owner: rotar `SENDGRID_API_KEY`/`SMTP_PASS` y validar delivery real. |
 
 ---
 
 ## Notas operativas
 
-- Migraciones: `36/36` local=remoto (verificado 2026-02-11).
-- CORS productivo: corregido para dominio actual.
+- Migraciones: `39/39` local=remoto (actualización 2026-02-13, incluye `20260213030000`).
+- Baseline histórico 2026-02-12: 13 funciones activas; `api-minimarket v21` con `verify_jwt=false`.
+- Snapshot remoto actual 2026-02-13: `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
+- `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
+- Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
+- Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`); SQL directo `psql` bloqueado por IPv6 desde este host.
+- **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
 
+## Cerrados recientes (2026-02-12, sesión de ejecución)
+
+- ✅ Gate 3: E2E POS 8/8 tests PASS (Playwright).
+- ✅ Gate 4: Canal real alertas operador (SendGrid + Slack + Webhook).
+- ✅ Gate 18: CI hardening con `security-tests` como gate bloqueante.
+- ✅ Gate 15: Backup automatizado + restore drill + GitHub Actions cron.
+- ✅ Credenciales visibles en login eliminadas.
+- ✅ Enlaces rotos documentales reparados.
+- ✅ Fallback legacy en cron-testing-suite removido.
+- ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
+- ✅ Adopción `ErrorMessage` completada en 13/13 páginas funcionales.

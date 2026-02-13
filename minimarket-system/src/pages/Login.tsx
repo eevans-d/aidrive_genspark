@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -69,9 +71,11 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
+            <ErrorMessage
+              message={parseErrorMessage(error, import.meta.env.PROD)}
+              type={detectErrorType(error)}
+              size="sm"
+            />
           )}
 
           <button
@@ -83,9 +87,8 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Usuarios de prueba:</p>
-          <p className="mt-1 text-xs">admin@minimarket.com / password123</p>
+        <div className="mt-6 text-center text-sm text-gray-500">
+          <p>Acceso restringido a usuarios autorizados</p>
         </div>
       </div>
     </div>

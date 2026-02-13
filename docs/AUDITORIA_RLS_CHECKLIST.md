@@ -1,7 +1,7 @@
 # Auditoría RLS - Checklist y Scripts
 
-**Estado:** ✅ **COMPLETADO 2026-01-23**  
-**Fecha actualización:** 2026-01-23  
+**Estado:** ✅ **COMPLETADO (P0) 2026-01-23 + REVALIDADO (P1) 2026-02-12**  
+**Fecha actualización:** 2026-02-12  
 **Propósito:** Auditoría RLS del sistema Mini Market  
 **Resultado:** ✅ TODAS LAS TABLAS PROTEGIDAS
 
@@ -10,6 +10,23 @@
 ## 📋 Resumen Ejecutivo
 
 Auditoría completada el 2026-01-23. **Todas las tablas P0 tienen RLS activo** y bloquean acceso a usuarios anónimos.
+
+### Addendum 2026-02-12 — Validación fina por rol (P1)
+
+Se cerró el pendiente P1 “Validación fina de RLS por reglas de negocio/rol” con:
+- Migración: `supabase/migrations/20260212130000_rls_fine_validation_lockdown.sql`
+- Evidencia (post‑migración):
+  - `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`
+  - `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log` (**0 FAIL**, `write_tests=1`)
+- Script reproducible:
+  - `scripts/rls_fine_validation.sql`
+
+### Addendum 2026-02-13 — Revalidación operativa
+
+- Smoke por rol en gateway (`/clientes`, `/pedidos`) en PASS:
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
+- Revalidación SQL directa (`psql`) bloqueada en este host por conectividad IPv6:
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
 
 ### Resultado de la Auditoría
 - **Tablas P0 verificadas:** 7/7 protegidas ✅
@@ -43,6 +60,16 @@ Se ejecutaron queries REST API con `anon` key contra cada tabla P0:
 | `tareas_pendientes` | ✅ Enabled | SELECT/INSERT/UPDATE/DELETE para `authenticated` | Migración `20260104083000` |
 | `stock_reservado` | ✅ Enabled | SELECT para `authenticated` | Solo lectura |
 | `ordenes_compra` | ✅ Enabled | SELECT para `authenticated` | Solo lectura |
+
+### P1 - Alto (operación comercial por rol)
+| Tabla/Vista | Control | Políticas | Evidencia |
+|------------|---------|-----------|-----------|
+| `clientes` | ✅ RLS | SELECT/INSERT/UPDATE `admin|ventas`; DELETE solo `admin` | `EVIDENCIA_RLS_FINE_2026-02-12.log` |
+| `pedidos` | ✅ RLS | SELECT/INSERT/UPDATE `admin|deposito|ventas`; DELETE solo `admin` | `EVIDENCIA_RLS_FINE_2026-02-12.log` |
+| `detalle_pedidos` | ✅ RLS | SELECT/INSERT/UPDATE `admin|deposito|ventas`; DELETE solo `admin` | `EVIDENCIA_RLS_FINE_2026-02-12.log` |
+| `personal` | ✅ RLS | SELECT self only; unique `user_auth_id` | `EVIDENCIA_RLS_AUDIT_2026-02-12.log` |
+| `vista_cc_saldos_por_cliente` | ✅ security_invoker | Respeta RLS de `clientes` | `EVIDENCIA_RLS_FINE_2026-02-12.log` |
+| `vista_cc_resumen` | ✅ security_invoker | Respeta RLS de `vista_cc_saldos_por_cliente` | `EVIDENCIA_RLS_FINE_2026-02-12.log` |
 
 ### P2 - Medio (scraping / cron - solo service_role)
 | Tabla | RLS Enabled | Políticas | Notas |
@@ -360,4 +387,4 @@ Al ejecutar la auditoría, guardar:
 - Migración RLS: [20260104083000_add_rls_policies.sql](../supabase/migrations/20260104083000_add_rls_policies.sql)
 - Fix SECURITY DEFINER: [20260110100000_fix_rls_security_definer.sql](../supabase/migrations/20260110100000_fix_rls_security_definer.sql)
 - Esquema BD: [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md)
-- Plan de ejecución: [PLAN_TRES_PUNTOS.md](PLAN_TRES_PUNTOS.md) - FASE 2
+- Plan de ejecución: *(archivo original deprecado — ver [MEGA_PLAN_CONSOLIDADO](mpc/MEGA_PLAN_CONSOLIDADO.md))*
