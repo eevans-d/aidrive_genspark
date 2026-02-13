@@ -46,7 +46,27 @@
 - ✅ **Snapshot remoto actualizado (2026-02-13):** ver `docs/closure/BASELINE_LOG_2026-02-13_031900.md` (funciones activas y versiones corrientes).
 - ✅ **RLS smoke por rol revalidado:** `/clientes` (admin/ventas 200, depósito 403) y `/pedidos` (admin/ventas/depósito 200). Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.
 - ✅ **SQL directa RLS revalidada en este host:** ejecución remota por pooler (`scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` con `write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencia: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`.
+- ✅ **Auditoría forense ejecutiva revisada (v1.1):** reporte actualizado con verificación cruzada local de inventario, auth guards, CI/coverage y matriz de riesgos priorizada. Documento: `docs/AUDITORIA_FORENSE_ABSOLUTA_2026-02-13.md`.
+- ✅ **Mega planificación absoluta por auditoría (módulos + submódulos):** versión definitiva `v2.0` con Top 10, secuencia por bloques, cronograma semanal día por día, ruta crítica, gates, evidencia obligatoria y Production Readiness Score inicial (70/100). Documento: `docs/closure/MEGA_PLAN_2026-02-13_042956.md`.
+- ✅ **Context prompt engineering para ejecutor externo (Claude Code / GitHub Copilot):** prompt operativo definitivo creado para ejecutar T01..T10 con checkpoints, contrato de salida y manejo de bloqueos externos. Documento: `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md`.
 - ⚠️ **Pendientes owner:** `VITE_SENTRY_DSN` (Gate 16) y rotación SendGrid (`SENDGRID_API_KEY`/`SMTP_PASS`).
+
+**Nuevo (2026-02-13, Mega Plan T01..T10 - ejecución formal):**
+- ✅ **T01 (M3.S1) PASS:** guard interno uniforme en cron sensible, evidencia: `docs/closure/EVIDENCIA_M3_S1_2026-02-13.md`.
+- ✅ **T02 (M5.S1) PASS:** suite security contractual real (6 pass, 1 skip opcional), evidencia: `docs/closure/EVIDENCIA_M5_S1_2026-02-13.md`.
+- ✅ **T03 (M5.S2) PASS:** governance coverage bloqueante + run cobertura (`829 tests`, `%Lines 66.17`), evidencia: `docs/closure/EVIDENCIA_M5_S2_2026-02-13.md`.
+- ✅ **T04 (M8.S1) PASS:** branch allowlist de deploy validada (rama inválida fail-fast, rama válida pass gate), evidencia: `docs/closure/EVIDENCIA_M8_S1_2026-02-13.md`.
+- ✅ **T05 (M6.S1) PASS:** hardening auth target aplicado en `supabase/config.toml`, evidencia: `docs/closure/EVIDENCIA_M6_S1_2026-02-13.md`.
+- ✅ **T06 (M2.S1) PASS:** catch-all 404 + test de navegación inválida, evidencia: `docs/closure/EVIDENCIA_M2_S1_2026-02-13.md`.
+- ✅ **T07 (M2.S2) PASS:** smoke tests de 5 páginas faltantes incorporados, evidencia: `docs/closure/EVIDENCIA_M2_S2_2026-02-13.md`.
+- ✅ **T08 (M3.S2) PASS:** redacción/máscara PII en `cron-notifications` (persistencia/log), evidencia: `docs/closure/EVIDENCIA_M3_S2_2026-02-13.md`.
+- ⚠️ **T09 (M6.S2) BLOCKED:** dependencias owner (`VITE_SENTRY_DSN`, rotación final SendGrid/SMTP), evidencia + checklist owner: `docs/closure/EVIDENCIA_M6_S2_2026-02-13.md`.
+- ✅ **T10 (M7 cierre) PASS canónico:** sincronización documental final y checkpoints completos con bloqueo explícito de T09.
+- ✅ **Checkpoints obligatorios cada 2 tareas:** `CHECKPOINT_T01_T02_2026-02-13.md`, `CHECKPOINT_T03_T04_2026-02-13.md`, `CHECKPOINT_T05_T06_2026-02-13.md`, `CHECKPOINT_T07_T08_2026-02-13.md`.
+- ✅ **Checkpoint final de cierre:** `CHECKPOINT_T09_T10_2026-02-13.md`.
+
+**Score post-ejecución mega plan (2026-02-13):** **86/100** (cumple meta >=85 con bloqueo externo documentado en T09).
+**Veredicto operativo:** **CON RESERVAS NO CRÍTICAS** (únicamente dependencias owner externas).
 
 ### Estado remoto vigente (baseline 2026-02-13)
 

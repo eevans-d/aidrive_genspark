@@ -18,6 +18,7 @@
 
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('cron-dashboard');
 // =====================================================
@@ -134,6 +135,17 @@ Deno.serve(async (req) => {
 
         if (!supabaseUrl || !serviceRoleKey) {
             throw new Error('Configuración de Supabase faltante');
+        }
+
+        const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+        const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+        if (!authCheck.authorized) {
+            logger.warn('UNAUTHORIZED_REQUEST', {
+                requestId,
+                hasAuthorization: Boolean(req.headers.get('authorization')),
+                hasApiKey: Boolean(req.headers.get('apikey')),
+            });
+            return authCheck.errorResponse as Response;
         }
 
         let response: Response;

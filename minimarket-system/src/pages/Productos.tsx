@@ -2,11 +2,13 @@ import { useState } from 'react'
 import { TrendingUp, TrendingDown, Plus, DollarSign, Loader2 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
-import { useProductos, ProductoConHistorial } from '../hooks/queries'
+import { useProductos, ProductoConHistorial, ProductosResult } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { SkeletonTable, SkeletonText } from '../components/Skeleton'
 import { productosApi, preciosApi, ApiError } from '../lib/apiClient'
+import { queryKeys } from '../lib/queryClient'
+import { money } from '../utils/currency'
 
 export default function Productos() {
   const queryClient = useQueryClient()
@@ -60,14 +62,48 @@ export default function Productos() {
   const priceMutation = useMutation({
     mutationFn: (params: { producto_id: string; precio_compra: number; margen_ganancia?: number }) =>
       preciosApi.aplicar(params),
+    onMutate: async (params) => {
+      const currentQueryKey = [...queryKeys.productos, { page, pageSize, barcodeSearch: barcodeSearch || undefined }]
+      await queryClient.cancelQueries({ queryKey: currentQueryKey })
+      const snapshot = queryClient.getQueryData<ProductosResult>(currentQueryKey)
+
+      // Compute optimistic price estimate
+      const margen = params.margen_ganancia ?? selectedProducto?.margen_ganancia ?? 30
+      const optimisticPrice = Math.round(params.precio_compra * (1 + margen / 100) * 100) / 100
+
+      queryClient.setQueryData<ProductosResult>(currentQueryKey, (old) => {
+        if (!old) return old
+        return {
+          ...old,
+          productos: old.productos.map((p) =>
+            p.id === params.producto_id
+              ? { ...p, precio_actual: optimisticPrice, precio_costo: params.precio_compra }
+              : p
+          ),
+        }
+      })
+
+      if (selectedProducto?.id === params.producto_id) {
+        setSelectedProducto((prev) =>
+          prev ? { ...prev, precio_actual: optimisticPrice, precio_costo: params.precio_compra } : prev
+        )
+      }
+
+      return { snapshot, currentQueryKey }
+    },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['productos'] })
       toast.success('Precio actualizado correctamente')
       setShowPriceModal(false)
       setPriceForm({ precio_compra: '', margen_ganancia: '' })
     },
-    onError: (err: ApiError | Error) => {
+    onError: (err: ApiError | Error, _vars, context) => {
+      if (context?.snapshot && context.currentQueryKey) {
+        queryClient.setQueryData(context.currentQueryKey, context.snapshot)
+      }
       toast.error(err instanceof ApiError ? err.message : 'Error al actualizar precio')
+    },
+    onSettled: (_data, _err, _vars, context) => {
+      queryClient.invalidateQueries({ queryKey: context?.currentQueryKey ?? ['productos'] })
     },
   })
 
@@ -267,7 +303,7 @@ export default function Productos() {
                       </div>
                       <div className="text-right">
                         <div className="text-lg font-bold text-gray-900">
-                          ${producto.precio_actual?.toFixed(2)}
+                          ${producto.precio_actual != null ? money(producto.precio_actual) : '—'}
                         </div>
                         {tendencia && (
                           <div className={`flex items-center text-sm ${tendencia === 'subida' ? 'text-red-600' : 'text-green-600'
@@ -308,13 +344,13 @@ export default function Productos() {
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-600">Precio Actual</div>
                     <div className="text-2xl font-bold text-blue-600">
-                      ${selectedProducto.precio_actual?.toFixed(2)}
+                      ${selectedProducto.precio_actual != null ? money(selectedProducto.precio_actual) : '—'}
                     </div>
                   </div>
                   <div className="bg-gray-50 p-4 rounded-lg">
                     <div className="text-sm text-gray-600">Precio Costo</div>
                     <div className="text-2xl font-bold text-gray-900">
-                      ${selectedProducto.precio_costo?.toFixed(2)}
+                      ${selectedProducto.precio_costo != null ? money(selectedProducto.precio_costo) : '—'}
                     </div>
                   </div>
                   {selectedProducto.margen_ganancia !== null && (
@@ -372,7 +408,7 @@ export default function Productos() {
                           className="flex justify-between items-center p-3 bg-gray-50 rounded"
                         >
                           <div>
-                            <div className="font-medium">${precio.precio.toFixed(2)}</div>
+                            <div className="font-medium">${money(precio.precio)}</div>
                             <div className="text-xs text-gray-500">
                               {new Date(precio.fecha).toLocaleDateString('es-AR')}
                             </div>
@@ -410,8 +446,8 @@ export default function Productos() {
       {showNewModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setShowNewModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-4">Nuevo producto</h3>
+          <div className="relative bg-white rounded-lg shadow-xl max-w-md w-full mx-4 p-6" role="dialog" aria-modal="true" aria-labelledby="modal-title-new-product">
+            <h3 id="modal-title-new-product" className="text-lg font-semibold text-gray-800 mb-4">Nuevo producto</h3>
             <form
               onSubmit={(e) => {
                 e.preventDefault()
@@ -499,8 +535,8 @@ export default function Productos() {
       {showPriceModal && selectedProducto && (
         <div className="fixed inset-0 z-50 flex items-center justify-center">
           <div className="fixed inset-0 bg-black/40" onClick={() => setShowPriceModal(false)} />
-          <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Actualizar precio</h3>
+          <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-6" role="dialog" aria-modal="true" aria-labelledby="modal-title-price">
+            <h3 id="modal-title-price" className="text-lg font-semibold text-gray-800 mb-2">Actualizar precio</h3>
             <p className="text-sm text-gray-500 mb-4">{selectedProducto.nombre}</p>
             <form
               onSubmit={(e) => {

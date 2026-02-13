@@ -6,6 +6,7 @@ import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton
 import { useQuery } from '@tanstack/react-query'
 import { bitacoraApi, cuentasCorrientesApi } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
+import { money } from '../utils/currency'
 
 export default function Dashboard() {
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardStats();
@@ -123,15 +124,19 @@ export default function Dashboard() {
           {ccResumenQuery.isLoading ? (
             <div className="mt-3 text-gray-500">Cargando…</div>
           ) : ccResumenQuery.isError ? (
-            <div className="mt-3 text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
-              Error cargando resumen de cuenta corriente
-            </div>
+            <ErrorMessage
+              message={parseErrorMessage(ccResumenQuery.error)}
+              type={detectErrorType(ccResumenQuery.error)}
+              onRetry={() => ccResumenQuery.refetch()}
+              isRetrying={ccResumenQuery.isFetching}
+              size="sm"
+            />
           ) : (
             <div className="mt-3 flex flex-wrap gap-6">
               <div>
                 <div className="text-sm text-gray-600">Dinero en la calle</div>
                 <div className="text-3xl font-bold text-gray-900">
-                  ${Number(ccResumenQuery.data?.dinero_en_la_calle ?? 0).toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  ${money(Number(ccResumenQuery.data?.dinero_en_la_calle ?? 0))}
                 </div>
               </div>
               <div>
@@ -152,9 +157,13 @@ export default function Dashboard() {
           {bitacoraQuery.isLoading ? (
             <div className="mt-3 text-gray-500">Cargando…</div>
           ) : bitacoraQuery.isError ? (
-            <div className="mt-3 text-red-700 bg-red-50 border border-red-200 rounded-lg p-3">
-              Error cargando bitácora
-            </div>
+            <ErrorMessage
+              message={parseErrorMessage(bitacoraQuery.error)}
+              type={detectErrorType(bitacoraQuery.error)}
+              onRetry={() => bitacoraQuery.refetch()}
+              isRetrying={bitacoraQuery.isFetching}
+              size="sm"
+            />
           ) : (bitacoraQuery.data ?? []).length === 0 ? (
             <div className="mt-3 text-gray-500">Sin notas</div>
           ) : (
@@ -189,10 +198,10 @@ export default function Dashboard() {
                 <div
                   key={tarea.id}
                   className={`p-4 rounded-lg border-l-4 ${tarea.prioridad === 'urgente'
-                      ? 'border-red-500 bg-red-50'
-                      : tarea.prioridad === 'normal'
-                        ? 'border-yellow-500 bg-yellow-50'
-                        : 'border-blue-500 bg-blue-50'
+                    ? 'border-red-500 bg-red-50'
+                    : tarea.prioridad === 'normal'
+                      ? 'border-yellow-500 bg-yellow-50'
+                      : 'border-blue-500 bg-blue-50'
                     }`}
                 >
                   <div className="flex justify-between items-start">
@@ -208,10 +217,10 @@ export default function Dashboard() {
                     </div>
                     <span
                       className={`px-3 py-1 rounded-full text-xs font-medium ${tarea.prioridad === 'urgente'
-                          ? 'bg-red-100 text-red-800'
-                          : tarea.prioridad === 'normal'
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-blue-100 text-blue-800'
+                        ? 'bg-red-100 text-red-800'
+                        : tarea.prioridad === 'normal'
+                          ? 'bg-yellow-100 text-yellow-800'
+                          : 'bg-blue-100 text-blue-800'
                         }`}
                     >
                       {tarea.prioridad.toUpperCase()}

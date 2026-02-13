@@ -18,6 +18,7 @@ import { supabase } from '../lib/supabase'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { SkeletonTable } from '../components/Skeleton'
+import { money, calcTotal } from '../utils/currency'
 
 type CartItem = {
   producto_id: string
@@ -28,15 +29,6 @@ type CartItem = {
   cantidad: number
   es_oferta?: boolean
   descuento_pct?: number
-}
-
-function money(n: number): string {
-  return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
-
-function calcTotal(items: CartItem[]): number {
-  // Keep it simple; DB does definitive rounding.
-  return Math.round(items.reduce((acc, it) => acc + it.precio_unitario * it.cantidad, 0) * 100) / 100
 }
 
 function buildWhatsAppUrl(e164: string): string {
@@ -378,7 +370,7 @@ export default function Pos() {
             </button>
           </form>
 
-          <div className="mt-4 space-y-2">
+          <div className="mt-4 space-y-2" aria-live="polite" aria-label="Carrito de compras">
             {cart.length === 0 ? (
               <div className="py-10 text-center text-gray-500">
                 Escanea un producto para comenzar
@@ -406,6 +398,7 @@ export default function Pos() {
                       onClick={() => adjustQty(it.producto_id, -1)}
                       className="px-2 py-1 rounded bg-white border hover:bg-gray-100"
                       title="-1"
+                      aria-label={`Reducir cantidad de ${it.nombre}`}
                     >
                       -
                     </button>
@@ -414,6 +407,7 @@ export default function Pos() {
                       onClick={() => adjustQty(it.producto_id, +1)}
                       className="px-2 py-1 rounded bg-white border hover:bg-gray-100"
                       title="+1"
+                      aria-label={`Aumentar cantidad de ${it.nombre}`}
                     >
                       +
                     </button>
@@ -422,6 +416,7 @@ export default function Pos() {
                     onClick={() => removeItem(it.producto_id)}
                     className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
                     title="Quitar"
+                    aria-label={`Quitar ${it.nombre} del carrito`}
                   >
                     <Trash2 className="w-4 h-4" />
                   </button>
@@ -438,12 +433,14 @@ export default function Pos() {
             <div className="text-3xl font-black text-gray-900">${money(total)}</div>
           </div>
 
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Metodo de pago">
             <button
               onClick={() => setMetodoPago('efectivo')}
               className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'efectivo' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               title="F1"
+              role="radio"
+              aria-checked={metodoPago === 'efectivo'}
             >
               <Banknote className="w-5 h-5" />
               Efectivo
@@ -452,6 +449,8 @@ export default function Pos() {
               onClick={() => setMetodoPago('tarjeta')}
               className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
+              role="radio"
+              aria-checked={metodoPago === 'tarjeta'}
             >
               <CreditCard className="w-5 h-5" />
               Tarjeta
@@ -461,6 +460,8 @@ export default function Pos() {
               className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'cuenta_corriente' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               title="F2"
+              role="radio"
+              aria-checked={metodoPago === 'cuenta_corriente'}
             >
               <User className="w-5 h-5" />
               Fiado
@@ -520,6 +521,7 @@ export default function Pos() {
             onClick={() => submitVenta(false)}
             disabled={ventaMutation.isPending || cart.length === 0}
             className="w-full py-4 rounded-xl bg-black text-white font-black text-lg hover:bg-gray-900 disabled:opacity-50 flex items-center justify-center gap-2"
+            aria-busy={ventaMutation.isPending}
           >
             {ventaMutation.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
             Cobrar
@@ -530,10 +532,10 @@ export default function Pos() {
       {/* Cliente Picker Modal */}
       {clientePickerOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-          <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+          <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-label="Seleccionar cliente">
             <div className="p-4 border-b flex items-center justify-between gap-3">
               <div className="font-bold text-gray-900">Seleccionar Cliente</div>
-              <button onClick={() => setClientePickerOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+              <button onClick={() => setClientePickerOpen(false)} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -584,13 +586,13 @@ export default function Pos() {
       {/* Risk Confirm Modal */}
       {riskConfirmOpen && (
         <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center p-4">
-          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden">
+          <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden" role="alertdialog" aria-modal="true" aria-label="Confirmacion de riesgo">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-black text-red-700 flex items-center gap-2">
                 <AlertTriangle className="w-5 h-5" />
                 Riesgo de pérdida
               </div>
-              <button onClick={() => setRiskConfirmOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">✕</button>
+              <button onClick={() => setRiskConfirmOpen(false)} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
             </div>
             <div className="p-4 space-y-3">
               <div className="text-sm text-gray-700">

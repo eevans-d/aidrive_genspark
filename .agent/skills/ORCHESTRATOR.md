@@ -68,6 +68,12 @@ Todos los skills en `.agent/skills/*` deben aparecer en al menos uno de estos me
 
 ## Política de autonomía
 
-- Si el trigger se cumple, se ejecuta el skill automáticamente.
-- No esperar invocación manual del usuario cuando hay trigger válido.
+> [!IMPORTANT]
+> **REGLA OBLIGATORIA:** Si el trigger se cumple, el skill se ejecuta automáticamente.
+> El agente NO DEBE esperar invocación manual del usuario. La evaluación de triggers
+> es continua y automática en cada interacción.
+
+- Código modificado → `CodeCraft` + `TestMaster` + `DocuGuard` (obligatorio).
+- Error detectado → `DebugHound` + `TestMaster` + `DocuGuard`.
 - Si un skill falla y tiene fallback definido, ejecutar fallback y continuar.
+- Si no hay trigger válido, no ejecutar skills innecesariamente.

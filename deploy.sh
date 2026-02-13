@@ -25,6 +25,7 @@ BUILD_NUMBER=${2:-$(date +%s)}
 COMMIT_SHA=${3:-$(git rev-parse --short HEAD 2>/dev/null || echo "manual")}
 DRY_RUN=${4:-false}
 FORCE_DEPLOY=${5:-false}
+ALLOWED_PROD_BRANCHES=${ALLOWED_PROD_BRANCHES:-main}
 
 # Directorios
 BUILD_DIR="dist"
@@ -54,6 +55,40 @@ log_info() {
 
 log_deploy() {
     echo -e "${CYAN}[DEPLOY]${NC} $1"
+}
+
+validate_production_branch() {
+    if [ "$DEPLOY_ENV" != "production" ]; then
+        return 0
+    fi
+
+    if [ ! -d ".git" ]; then
+        log_warning "No se puede validar branch: no es repositorio Git"
+        return 0
+    fi
+
+    local current_branch
+    current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
+
+    local allowed=false
+    IFS=',' read -ra branches <<< "$ALLOWED_PROD_BRANCHES"
+    for branch in "${branches[@]}"; do
+        local trimmed
+        trimmed="$(echo "$branch" | xargs)"
+        if [ "$current_branch" = "$trimmed" ]; then
+            allowed=true
+            break
+        fi
+    done
+
+    if [ "$allowed" != "true" ]; then
+        log_error "Branch '$current_branch' no permitida para deploy productivo"
+        log_error "ALLOWED_PROD_BRANCHES=$ALLOWED_PROD_BRANCHES"
+        return 1
+    fi
+
+    log_success "Branch '$current_branch' permitida para producción"
+    return 0
 }
 
 # Banner
@@ -97,6 +132,16 @@ check_prerequisites() {
             fi
         else
             log_success "Repositorio limpio"
+        fi
+    fi
+
+    if [ "$DEPLOY_ENV" = "production" ]; then
+        if ! validate_production_branch; then
+            if [ "$FORCE_DEPLOY" != "true" ]; then
+                exit 1
+            else
+                log_warning "Branch inválida para producción (FORCE_DEPLOY=true)"
+            fi
         fi
     fi
     

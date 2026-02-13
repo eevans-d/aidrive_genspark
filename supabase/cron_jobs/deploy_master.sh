@@ -180,7 +180,7 @@ echo "   • TWILIO_ACCOUNT_SID"
 echo "   • TWILIO_AUTH_TOKEN"
 echo ""
 echo "2. 🧪 Probar función edge manualmente:"
-echo "   curl -X POST https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo \
+echo "   curl -X POST https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo \
      -H 'Content-Type: application/json' \
      -d '{\"action\":\"health\"}'"
 echo ""

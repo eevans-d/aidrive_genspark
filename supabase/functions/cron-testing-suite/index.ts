@@ -19,6 +19,39 @@
 import { createLogger } from '../_shared/logger.ts';
 
 const logger = createLogger('cron-testing-suite');
+const SUPABASE_PROJECT_REF = 'dqaygmjpzoqjjrywdsxi';
+const SUPABASE_DEFAULT_BASE_URL = `https://${SUPABASE_PROJECT_REF}.supabase.co`;
+
+function resolveSupabaseBaseUrl(): string {
+    const envUrl = Deno.env.get('SUPABASE_URL');
+    if (envUrl && envUrl.trim().length > 0) {
+        return envUrl.replace(/\/+$/, '');
+    }
+    return SUPABASE_DEFAULT_BASE_URL;
+}
+
+function getSupabaseAuthHeaders(): Record<string, string> {
+    // Edge Functions with verify_jwt=true require a valid JWT. Supabase anon/service keys are JWTs.
+    const jwt = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_ANON_KEY');
+    if (!jwt) return {};
+
+    return {
+        Authorization: `Bearer ${jwt}`,
+        apikey: jwt,
+    };
+}
+
+async function authedFetch(url: string, init: RequestInit = {}): Promise<Response> {
+    const authHeaders = getSupabaseAuthHeaders();
+    const headers = new Headers(init.headers);
+
+    // Do not override caller-provided headers.
+    for (const [k, v] of Object.entries(authHeaders)) {
+        if (!headers.has(k)) headers.set(k, v);
+    }
+
+    return globalThis.fetch(url, { ...init, headers });
+}
 
 // =====================================================
 // CONFIGURACIÓN DE TESTING
@@ -262,7 +295,7 @@ class CronJobsTestSuite {
             {
                 name: 'Cron Jobs Maxiconsumo - Health Check',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=health`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=health`, {
                         method: 'GET'
                     });
                     
@@ -283,7 +316,7 @@ class CronJobsTestSuite {
             {
                 name: 'Cron Jobs Maxiconsumo - System Status',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`, {
                         method: 'GET'
                     });
                     
@@ -304,7 +337,7 @@ class CronJobsTestSuite {
             {
                 name: 'Cron Jobs Maxiconsumo - Execute Job Manual',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -330,7 +363,7 @@ class CronJobsTestSuite {
             {
                 name: 'Health Monitor - Health Check',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`, {
                         method: 'GET'
                     });
                     
@@ -351,7 +384,7 @@ class CronJobsTestSuite {
             {
                 name: 'Notifications - Get Templates',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/templates`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/templates`, {
                         method: 'GET'
                     });
                     
@@ -372,7 +405,7 @@ class CronJobsTestSuite {
             {
                 name: 'Notifications - Get Channels',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/channels`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/channels`, {
                         method: 'GET'
                     });
                     
@@ -404,7 +437,7 @@ class CronJobsTestSuite {
                 name: 'Daily Price Update Job - Full Integration',
                 fn: async () => {
                     // 1. Verificar que el job esté configurado
-                    const statusResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
+                    const statusResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
                     const statusData = await statusResponse.json();
                     
                     if (!statusData.success) {
@@ -412,7 +445,7 @@ class CronJobsTestSuite {
                     }
 
                     // 2. Ejecutar el job manualmente
-                    const executeResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const executeResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -434,7 +467,7 @@ class CronJobsTestSuite {
                     // 4. Verificar health post-ejecución
                     await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for cleanup
                     
-                    const healthResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const healthResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const healthData = await healthResponse.json();
                     
                     if (!healthData.success || healthData.data.health.overall === 'critical') {
@@ -447,7 +480,7 @@ class CronJobsTestSuite {
                 name: 'Real-time Alerts System - Full Integration',
                 fn: async () => {
                     // 1. Verificar alerts system
-                    const alertsResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=alerts&status=activa&limit=10`);
+                    const alertsResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=alerts&status=activa&limit=10`);
                     const alertsData = await alertsResponse.json();
                     
                     if (!alertsData.success) {
@@ -455,7 +488,7 @@ class CronJobsTestSuite {
                     }
 
                     // 2. Ejecutar job de alertas
-                    const executeResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const executeResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -480,7 +513,7 @@ class CronJobsTestSuite {
                 name: 'Weekly Trend Analysis - Full Integration',
                 fn: async () => {
                     // 1. Ejecutar análisis semanal
-                    const executeResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const executeResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -500,7 +533,7 @@ class CronJobsTestSuite {
                     }
 
                     // 3. Verificar que el sistema sigue operativo
-                    const healthResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const healthResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const healthData = await healthResponse.json();
                     
                     if (!healthData.success) {
@@ -513,7 +546,7 @@ class CronJobsTestSuite {
                 name: 'End-to-End Price Update Flow',
                 fn: async () => {
                     // 1. Health check inicial
-                    const initialHealth = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const initialHealth = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const initialData = await initialHealth.json();
                     
                     if (!initialData.success) {
@@ -521,7 +554,7 @@ class CronJobsTestSuite {
                     }
 
                     // 2. Ejecutar job de actualización
-                    const jobResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const jobResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -541,7 +574,7 @@ class CronJobsTestSuite {
                     // 3. Health check final
                     await new Promise(resolve => setTimeout(resolve, 2000)); // Wait for cleanup
                     
-                    const finalHealth = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const finalHealth = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const finalData = await finalHealth.json();
                     
                     if (!finalData.success) {
@@ -576,7 +609,7 @@ class CronJobsTestSuite {
                 fn: async () => {
                     const startTime = Date.now();
                     
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const duration = Date.now() - startTime;
                     
                     if (!response.ok) {
@@ -598,7 +631,7 @@ class CronJobsTestSuite {
                     
                     // Ejecutar múltiples jobs concurrentemente
                     const jobPromises = Array.from({ length: concurrentJobs }, (_, i) => 
-                        fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                        authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -631,7 +664,7 @@ class CronJobsTestSuite {
                     // Ejecutar múltiples health checks consecutivos
                     for (let i = 0; i < loadTests; i++) {
                         try {
-                            const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                            const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                             if (!response.ok) {
                                 failures++;
                             }
@@ -661,7 +694,7 @@ class CronJobsTestSuite {
                     
                     // Tomar múltiples mediciones de memory
                     for (let i = 0; i < 5; i++) {
-                        const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                        const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                         const data = await response.json();
                         
                         if (data.success && data.data.health.components.memory.details.percentage) {
@@ -699,7 +732,7 @@ class CronJobsTestSuite {
                 name: 'Circuit Breaker Recovery',
                 fn: async () => {
                     // 1. Obtener estado inicial de circuit breakers
-                    const initialResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/status`);
+                    const initialResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/status`);
                     const initialData = await initialResponse.json();
                     
                     if (!initialData.success) {
@@ -707,7 +740,7 @@ class CronJobsTestSuite {
                     }
 
                     // 2. Ejecutar recovery automático
-                    const recoveryResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
+                    const recoveryResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
                         method: 'POST'
                     });
                     
@@ -728,20 +761,20 @@ class CronJobsTestSuite {
                 name: 'System Health Recovery',
                 fn: async () => {
                     // 1. Verificar health inicial
-                    const initialResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const initialResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const initialData = await initialResponse.json();
                     
                     const initialScore = initialData.data.health.healthScore;
 
                     // 2. Ejecutar auto-recovery
-                    await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
+                    await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
                         method: 'POST'
                     });
 
                     // 3. Esperar y verificar recovery
                     await new Promise(resolve => setTimeout(resolve, 3000));
 
-                    const finalResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const finalResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const finalData = await finalResponse.json();
                     
                     const finalScore = finalData.data.health.healthScore;
@@ -758,7 +791,7 @@ class CronJobsTestSuite {
                 name: 'Failed Job Recovery',
                 fn: async () => {
                     // 1. Ejecutar job que sabemos que puede fallar en test environment
-                    const jobResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                    const jobResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -780,7 +813,7 @@ class CronJobsTestSuite {
                     // 3. Verificar que el sistema se recupera
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     
-                    const healthResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const healthResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const healthData = await healthResponse.json();
                     
                     if (healthData.data.health.overall === 'critical') {
@@ -804,7 +837,7 @@ class CronJobsTestSuite {
             {
                 name: 'Email Notification Template Processing',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -834,7 +867,7 @@ class CronJobsTestSuite {
             {
                 name: 'SMS Notification Processing',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -864,7 +897,7 @@ class CronJobsTestSuite {
             {
                 name: 'Slack Notification Processing',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
@@ -893,7 +926,7 @@ class CronJobsTestSuite {
                 fn: async () => {
                     // Intentar enviar múltiples notificaciones rapidamente
                     const notifications = Array.from({ length: 5 }, (_, i) => 
-                        fetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
+                        authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications/test`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -928,7 +961,7 @@ class CronJobsTestSuite {
             {
                 name: 'Database Health Check',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const data = await response.json();
                     
                     if (!data.success) {
@@ -946,7 +979,7 @@ class CronJobsTestSuite {
             {
                 name: 'Memory Health Check',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const data = await response.json();
                     
                     const memoryHealth = data.data.health.components.memory;
@@ -965,7 +998,7 @@ class CronJobsTestSuite {
             {
                 name: 'Jobs Health Check',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const data = await response.json();
                     
                     const jobsHealth = data.data.health.components.jobs;
@@ -983,7 +1016,7 @@ class CronJobsTestSuite {
             {
                 name: 'Health Score Calculation',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`);
                     const data = await response.json();
                     
                     const health = data.data.health;
@@ -1015,7 +1048,7 @@ class CronJobsTestSuite {
             {
                 name: 'Circuit Breaker Initial State',
                 fn: async () => {
-                    const response = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
+                    const response = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
                     const data = await response.json();
                     
                     if (!data.success) {
@@ -1042,7 +1075,7 @@ class CronJobsTestSuite {
                 fn: async () => {
                     // Intentar ejecutar jobs que podrían fallar
                     const failurePromises = Array.from({ length: 3 }, (_, i) => 
-                        fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+                        authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1071,11 +1104,11 @@ class CronJobsTestSuite {
                 name: 'Circuit Breaker Recovery',
                 fn: async () => {
                     // 1. Verificar estado inicial
-                    const initialResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
+                    const initialResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
                     const initialData = await initialResponse.json();
                     
                     // 2. Ejecutar recovery
-                    const recoveryResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
+                    const recoveryResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/auto-recovery`, {
                         method: 'POST'
                     });
                     
@@ -1084,7 +1117,7 @@ class CronJobsTestSuite {
                     // 3. Verificar que circuit breakers fueron reset
                     await new Promise(resolve => setTimeout(resolve, 2000));
                     
-                    const finalResponse = await fetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
+                    const finalResponse = await authedFetch(`${this.config.baseUrl}/functions/v1/cron-jobs-maxiconsumo?action=status`);
                     const finalData = await finalResponse.json();
                     
                     logger.info('CIRCUIT_RECOVERY_SUCCESS');
@@ -1105,7 +1138,7 @@ class CronJobsTestSuite {
                 fn: async () => {
                     // Hacer múltiples requests rápidos
                     const requests = Array.from({ length: 10 }, (_, i) => 
-                        fetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`, {
+                        authedFetch(`${this.config.baseUrl}/functions/v1/cron-health-monitor/health-check`, {
                             method: 'GET',
                             headers: { 'x-test-request': `rate_test_${i}` }
                         })
@@ -1131,7 +1164,7 @@ class CronJobsTestSuite {
                 fn: async () => {
                     // Intentar enviar muchas notificaciones rapidamente
                     const notifications = Array.from({ length: 15 }, (_, i) => 
-                        fetch(`${this.config.baseUrl}/functions/v1/cron-notifications`, {
+                        authedFetch(`${this.config.baseUrl}/functions/v1/cron-notifications`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -1317,7 +1350,7 @@ interface TestReport {
 export async function runCompleteTestSuite(): Promise<TestReport> {
     const config: TestConfig = {
         environment: (Deno.env.get('TEST_ENVIRONMENT') as any) || 'development',
-        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://htvlwhisjpdagqkqnpxg.supabase.co',
+        baseUrl: resolveSupabaseBaseUrl(),
         timeout: 30000,
         retries: 2,
         parallel: true,
@@ -1339,7 +1372,7 @@ export async function runCompleteTestSuite(): Promise<TestReport> {
 export async function runTestCategory(category: 'unit' | 'integration' | 'performance' | 'recovery'): Promise<TestReport> {
     const config: TestConfig = {
         environment: 'development',
-        baseUrl: Deno.env.get('SUPABASE_URL') || 'https://htvlwhisjpdagqkqnpxg.supabase.co',
+        baseUrl: resolveSupabaseBaseUrl(),
         timeout: 45000,
         retries: 1,
         parallel: false,

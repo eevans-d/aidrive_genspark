@@ -1,0 +1,2 @@
+cd minimarket-system && npx tsc --noEmit --pretty 2>&1 | head -30
+npx lint-staged

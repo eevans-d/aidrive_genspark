@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
 import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 type TabMode = 'rapido' | 'normal'
 
@@ -30,22 +32,24 @@ export default function Deposito() {
   const qCantidadRef = useRef<HTMLInputElement>(null)
 
   // Query para productos
-  const { data: productos = [] } = useQuery({
+  const productosQuery = useQuery({
     queryKey: ['productos-deposito'],
     queryFn: async () => {
       return await apiClient.productos.dropdown()
     },
     staleTime: 1000 * 60 * 5,
   })
+  const productos = productosQuery.data ?? []
 
   // Query para proveedores
-  const { data: proveedores = [] } = useQuery({
+  const proveedoresQuery = useQuery({
     queryKey: ['proveedores-deposito'],
     queryFn: async () => {
       return await apiClient.proveedores.dropdown()
     },
     staleTime: 1000 * 60 * 10,
   })
+  const proveedores = proveedoresQuery.data ?? []
 
   // Auto-focus search input when switching to quick mode
   useEffect(() => {
@@ -217,26 +221,44 @@ export default function Deposito() {
 
       <h1 className="text-3xl font-bold text-gray-900">Gestion de Deposito</h1>
 
+      {productosQuery.isError && (
+        <ErrorMessage
+          message={parseErrorMessage(productosQuery.error)}
+          type={detectErrorType(productosQuery.error)}
+          onRetry={() => productosQuery.refetch()}
+          isRetrying={productosQuery.isFetching}
+          size="sm"
+        />
+      )}
+
+      {proveedoresQuery.isError && (
+        <ErrorMessage
+          message={parseErrorMessage(proveedoresQuery.error)}
+          type={detectErrorType(proveedoresQuery.error)}
+          onRetry={() => proveedoresQuery.refetch()}
+          isRetrying={proveedoresQuery.isFetching}
+          size="sm"
+        />
+      )}
+
       {/* Tab Toggle */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab('rapido')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'rapido'
-              ? 'bg-white text-green-700 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'rapido'
+            ? 'bg-white text-green-700 shadow-sm'
+            : 'text-gray-600 hover:text-gray-800'
+            }`}
         >
           <Zap className="w-4 h-4" />
           Ingreso Rapido
         </button>
         <button
           onClick={() => setActiveTab('normal')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-            activeTab === 'normal'
-              ? 'bg-white text-blue-700 shadow-sm'
-              : 'text-gray-600 hover:text-gray-800'
-          }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'normal'
+            ? 'bg-white text-blue-700 shadow-sm'
+            : 'text-gray-600 hover:text-gray-800'
+            }`}
         >
           Movimiento Normal
         </button>

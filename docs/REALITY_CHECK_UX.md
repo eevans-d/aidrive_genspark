@@ -1,37 +1,41 @@
-# 🎯 Reality Check (Sistema + UX)
+# RealityCheck Report
+**Fecha:** 2026-02-12 (post-ejecución gates) | **Scope:** full (frontend + backend + docs + linked Supabase) | **Score UX:** 8/10
 
-**Fecha:** 2026-02-08  
-**Scope:** verificación post-ejecución del plan `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md` (Fases 0-6) + alineación con remoto.  
-**Estado:** ✅ Operativo (con pendientes menores antes de producción).
+## Clasificacion de Estado
+| Elemento | Estado | Evidencia |
+|----------|--------|-----------|
+| Frontend principal (13 páginas operativas) | REAL | `minimarket-system/src/pages/` |
+| Estados de carga/error/vacío en páginas críticas | REAL (parcial UX) | `minimarket-system/src/pages/Productos.tsx`, `minimarket-system/src/pages/Dashboard.tsx`, `minimarket-system/src/pages/Tareas.tsx` |
+| Feedback de mutaciones en `Pedidos` (HC-3) | REAL | `minimarket-system/src/pages/Pedidos.tsx` |
+| Endpoints consumidos por `apiClient` existen en gateway | REAL | `minimarket-system/src/lib/apiClient.ts`, `supabase/functions/api-minimarket/index.ts` |
+| Cron jobs con `Authorization` (HC-1) | REAL | `supabase/migrations/20260211062617_cron_jobs_use_vault_secret.sql`, `supabase/migrations/20260211055140_fix_cron_jobs_auth_and_maintenance.sql` |
+| `deploy.sh` seguro para `_shared` + `--no-verify-jwt` en `api-minimarket` (HC-2) | REAL | `deploy.sh` |
+| `api-minimarket` en remoto con `verify_jwt=false` | REAL | `docs/closure/BASELINE_LOG_2026-02-12_161515.md` |
+| Quality gates + componentes UI | REAL | `test-reports/quality-gates_20260212-032946.log` |
+| E2E POS flujo completo (Gate 3) | REAL | `minimarket-system/e2e/pos.e2e.spec.ts` (8/8 PASS). Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md` |
+| Canal real alertas operador (Gate 4) | REAL | `cron-notifications` con SendGrid real. MessageIds confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md` |
+| Monitoreo real Sentry (Gate 16) | REAL (código) / A_CREAR (DSN) | `@sentry/react` integrado, `Sentry.init()` + `captureException()` funcional. DSN pendiente del owner. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-12.md` |
+| CI hardening security gate (Gate 18) | REAL | Job `security-tests` obligatorio/bloqueante. 14/14 PASS. Evidencia: `docs/closure/EVIDENCIA_GATE18_2026-02-12.md` |
+| Backup automatizado + restore drill (Gate 15) | REAL | `db-backup.sh` + `db-restore-drill.sh` + `backup.yml` GitHub Actions. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md` |
+| Fallback URL hardcodeada en testing suite cron | REAL (corregido) | `supabase/functions/cron-testing-suite/index.ts` |
+| Enlaces internos rotos en documentación | REAL (corregido) | `docs/AUDITORIA_RLS_CHECKLIST.md`, `docs/mpc/MEGA_PLAN_CONSOLIDADO.md` |
 
-## Evidencia / Fuentes de verdad
-- Plan: `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`
-- Registro auditable de ejecución: `docs/closure/EXECUTION_LOG_2026-02-07.md`
-- Estado consolidado: `docs/ESTADO_ACTUAL.md`
-- Decisiones: `docs/DECISION_LOG.md`
-- Auditoría de flujos (frontend): `docs/audit/00_EVIDENCE_REPORT.md` y `docs/audit/02_GAP_MATRIX.md`
+## Blockers (P0)
+- [x] No se detectó blocker P0. Todos los gates ejecutables cerrados.
 
-## Verificación (2026-02-08)
-- ✅ Suites locales ejecutadas (unit/integration/e2e backend + lint/build/components frontend). Ver evidencia en `docs/ESTADO_ACTUAL.md`.
-- ✅ Remoto Supabase vinculado (ref `dqaygmjpzoqjjrywdsxi`) con migraciones y Edge Functions desplegadas. Ver `docs/ESTADO_ACTUAL.md`.
+## Fricciones (P1)
+- [ ] Sentry DSN pendiente del owner (Gate 16 parcial — código listo, necesita configuración).
+- [ ] Backup workflow requiere `SUPABASE_DB_URL` en GitHub Secrets para funcionar.
 
-## Cambios relevantes ya implementados (resumen)
-- Fase 0: hardening (deny-by-default rutas, fix depósito, sync roles, fix alertas scraper).
-- Fase 1: insights de arbitraje (vistas + endpoints + acciones desde AlertsDrawer).
-- Fase 2: POS MVP + Fiados/CC (tablas/RPCs/endpoints + UI `/pos` + idempotencia).
-- Fase 3: Pocket Manager PWA (UI `/pocket` + cámara ZXing + impresión etiqueta MVP).
-- Fase 4: Anti-mermas (ofertas por stock_id + CTA 1 click + POS respeta precio oferta).
-- Fase 5: Bitácora de turno (modal al logout + endpoints + UI admin).
-- Fase 6: UX quick wins (optimistic UI + semáforos + “Scan & Action” en Ctrl+K).
-
-## Hallazgos / Pendientes recomendados antes de producción
-1. **Refresh de materialized views de stock (operativo)**
-   - La UI consume `mv_stock_bajo` y `mv_productos_proximos_vencer` (AlertsDrawer). Para que no queden “congeladas”, debe existir un mecanismo de refresh periódico (DB cron o equivalente).
-2. **Gaps de flujos en frontend (UX)**
-   - Alta producto, ajuste de stock y cambio de precio siguen siendo gaps o parciales en UI (ver matriz en `docs/audit/02_GAP_MATRIX.md`).
-3. **Hardening adicional (no bloqueante)**
-   - Rate limit persistente en `api-minimarket`, observabilidad (Sentry) y rotación de secretos, según `docs/ESTADO_ACTUAL.md`.
-
-## Notas
-- Versiones previas de reportes RealityCheck se archivaron en `docs/archive/` (ej: `docs/archive/REALITY_CHECK_UX_2026-02-02.md`). Este archivo mantiene un resumen actualizado y referencias de evidencia.
-
+## Ready
+- [x] Tests críticos de UI ejecutados: `Dashboard`, `Login`, `Tareas.optimistic` (9/9 PASS).
+- [x] E2E POS completo: 8/8 tests PASS (Playwright).
+- [x] Quality gates ejecutados y en PASS.
+- [x] Migraciones local/remoto alineadas (38/38) según baseline 2026-02-12.
+- [x] Guardrails críticos HC-1, HC-2 y HC-3 verificados en código actual.
+- [x] Canal real de alertas confirmado con SendGrid messageIds.
+- [x] CI security tests como gate bloqueante (14/14 PASS).
+- [x] Backup automatizado con retención + restore drill documentado.
+- [x] Reportes de extracción generados: `docs/closure/TECHNICAL_ANALYSIS_2026-02-12_160211.md` y `docs/closure/INVENTORY_REPORT_2026-02-12_160305.md`.
+- [x] 5/5 pasos del mini-plan ejecutados y verificados.
+- [x] **Veredicto: CON RESERVAS** — defendible para producción piloto.

@@ -104,19 +104,20 @@ function normalizeRole(rolString: string | null | undefined): UserRole {
         const normalized = rolString.toLowerCase().trim();
 
         // Mapear variantes conocidas
-        const roleMap: Record<string, UserRole> = {
-                'admin': 'admin',
-                'administrador': 'admin',
-                'administrator': 'admin',
-                'deposito': 'deposito',
-                'depósito': 'deposito',
-                'warehouse': 'deposito',
-                'ventas': 'ventas',
-                'vendedor': 'ventas',
-                'sales': 'ventas',
-                'usuario': 'usuario',
-                'user': 'usuario',
-        };
+	const roleMap: Record<string, UserRole> = {
+			'admin': 'admin',
+			'administrador': 'admin',
+			'administrator': 'admin',
+			'jefe': 'admin',
+			'deposito': 'deposito',
+			'depósito': 'deposito',
+			'warehouse': 'deposito',
+			'ventas': 'ventas',
+			'vendedor': 'ventas',
+			'sales': 'ventas',
+			'usuario': 'usuario',
+			'user': 'usuario',
+	};
 
         return roleMap[normalized] || 'usuario';
 }

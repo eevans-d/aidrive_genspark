@@ -80,7 +80,7 @@ La función `cron-jobs-maxiconsumo` debe estar desplegada en Supabase con las si
 ## Variables de Entorno Requeridas
 
 ```bash
-SUPABASE_URL=https://htvlwhisjpdagqkqnpxg.supabase.co
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 SENDGRID_API_KEY=<sendgrid_key>
 TWILIO_ACCOUNT_SID=<twilio_sid>

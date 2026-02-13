@@ -1,0 +1,61 @@
+name: Scheduled Database Backup
+
+on:
+  schedule:
+    # Daily at 03:00 UTC
+    - cron: '0 3 * * *'
+  workflow_dispatch:
+    inputs:
+      retention_days:
+        description: 'Number of days to retain backups'
+        required: false
+        default: '7'
+        type: string
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  backup:
+    name: Database Backup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install PostgreSQL client
+        run: sudo apt-get update && sudo apt-get install -y postgresql-client
+
+      - name: Run backup
+        run: |
+          chmod +x scripts/db-backup.sh
+          ./scripts/db-backup.sh ./backups
+        env:
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+          BACKUP_RETENTION_DAYS: ${{ github.event.inputs.retention_days || '7' }}
+
+      - name: Verify backup file
+        run: |
+          BACKUP_FILE=$(ls -t ./backups/backup_*.sql.gz 2>/dev/null | head -1)
+          if [ -z "$BACKUP_FILE" ]; then
+            echo "::error::No backup file found"
+            exit 1
+          fi
+          FILE_SIZE=$(stat -f%z "$BACKUP_FILE" 2>/dev/null || stat -c%s "$BACKUP_FILE" 2>/dev/null)
+          if [ "$FILE_SIZE" -lt 1000 ]; then
+            echo "::error::Backup file suspiciously small ($FILE_SIZE bytes)"
+            exit 1
+          fi
+          echo "Backup verified: $BACKUP_FILE ($FILE_SIZE bytes)"
+
+      - name: Upload backup artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: db-backup-${{ github.run_number }}
+          path: backups/backup_*.sql.gz
+          retention-days: 30
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Database backup failed! Check logs for details."
+          echo "::warning::Consider running a manual backup: ./scripts/db-backup.sh"

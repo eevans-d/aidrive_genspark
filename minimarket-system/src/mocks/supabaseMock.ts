@@ -329,6 +329,14 @@ export const createMockSupabaseClient = () => {
 
   const auth = {
     getUser: async () => ({ data: { user: currentUser }, error: null }),
+    getSession: async () => ({
+      data: {
+        session: currentUser
+          ? { access_token: 'mock-jwt-token', user: currentUser }
+          : null,
+      },
+      error: null,
+    }),
     onAuthStateChange: (callback: AuthCallback) => {
       listeners.add(callback)
       callback('INITIAL_SESSION', currentUser ? { user: currentUser } : null)

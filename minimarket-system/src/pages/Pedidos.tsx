@@ -23,6 +23,7 @@ import ErrorMessage from '../components/ErrorMessage';
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
 import { toast } from 'sonner';
+import { money } from '../utils/currency';
 
 // ============================================================================
 // Componente principal
@@ -219,7 +220,7 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
                                         )}
                                 </div>
                                 <div className="text-right">
-                                        <p className="font-bold text-xl">${pedido.monto_total.toLocaleString()}</p>
+                                        <p className="font-bold text-xl">${money(pedido.monto_total)}</p>
                                         <p className="text-sm text-gray-500">
                                                 {pedido.tipo_entrega === 'domicilio' ? '🚚 Envío' : '🏪 Retira'}
                                         </p>
@@ -411,10 +412,10 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
 
         return (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+                        <div className="bg-white rounded-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title-new-order">
                                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                                        <h2 className="text-xl font-bold">Nuevo Pedido</h2>
-                                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                                        <h2 id="modal-title-new-order" className="text-xl font-bold">Nuevo Pedido</h2>
+                                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Cerrar">×</button>
                                 </div>
 
                                 <form onSubmit={handleSubmit} className="p-6 space-y-6">
@@ -574,7 +575,7 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                                                                         <div key={index} className="flex items-center justify-between p-3">
                                                                                 <span>{item.cantidad}x {item.producto_nombre}</span>
                                                                                 <div className="flex items-center gap-4">
-                                                                                        <span className="font-medium">${(item.cantidad * item.precio_unitario).toLocaleString()}</span>
+                                                                                        <span className="font-medium">${money(item.cantidad * item.precio_unitario)}</span>
                                                                                         <button
                                                                                                 type="button"
                                                                                                 onClick={() => handleRemoveItem(index)}
@@ -587,7 +588,7 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                                                                 ))}
                                                                 <div className="flex justify-between p-3 bg-gray-50 font-bold">
                                                                         <span>Total</span>
-                                                                        <span>${totalPedido.toLocaleString()}</span>
+                                                                        <span>${money(totalPedido)}</span>
                                                                 </div>
                                                         </div>
                                                 )}
@@ -642,10 +643,10 @@ interface DetallePedidoModalProps {
 function DetallePedidoModal({ pedido, onClose, onUpdateEstado, onToggleItem }: DetallePedidoModalProps) {
         return (
                 <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-                        <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+                        <div className="bg-white rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="modal-title-order-detail">
                                 <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center">
-                                        <h2 className="text-xl font-bold">Pedido #{pedido.numero_pedido}</h2>
-                                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl">×</button>
+                                        <h2 id="modal-title-order-detail" className="text-xl font-bold">Pedido #{pedido.numero_pedido}</h2>
+                                        <button onClick={onClose} className="text-gray-500 hover:text-gray-700 text-2xl" aria-label="Cerrar">×</button>
                                 </div>
 
                                 <div className="p-6 space-y-6">
@@ -679,13 +680,13 @@ function DetallePedidoModal({ pedido, onClose, onUpdateEstado, onToggleItem }: D
                                                                                         <p className="text-xs text-orange-600 mt-1">{item.observaciones}</p>
                                                                                 )}
                                                                         </div>
-                                                                        <span className="font-medium">${item.subtotal?.toLocaleString()}</span>
+                                                                        <span className="font-medium">${item.subtotal != null ? money(item.subtotal) : '—'}</span>
                                                                 </div>
                                                         ))}
                                                 </div>
                                                 <div className="flex justify-between mt-4 pt-4 border-t font-bold text-lg">
                                                         <span>Total</span>
-                                                        <span>${pedido.monto_total.toLocaleString()}</span>
+                                                        <span>${money(pedido.monto_total)}</span>
                                                 </div>
                                         </div>
 

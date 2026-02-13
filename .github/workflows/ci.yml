@@ -37,16 +37,21 @@ env:
 # =============================================================================
 # OBLIGATORIO (siempre corre):
 #   - lint, test (unit/Vitest), build, typecheck, edge-functions-check
+#   - security-tests (BLOCKING gate - falla = CI falla)
 #
 # OPCIONAL (gated por secrets o workflow_dispatch):
 #   - integration: requiere SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 #   - e2e: requiere lo anterior + API_PROVEEDOR_SECRET
 #   - e2e-frontend: Playwright con mocks, sin secrets
 #
-# LEGACY (desactivado - ver tests/*/README.md):
-#   - tests/performance/ (Jest) - migrar a Vitest o k6
-#   - tests/security/ (Jest) - migrar a Vitest
-#   - tests/api-contracts/ (Jest) - migrar a Vitest
+# LEGACY (solo via workflow_dispatch, no bloquea):
+#   - tests/performance/ (Vitest) - continue-on-error
+#   - tests/api-contracts/ (Vitest) - continue-on-error
+#
+# GO/NO-GO POLICY:
+#   - Security tests MUST pass to merge. No exceptions.
+#   - Performance/API-contract tests are informational; failures are logged
+#     but do not block merges.
 # =============================================================================
 
 jobs:
@@ -126,7 +131,6 @@ jobs:
       - name: Run tests with coverage
         run: npx vitest run tests/unit/ --coverage --reporter=json --outputFile=test-results.json
         working-directory: .
-        continue-on-error: true
 
       - name: Upload coverage report
         uses: actions/upload-artifact@v4
@@ -135,6 +139,13 @@ jobs:
           name: coverage-report
           path: coverage/
           retention-days: 7
+
+      - name: Coverage PR comment
+        if: github.event_name == 'pull_request'
+        uses: davelosert/vitest-coverage-report-action@v2
+        with:
+          working-directory: .
+          json-summary-path: coverage/coverage-summary.json
 
   build:
     name: Build
@@ -184,6 +195,29 @@ jobs:
           name: frontend-build
           path: minimarket-system/dist/
           retention-days: 7
+
+      - name: Check bundle size
+        working-directory: minimarket-system
+        run: |
+          MAX_CHUNK_KB=500
+          FAILED=0
+          echo "## Bundle Size Report" >> $GITHUB_STEP_SUMMARY
+          echo "| Chunk | Size (KB) | Status |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|-----------|--------|" >> $GITHUB_STEP_SUMMARY
+          for f in dist/assets/*.js; do
+            SIZE_KB=$(( $(wc -c < "$f") / 1024 ))
+            NAME=$(basename "$f")
+            if [ "$SIZE_KB" -gt "$MAX_CHUNK_KB" ]; then
+              echo "| $NAME | $SIZE_KB | FAIL |" >> $GITHUB_STEP_SUMMARY
+              FAILED=1
+            else
+              echo "| $NAME | $SIZE_KB | OK |" >> $GITHUB_STEP_SUMMARY
+            fi
+          done
+          if [ "$FAILED" = "1" ]; then
+            echo "::error::Chunk exceeds ${MAX_CHUNK_KB}KB budget"
+            exit 1
+          fi
 
   # ===========================================================================
   # OPTIONAL: Frontend E2E Tests (Playwright + mocks, no secrets)
@@ -411,7 +445,35 @@ jobs:
           retention-days: 7
 
   # ===========================================================================
-  # OPTIONAL: Legacy Tests (migrated but not main suite)
+  # OBLIGATORY: Security Tests (blocking gate)
+  # ===========================================================================
+  security-tests:
+    name: Security Tests (Gate)
+    runs-on: ubuntu-latest
+    needs: [test]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Security Tests (BLOCKING)
+        run: npx vitest run tests/security --config vitest.auxiliary.config.ts --reporter=verbose
+
+  # ===========================================================================
+  # OPTIONAL: Legacy Tests (performance, api-contracts - non-blocking)
   # ===========================================================================
   legacy-tests:
     name: Legacy Tests (Auxiliary)
@@ -437,10 +499,6 @@ jobs:
 
       - name: Run Performance Tests
         run: npx vitest run tests/performance --config vitest.auxiliary.config.ts
-        continue-on-error: true
-
-      - name: Run Security Tests
-        run: npx vitest run tests/security --config vitest.auxiliary.config.ts
         continue-on-error: true
 
       - name: Run API Contract Tests

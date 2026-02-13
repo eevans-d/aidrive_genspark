@@ -3,6 +3,7 @@ import { Phone, Mail, Package } from 'lucide-react'
 import { useProveedores, ProveedorConProductos } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { money } from '../utils/currency'
 
 export default function Proveedores() {
   const [page, setPage] = useState(1)
@@ -187,7 +188,7 @@ export default function Proveedores() {
                             <div className="text-right">
                               {producto.precio_actual !== null && (
                                 <div className="font-bold text-blue-600">
-                                  ${producto.precio_actual.toFixed(2)}
+                                  ${money(producto.precio_actual)}
                                 </div>
                               )}
                               {producto.margen_ganancia !== null && (

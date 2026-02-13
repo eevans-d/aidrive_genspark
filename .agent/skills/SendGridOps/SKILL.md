@@ -85,3 +85,30 @@ Crear evidencia en `docs/closure/`:
   - Comandos ejecutados
   - Verificacion
 
+## Quality Gates
+
+- [ ] Mismatch de nombres identificado (EMAIL_FROM vs SMTP_FROM).
+- [ ] Opcion de fix elegida (A o B) y justificada.
+- [ ] Secret/config seteado correctamente (solo nombre verificado).
+- [ ] Funcion afectada redeployada.
+- [ ] Health check o log post-deploy verificado.
+- [ ] Evidencia generada en `docs/closure/` sin valores expuestos.
+
+## Anti-Loop / Stop-Conditions
+
+**SI Supabase CLI no disponible:**
+1. Documentar fix requerido como checklist para el owner.
+2. Marcar como BLOCKED.
+3. NO intentar workaround riesgoso.
+
+**SI SendGrid Dashboard no accesible:**
+1. Solo verificar configuracion local (codigo +env vars).
+2. Marcar verificacion de Verified Sender como BLOCKED.
+3. Generar checklist manual para el owner.
+
+**SI mismatch persiste post-fix:**
+1. Verificar que el redeploy se completo.
+2. Revisar logs de la Edge Function.
+3. Maximo 2 intentos; si persiste → NEEDS_HUMAN_REVIEW.
+
+**NUNCA:** Exponer valores de API keys o SMTP credentials.

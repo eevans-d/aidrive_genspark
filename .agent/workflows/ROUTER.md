@@ -3,7 +3,7 @@ name: workflow-router
 description: >
   Router canónico de workflows. Resuelve activación automática/manual, prioridades
   y reglas de conflicto entre flujos.
-version: 1.0.0
+version: 1.1.0
 trigger:
   automatic:
     - en cada interacción del agente
@@ -20,6 +20,13 @@ timeout: 5
 
 **Canonical ID:** `workflow-router`  
 **Skill counterpart:** `skills-orchestrator` en `.agent/skills/ORCHESTRATOR.md`
+
+> [!IMPORTANT]
+> **REGLA OBLIGATORIA:** El agente DEBE leer este archivo al inicio de cada sesión y
+> evaluar los triggers automáticos después de cada acción significativa (cambio de código,
+> error, fin de tarea). NO esperar instrucción manual del usuario para activar workflows.
+> Si se modificó código → activar `code-change`. Si se detectó error → `error-recovery`.
+> Al cerrar trabajo → `session-end`. Esta evaluación es AUTOMÁTICA y NO NEGOCIABLE.
 
 ## Lógica de Activación
 
