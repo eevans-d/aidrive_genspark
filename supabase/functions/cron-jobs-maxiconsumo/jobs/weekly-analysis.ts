@@ -10,6 +10,65 @@ import { validateJobContext, validateEnvVars, ValidationError } from '../validat
 
 const logger = createLogger('cron-jobs-maxiconsumo:job:weekly-analysis');
 
+type PriceChangeRow = {
+  precio?: number | null;
+  precio_nuevo?: number | null;
+  precio_anterior?: number | null;
+};
+
+type AlertRow = {
+  severidad?: string | null;
+};
+
+function normalizeBatchSize(parameters: Record<string, unknown>): number {
+  const raw = Number(parameters.batchSize ?? parameters.batch_size ?? 500);
+  if (!Number.isFinite(raw) || raw <= 0) return 500;
+  return Math.min(Math.floor(raw), 5000);
+}
+
+function normalizeMaxRows(parameters: Record<string, unknown>): number {
+  const raw = Number(parameters.maxRows ?? parameters.max_rows ?? 50000);
+  if (!Number.isFinite(raw) || raw <= 0) return 50000;
+  return Math.min(Math.floor(raw), 500000);
+}
+
+async function fetchPaged<T>(
+  baseUrl: string,
+  batchSize: number,
+  headers: Record<string, string>,
+  maxRows: number,
+): Promise<T[]> {
+  const results: T[] = [];
+  let offset = 0;
+
+  while (true) {
+    const url = `${baseUrl}&limit=${batchSize}&offset=${offset}`;
+    const response = await fetch(url, { headers });
+    if (!response.ok) {
+      throw new Error(`Paged fetch failed (${response.status}) for ${baseUrl}`);
+    }
+
+    const page = await response.json() as T[];
+    if (!Array.isArray(page)) break;
+
+    results.push(...page);
+    if (results.length >= maxRows) break;
+    if (page.length < batchSize) break;
+    offset += batchSize;
+  }
+
+  return results.slice(0, maxRows);
+}
+
+function computeAbsoluteChange(row: PriceChangeRow): number {
+  const current = row.precio_nuevo ?? row.precio;
+  const previous = row.precio_anterior ?? current;
+
+  if (typeof current !== 'number' || !Number.isFinite(current)) return 0;
+  if (typeof previous !== 'number' || !Number.isFinite(previous)) return 0;
+  return Math.abs(current - previous);
+}
+
 export async function executeWeeklyAnalysis(
   ctx: JobExecutionContext,
   supabaseUrl: string,
@@ -41,24 +100,31 @@ export async function executeWeeklyAnalysis(
 
   try {
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
+    const parameters = ctx.parameters as Record<string, unknown>;
+    const batchSize = normalizeBatchSize(parameters);
+    const maxRows = normalizeMaxRows(parameters);
+    const authHeaders = { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` };
 
-    // 1. Fetch weekly data
-    const [pricesRes, alertsRes] = await Promise.all([
-      fetch(`${supabaseUrl}/rest/v1/precios_historicos?select=*&fecha_cambio=gte.${weekAgo}`, {
-        headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-      }),
-      fetch(`${supabaseUrl}/rest/v1/alertas_cambios_precios?select=*&fecha_alerta=gte.${weekAgo}`, {
-        headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` }
-      })
+    // 1. Fetch weekly data in pages to avoid high-memory spikes/timeouts.
+    const [prices, alerts] = await Promise.all([
+      fetchPaged<PriceChangeRow>(
+        `${supabaseUrl}/rest/v1/precios_historicos?select=precio_nuevo,precio_anterior&fecha_cambio=gte.${weekAgo}`,
+        batchSize,
+        authHeaders,
+        maxRows,
+      ),
+      fetchPaged<AlertRow>(
+        `${supabaseUrl}/rest/v1/alertas_cambios_precios?select=severidad&fecha_alerta=gte.${weekAgo}`,
+        batchSize,
+        authHeaders,
+        maxRows,
+      ),
     ]);
-
-    const prices = pricesRes.ok ? await pricesRes.json() : [];
-    const alerts = alertsRes.ok ? await alertsRes.json() : [];
 
     // 2. Calculate trends
     const totalChanges = prices.length;
-    const avgChange = prices.length > 0 
-      ? prices.reduce((sum: number, p: any) => sum + Math.abs(p.precio - (p.precio_anterior || p.precio)), 0) / prices.length 
+    const avgChange = prices.length > 0
+      ? prices.reduce((sum: number, p: PriceChangeRow) => sum + computeAbsoluteChange(p), 0) / prices.length
       : 0;
 
     const trends = {
