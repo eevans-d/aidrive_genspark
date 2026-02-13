@@ -2,6 +2,8 @@ import { useState } from 'react'
 import { useAuth } from '../hooks/useAuth'
 import { useNavigate } from 'react-router-dom'
 import { LogIn } from 'lucide-react'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -69,9 +71,11 @@ export default function Login() {
           </div>
 
           {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
-              {error}
-            </div>
+            <ErrorMessage
+              message={parseErrorMessage(error, import.meta.env.PROD)}
+              type={detectErrorType(error)}
+              size="sm"
+            />
           )}
 
           <button
@@ -84,8 +88,7 @@ export default function Login() {
         </form>
 
         <div className="mt-6 text-center text-sm text-gray-600">
-          <p>Usuarios de prueba:</p>
-          <p className="mt-1 text-xs">admin@minimarket.com / password123</p>
+          <p>Accede con una cuenta de prueba habilitada en el entorno.</p>
         </div>
       </div>
     </div>

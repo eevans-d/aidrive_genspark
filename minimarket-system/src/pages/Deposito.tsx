@@ -3,6 +3,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
 import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 type TabMode = 'rapido' | 'normal'
 
@@ -30,7 +32,13 @@ export default function Deposito() {
   const qCantidadRef = useRef<HTMLInputElement>(null)
 
   // Query para productos
-  const { data: productos = [] } = useQuery({
+  const {
+    data: productos = [],
+    isError: isProductosError,
+    error: productosError,
+    refetch: refetchProductos,
+    isFetching: isFetchingProductos
+  } = useQuery({
     queryKey: ['productos-deposito'],
     queryFn: async () => {
       return await apiClient.productos.dropdown()
@@ -39,7 +47,13 @@ export default function Deposito() {
   })
 
   // Query para proveedores
-  const { data: proveedores = [] } = useQuery({
+  const {
+    data: proveedores = [],
+    isError: isProveedoresError,
+    error: proveedoresError,
+    refetch: refetchProveedores,
+    isFetching: isFetchingProveedores
+  } = useQuery({
     queryKey: ['proveedores-deposito'],
     queryFn: async () => {
       return await apiClient.proveedores.dropdown()
@@ -211,11 +225,28 @@ export default function Deposito() {
     })
   }
 
+  const catalogError = productosError ?? proveedoresError
+  const hasCatalogError = isProductosError || isProveedoresError
+  const retryCatalogQueries = () => {
+    refetchProductos()
+    refetchProveedores()
+  }
+  const isRetryingCatalog = isFetchingProductos || isFetchingProveedores
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
 
       <h1 className="text-3xl font-bold text-gray-900">Gestion de Deposito</h1>
+
+      {hasCatalogError && (
+        <ErrorMessage
+          message={parseErrorMessage(catalogError, import.meta.env.PROD)}
+          type={detectErrorType(catalogError)}
+          onRetry={retryCatalogQueries}
+          isRetrying={isRetryingCatalog}
+        />
+      )}
 
       {/* Tab Toggle */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">

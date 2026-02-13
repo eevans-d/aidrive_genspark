@@ -2,6 +2,7 @@
 
 **Última actualización:** 2026-02-13 (revalidación operativa)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+**Limpieza de restos:** `docs/closure/RESTOS_CIERRE_2026-02-13.md` (13/15 cerrados, 2/15 abiertos por owner/infra)
 
 ---
 
@@ -28,11 +29,12 @@
 
 ## Notas operativas
 
-- Migraciones: `38/38` local=remoto (baseline 2026-02-12).
+- Migraciones: baseline histórico 2026-02-12 reportó `38/38` remoto; conteo versionado local actual: `35` migraciones SQL.
 - Baseline remoto vigente: 13 funciones activas; `api-minimarket v21` con `verify_jwt=false`.
 - `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
-- Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
+- Hardening 5 pasos: cerrado (en estado vigente: `ErrorMessage` 12/13 páginas no-test).
+- Estado actual UI: `ErrorMessage` en 12/13 páginas (`Pos.tsx` mantiene feedback por toast orientado a operación rápida).
 - Revalidación SQL en este host (2026-02-13) quedó bloqueada por conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`); re-ejecutar `scripts/rls_audit.sql` y `scripts/rls_fine_validation.sql` en runner con salida IPv6.
 - Referencias a `checkRole(['admin','deposito','jefe'])` en logs históricos/worktrees se consideran **no canónicas**; rol operativo vigente: `admin|deposito|ventas` con alias legacy `jefe -> admin`.
 - **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
@@ -47,4 +49,4 @@
 - ✅ Enlaces rotos documentales reparados.
 - ✅ Fallback legacy en cron-testing-suite removido.
 - ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
-- ✅ Adopción `ErrorMessage` completada en 13/13 páginas funcionales.
+- ✅ Adopción `ErrorMessage` elevada a 12/13 páginas funcionales y estandarizada en `Login`, `Clientes`, `Deposito`, `Pocket`, `Pedidos`.

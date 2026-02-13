@@ -54,7 +54,7 @@
 | 31 | GET | `/pedidos/:id` | `BASE_ROLES` | No | Global (gateway) |
 | 32 | POST | `/pedidos` | `BASE_ROLES` | Sí | Global (gateway) |
 | 33 | PUT | `/pedidos/:id/estado` | `BASE_ROLES` | Sí | Global (gateway) |
-| 34 | PUT | `/pedidos/:id/pago` | `admin`, `deposito`, `jefe` | Sí | Global (gateway) |
+| 34 | PUT | `/pedidos/:id/pago` | `admin`, `deposito` | Sí | Global (gateway) |
 | 35 | PUT | `/pedidos/items/:id` (y `/preparado` legacy) | `BASE_ROLES` | Sí | Global (gateway) |
 | 36 | GET | `/insights/arbitraje` | `BASE_ROLES` | No | Global (gateway) |
 | 37 | GET | `/insights/compras` | `BASE_ROLES` | No | Global (gateway) |

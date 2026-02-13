@@ -28,17 +28,18 @@
 **Nuevo (2026-02-12, RealityCheck + DocuGuard):**
 - ✅ Auditoría de realidad ejecutada end-to-end (frontend/backend/docs/remoto) con reporte actualizado en `docs/REALITY_CHECK_UX.md`.
 - ✅ Extracción técnica+inventario regenerada (post-ajustes finales): `docs/closure/TECHNICAL_ANALYSIS_2026-02-12_160211.md` y `docs/closure/INVENTORY_REPORT_2026-02-12_160305.md`.
-- ✅ Baseline remoto validado (post-migraciones 2026-02-12): `api-minimarket v21` con `verify_jwt=false`; 13 funciones activas; migraciones local=remoto `38/38` (`docs/closure/BASELINE_LOG_2026-02-12_161515.md`).
+- ✅ Baseline remoto histórico (2026-02-12): `api-minimarket v21` con `verify_jwt=false`; 13 funciones activas; snapshot de ese momento `38/38` (`docs/closure/BASELINE_LOG_2026-02-12_161515.md`).
 - ✅ Quality gates en PASS en ejecución del 2026-02-12 (`test-reports/quality-gates_20260212-032946.log`).
-- ✅ Revalidación remota en vivo (CLI, 2026-02-12): `supabase migration list --linked` y `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi` confirman `38/38` y versiones vigentes de 13 functions.
+- ⚠️ Revalidación remota actual pendiente en este host por conectividad IPv6 a `db.<project-ref>.supabase.co:5432` (`Network is unreachable`). Ver detalle en `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
 - ✅ HC-1 / HC-2 / HC-3 revalidados en código actual (cron con auth, deploy seguro, feedback UX en mutaciones de Pedidos).
 - ✅ Hallazgos de alto impacto cerrados: fallback legacy en `cron-testing-suite` eliminado, enlaces rotos corregidos y snapshot documental actualizado con baseline vigente.
 - ✅ `supabase/cron_jobs/*` normalizado al project ref vigente (evita drift operativo al redeploy de cron jobs).
-- ✅ **Mini Plan 5 Pasos CERRADO:** credenciales removidas, 8 links reparados, baseline normalizado, `ErrorMessage` 13/13 páginas (100%). Reporte (versionable): `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
+- ✅ **Mini Plan 5 Pasos CERRADO:** credenciales removidas, 8 links reparados, baseline normalizado, `ErrorMessage` estandarizado en 12/13 páginas operativas. Reporte (versionable): `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
 - ✅ **RLS fine validation (P1) CERRADO:** migración `20260212130000_rls_fine_validation_lockdown.sql` aplicada + `scripts/rls_fine_validation.sql` ejecutado (`write_tests=1`) con **0 FAIL**. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`.
 - ✅ **Plan de optimización de precios (T1..T8) revalidado:** T1-T7 verificados en código/migraciones + T8 endurecido con validación de auth interna (`service_role`) en `notificaciones-tareas`, `alertas-stock` y `reportes-automaticos`. Evidencia: `docs/closure/EVIDENCIA_PLAN_OPTIMIZACION_PRECIOS_2026-02-13.md`.
 - 🧭 **Camino restante a producción (vigente):** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` (paso por paso, tarea por tarea).
 - 🚀 **Prompt único para nueva ventana (sin prompts complejos adicionales):** `docs/closure/PROMPT_UNICO_EJECUCION_RESTANTE_2026-02-12.md`.
+- ✅ **Limpieza de restos (2026-02-13):** barrido y cierre de 15 restos (13 cerrados, 2 abiertos por owner/infra) en `docs/closure/RESTOS_CIERRE_2026-02-13.md`.
 
 ### Estado remoto vigente (baseline 2026-02-12)
 

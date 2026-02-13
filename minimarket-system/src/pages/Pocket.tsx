@@ -8,6 +8,8 @@ import type { ArbitrajeItem, DropdownItem } from '../lib/apiClient'
 import { supabase } from '../lib/supabase'
 import BarcodeScanner from '../components/BarcodeScanner'
 import JsBarcode from 'jsbarcode'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 // ============================================================================
 // Types
@@ -320,7 +322,13 @@ export default function Pocket() {
   const [isResolving, setIsResolving] = useState(false)
 
   // Fetch products dropdown for barcode lookup
-  const { data: productos = [] } = useQuery({
+  const {
+    data: productos = [],
+    isError: isProductosError,
+    error: productosError,
+    refetch: refetchProductos,
+    isFetching: isFetchingProductos
+  } = useQuery({
     queryKey: ['pocket-productos'],
     queryFn: () => apiClient.productos.dropdown(),
     staleTime: 1000 * 60 * 5,
@@ -452,6 +460,15 @@ export default function Pocket() {
         {/* Scanner View */}
         {view === 'scan' && (
           <>
+            {isProductosError && (
+              <ErrorMessage
+                message={parseErrorMessage(productosError, import.meta.env.PROD)}
+                type={detectErrorType(productosError)}
+                onRetry={() => refetchProductos()}
+                isRetrying={isFetchingProductos}
+                size="sm"
+              />
+            )}
             <BarcodeScanner
               isActive={scannerActive}
               onScan={resolveProduct}

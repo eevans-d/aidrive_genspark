@@ -10,6 +10,8 @@ import {
   type ClienteSaldoItem,
 } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 
 function money(n: number): string {
   return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
@@ -157,7 +159,15 @@ export default function Clientes() {
         </div>
         <div className="divide-y">
           {clientesQuery.isError && (
-            <div className="p-6 text-red-700 bg-red-50">Error cargando clientes</div>
+            <div className="p-4">
+              <ErrorMessage
+                message={parseErrorMessage(clientesQuery.error, import.meta.env.PROD)}
+                type={detectErrorType(clientesQuery.error)}
+                onRetry={() => clientesQuery.refetch()}
+                isRetrying={clientesQuery.isFetching}
+                size="sm"
+              />
+            </div>
           )}
           {!clientesQuery.isLoading && clientes.length === 0 && (
             <div className="p-10 text-center text-gray-500">Sin resultados</div>

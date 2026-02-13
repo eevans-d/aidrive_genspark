@@ -20,6 +20,9 @@ import {
 } from '../lib/apiClient';
 import { useQuery } from '@tanstack/react-query';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
+import { ErrorMessage } from '../components/ErrorMessage';
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils';
+import { Toaster, toast } from 'sonner';
 
 // ============================================================================
 // Componente principal
@@ -30,7 +33,7 @@ export default function Pedidos() {
         const [showForm, setShowForm] = useState(false);
         const [selectedPedido, setSelectedPedido] = useState<PedidoResponse | null>(null);
 
-        const { data, isLoading, error, refetch } = usePedidos(filters);
+        const { data, isLoading, isFetching, error, refetch } = usePedidos(filters);
         const createMutation = useCreatePedido();
         const updateEstadoMutation = useUpdateEstadoPedido();
         const updateItemMutation = useUpdateItemPreparado();
@@ -47,7 +50,7 @@ export default function Pedidos() {
                         setShowForm(false);
                         refetch();
                 } catch (err) {
-                        console.error('Error creando pedido:', err);
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
                 }
         };
 
@@ -56,7 +59,7 @@ export default function Pedidos() {
                         await updateEstadoMutation.mutateAsync({ id, estado });
                         refetch();
                 } catch (err) {
-                        console.error('Error actualizando estado:', err);
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
                 }
         };
 
@@ -65,7 +68,7 @@ export default function Pedidos() {
                         await updateItemMutation.mutateAsync({ itemId, preparado });
                         refetch();
                 } catch (err) {
-                        console.error('Error actualizando item:', err);
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
                 }
         };
 
@@ -81,14 +84,20 @@ export default function Pedidos() {
 
         if (error) {
                 return (
-                        <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-red-700">
-                                Error cargando pedidos: {error.message}
+                        <div className="p-4">
+                                <ErrorMessage
+                                        message={parseErrorMessage(error, import.meta.env.PROD)}
+                                        type={detectErrorType(error)}
+                                        onRetry={() => refetch()}
+                                        isRetrying={isFetching}
+                                />
                         </div>
                 );
         }
 
         return (
                 <div className="space-y-6">
+                        <Toaster position="top-right" richColors />
                         {/* Header */}
                         <div className="flex justify-between items-center">
                                 <div>

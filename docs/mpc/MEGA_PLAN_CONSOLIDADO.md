@@ -171,13 +171,13 @@ cron-jobs-maxiconsumo → scraper-maxiconsumo
 
 | # | Archivo | Subsistema |
 |---|---------|------------|
-| 1 | [SUB_PLAN_01_GATEWAY_API_MINIMARKET.md](file:///mpc/SUB_PLAN_01_GATEWAY_API_MINIMARKET.md) | Gateway |
-| 2 | [SUB_PLAN_02_FRONTEND_CORE.md](file:///mpc/SUB_PLAN_02_FRONTEND_CORE.md) | Frontend |
-| 3 | [SUB_PLAN_03_SCRAPER_MAXICONSUMO.md](file:///mpc/SUB_PLAN_03_SCRAPER_MAXICONSUMO.md) | Scraper |
-| 4 | [SUB_PLAN_04_CRON_JOBS.md](file:///mpc/SUB_PLAN_04_CRON_JOBS.md) | Cron Jobs |
-| 5 | [SUB_PLAN_05_API_PROVEEDOR.md](file:///mpc/SUB_PLAN_05_API_PROVEEDOR.md) | API Proveedor |
-| 6 | [SUB_PLAN_06_ALERTAS_NOTIFICACIONES.md](file:///mpc/SUB_PLAN_06_ALERTAS_NOTIFICACIONES.md) | Alertas |
-| 7 | [SUB_PLAN_07_SHARED_INFRASTRUCTURE.md](file:///mpc/SUB_PLAN_07_SHARED_INFRASTRUCTURE.md) | Shared |
+| 1 | [C2_SUBPLAN_E1_v1.1.0.md](C2_SUBPLAN_E1_v1.1.0.md) | Observabilidad & Logging |
+| 2 | [C2_SUBPLAN_E2_v1.1.0.md](C2_SUBPLAN_E2_v1.1.0.md) | Testing & QA |
+| 3 | [C2_SUBPLAN_E3_v1.1.0.md](C2_SUBPLAN_E3_v1.1.0.md) | DB & Migraciones |
+| 4 | [C2_SUBPLAN_E4_v1.1.0.md](C2_SUBPLAN_E4_v1.1.0.md) | Seguridad Operacional |
+| 5 | [C2_SUBPLAN_E5_v1.1.0.md](C2_SUBPLAN_E5_v1.1.0.md) | Frontend Calidad |
+| 6 | [C2_SUBPLAN_E6_v1.1.0.md](C2_SUBPLAN_E6_v1.1.0.md) | CI/CD & Release |
+| 7 | [C2_SUBPLAN_E7_v1.1.0.md](C2_SUBPLAN_E7_v1.1.0.md) | Documentación & Gobernanza |
 
 ---
 
