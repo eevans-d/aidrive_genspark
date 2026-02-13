@@ -10,6 +10,19 @@ import { validateJobContext, validateEnvVars, ValidationError, isPositiveNumber 
 
 const logger = createLogger('cron-jobs-maxiconsumo:job:realtime-alerts');
 
+type PriceAlertRow = {
+  producto_id: string;
+  precio?: number | null;
+  precio_nuevo?: number | null;
+  precio_anterior?: number | null;
+  productos?: { nombre?: string | null };
+};
+
+function resolveCurrentPrice(row: PriceAlertRow): number | null {
+  const value = row.precio_nuevo ?? row.precio;
+  return typeof value === 'number' && Number.isFinite(value) ? value : null;
+}
+
 export async function executeRealtimeAlerts(
   ctx: JobExecutionContext,
   supabaseUrl: string,
@@ -46,14 +59,17 @@ export async function executeRealtimeAlerts(
     const since = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/precios_historicos?select=*,productos(nombre)&fecha_cambio=gte.${since}`,
+      `${supabaseUrl}/rest/v1/precios_historicos?select=producto_id,precio_nuevo,precio_anterior,productos(nombre)&fecha_cambio=gte.${since}`,
       { headers: { 'apikey': serviceRoleKey, 'Authorization': `Bearer ${serviceRoleKey}` } }
     );
 
     if (res.ok) {
-      const changes = await res.json();
-      const critical = changes.filter((c: any) => {
-        const pct = c.precio_anterior > 0 ? Math.abs((c.precio - c.precio_anterior) / c.precio_anterior * 100) : 0;
+      const changes = await res.json() as PriceAlertRow[];
+      const critical = changes.filter((c: PriceAlertRow) => {
+        const current = resolveCurrentPrice(c);
+        const previous = c.precio_anterior;
+        if (current === null || typeof previous !== 'number' || previous <= 0) return false;
+        const pct = Math.abs((current - previous) / previous * 100);
         return pct >= threshold;
       });
 
@@ -62,17 +78,27 @@ export async function executeRealtimeAlerts(
 
       // 2. Create alerts for critical changes
       if (alerts > 0) {
-        const alertData = critical.map((c: any) => ({
-          producto_id: c.producto_id,
-          tipo_cambio: c.precio > c.precio_anterior ? 'aumento' : 'disminucion',
-          valor_anterior: c.precio_anterior,
-          valor_nuevo: c.precio,
-          porcentaje_cambio: ((c.precio - c.precio_anterior) / c.precio_anterior * 100).toFixed(2),
-          severidad: 'critica',
-          mensaje: `Cambio crítico detectado: ${c.productos?.nombre}`,
-          fecha_alerta: new Date().toISOString(),
-          procesada: false
-        }));
+        const alertData = critical.map((c: PriceAlertRow) => {
+          const current = resolveCurrentPrice(c);
+          const previous = c.precio_anterior;
+          const safeCurrent = current ?? 0;
+          const safePrevious = typeof previous === 'number' ? previous : 0;
+          const pct = safePrevious > 0
+            ? ((safeCurrent - safePrevious) / safePrevious * 100).toFixed(2)
+            : '0.00';
+
+          return {
+            producto_id: c.producto_id,
+            tipo_cambio: safeCurrent > safePrevious ? 'aumento' : 'disminucion',
+            valor_anterior: safePrevious,
+            valor_nuevo: safeCurrent,
+            porcentaje_cambio: pct,
+            severidad: 'critica',
+            mensaje: `Cambio crítico detectado: ${c.productos?.nombre}`,
+            fecha_alerta: new Date().toISOString(),
+            procesada: false,
+          };
+        });
 
         await fetch(`${supabaseUrl}/rest/v1/alertas_cambios_precios`, {
           method: 'POST',
