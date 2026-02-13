@@ -106,6 +106,7 @@ function normalizeRole(rolString: string | null | undefined): UserRole {
         // Mapear variantes conocidas
         const roleMap: Record<string, UserRole> = {
                 'admin': 'admin',
+                'jefe': 'admin',
                 'administrador': 'admin',
                 'administrator': 'admin',
                 'deposito': 'deposito',
