@@ -37,7 +37,9 @@ export const JOB_CONFIGS: Record<string, CronJobConfig> = {
     parameters: {
       analysisPeriod: 'last_week',
       includeForecasting: true,
-      exportExcel: true
+      exportExcel: true,
+      batchSize: 500,
+      maxRows: 50000,
     },
     notificationChannels: ['email']
   },

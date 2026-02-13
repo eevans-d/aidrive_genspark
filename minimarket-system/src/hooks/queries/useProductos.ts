@@ -6,7 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { queryKeys } from '../../lib/queryClient';
-import { Producto, PrecioHistorico, Proveedor } from '../../types/database';
+import { Producto, Proveedor } from '../../types/database';
 
 type ProductoResumen = Pick<
         Producto,
@@ -20,10 +20,14 @@ type ProductoResumen = Pick<
         | 'margen_ganancia'
 >;
 
-type PrecioHistoricoResumen = Pick<
-        PrecioHistorico,
-        'id' | 'producto_id' | 'precio' | 'fuente' | 'fecha' | 'cambio_porcentaje'
->;
+type PrecioHistoricoResumen = {
+        id: string;
+        producto_id: string;
+        precio: number;
+        fuente: string | null;
+        fecha: string;
+        cambio_porcentaje: number | null;
+};
 
 export interface ProductoConHistorial extends ProductoResumen {
         historial?: PrecioHistoricoResumen[];
@@ -101,16 +105,25 @@ export async function fetchProductos(options: UseProductosOptions): Promise<Prod
         let historialPorProducto: Record<string, PrecioHistoricoResumen[]> = {};
         const { data: historialData } = await supabase
                 .from('precios_historicos')
-                .select('id,producto_id,precio,fuente,fecha,cambio_porcentaje')
+                .select('id,producto_id,precio_nuevo,motivo_cambio,fecha_cambio,cambio_porcentaje')
                 .in('producto_id', productoIds)
-                .order('fecha', { ascending: false });
+                .order('fecha_cambio', { ascending: false });
 
         if (historialData) {
                 historialPorProducto = historialData.reduce<Record<string, PrecioHistoricoResumen[]>>(
                         (acc, item) => {
                                 const key = item.producto_id;
                                 if (!acc[key]) acc[key] = [];
-                                if (acc[key].length < 5) acc[key].push(item);
+                                if (acc[key].length < 5) {
+                                        acc[key].push({
+                                                id: item.id,
+                                                producto_id: item.producto_id,
+                                                precio: item.precio_nuevo ?? 0,
+                                                fuente: item.motivo_cambio ?? null,
+                                                fecha: item.fecha_cambio,
+                                                cambio_porcentaje: item.cambio_porcentaje ?? null,
+                                        });
+                                }
                                 return acc;
                         },
                         {}

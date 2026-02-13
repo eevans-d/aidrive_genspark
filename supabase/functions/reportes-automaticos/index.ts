@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
         // 4. Cambios de precios recientes
         const ayer = new Date(Date.now() - 24 * 60 * 60 * 1000);
         const preciosResponse = await fetch(
-            `${supabaseUrl}/rest/v1/precios_historicos?fecha=gte.${ayer.toISOString()}&select=*`,
+            `${supabaseUrl}/rest/v1/precios_historicos?fecha_cambio=gte.${ayer.toISOString()}&select=*`,
             {
                 headers: {
                     'apikey': serviceRoleKey,

@@ -14,6 +14,7 @@
 - **T6:** PASS
 - **T7:** PASS
 - **T8:** PASS (hardening aplicado en codigo)
+- **Fase 5 extendida (bloque final):** PASS
 
 ## Evidencia por Tarea
 
@@ -92,6 +93,37 @@ Comportamiento esperado:
 - Requests sin token interno valido -> `401 UNAUTHORIZED`.
 - Cron interno con service role -> funciona sin cambios de contrato HTTP.
 
+### Fase 5 extendida - Cierre tecnico final
+
+#### A) `weekly_trend_analysis` con paginacion por lotes
+
+Implementado en:
+- `supabase/functions/cron-jobs-maxiconsumo/jobs/weekly-analysis.ts`
+- `supabase/functions/cron-jobs-maxiconsumo/config.ts`
+- `supabase/cron_jobs/job_weekly_trend_analysis.json`
+
+Detalles:
+- Fetch paginado con `limit/offset` para `precios_historicos` y `alertas_cambios_precios`.
+- Parametros soportados: `batchSize|batch_size` y `maxRows|max_rows`.
+- Calculo de variacion usa campos canonicos (`precio_nuevo`, `precio_anterior`).
+
+#### B) Limpieza deuda tecnica en `precios_historicos`
+
+Migracion creada:
+- `supabase/migrations/20260213030000_drop_legacy_columns_precios_historicos.sql`
+
+Accion:
+- `DROP COLUMN IF EXISTS precio`
+- `DROP COLUMN IF EXISTS fuente`
+
+Compatibilidad preservada:
+- Frontend de historial de productos actualizado para leer campos canonicos:
+  - `precio_nuevo` -> `precio` (UI)
+  - `motivo_cambio` -> `fuente` (UI)
+  - `fecha_cambio` -> `fecha` (UI)
+  en `minimarket-system/src/hooks/queries/useProductos.ts`.
+- Cron realtime/weekly ajustados a columnas canonicas.
+
 ## Validaciones de Calidad Ejecutadas
 
 Comandos:
@@ -110,8 +142,4 @@ Resultado:
 
 ## Limitaciones / Pendientes Derivados del Plan Extendido (Fase 5)
 
-No se encontraron implementaciones en esta sesion para:
-- paginacion por lotes en `weekly_trend_analysis`
-- eliminacion de columnas legacy (`precio`, `fuente`) en `precios_historicos`
-
-Estos dos puntos quedan como **siguiente bloque de trabajo** para cerrar completamente la Fase 5 extendida.
+- No quedan pendientes tecnicos del plan T1..T8 y del bloque extendido definido para esta sesion.
