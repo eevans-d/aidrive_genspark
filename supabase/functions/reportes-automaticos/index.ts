@@ -1,6 +1,7 @@
 import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { ok, fail } from '../_shared/response.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 Deno.serve(async (req) => {
     const corsHeaders = getCorsHeaders();
@@ -10,6 +11,7 @@ Deno.serve(async (req) => {
     }
 
     const logger = createLogger('reportes-automaticos');
+    const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
 
     try {
         const supabaseUrl = Deno.env.get('SUPABASE_URL');
@@ -17,6 +19,16 @@ Deno.serve(async (req) => {
 
         if (!supabaseUrl || !serviceRoleKey) {
             throw new Error('Configuración de Supabase faltante');
+        }
+
+        const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+        if (!authCheck.authorized) {
+            logger.warn('UNAUTHORIZED_REQUEST', {
+                requestId,
+                hasAuthorization: Boolean(req.headers.get('authorization')),
+                hasApiKey: Boolean(req.headers.get('apikey')),
+            });
+            return authCheck.errorResponse as Response;
         }
 
         // Generar reporte diario

@@ -6,6 +6,7 @@ import {
     createCorsErrorResponse,
 } from '../_shared/cors.ts';
 import { ok, fail } from '../_shared/response.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('notificaciones-tareas');
 
@@ -48,6 +49,16 @@ Deno.serve(async (req) => {
                 responseHeaders,
                 { requestId }
             );
+        }
+
+        const authCheck = requireServiceRoleAuth(req, serviceRoleKey, responseHeaders, requestId);
+        if (!authCheck.authorized) {
+            logger.warn('UNAUTHORIZED_REQUEST', {
+                requestId,
+                hasAuthorization: Boolean(req.headers.get('authorization')),
+                hasApiKey: Boolean(req.headers.get('apikey')),
+            });
+            return authCheck.errorResponse as Response;
         }
 
         const commonHeaders = {
