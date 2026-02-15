@@ -155,13 +155,15 @@ export default function Clientes() {
         </div>
         <div className="divide-y">
           {clientesQuery.isError && (
-            <ErrorMessage
-              message={parseErrorMessage(clientesQuery.error)}
-              type={detectErrorType(clientesQuery.error)}
-              onRetry={() => clientesQuery.refetch()}
-              isRetrying={clientesQuery.isFetching}
-              size="sm"
-            />
+            <div className="p-4">
+              <ErrorMessage
+                message={parseErrorMessage(clientesQuery.error, import.meta.env.PROD)}
+                type={detectErrorType(clientesQuery.error)}
+                onRetry={() => clientesQuery.refetch()}
+                isRetrying={clientesQuery.isFetching}
+                size="sm"
+              />
+            </div>
           )}
           {!clientesQuery.isLoading && clientes.length === 0 && (
             <div className="p-10 text-center text-gray-500">Sin resultados</div>

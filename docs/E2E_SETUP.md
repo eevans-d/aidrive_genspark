@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-02-01  
 **Estado:** ✅ Revalidado (última ejecución 2026-01-27: 7/7 PASS, 22.7s; spec actual 10 tests, 2 skip)  
-**Plan detallado:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`
+**Plan detallado:** ver `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`)
 
 ---
 
@@ -20,7 +20,7 @@ SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_ANON_KEY=<REDACTED>
 SUPABASE_SERVICE_ROLE_KEY=<REDACTED>
 
-# Usuarios de prueba (ver HOJA_RUTA_MADRE_2026-01-31.md)
+# Usuarios de prueba (ver `docs/ESTADO_ACTUAL.md` + `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`)
 TEST_USER_ADMIN=admin@staging.minimarket.test
 TEST_USER_DEPOSITO=deposito@staging.minimarket.test
 TEST_USER_VENTAS=ventas@staging.minimarket.test

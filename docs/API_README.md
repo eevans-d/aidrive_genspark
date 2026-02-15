@@ -238,6 +238,53 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 
 ## 📋 Endpoints Principales
 
+### Inventario real del gateway (`api-minimarket`) — 34 rutas (source of truth)
+Rutas **exactas** en `supabase/functions/api-minimarket/index.ts` (bloques `if (path === ...)`):
+
+| # | Método | Ruta |
+|---:|:------|:-----|
+| 1 | GET | `/search` |
+| 2 | GET | `/productos/dropdown` |
+| 3 | GET | `/proveedores/dropdown` |
+| 4 | GET | `/categorias` |
+| 5 | GET | `/productos` |
+| 6 | POST | `/productos` |
+| 7 | GET | `/proveedores` |
+| 8 | POST | `/precios/aplicar` |
+| 9 | POST | `/precios/redondear` |
+| 10 | GET | `/stock` |
+| 11 | GET | `/stock/minimo` |
+| 12 | GET | `/reportes/efectividad-tareas` |
+| 13 | POST | `/tareas` |
+| 14 | POST | `/deposito/movimiento` |
+| 15 | GET | `/deposito/movimientos` |
+| 16 | POST | `/deposito/ingreso` |
+| 17 | POST | `/reservas` |
+| 18 | POST | `/compras/recepcion` |
+| 19 | GET | `/pedidos` |
+| 20 | POST | `/pedidos` |
+| 21 | GET | `/insights/arbitraje` |
+| 22 | GET | `/insights/compras` |
+| 23 | GET | `/clientes` |
+| 24 | POST | `/clientes` |
+| 25 | GET | `/cuentas-corrientes/resumen` |
+| 26 | GET | `/cuentas-corrientes/saldos` |
+| 27 | POST | `/cuentas-corrientes/pagos` |
+| 28 | POST | `/ventas` |
+| 29 | GET | `/ventas` |
+| 30 | GET | `/ofertas/sugeridas` |
+| 31 | POST | `/ofertas/aplicar` |
+| 32 | POST | `/bitacora` |
+| 33 | GET | `/bitacora` |
+| 34 | GET | `/health` |
+
+### Criterio de conteo de endpoints (evita discrepancias)
+- **Incluye** solo rutas **expresamente** enrutadas en `api-minimarket/index.ts`.
+- **Excluye** rutas documentadas abajo que hoy **no** existen como `if (path === ...)` (ej.: `/productos/{id}`, `/categorias/{id}`, `/ventas/{id}`, `/ofertas/{id}/desactivar`).
+- **Excluye** Edge Functions independientes (`reposicion-sugerida`, `alertas-vencimientos`, cron/scraper) y endpoints PostgREST directos a tablas.
+- `api-proveedor` tiene **9 endpoints** definidos en `schemas.ts` (ver sección al final).  
+Si alguien reporta “52 endpoints”, no existe inventario en el repo; el criterio probable mezcla gateway + api-proveedor + funciones independientes y/o PostgREST.
+
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
 ```bash
@@ -481,17 +528,19 @@ x-api-secret: <valor de API_PROVEEDOR_SECRET>
 - Para mantener el comportamiento legacy con service role en lecturas, configurar `API_PROVEEDOR_READ_MODE=service`.
 
 ### Endpoints Disponibles
-| Endpoint | Método | Descripción |
-|----------|--------|-------------|
-| `/precios` | GET | Precios actuales del proveedor |
-| `/productos` | GET | Productos disponibles |
-| `/comparacion` | GET | Comparación con sistema interno |
-| `/sincronizar` | POST | Disparar sincronización |
-| `/status` | GET | Estado del sistema de scraping |
-| `/alertas` | GET | Alertas activas de precios |
-| `/estadisticas` | GET | Estadísticas de scraping |
-| `/configuracion` | GET/POST | Configuración del proveedor |
-| `/health` | GET | Health check (sin auth) |
+Listado oficial según `supabase/functions/api-proveedor/schemas.ts`:
+
+| Endpoint | Descripción | Requiere auth |
+|----------|-------------|--------------|
+| `/precios` | Consulta de precios actuales | Sí |
+| `/productos` | Listado de productos disponibles | Sí |
+| `/comparacion` | Comparación con inventario interno | Sí |
+| `/sincronizar` | Trigger de sincronización manual | Sí |
+| `/status` | Estado del sistema proveedor | Sí |
+| `/alertas` | Alertas activas | Sí |
+| `/estadisticas` | Métricas de scraping y proveedor | Sí |
+| `/configuracion` | Configuración segura del proveedor | Sí |
+| `/health` | Health check completo | No |
 
 ### Headers de Respuesta
 Igual que `api-minimarket`:

@@ -68,6 +68,32 @@
 
 ---
 
+## Addendum 2026-02-12 — Seguridad Aplicativa (RLS/Roles)
+
+**Objetivo:** cerrar la validación fina de RLS por rol (P1) y eliminar bypasses típicos (PostgREST/RPC).
+
+### CRITICAL
+- (none) No se detectaron tablas críticas sin RLS ni secretos hardcodeados en los cambios auditados.
+
+### HIGH
+- CORS wildcard detectado (revisar exposición real y restringir si hay consumo browser):
+  - `supabase/functions/scraper-maxiconsumo/index.ts`
+  - `supabase/functions/cron-jobs-maxiconsumo/index.ts`
+
+### MEDIUM
+- Normalización de rol legacy `jefe`:
+  - Tratado como alias legacy de `admin` en FE/BE; en DB se normaliza `personal.rol` a roles canónicos.
+  - Migración aplicada: `supabase/migrations/20260212130000_rls_fine_validation_lockdown.sql`.
+
+### LOW
+- Recomendación: mantener la batería `scripts/rls_fine_validation.sql` como verificación periódica antes de cada release (staging y luego prod).
+
+### Evidencia (sin secretos)
+- Auditoría RLS (post): `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`
+- Validación fina (post, `write_tests=1`, 0 FAIL): `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`
+
+---
+
 ## Resumen Ejecutivo
 
 | Paquete | Vulnerabilidades | Severidad Máxima |

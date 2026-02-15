@@ -99,6 +99,8 @@ revoke insert, update, delete on public.personal from authenticated;
 grant select on public.personal to authenticated;
 
 drop policy if exists personal_select_self on public.personal;
+drop policy if exists personal_select_own_authenticated on public.personal;
+drop policy if exists personal_insert_own_authenticated on public.personal;
 create policy personal_select_self
   on public.personal
   for select

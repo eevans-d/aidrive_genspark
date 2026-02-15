@@ -4,6 +4,12 @@
 # Mini Market Sprint 6
 # ===================================================================
 
+set -euo pipefail
+
+# Repo root (script lives in supabase/cron_jobs/)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/../.." && pwd)"
+
 echo "🚀 INICIANDO IMPLEMENTACIÓN DE CRON JOBS AUTOMÁTICOS"
 echo "=================================================="
 
@@ -38,8 +44,8 @@ log_error() {
 log_info "Verificando archivos necesarios..."
 
 FILES_TO_CHECK=(
-    "/workspace/supabase/functions/cron-jobs-maxiconsumo/index.ts"
-    "/workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql"
+    "${ROOT_DIR}/supabase/functions/cron-jobs-maxiconsumo/index.ts"
+    "${ROOT_DIR}/supabase/cron_jobs/deploy_all_cron_jobs.sql"
 )
 
 for file in "${FILES_TO_CHECK[@]}"; do
@@ -58,10 +64,8 @@ done
 log_info "Aplicando migraciones de base de datos (supabase/migrations)..."
 
 if command -v supabase &> /dev/null; then
-    cd /workspace
-    supabase db push
-    
-    if [ $? -eq 0 ]; then
+    cd "${ROOT_DIR}"
+    if supabase db push; then
         log_success "✅ Migración de BD aplicada correctamente"
     else
         log_error "❌ Error aplicando migración de BD"
@@ -71,7 +75,7 @@ if command -v supabase &> /dev/null; then
 else
     log_warning "⚠️  Supabase CLI no encontrado"
     log_info "Aplicar migración manualmente en Supabase Dashboard > SQL Editor"
-    log_info "Carpeta: /workspace/supabase/migrations/"
+    log_info "Carpeta: supabase/migrations/"
 fi
 
 # ===================================================================
@@ -81,10 +85,8 @@ fi
 log_info "Desplegando función edge cron-jobs-maxiconsumo..."
 
 if command -v supabase &> /dev/null; then
-    cd /workspace
-    supabase functions deploy cron-jobs-maxiconsumo
-    
-    if [ $? -eq 0 ]; then
+    cd "${ROOT_DIR}"
+    if supabase functions deploy cron-jobs-maxiconsumo; then
         log_success "✅ Función edge desplegada correctamente"
     else
         log_error "❌ Error desplegando función edge"
@@ -102,30 +104,23 @@ fi
 
 log_info "Configurando cron jobs en la base de datos..."
 
-# Verificar si podemos conectarnos a la base de datos
-if command -v psql &> /dev/null; then
-    log_info "Ejecutando script de implementación de cron jobs..."
-    
-    # Crear archivo temporal con el script
-    TEMP_SCRIPT="/tmp/deploy_cron_jobs.sql"
-    cp /workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql "$TEMP_SCRIPT"
-    
-    # Ejecutar script (requiere conexión a Supabase)
-    # psql -h <host> -U <user> -d <database> -f "$TEMP_SCRIPT"
-    
-    if [ $? -eq 0 ]; then
+DEPLOY_SQL="${ROOT_DIR}/supabase/cron_jobs/deploy_all_cron_jobs.sql"
+
+# Opción A: ejecutar via psql (si está disponible) usando DATABASE_URL.
+# Opción B: ejecutar manualmente en Supabase Dashboard > SQL Editor.
+if command -v psql &> /dev/null && [ -n "${DATABASE_URL:-}" ]; then
+    log_info "Ejecutando cron jobs via psql (DATABASE_URL)..."
+    if psql "${DATABASE_URL}" -v ON_ERROR_STOP=1 -f "${DEPLOY_SQL}"; then
         log_success "✅ Cron jobs configurados correctamente"
     else
         log_warning "⚠️  Ejecución automática falló"
         log_info "Ejecutar manualmente en Supabase SQL Editor:"
-        log_info "Archivo: /workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql"
+        log_info "Archivo: supabase/cron_jobs/deploy_all_cron_jobs.sql"
     fi
-    
-    rm -f "$TEMP_SCRIPT"
 else
-    log_warning "⚠️  PostgreSQL CLI no encontrado"
+    log_warning "⚠️  psql no disponible o DATABASE_URL no configurada"
     log_info "Ejecutar manualmente en Supabase SQL Editor:"
-    log_info "Archivo: /workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql"
+    log_info "Archivo: supabase/cron_jobs/deploy_all_cron_jobs.sql"
 fi
 
 # ===================================================================
@@ -161,11 +156,11 @@ echo "   • Estado en: cron_jobs_config"
 echo "   • Alertas en: cron_jobs_alerts"
 echo ""
 echo "📁 Archivos Creados:"
-echo "   • /workspace/supabase/cron_jobs/job_daily_price_update.json"
-echo "   • /workspace/supabase/cron_jobs/job_weekly_trend_analysis.json"
-echo "   • /workspace/supabase/cron_jobs/job_realtime_alerts.json"
-echo "   • /workspace/supabase/cron_jobs/deploy_all_cron_jobs.sql"
-echo "   • /workspace/supabase/cron_jobs/README.md"
+echo "   • supabase/cron_jobs/job_daily_price_update.json"
+echo "   • supabase/cron_jobs/job_weekly_trend_analysis.json"
+echo "   • supabase/cron_jobs/job_realtime_alerts.json"
+echo "   • supabase/cron_jobs/deploy_all_cron_jobs.sql"
+echo "   • supabase/cron_jobs/README.md"
 echo ""
 
 # ===================================================================
