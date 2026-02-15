@@ -35,7 +35,7 @@
   - `.agent/sessions/current/BRIEFING.md`
   - `.agent/sessions/current/EVIDENCE.md`
   - `.agent/sessions/current/SESSION_REPORT.md`
-  - `docs/closure/BASELINE_LOG_2026-02-13_061916.md`
+  - Nota: `docs/closure/BASELINE_LOG_*.md` fue removido en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 
 ### 3) Coherencia documental
 - Chequeo de enlaces Markdown internos -> **0 rotos**.
@@ -109,8 +109,8 @@ Se resolvieron referencias a archivos inexistentes mediante stubs históricos:
 - **Riesgos de mejora (no bloqueantes):** 3 (indexación histórica, nightly smoke real, consolidación final legacy).
 
 ## Nota Operativa
-Los únicos pendientes vigentes son **externos** (owner):
-1. `VITE_SENTRY_DSN` (cierre Gate 16).
-2. Rotación final de `SENDGRID_API_KEY` y `SMTP_PASS`.
+Estado al 2026-02-13 (sesión de DocuGuard): existían pendientes externos (owner) para Gate 16 y SendGrid.
 
-Esto no introduce contradicción documental; se mantiene reflejado en `docs/ESTADO_ACTUAL.md` y `docs/closure/OPEN_ISSUES.md`.
+**Addendum 2026-02-15:** ambos pendientes quedaron cerrados con evidencia externa:
+- Gate 16 (Sentry): `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`
+- SendGrid/SMTP: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`

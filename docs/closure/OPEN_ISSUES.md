@@ -71,12 +71,12 @@ Verificación post-remediación: Build PASS (9.24s), 829/829 tests PASS.
 | Tarea | Estado | Detalle |
 |---|---|---|
 | C-01..C-07: Correcciones documentales en auditoría | ✅ CERRADO | 7 errores factuales corregidos en `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` |
-| R-01..R-05 (P1 ALTO): config, deps, auth guards | ✅ CERRADO | email rate 60s, tests/contract/, supabase-js 2.49.4, React types ^18.x, 3 auth guards |
-| R-06..R-13 (P2 MEDIO): tests, PII hash, dead code | ✅ CERRADO | Ventas test, perf tests sin mocks, SHA-256 PII, deno check hook, roles cleanup |
-| R-14..R-18 (P3 BAJO): residuales, CI cache, tests | ✅ CERRADO | cypress residual, staging deploy, npm cache CI, Tareas test, usePedidos test |
+| R-01..R-05 (P1 ALTO): config, deps, auth guards | ✅ CERRADO | `max_frequency="60s"`, tests `tests/contract/`, `@supabase/supabase-js@2.49.4` en `supabase/functions/deno.json`, `@types/react@^18.x`, auth guards (`requireServiceRoleAuth`) en 3 Edge Functions |
+| R-06..R-13 (P2 MEDIO): tests, hashing, docs | ✅ CERRADO | Tests Ventas/Tareas/usePedidos, perf tests con medición real (`performance.now()`), `recipients` redacted con SHA-256 en `cron-notifications`, hook pre-commit `deno check`, limpieza de dead code de roles, `ESTADO_ACTUAL.md` normalizado, import named `ErrorMessage` |
+| R-14..R-18 (P3 BAJO): residuales, deploy.sh, CI cache | ✅ CERRADO | Residuales Cypress, allowlist de rama en `deploy.sh`, cache npm root en CI, tests Tareas/usePedidos |
 | D-109: Limpieza documental masiva | ✅ CERRADO | 79 archivos obsoletos eliminados (prompts, baselines, duplicados, legacy) |
 
-Verificación: 18/18 remediaciones verificadas OK. 829 root tests + 22 frontend tests PASS. Build OK.
+Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ventas/Tareas/usePedidos -> 27/27 PASS.
 
 ---
 
@@ -87,7 +87,7 @@ Verificación: 18/18 remediaciones verificadas OK. 829 root tests + 22 frontend 
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
-- Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
+- Hardening 5 pasos: cerrado (incluye `ErrorMessage` 14/14 en páginas principales; `NotFound.tsx` no aplica).
 - Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`) y SQL fina remota en PASS (`60/60`, `0 FAIL`).
 - Gates sesión 2026-02-13 en PASS: `test-reports/quality-gates_20260213-061657.log`.
 - Gates frontend recheck 2026-02-14 en PASS: `test-reports/quality-gates_20260214-042354.log`.
@@ -104,4 +104,10 @@ Verificación: 18/18 remediaciones verificadas OK. 829 root tests + 22 frontend 
 - ✅ Enlaces rotos documentales reparados.
 - ✅ Fallback legacy en cron-testing-suite removido.
 - ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
-- ✅ Adopción `ErrorMessage` completada en 13/13 páginas funcionales.
+- ✅ Adopción `ErrorMessage` completada en 14/14 páginas principales (excluye `NotFound.tsx`).
+
+## Issues técnicos conocidos (no bloqueantes)
+
+- `minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).
+- Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.
+- Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).

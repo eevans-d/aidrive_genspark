@@ -19,9 +19,9 @@
 - Componentes compartidos: 7 .tsx + 1 .ts.
 - Archivos de test: 84 (47 unit + 27 component + 3 contract + 1 security + 1 performance + 1 api-contracts + 4 e2e).
 - Evidencia:
-  - `docs/closure/BASELINE_LOG_2026-02-13_061916.md`
   - `supabase migration list --linked`
   - `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi`
+  - Nota: `docs/closure/BASELINE_LOG_*.md` fue removido en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 
 ### Snapshot de Functions
 | Function | Version | Status |
@@ -52,7 +52,7 @@
 - Recheck frontend 2026-02-14: PASS (`test-reports/quality-gates_20260214-042354.log`).
 
 ## 4) Mega Plan (T01..T10)
-**Plan canonico:** `docs/closure/MEGA_PLAN_2026-02-13_042956.md`
+**Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).
 
 | Tarea | Estado | Evidencia |
 |---|---|---|
@@ -68,11 +68,7 @@
 | T10 (M7) | PASS | `docs/closure/EVIDENCIA_M7_CIERRE_2026-02-13.md` |
 
 Checkpoints:
-- `docs/closure/CHECKPOINT_T01_T02_2026-02-13.md`
-- `docs/closure/CHECKPOINT_T03_T04_2026-02-13.md`
-- `docs/closure/CHECKPOINT_T05_T06_2026-02-13.md`
-- `docs/closure/CHECKPOINT_T07_T08_2026-02-13.md`
-- `docs/closure/CHECKPOINT_T09_T10_2026-02-13.md`
+- Removidos en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 
 ## 5) Auditoría Pragmática y Remediación (2026-02-14)
 
@@ -136,7 +132,7 @@ Para decisiones actuales, este archivo es la unica fuente de verdad de estado.
 - Verificacion intensiva de consistencia documental completada el 2026-02-13.
 - Reporte: `docs/closure/AUDITORIA_DOCUMENTAL_ABSOLUTA_2026-02-13.md`.
 - Segunda pasada intensiva ejecutada:
-  - Simulacion de inicio/cierre de sesion de agentes (`SessionOps`) con evidencia en `.agent/sessions/current/*` y baseline `docs/closure/BASELINE_LOG_2026-02-13_061916.md`.
+  - Simulacion de inicio/cierre de sesion de agentes (`SessionOps`) con evidencia en `.agent/sessions/current/*` (los `BASELINE_LOG_*.md` fueron removidos en D-109; ver historial git).
   - Ajuste de workflows de sesion (`.agent/workflows/session-start.md`, `.agent/workflows/session-end.md`) para alinearlos a fuentes canónicas actuales.
   - Clasificacion adicional de documentos activos vs historicos (marcadores `[ACTIVO_VERIFICADO: 2026-02-13]` y `[DEPRECADO: 2026-02-13]`).
 - Resultado de verificación final:

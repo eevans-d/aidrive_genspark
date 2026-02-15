@@ -14,12 +14,20 @@ import {
 } from '../../supabase/functions/api-proveedor/validators.ts';
 
 const RUN_REAL_TESTS = process.env.RUN_REAL_TESTS === 'true';
+const RUN_REAL_SENDGRID_SMOKE = process.env.RUN_REAL_SENDGRID_SMOKE === 'true';
 const CRON_ENDPOINTS = [
   'cron-dashboard/dashboard',
   'cron-health-monitor/status',
   'cron-jobs-maxiconsumo/status',
   'cron-notifications/channels',
 ] as const;
+
+function makeUnsignedJwt(payload: Record<string, unknown>) {
+  // Unit-only: internal-auth does not verify signatures. In production, functions run with verify_jwt=true.
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode(header)}.${encode(payload)}.sig`;
+}
 
 describe('Security contracts (real helpers)', () => {
   describe('Internal auth guard (cron sensibles)', () => {
@@ -65,6 +73,33 @@ describe('Security contracts (real helpers)', () => {
         const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-apikey');
         expect(result.authorized).toBe(true);
       }
+    });
+
+    it('acepta JWT con claim role=service_role (fallback) si no coincide exactamente con la key', () => {
+      const jwt = makeUnsignedJwt({ role: 'service_role' });
+      const req = new Request('https://example.test/functions/v1/cron-notifications/channels', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-role-fallback');
+      expect(result.authorized).toBe(true);
+    });
+
+    it('rechaza JWT con role distinto de service_role en fallback', () => {
+      const jwt = makeUnsignedJwt({ role: 'anon' });
+      const req = new Request('https://example.test/functions/v1/cron-notifications/channels', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-role-reject');
+      expect(result.authorized).toBe(false);
+      expect(result.errorResponse?.status).toBe(401);
     });
 
     it('rechaza Bearer malformado y claves rotadas/inválidas', async () => {
@@ -161,6 +196,7 @@ describe('Security contracts (real helpers)', () => {
 
 describe('Security smoke real (opcional con credenciales)', () => {
   const maybeRun = RUN_REAL_TESTS ? it : it.skip;
+  const maybeSendgrid = RUN_REAL_SENDGRID_SMOKE ? it : it.skip;
 
   maybeRun('verifica 401 reales sin auth en endpoints críticos', async () => {
     const baseUrl = process.env.SUPABASE_URL;
@@ -198,5 +234,55 @@ describe('Security smoke real (opcional con credenciales)', () => {
       // Si auth pasa, un 5xx sigue siendo incidente real que debemos detectar.
       expect(authorized.status).toBeLessThan(500);
     }
+  });
+
+  maybeSendgrid('envia email real via cron-notifications y retorna messageId (requiere NOTIFICATIONS_MODE=real en production)', async () => {
+    const baseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const emailTo = process.env.REAL_SMOKE_EMAIL_TO;
+
+    if (!baseUrl || !serviceRoleKey || !emailTo) {
+      throw new Error('Faltan SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY o REAL_SMOKE_EMAIL_TO para RUN_REAL_SENDGRID_SMOKE=true');
+    }
+
+    const requestId = `vitest-sendgrid-smoke-${Date.now()}`;
+    const payload = {
+      templateId: 'critical_alert',
+      channels: ['email_default'],
+      recipients: { email: [emailTo] },
+      data: {
+        alertType: 'SMOKE_TEST',
+        alertTitle: 'SendGrid smoke (vitest)',
+        alertDescription: 'Smoke test triggered from security suite to validate SendGrid delivery.',
+        jobId: 'sendgrid-smoke',
+        executionId: requestId,
+        timestamp: new Date().toISOString(),
+        severity: 'low',
+        recommendedAction: 'N/A',
+        dashboardUrl: 'https://example.invalid/dashboard',
+        logsUrl: 'https://example.invalid/logs',
+      },
+      priority: 'low',
+      source: 'vitest-smoke',
+      requiresEscalation: false,
+    };
+
+    const res = await fetch(`${baseUrl}/functions/v1/cron-notifications/send`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    expect(res.status).toBe(200);
+
+    const json = await res.json();
+    expect(json?.success).toBe(true);
+    expect(json?.data?.result?.channels?.[0]?.status).toBe('sent');
+    expect(json?.data?.result?.channels?.[0]?.messageId).toBeTruthy();
   });
 });

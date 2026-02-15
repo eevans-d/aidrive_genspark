@@ -7,6 +7,22 @@ type AuthResult = {
   errorResponse?: Response;
 };
 
+function decodeJwtPayload(token: string): Record<string, unknown> | null {
+  const parts = token.split('.');
+  if (parts.length < 2) return null;
+
+  try {
+    // JWT payload is base64url without padding.
+    const b64url = parts[1];
+    const b64 = b64url.replace(/-/g, '+').replace(/_/g, '/');
+    const padded = b64 + '='.repeat((4 - (b64.length % 4)) % 4);
+    const json = atob(padded);
+    return JSON.parse(json);
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Restricts internal cron endpoints to service-role callers.
  * Accepts either Authorization Bearer token or apikey header.
@@ -21,7 +37,18 @@ export function requireServiceRoleAuth(
   const apiKeyHeader = req.headers.get('apikey');
   const expectedBearer = `Bearer ${serviceRoleKey}`;
 
-  const authorized = authHeader === expectedBearer || apiKeyHeader === serviceRoleKey;
+  // Primary mode: exact match against the project service role key (or configured internal token).
+  let authorized = authHeader === expectedBearer || apiKeyHeader === serviceRoleKey;
+
+  // Fallback: if the platform already verified the JWT (verify_jwt=true), accept any JWT whose role is service_role.
+  // This prevents brittle coupling to a specific key string while still requiring a privileged token.
+  if (!authorized && authHeader?.startsWith('Bearer ')) {
+    const token = authHeader.slice('Bearer '.length).trim();
+    const payload = decodeJwtPayload(token);
+    if (payload && payload['role'] === 'service_role') {
+      authorized = true;
+    }
+  }
 
   if (authorized) {
     return { authorized: true };

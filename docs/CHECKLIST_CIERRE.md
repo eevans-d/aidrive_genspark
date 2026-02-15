@@ -1,10 +1,10 @@
-> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/MEGA_PLAN_2026-02-13_042956.md`, `docs/closure/OPEN_ISSUES.md`.
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`, `docs/closure/OPEN_ISSUES.md`.
 
 # Checklist de Cierre - Plan de Ejecución
 
 **Fecha:** 2026-02-04  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-04)  
-**Plan vigente:** ver `docs/ESTADO_ACTUAL.md`, `docs/closure/MEGA_PLAN_2026-02-13_042956.md` y `docs/DECISION_LOG.md`
+**Plan vigente:** ver `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` y `docs/DECISION_LOG.md`
 
 ---
 

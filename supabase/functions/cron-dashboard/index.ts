@@ -827,12 +827,11 @@ async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string
 
     const executions = await response.json();
     
-    // Simular datos de performance (en implementación real vendrían del sistema)
     return executions.map((execution: any, index: number) => ({
         time: execution.start_time.split('T')[1]?.substring(0, 8) || '00:00:00',
-        responseTime: execution.duracion_ms || 1000 + Math.random() * 2000,
-        memoryUsage: 40 + Math.random() * 30, // Simulado
-        cpuUsage: 20 + Math.random() * 50 // Simulado
+        responseTime: execution.duracion_ms || null,
+        memoryUsage: null,
+        cpuUsage: null
     }));
 }
 

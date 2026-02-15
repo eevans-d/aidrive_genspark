@@ -85,6 +85,10 @@ import {
   handleActualizarCliente,
 } from './handlers/clientes.ts';
 import {
+  handleCrearProveedor,
+  handleActualizarProveedor,
+} from './handlers/proveedores.ts';
+import {
   handleResumenCC,
   handleListarSaldosCC,
   handleRegistrarPagoCC,
@@ -838,6 +842,44 @@ Deno.serve(async (req) => {
       }
 
       return respondOk(proveedores[0]);
+    }
+
+    // 9b. POST /proveedores - Crear proveedor (admin)
+    if (path === '/proveedores' && method === 'POST') {
+      checkRole(['admin']);
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const res = await handleCrearProveedor(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        bodyResult as Record<string, unknown>,
+      );
+      recordCircuitSuccess();
+      return res;
+    }
+
+    // 9c. PUT /proveedores/:id - Actualizar proveedor (admin)
+    if (path.match(/^\/proveedores\/[a-f0-9-]+$/) && method === 'PUT') {
+      checkRole(['admin']);
+
+      const proveedorId = path.split('/')[2];
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+
+      const res = await handleActualizarProveedor(
+        supabaseUrl,
+        requestHeaders(),
+        responseHeaders,
+        requestId,
+        proveedorId,
+        bodyResult as Record<string, unknown>,
+      );
+      recordCircuitSuccess();
+      return res;
     }
 
     // ====================================================================
@@ -2019,12 +2061,15 @@ Deno.serve(async (req) => {
       const pagination = getPaginationOrFail(50, 200);
       if (pagination instanceof Response) return pagination;
 
+      const fechaDesde = url.searchParams.get('fecha_desde') || undefined;
+      const fechaHasta = url.searchParams.get('fecha_hasta') || undefined;
+
       const res = await handleListarVentas(
         supabaseUrl,
         requestHeaders(),
         responseHeaders,
         requestId,
-        { limit: pagination.limit, offset: pagination.offset },
+        { limit: pagination.limit, offset: pagination.offset, fecha_desde: fechaDesde, fecha_hasta: fechaHasta },
       );
       recordCircuitSuccess();
       return res;

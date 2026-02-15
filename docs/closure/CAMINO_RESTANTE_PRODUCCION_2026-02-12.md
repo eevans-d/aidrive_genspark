@@ -7,9 +7,9 @@
 ## 1) Estado real confirmado (base 2026-02-13)
 
 - Baseline remoto: 13 Edge Functions activas, `api-minimarket v26 verify_jwt=false`.
-  Evidencia: `docs/ESTADO_ACTUAL.md`, `docs/closure/BASELINE_LOG_2026-02-13_061916.md`.
+  Evidencia: `docs/ESTADO_ACTUAL.md` (nota: `BASELINE_LOG_*.md` fue removido en D-109; ver historial git para snapshots antiguos).
 - Revalidacion remota en vivo (2026-02-13): `supabase migration list --linked` y `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi` confirman `39/39` y versiones vigentes.
-- Mini plan de hardening 5/5 cerrado (credenciales, links, fallback cron, baseline, ErrorMessage 13/13).
+- Mini plan de hardening 5/5 cerrado (credenciales, links, fallback cron, baseline, ErrorMessage 14/14 en páginas principales).
   Evidencia: `scripts/verify_5steps.sh`, `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
 - Quality gates locales en PASS (unit + frontend tests + build).
   Evidencia: `test-reports/quality-gates_20260213-061657.log`.

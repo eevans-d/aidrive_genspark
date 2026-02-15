@@ -3,6 +3,8 @@
 
 **Fecha:** 2026-02-12 (post-ejecución gates) | **Scope:** full (frontend + backend + docs + linked Supabase) | **Score UX:** 8/10
 
+**Addendum 2026-02-15:** Gate 16 (Sentry) y Gate 4 (SendGrid/SMTP) quedaron cerrados con evidencia externa. Ver `docs/ESTADO_ACTUAL.md`.
+
 ## Clasificacion de Estado
 | Elemento | Estado | Evidencia |
 |----------|--------|-----------|
@@ -12,7 +14,7 @@
 | Endpoints consumidos por `apiClient` existen en gateway | REAL | `minimarket-system/src/lib/apiClient.ts`, `supabase/functions/api-minimarket/index.ts` |
 | Cron jobs con `Authorization` (HC-1) | REAL | `supabase/migrations/20260211062617_cron_jobs_use_vault_secret.sql`, `supabase/migrations/20260211055140_fix_cron_jobs_auth_and_maintenance.sql` |
 | `deploy.sh` seguro para `_shared` + `--no-verify-jwt` en `api-minimarket` (HC-2) | REAL | `deploy.sh` |
-| `api-minimarket` en remoto con `verify_jwt=false` | REAL | `docs/closure/BASELINE_LOG_2026-02-12_161515.md` |
+| `api-minimarket` en remoto con `verify_jwt=false` | REAL | Ver `docs/ESTADO_ACTUAL.md` (nota: `BASELINE_LOG_*.md` fue removido en D-109; usar historial git para trazabilidad) |
 | Quality gates + componentes UI | REAL | `test-reports/quality-gates_20260212-032946.log` |
 | E2E POS flujo completo (Gate 3) | REAL | `minimarket-system/e2e/pos.e2e.spec.ts` (8/8 PASS). Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md` |
 | Canal real alertas operador (Gate 4) | REAL | `cron-notifications` con SendGrid real. MessageIds confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md` |

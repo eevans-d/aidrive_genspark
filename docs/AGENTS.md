@@ -1,7 +1,7 @@
 # Guia Para Agentes IA (Canonica)
 
 **Proyecto:** Mini Market System  
-**Ultima actualizacion:** 2026-02-13
+**Ultima actualizacion:** 2026-02-15
 
 ## Estado Rapido
 | Metrica | Valor |
@@ -17,10 +17,12 @@
 ## Fuente de Verdad (orden de prioridad)
 1. `docs/ESTADO_ACTUAL.md`
 2. `docs/DECISION_LOG.md`
-3. `docs/closure/MEGA_PLAN_2026-02-13_042956.md`
+3. `docs/closure/OPEN_ISSUES.md`
 4. `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
-5. `docs/closure/OPEN_ISSUES.md`
-6. `docs/closure/README_CANONICO.md`
+5. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+6. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
+7. `docs/closure/README_CANONICO.md`
+8. `docs/closure/CONTINUIDAD_SESIONES.md`
 
 ## Guardrails No Negociables
 1. No imprimir secretos/JWTs (solo nombres).

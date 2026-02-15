@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
@@ -33,6 +33,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
   { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
   { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
+  { path: '/ventas', icon: DollarSign, label: 'Ventas', allowedRoles: ['admin', 'ventas'] },
 ]
 
 export default function Layout({ children }: LayoutProps) {

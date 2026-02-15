@@ -3,8 +3,8 @@
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
 ## Estado Actual
-- Fecha de referencia: 2026-02-13
-- Veredicto: CON RESERVAS NO CRITICAS (dependencias owner)
+- Fecha de referencia: 2026-02-15
+- Veredicto: CON RESERVAS NO CRITICAS (defendible para produccion piloto; sin P0 bloqueantes)
 - Score operativo: 86/100
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 
@@ -40,9 +40,8 @@ pnpm -C minimarket-system test:components
 - Skills locales en `.agent/skills`: 22
 - Workflows `.agent/workflows/*.md`: 12
 
-## Calidad Verificada (sesion 2026-02-13)
+## Calidad Verificada (ultimo recheck 2026-02-15)
 - Unit: 829/829 PASS
-- Integration: 38/38 PASS
 - E2E smoke: 5/5 PASS
 - Frontend component tests: 150/150 PASS
 - Gates: PASS
@@ -51,9 +50,10 @@ pnpm -C minimarket-system test:components
 ## Documentacion Canonica
 - `docs/ESTADO_ACTUAL.md`
 - `docs/DECISION_LOG.md`
-- `docs/closure/MEGA_PLAN_2026-02-13_042956.md`
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md`
 - `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+- `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+- `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
 - `docs/closure/OPEN_ISSUES.md`
 - `docs/closure/README_CANONICO.md`
 

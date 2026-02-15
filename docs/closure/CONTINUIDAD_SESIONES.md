@@ -53,28 +53,15 @@
 
 | # | Tarea | Prioridad | Estado | Tipo | Siguiente accion |
 |---|-------|-----------|--------|------|------------------|
-| 1 | SendGrid: capturar evidencia Email Activity + revocar key anterior | P0 | PENDIENTE (owner/externo) | Manual/navegador | Ver pasos en `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` seccion "Paso 2" |
-| 2 | Ejecutar remediaciones de auditoria forense (R-01 a R-18) | P1 | PENDIENTE | Codigo/config | Usar `docs/CONTEXT_PROMPT_EJECUTOR_CORRECCIONES_2026-02-15.md` como guia |
-| 3 | Activar backups en GitHub Actions (SUPABASE_DB_URL secret) | P1 | PENDIENTE (owner) | Config externa | Configurar secret en GitHub repo settings |
+| 1 | SendGrid: (higiene) revocar API key anterior (si aun esta activa) | P2 | RECOMENDADO (owner/externo) | Manual/navegador | Ver `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` seccion "Paso 2" |
+| 2 | Auditoria forense: C-01..C-07 + R-01..R-18 | P0 | CERRADO | Docs/codigo | Ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` + `docs/closure/OPEN_ISSUES.md` |
+| 3 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
 
-### 3.2 Remediaciones de Auditoria Forense (detalle R-01 a R-18)
+### 3.2 Auditoria Forense (C-01..C-07, R-01..R-18)
 
-Plan de remediacion priorizado (de `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`):
-
-**Prioridad 1 — Hallazgos ALTOS:**
-- R-01: config.toml email rate limit
-- R-02: Reclasificar tests (contract → unit/integration)
-- R-03: Actualizar dependencias
-- R-04: Auth guards faltantes
-- R-05: (ver auditoria)
-
-**Prioridad 2 — Hallazgos MEDIOS:**
-- R-06 a R-13: Tests faltantes, dead code, docs desactualizados
-
-**Prioridad 3 — Hallazgos BAJOS:**
-- R-14 a R-18: Residuos, cache CI
-
-**Guia de ejecucion:** `docs/CONTEXT_PROMPT_EJECUTOR_CORRECCIONES_2026-02-15.md`
+Estado actual (2026-02-15): **CERRADO**. Referencias:
+- `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
+- `docs/closure/OPEN_ISSUES.md`
 
 ### 3.3 Mejoras opcionales (no bloqueantes)
 
@@ -138,11 +125,8 @@ Estos documentos estan disenados para copiar/pegar en ventanas IA nuevas:
 
 | Documento | Para que sirve | Fecha |
 |-----------|---------------|-------|
-| `docs/CONTEXT_PROMPT_EJECUTOR_CORRECCIONES_2026-02-15.md` | Ejecutar remediaciones R-01 a R-18 de la auditoria forense | 2026-02-15 |
-| `docs/CONTEXT_PROMPT_VALIDACION_AUDITORIA_2026-02-15.md` | Validar la auditoria forense contra filesystem | 2026-02-15 |
 | `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` | Ejecutar Mega Plan T01-T10 (ya completado) | 2026-02-13 |
-| `docs/closure/CONTEXT_PROMPT_COMET_VERIFICAR_SENDGRID_EMAIL_ACTIVITY_2026-02-15.md` | Verificar SendGrid Email Activity (tarea owner) | 2026-02-15 |
-| `docs/closure/CONTEXT_PROMPT_COMET_CIERRE_SENDGRID_SMTP_2026-02-14.md` | Cierre SendGrid/SMTP | 2026-02-14 |
+| (Nota) Prompts operativos ad-hoc | Removidos tras ejecucion para evitar ruido | 2026-02-15 |
 
 ---
 

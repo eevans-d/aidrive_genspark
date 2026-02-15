@@ -19,8 +19,9 @@ Sos un agente tecnico ejecutor trabajando en el repo:
 ## FUENTES DE VERDAD (orden)
 1. `docs/ESTADO_ACTUAL.md`
 2. `docs/closure/OPEN_ISSUES.md`
-3. `docs/closure/MEGA_PLAN_2026-02-13_042956.md`
-4. `docs/DECISION_LOG.md`
+3. `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+4. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+5. `docs/DECISION_LOG.md`
 
 ## OBJETIVO
 Ejecutar (o re-chequear) el Mega Plan T01..T10, manteniendo evidencia reproducible y consistencia documental absoluta.
@@ -48,4 +49,3 @@ Ejecutar (o re-chequear) el Mega Plan T01..T10, manteniendo evidencia reproducib
 - Resumen de tareas ejecutadas/re-chequeadas.
 - Lista de archivos de evidencia generados o reusados.
 - Cualquier decision nueva registrada.
-

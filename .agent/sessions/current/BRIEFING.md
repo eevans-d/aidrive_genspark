@@ -1,21 +1,26 @@
 # Briefing de Sesion
-**Fecha:** 2026-02-13T06:19:22+00:00
+**Fecha:** 2026-02-15T04:57:25+00:00
 **Generado por:** CODEX
-**Objetivo:** Verificacion final consistencia documental + rigor tests
+**Objetivo:** Establecer sistema de continuidad documentada entre sesiones y ventanas IA
 
-## Checklist Atomico (ejecutado)
-- [x] Validar consistencia documental canónica y legacy (`README.md` + `docs/**/*.md`).
-- [x] Simular ciclo SessionOps (`session-end` + `session-start`) y verificar artefactos.
-- [x] Re-ejecutar gates y tests de seguridad para confirmar estabilidad real.
-- [x] Ajustar documentación con evidencia final y timestamps actuales.
+## Contexto
+El usuario solicita que toda planificacion y proceso quede documentado paso a paso,
+de manera que futuras sesiones (propias o de otros agentes IA) puedan retomar el trabajo
+de forma optima y eficiente.
+
+## Checklist Atomico
+- [ ] Archivar sesion anterior (2026-02-13, COMPLETADA).
+- [ ] Crear documento unico de continuidad (`docs/closure/CONTINUIDAD_SESIONES.md`).
+- [ ] Actualizar ESTADO_ACTUAL.md con estado de esta sesion.
+- [ ] Crear SESSION_REPORT con estado de avance.
+- [ ] Validar sistema de continuidad (lectura completa de artefactos).
 
 ## Criterio de DONE
-- [x] `0` enlaces markdown rotos en documentación completa.
-- [x] `npm run test:security` en PASS.
-- [x] `.agent/scripts/p0.sh gates all` en PASS.
-- [x] Estado canónico actualizado (`ESTADO_ACTUAL`, `OPEN_ISSUES`, `AUDITORIA_DOCUMENTAL`, `DECISION_LOG`).
+- Documento `CONTINUIDAD_SESIONES.md` creado con toda la informacion necesaria para handoff.
+- ESTADO_ACTUAL actualizado con referencia al documento de continuidad.
+- SESSION_REPORT generado.
 
 ## Restricciones
 - NO imprimir secretos/JWTs (solo nombres).
-- NO usar comandos destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
-- `api-minimarket`: mantener `verify_jwt=false` (deploy con `--no-verify-jwt`).
+- NO usar comandos destructivos de git.
+- Documentar TODO en filesystem (no solo en chat).

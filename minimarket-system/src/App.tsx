@@ -17,6 +17,7 @@ const Stock = lazy(() => import('./pages/Stock'))
 const Tareas = lazy(() => import('./pages/Tareas'))
 const Productos = lazy(() => import('./pages/Productos'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
+const Ventas = lazy(() => import('./pages/Ventas'))
 const Pedidos = lazy(() => import('./pages/Pedidos'))
 const Pocket = lazy(() => import('./pages/Pocket'))
 const Pos = lazy(() => import('./pages/Pos'))
@@ -140,6 +141,16 @@ export function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Proveedores />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/ventas"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Ventas />
               </Layout>
             </ProtectedRoute>
           }
