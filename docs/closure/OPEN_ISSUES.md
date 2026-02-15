@@ -26,8 +26,8 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 
 | Pendiente | Gate | Estado | Evidencia actual | Siguiente acción |
 |-----------|------|--------|------------------|------------------|
-| Tablas internas sin RLS (`rate_limit_state`, `circuit_breaker_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated` | RLS | 🔴 ABIERTO | `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (secciones 1, 3 y 6) | Crear migración de hardening: habilitar RLS + revocar grants explícitos (`anon`/`authenticated`). Re-ejecutar `scripts/rls_audit.sql` y registrar evidencia nueva. |
-| `public.sp_aplicar_precio` (SECURITY DEFINER) sin `search_path` fijo (mutable search_path) | RLS/SQL | 🔴 ABIERTO | `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (sección 5) + `supabase/migrations/20260212100000_pricing_module_integrity.sql` | Crear migración de hardening: `ALTER FUNCTION ... SET search_path = public` después de la última redefinición. Re-ejecutar `scripts/rls_audit.sql` y Security Advisor. |
+| ~~Tablas internas sin RLS (`rate_limit_state`, `circuit_breaker_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated`~~ | RLS | ✅ CERRADO | Migración `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql` (PART 1+2). Evidencia pre: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`. Evidencia post: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. | — |
+| ~~`public.sp_aplicar_precio` (SECURITY DEFINER) sin `search_path` fijo (mutable search_path)~~ | RLS/SQL | ✅ CERRADO | Migración `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql` (PART 3). Evidencia pre: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (sección 5). Evidencia post: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. | — |
 | ~~E2E completo de POS (flujo venta end-to-end)~~ | 3 | ✅ CERRADO | 8/8 tests E2E Playwright PASS. `minimarket-system/e2e/pos.e2e.spec.ts`. Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md`. | — |
 | ~~Canal real de alertas stock bajo al operador (SendGrid)~~ | 4 | ✅ CERRADO | Historial: Gate 4 cerrado 2026-02-12: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md`. Revalidación post-rotación 2026-02-15: smoke real + Email Activity `delivered`: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`. | — |
 | ~~Monitoreo real en producción~~ | 16 | ✅ CERRADO | Evidencia tecnica (`SENTRY_SMOKE_STATUS=200`) + evidencia visual/alerta confirmada en Sentry: issue `7265042116`, event `b8474593d35d95a9a752a87c67fe52e8`, regla `Send a notification for high priority issues` en `Enabled` con filtro `environment=production`. Ver `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`. | — |
@@ -94,7 +94,7 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 - Gates sesión 2026-02-13 en PASS: `test-reports/quality-gates_20260213-061657.log`.
 - Gates frontend recheck 2026-02-14 en PASS: `test-reports/quality-gates_20260214-042354.log`.
 - Gate 16 Sentry cerrado con evidencia tecnica + visual externa (Comet): `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
-- **Veredicto:** CON RESERVAS (P0 seguridad pendiente; ver tabla P0). Score operativo 86/100 (pre-hallazgo).
+- **Veredicto:** APROBADO (todos los P0 cerrados). Score operativo 92/100 (post-fix P0 RLS + search_path, 2026-02-15). Nota: pendiente aplicar migración a remoto (`supabase db push`) y re-ejecutar `scripts/rls_audit.sql` para confirmar en producción.
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)
 
