@@ -3,13 +3,26 @@
 **Estado:** ✅ **COMPLETADO (P0) 2026-01-23 + REVALIDADO (P1) 2026-02-12**  
 **Fecha actualización:** 2026-02-12  
 **Propósito:** Auditoría RLS del sistema Mini Market  
-**Resultado:** ✅ TODAS LAS TABLAS PROTEGIDAS
+**Resultado:** ✅ Tablas críticas protegidas (P0/P1) + ⚠️ ver Addendum 2026-02-15 (3 tablas internas sin RLS)
 
 ---
 
 ## 📋 Resumen Ejecutivo
 
 Auditoría completada el 2026-01-23. **Todas las tablas P0 tienen RLS activo** y bloquean acceso a usuarios anónimos.
+
+### Addendum 2026-02-15 — Hallazgo complementario (Full Audit)
+
+La evidencia más reciente de auditoría RLS muestra **3 tablas internas con RLS deshabilitado**:
+- `circuit_breaker_state`
+- `rate_limit_state`
+- `cron_jobs_locks`
+
+Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (secciones 1, 3 y 6: estado `DISABLED` + grants a `anon`/`authenticated`).
+
+Adicionalmente, la misma evidencia marca un riesgo de **mutable search_path** en `public.sp_aplicar_precio` (SECURITY DEFINER sin `search_path` fijo).
+
+**Implicancia:** hasta que se aplique hardening (habilitar RLS + revocar grants explícitos), estas tablas deben considerarse **P0 seguridad**.
 
 ### Addendum 2026-02-12 — Validación fina por rol (P1)
 
@@ -33,8 +46,8 @@ Se cerró el pendiente P1 “Validación fina de RLS por reglas de negocio/rol�
 ### Resultado de la Auditoría
 - **Tablas P0 verificadas:** 7/7 protegidas ✅
 - **Tablas P2/P3 verificadas:** 4/4 bloqueadas para anon ✅
-- **Exposiciones detectadas:** 0
-- **Acciones requeridas:** Ninguna
+- **Exposiciones detectadas:** ver Addendum 2026-02-15 (3 tablas sin RLS)
+- **Acciones requeridas:** hardening de RLS/grants para tablas internas sin RLS
 
 ### Método de Verificación
 Se ejecutaron queries REST API con `anon` key contra cada tabla P0:

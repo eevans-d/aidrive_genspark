@@ -1,5 +1,8 @@
 # VERIFICACIÓN Y AMPLIACIÓN DE AUDITORÍA FORENSE ABSOLUTA
 
+> [DEPRECADO: 2026-02-15] Este documento quedó desincronizado tras la consolidación final en `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` y la reapertura de un P0 de seguridad (RLS interno) en `docs/closure/OPEN_ISSUES.md`.  
+> Fuente vigente: `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`, `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md`.
+
 **Proyecto:** Mini Market System
 **Branch:** `session-close-2026-02-11`
 **Fecha de verificación:** 2026-02-15

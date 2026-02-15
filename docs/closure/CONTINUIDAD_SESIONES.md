@@ -28,8 +28,8 @@
 | **Proyecto** | Mini Market System (inventario, ventas, tareas, proveedores) |
 | **Stack** | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | **Ref Supabase** | dqaygmjpzoqjjrywdsxi |
-| **Veredicto** | CON RESERVAS NO CRITICAS (defendible para produccion piloto) |
-| **Score** | 86/100 (ESTADO_ACTUAL) / 78/100 (Auditoria Forense) |
+| **Veredicto** | CON RESERVAS (P0 seguridad pendiente; ver OPEN_ISSUES) |
+| **Score** | 86/100 (operativo, pre-hallazgo) / 78/100 (forense, pre-addendum) |
 | **Tests** | 829/829 PASS, Build PASS, Lint PASS |
 | **Edge Functions** | 13 activas (api-minimarket v26) |
 | **Migraciones** | 39/39 local=remoto |
@@ -54,8 +54,9 @@
 | # | Tarea | Prioridad | Estado | Tipo | Siguiente accion |
 |---|-------|-----------|--------|------|------------------|
 | 1 | SendGrid: (higiene) revocar API key anterior (si aun esta activa) | P2 | RECOMENDADO (owner/externo) | Manual/navegador | Ver `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` seccion "Paso 2" |
-| 2 | Auditoria forense: C-01..C-07 + R-01..R-18 | P0 | CERRADO | Docs/codigo | Ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` + `docs/closure/OPEN_ISSUES.md` |
-| 3 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
+| 2 | P0 seguridad: RLS interno + mutable search_path | P0 | ABIERTO | DB/migraciones | Ver `docs/closure/OPEN_ISSUES.md` + `docs/SECURITY_AUDIT_REPORT.md` (acción: migración hardening + re-ejecutar `scripts/rls_audit.sql`) |
+| 3 | Auditoria forense: C-01..C-07 + R-01..R-18 | P2 | CERRADO | Docs/codigo | Ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` |
+| 4 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
 
 ### 3.2 Auditoria Forense (C-01..C-07, R-01..R-18)
 
@@ -141,7 +142,7 @@ Eres un agente tecnico ejecutor trabajando en el proyecto Mini Market System.
 CONTEXTO RAPIDO
 - Repo: /home/eevan/ProyectosIA/aidrive_genspark
 - Stack: React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL
-- Estado: CON RESERVAS NO CRITICAS (score 86/100, defendible para produccion piloto)
+- Estado: CON RESERVAS (P0 seguridad pendiente; ver OPEN_ISSUES)
 - Tests: 829/829 PASS, Build PASS
 - Branch actual: main
 

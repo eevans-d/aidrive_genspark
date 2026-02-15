@@ -1,9 +1,46 @@
-# Reporte de Auditoría de Dependencias
+# Security Audit Report
+> Este archivo comenzó como un reporte de *dependencias* (2026-01-23). Se conserva el historial abajo.
+
+**Última actualización:** 2026-02-15  
+
+---
+
+## Addendum 2026-02-15 — SecurityAudit Complementario (Full Audit)
+
+### CRITICAL
+- **Tablas sin RLS habilitado (exposición potencial vía Data API/PostgREST):**
+  - `circuit_breaker_state`
+  - `rate_limit_state`
+  - `cron_jobs_locks`
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (secciones 1, 3 y 6: RLS `DISABLED` + grants a `anon`/`authenticated`).
+  - Estado en repo: no hay `ALTER TABLE ... ENABLE ROW LEVEL SECURITY` para estas 3 tablas en `supabase/migrations/`.
+  - Recomendación: agregar migración de hardening que (1) habilite RLS y (2) revoque privilegios explícitos a `anon`/`authenticated` (defensa en profundidad).
+
+- **SECURITY DEFINER sin `search_path` fijo (riesgo de `mutable search_path`):**
+  - `public.sp_aplicar_precio(...)` se redefine sin `SET search_path = public` en `supabase/migrations/20260212100000_pricing_module_integrity.sql`.
+  - Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (sección 5: `sp_aplicar_precio` marcado como “⚠️ SIN search_path”).
+  - Recomendación: agregar migración que aplique `ALTER FUNCTION ... SET search_path = public` después de la última redefinición.
+
+### HIGH
+- **CORS wildcard** (`Access-Control-Allow-Origin: *`) en `supabase/functions/scraper-maxiconsumo/index.ts`.
+  - Nota: el endpoint está protegido por `validateApiSecret`, pero el wildcard mantiene superficie browser abierta si el secret se filtra.
+
+### MEDIUM
+- **Fixtures con patrones tipo JWT/API keys en tests unitarios** (no son secretos reales, pero pueden disparar scanners):
+  - `tests/unit/security-gaps.test.ts`
+  - `tests/unit/strategic-high-value.test.ts`
+
+### Estado RLS (extracto, 2026-02-13)
+| Tabla | RLS Habilitado | Policies | Estado |
+|-------|----------------|----------|--------|
+| `circuit_breaker_state` | No | N/A | **VULNERABLE** |
+| `rate_limit_state` | No | N/A | **VULNERABLE** |
+| `cron_jobs_locks` | No | N/A | **VULNERABLE** |
+
+---
 
 **Fecha:** 2026-01-23  
 **Ejecutado por:** WS7.2 - Security Scan  
-
----
 
 ## Addendum 2026-02-12 — Seguridad Aplicativa (RLS/Roles)
 

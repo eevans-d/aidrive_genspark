@@ -30,7 +30,7 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 
 ## Estado operativo
 
-- Veredicto consolidado: `CON RESERVAS NO CRÍTICAS` (defendible para producción piloto; sin P0 bloqueantes).
+- Veredicto consolidado: `CON RESERVAS` (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`).
 - Score operativo: `86/100`.
 - Snapshot vigente de gates: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 - Pendientes P0/P1 vigentes: `docs/closure/OPEN_ISSUES.md`.

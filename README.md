@@ -4,7 +4,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 
 ## Estado Actual
 - Fecha de referencia: 2026-02-15
-- Veredicto: CON RESERVAS NO CRITICAS (defendible para produccion piloto; sin P0 bloqueantes)
+- Veredicto: CON RESERVAS (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`)
 - Score operativo: 86/100
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 

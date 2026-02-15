@@ -6,7 +6,7 @@
 ## Estado Rapido
 | Metrica | Valor |
 |---|---|
-| Estado global | CON RESERVAS NO CRITICAS |
+| Estado global | CON RESERVAS (P0 seguridad pendiente; ver OPEN_ISSUES) |
 | Score operativo | 86/100 |
 | Migraciones | 39/39 (local=remoto) |
 | Edge Functions activas | 13 |

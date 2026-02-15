@@ -4,6 +4,7 @@
 **Fecha:** 2026-02-12 (post-ejecución gates) | **Scope:** full (frontend + backend + docs + linked Supabase) | **Score UX:** 8/10
 
 **Addendum 2026-02-15:** Gate 16 (Sentry) y Gate 4 (SendGrid/SMTP) quedaron cerrados con evidencia externa. Ver `docs/ESTADO_ACTUAL.md`.
+**Addendum 2026-02-15 (full-audit complementario):** P0 seguridad detectado en RLS (tablas internas sin RLS + grants). Ver `docs/SECURITY_AUDIT_REPORT.md` y `docs/closure/OPEN_ISSUES.md`.
 
 ## Clasificacion de Estado
 | Elemento | Estado | Evidencia |
@@ -25,7 +26,8 @@
 | Enlaces internos rotos en documentación | REAL (corregido) | `docs/AUDITORIA_RLS_CHECKLIST.md`, `docs/mpc/MEGA_PLAN_CONSOLIDADO.md` |
 
 ## Blockers (P0)
-- [x] No se detectó blocker P0. Todos los gates ejecutables cerrados.
+- [ ] P0 seguridad: tablas internas sin RLS (`rate_limit_state`, `circuit_breaker_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated` (evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`).
+- [x] Gates ejecutables (3/4/15/16/18) cerrados con evidencia.
 
 ## Fricciones (P1)
 - [ ] Sentry DSN pendiente del owner (Gate 16 parcial — código listo, necesita configuración).

@@ -8,11 +8,18 @@
 
 ---
 
-## SCORE TOTAL: 78/100 — APROBADO CON RESERVAS MENORES
+## SCORE TOTAL: 78/100 — APROBADO CON RESERVAS (ver Addendum 2026-02-15)
 
 > **Cambio respecto a auditoría original (55/100):** +23 puntos. Se resolvieron 4 de los 4 hallazgos críticos originales, 6 de los 8 hallazgos altos, y 3 de los 7 medios. Los hallazgos restantes no bloqueantes.
 
 ---
+
+### Addendum 2026-02-15 — Correcciones Post-Remediación + Hallazgos Complementarios
+
+1. **Inventario frontend actualizado:** `Ventas.tsx` y `Tareas.tsx` tienen tests completos (`Ventas.test.tsx`, `Tareas.test.tsx`) y `usePedidos` tiene `usePedidos.test.ts`.
+2. **Auth guards:** las 13 Edge Functions tienen `requireServiceRoleAuth` o `validateApiSecret` (incluye `alertas-vencimientos`, `reposicion-sugerida`, `cron-testing-suite`).
+3. **P0 seguridad (RLS):** evidencia remota muestra 3 tablas internas sin RLS (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated`. Ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` y `docs/SECURITY_AUDIT_REPORT.md`.
+4. **Security definer:** `public.sp_aplicar_precio` queda definido sin `SET search_path = public` en `supabase/migrations/20260212100000_pricing_module_integrity.sql` (mutable search_path).
 
 ## 1. EVALUACIÓN POR MÓDULOS
 
@@ -43,10 +50,10 @@
 | 4 | Kardex.tsx | /kardex | Sí | Sí | Kardex.test.tsx ✅ |
 | 5 | Stock.tsx | /stock | Sí | Sí | Stock.test.tsx ✅ |
 | 6 | Rentabilidad.tsx | /rentabilidad | Sí | Sí | Rentabilidad.test.tsx ✅ |
-| 7 | Tareas.tsx | /tareas | Sí | Sí | Tareas.optimistic.test.tsx ⚠️ |
+| 7 | Tareas.tsx | /tareas | Sí | Sí | Tareas.test.tsx ✅ (+ optimistic) |
 | 8 | Productos.tsx | /productos | Sí | Sí | Productos.test.tsx ✅ |
 | 9 | Proveedores.tsx | /proveedores | Sí | Sí | Proveedores.test.tsx ✅ |
-| 10 | Ventas.tsx | /ventas | Sí | Sí | **SIN TEST** |
+| 10 | Ventas.tsx | /ventas | Sí | Sí | Ventas.test.tsx ✅ |
 | 11 | Pedidos.tsx | /pedidos | Sí | Sí | Pedidos.test.tsx ✅ |
 | 12 | Clientes.tsx | /clientes | Sí | Sí | Clientes.test.tsx ✅ |
 | 13 | Pocket.tsx | /pocket | Sí | No | Pocket.test.tsx ✅ |
@@ -73,14 +80,14 @@
 | 1 | useDashboardStats.ts | 1 useQuery | ✅ |
 | 2 | useDeposito.ts | 1 useQuery | ✅ |
 | 3 | useKardex.ts | 1 useQuery | ✅ |
-| 4 | usePedidos.ts | 2 useQuery + 4 useMutation (6 total) | ❌ |
+| 4 | usePedidos.ts | 2 useQuery + 4 useMutation (6 total) | ✅ usePedidos.test.ts |
 | 5 | useProductos.ts | 1 useQuery | ✅ |
 | 6 | useProveedores.ts | 1 useQuery | ✅ |
 | 7 | useRentabilidad.ts | 1 useQuery | ✅ |
 | 8 | useStock.ts | 1 useQuery | ✅ |
 | 9 | useTareas.ts | 1 useQuery | ✅ |
 
-⚠️ **Nota:** `hooks/queries/index.ts` (barrel export) NO re-exporta `usePedidos` ni sus 5 hooks asociados. Solo exporta 8 de 9 archivos.
+✅ **Nota:** `hooks/queries/index.ts` (barrel export) re-exporta `usePedidos` y sus hooks asociados.
 
 **Hooks — Custom (7 archivos):**
 
@@ -117,20 +124,20 @@
 | # | Función | Tipo | Auth Guard | Invocada por cron |
 |---|---------|------|------------|-------------------|
 | 1 | alertas-stock | Negocio | `requireServiceRoleAuth` | SÍ (hourly) |
-| 2 | alertas-vencimientos | Negocio | **NINGUNO** | NO |
+| 2 | alertas-vencimientos | Negocio | `requireServiceRoleAuth` | NO |
 | 3 | api-minimarket | API Principal | JWT + SHA-256 cache + circuit breaker | NO (HTTP directo) |
 | 4 | api-proveedor | API | `x-api-secret` + origin validation | NO (HTTP directo) |
 | 5 | cron-dashboard | Admin/Control | `requireServiceRoleAuth` (L141) | NO |
 | 6 | cron-health-monitor | Monitoreo | `requireServiceRoleAuth` (L105) | NO |
 | 7 | cron-jobs-maxiconsumo | Scraping/Precios | `requireServiceRoleAuth` (L118) | SÍ (4 jobs) |
 | 8 | cron-notifications | Notificaciones | `requireServiceRoleAuth` (L624) | NO |
-| 9 | cron-testing-suite | Testing | **NINGUNO** | NO |
+| 9 | cron-testing-suite | Testing | `requireServiceRoleAuth` | NO |
 | 10 | notificaciones-tareas | Negocio | `requireServiceRoleAuth` (L54) | SÍ (cada 2h) |
 | 11 | reportes-automaticos | Negocio | `requireServiceRoleAuth` (L24) | SÍ (daily 8AM) |
-| 12 | reposicion-sugerida | Negocio | **NINGUNO** | NO |
+| 12 | reposicion-sugerida | Negocio | `requireServiceRoleAuth` | NO |
 | 13 | scraper-maxiconsumo | Scraping | `validateApiSecret` (L283) | NO |
 
-**Auth Guard Summary: 10/13 funciones protegidas, 3 sin auth.**
+**Auth Guard Summary: 13/13 funciones protegidas.**
 
 ### 2.3 Cron Jobs Configurados (7+1)
 
@@ -154,13 +161,14 @@ Total: **39 archivos** en `supabase/migrations/`. Desde `20250101000000_version_
 | Categoría | Archivos | Ubicación |
 |-----------|----------|-----------|
 | Unit (raíz) | 47 | `tests/unit/` |
-| Frontend | 27 | `minimarket-system/src/` |
-| Integration | 3 | `tests/integration/` |
+| Frontend | 30 | `minimarket-system/src/` |
+| Contract | 3 | `tests/contract/` |
+| E2E smoke (vitest) | 2 | `tests/e2e/` |
 | Security | 1 | `tests/security/` |
 | Performance | 1 | `tests/performance/` |
 | API Contracts | 1 | `tests/api-contracts/` |
-| E2E | 4 | `minimarket-system/e2e/` |
-| **TOTAL** | **84** | |
+| E2E (Playwright) | 4 | `minimarket-system/e2e/` |
+| **TOTAL** | **89** | |
 
 E2E detalle:
 - `pos.e2e.spec.ts` — 8 tests POS
@@ -240,28 +248,28 @@ E2E detalle:
 
 #### H-11: Triple versión de @supabase/supabase-js → SIGUE PRESENTE ❌
 - **Estado actual verificado:**
-  - Edge Functions (`supabase/functions/deno.json`): `@supabase/supabase-js@2.39.3`
+  - Edge Functions (`supabase/functions/deno.json`): `@supabase/supabase-js@2.49.4`
   - Frontend (`minimarket-system/package.json`): `@supabase/supabase-js@^2.78.0`
   - Root (`package.json`): `@supabase/supabase-js@^2.95.3`
-- **Delta:** 56 versiones entre Edge Functions y root.
+- **Delta:** ~46 versiones menores entre Edge Functions y root.
 
-#### H-12: React types v19 en root vs runtime v18 → SIGUE PRESENTE ❌
+#### H-12: React types mismatch en root → RESUELTO ✅
 - **Estado actual verificado:**
-  - Root `package.json`: `@types/react@^19.2.8` con `react@^18.3.1`
-  - Frontend `minimarket-system/package.json`: `@types/react@^18.3.12` con `react@^18.3.1` (correcto)
+  - Root `package.json`: `@types/react@^18.3.12` con `react@^18.3.1` (alineado)
+  - Frontend `minimarket-system/package.json`: `@types/react@^18.3.12` con `react@^18.3.1` (alineado)
 
 ### 3.3 HALLAZGOS MEDIOS ORIGINALES — 3 de 7 RESUELTOS
 
-#### ~~H-16: 5 de 13 páginas sin tests~~ → MAYORMENTE RESUELTO ✅
+#### ~~H-16: 5 de 13 páginas sin tests~~ → RESUELTO ✅
 - **Estado original:** Kardex, Pocket, Proveedores, Rentabilidad, Stock sin tests.
 - **Estado actual:** Ahora tienen tests: Kardex.test.tsx, Pocket.test.tsx, Proveedores.test.tsx, Rentabilidad.test.tsx, Stock.test.tsx.
-- **Pendiente:** Solo Ventas.tsx (página nueva) no tiene test. NotFound.tsx es utilitaria (aceptable sin test). Tareas solo tiene `optimistic.test.tsx` (parcial).
+- **Estado actual (2026-02-15):** Ventas y Tareas también tienen tests completos (`Ventas.test.tsx`, `Tareas.test.tsx`). NotFound.tsx es utilitaria (aceptable sin test).
 
 #### ~~H-18: No hay catch-all 404 route~~ → RESUELTO ✅
 - **Estado actual:** App.tsx L195+: `<Route path="*" element={...}><NotFound /></Route>` con lazy loading.
 
-#### ~~H-13: ESTADO_ACTUAL.md métricas incorrectas~~ → PARCIALMENTE RESUELTO ⚠️
-- Requiere actualización a nueva realidad (15 páginas, 27 frontend tests, etc.)
+#### ~~H-13: ESTADO_ACTUAL.md métricas incorrectas~~ → RESUELTO ✅
+- Estado actualizado a la realidad: 15 páginas, 30 test files frontend, 89 test files totales (incluye 2 smoke e2e en `tests/e2e/`).
 
 #### H-14: 5 performance tests son sintéticos → SIGUE PRESENTE ❌
 - **Evidencia actual:** `tests/performance/load-testing.vitest.test.ts` sigue usando `const mockFetch = vi.fn()` (L38), `vi.stubGlobal('fetch', mockFetch)` (L82). No testea rendimiento real.
@@ -270,107 +278,55 @@ E2E detalle:
 - **Estado actual:** La función `recordNotificationLog` (cron-notifications L1191-1202) sigue almacenando `recipients` (emails/phones) en texto plano en BD.
 - **Matiz:** En logging de consola, NO se loguean emails directos (se loguea `toCount`). La severidad se concentra en almacenamiento en BD.
 
-#### H-17: Pre-commit hooks no cubren backend → SIGUE PRESENTE ❌
-- **Estado actual:** `.husky/pre-commit` ejecuta `cd minimarket-system && npx tsc --noEmit` (L1) y `npx lint-staged` (L2). No ejecuta `deno check`.
+#### H-17: Pre-commit hooks no cubren backend → RESUELTO ✅
+- **Estado actual:** `.husky/pre-commit` incluye `deno check --no-lock supabase/functions/*/index.ts`.
 
-#### H-19: `extractUserRole()` es dead code → SIGUE PRESENTE ❌
-- **Estado actual:** Solo usada en `roles.test.ts`, cero usos en producción. Confirmado.
+#### H-19: `extractUserRole()` es dead code → RESUELTO ✅
+- **Estado actual:** `extractUserRole()` ya no existe en `minimarket-system/src/lib/roles.ts`.
 
 ---
 
 ## 4. HALLAZGOS VIGENTES — ORDENADOS POR SEVERIDAD
 
-### 4.1 CRÍTICOS (0)
+### 4.1 CRÍTICOS (2)
 
-**No hay hallazgos críticos vigentes.**
+#### H-C1: Tablas internas sin RLS (exposición potencial)
+- **Módulo:** M4/M6
+- **Tablas:** `circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`
+- **Evidencia:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`:
+  - Sección 1/3: RLS `DISABLED` en estas 3 tablas.
+  - Sección 6: grants a `anon`/`authenticated`.
+- **Impacto:** potencial acceso vía Data API/PostgREST sin restricciones RLS.
+- **Estado:** 🔴 P0 ABIERTO (ver `docs/closure/OPEN_ISSUES.md`).
 
-### 4.2 ALTOS (5)
+#### H-C2: SECURITY DEFINER sin `search_path` fijo (mutable search_path)
+- **Módulo:** M4/M6
+- **Objeto:** `public.sp_aplicar_precio(...)`
+- **Evidencia:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (sección 5) marca `sp_aplicar_precio` como “⚠️ SIN search_path”.
+- **Fuente en repo:** `supabase/migrations/20260212100000_pricing_module_integrity.sql` redefine la función con `SECURITY DEFINER;` sin `SET search_path = public`.
+- **Estado:** 🔴 P0 ABIERTO.
 
-#### H-08: Email rate throttle a 1s
-- **Módulo:** M6
-- **Archivo:** `supabase/config.toml` L182
-- **Valor:** `max_frequency = "1s"`
-- **Impacto:** Permite 60 emails/minuto (flooding de confirmaciones/resets).
+### 4.2 ALTOS (1)
 
-#### H-10: 38 integration tests son unit tests mal etiquetados
-- **Módulo:** M5
-- **Archivos:** `tests/integration/api-scraper.integration.test.ts`, `database.integration.test.ts`, `msw-integration.test.ts`
-- **Evidencia:** Los 3 archivos usan `vi.fn()` para mockear `global.fetch`. Cero contacto con servicios reales.
-- **Recomendación:** Reclasificar como `tests/contract/` o `tests/unit-api/`.
-
-#### H-11: Triple versión de @supabase/supabase-js
-- **Módulo:** M1
-- **Evidencia:** Edge Functions: `2.39.3` (pinned), Frontend: `^2.78.0`, Root: `^2.95.3`.
-- **Riesgo:** Drift de API entre entornos. La versión de Edge Functions tiene 56 minor versions de atraso.
-
-#### H-12: React types v19 en root vs runtime v18
-- **Módulo:** M1
-- **Evidencia:** Root `@types/react@^19.2.8` con runtime `react@^18.3.1`. Frontend correctamente alineado.
-- **Impacto:** Type checking en root puede generar errores espurios por APIs de React 19 no disponibles.
-
-#### H-NEW-01: 3 Edge Functions sin auth guard
-- **Módulo:** M3/M6
-- **Funciones afectadas:**
-  - `cron-testing-suite` — ejecuta tests contra funciones de producción
-  - `alertas-vencimientos` — genera alertas de vencimientos
-  - `reposicion-sugerida` — calcula reposiciones
-- **Impacto:** Invocables por cualquiera con la URL base. `cron-testing-suite` es el más riesgoso (puede ejecutar tests contra producción sin auth).
-- **Mitigante:** No tienen endpoints de control/escritura destructivos como los que tenía cron-dashboard.
-
-### 4.3 MEDIOS (9)
-
-#### H-14: 5 performance tests son sintéticos
+#### H-14: Performance tests son sintéticos
 - **Módulo:** M5
 - **Archivo:** `tests/performance/load-testing.vitest.test.ts`
-- **Evidencia:** Mockea fetch con `vi.fn()`, genera datos en memoria, mide latencia ficticia con `setTimeout`.
+- **Nota:** útiles como tests de resiliencia, pero NO demuestran performance real.
 
-#### H-15: PII almacenada sin cifrar en BD (cron-notifications)
+### 4.3 MEDIOS (1)
+
+#### H-M1: CORS wildcard en scraper-maxiconsumo
 - **Módulo:** M3/M6
-- **Archivo:** `supabase/functions/cron-notifications/index.ts` L1191-1202
-- **Evidencia:** `recordNotificationLog` almacena `recipients` (emails/phones en texto plano) y `data` (variables de template) en tabla `cron_jobs_notifications`.
-- **Nota:** El logging en consola NO expone emails directos (loguea `toCount`).
+- **Archivo:** `supabase/functions/scraper-maxiconsumo/index.ts`
+- **Evidencia:** `Access-Control-Allow-Origin: '*'` en headers base.
+- **Matiz:** la Function está protegida por `validateApiSecret`, pero el wildcard es un anti-patrón.
 
-#### H-17: Pre-commit hooks no cubren backend (Deno)
-- **Módulo:** M8
-- **Archivo:** `.husky/pre-commit`
-- **Evidencia:** Ejecuta `cd minimarket-system && npx tsc --noEmit` (L1) y `npx lint-staged` (L2). No verifica Edge Functions con `deno check`.
+### 4.4 BAJOS (1)
 
-#### H-19: `extractUserRole()` es dead code
+#### H-L1: `console.error` residual en `Pedidos.tsx`
 - **Módulo:** M2
-- **Archivo:** `minimarket-system/src/lib/roles.ts` L65-82
-- **Evidencia:** Exportada, usada SOLO en `roles.test.ts`. Cero usos en producción.
-
-#### H-NEW-02: Ventas.tsx sin test
-- **Módulo:** M2/M5
-- **Evidencia:** Página nueva `/ventas` con lazy loading y ErrorMessage, pero sin archivo de test.
-
-#### H-NEW-03: Barrel export incompleto en queries
-- **Módulo:** M2
-- **Archivo:** `minimarket-system/src/hooks/queries/index.ts`
-- **Evidencia:** NO re-exporta `usePedidos` ni sus 5 hooks asociados.
-
-#### H-NEW-04: Pedidos.tsx usa default import para ErrorMessage
-- **Módulo:** M2
-- **Evidencia:** Todas las páginas usan named import `{ ErrorMessage }` excepto Pedidos.tsx que usa default import. Inconsistencia menor.
-
-#### H-13: ESTADO_ACTUAL.md incompleto
-- **Módulo:** M7
-- **Evidencia:** Actualizado para migraciones (39/39) y funciones (13), pero NO incluye métricas de páginas (15), componentes (7), ni conteo de tests (84). Severidad reclasificada a BAJA.
-
-#### H-NEW-05: Decision Log no referenciado en todas sus decisiones recientes
-- **Módulo:** M7
-- **Evidencia:** 106 decisiones (D-001 a D-106). Las más recientes (D-089 a D-106, post 2026-02-13) pueden no estar reflejadas en otros documentos.
-
-### 4.4 BAJOS (6)
-
-| # | Hallazgo | Archivo |
-|---|----------|---------|
-| B-01 | `"main": "cypress.config.js"` residual | root `package.json` L5 |
-| B-02 | Phone MFA deshabilitado (TOTP activo es suficiente) | `config.toml` L260-261 |
-| B-03 | Falta cache npm en CI para root-level dependencies | `.github/workflows/ci.yml` |
-| B-04 | `deploy.sh` no valida branch para staging/dev | `deploy.sh` |
-| B-05 | `usePedidos.ts` sin test file | `hooks/queries/usePedidos.ts` |
-| B-06 | Tareas.tsx solo tiene test parcial (optimistic) | `pages/Tareas.optimistic.test.tsx` |
+- **Archivo:** `minimarket-system/src/pages/Pedidos.tsx`
+- **Matiz:** también usa `toast.error()`, por lo que no es un bug UX (solo higiene).
 
 ### 4.5 OBSERVACIONES ADICIONALES (post-validación)
 
@@ -386,7 +342,7 @@ E2E detalle:
 | # | Hallazgo | Evidencia | Módulo |
 |---|----------|-----------|--------|
 | P-01 | **Auth flow api-minimarket sólido** | SHA-256 cache (auth.ts L56-62), circuit breaker 3-fail/15s (L90-146), app_metadata only (L248-253), token cache positivo 30s / negativo 10s, AbortController timeout 5s | M3/M6 |
-| P-02 | **RLS comprehensivo** | 33+ policies activas, anon revocado, 60/60 PASS en fine validation | M4 |
+| P-02 | **RLS robusto en tablas de negocio** | 33+ policies activas, 60/60 PASS en fine validation; ⚠️ ver P0: 3 tablas internas sin RLS | M4 |
 | P-03 | **RBAC deny-by-default** | Frontend: `canAccessRoute` (roles.ts L41-48). Backend: `requireRole` (auth.ts L294-312) | M2/M3 |
 | P-04 | **POS E2E tests genuinos** | 8 Playwright tests con route interception, seed data, flujo buy/return/discount/tarjeta | M5 |
 | P-05 | **Decision Log ejemplar** | 106 decisiones (D-001 a D-106) con fechas, contexto, cross-references | M7 |
@@ -404,7 +360,7 @@ E2E detalle:
 | P-17 | **Coverage alineado y bloqueante** | vitest.config.ts 80% + CI sin continue-on-error + CLAUDE.md 80% + D-106 confirma | M5/M8 |
 | P-18 | **Password policy robusta** | 10 chars mínimo + `lower_upper_letters_digits_symbols` — supera OWASP | M6 |
 | P-19 | **MFA TOTP habilitado** | `enroll_enabled = true`, `verify_enabled = true` | M6 |
-| P-20 | **10/13 Edge Functions protegidas** | Todas las funciones con capacidad sensible ahora tienen `requireServiceRoleAuth` o `validateApiSecret` | M3/M6 |
+| P-20 | **13/13 Edge Functions protegidas** | Todas las funciones usan `requireServiceRoleAuth`, `validateApiSecret` o JWT+roles (api-minimarket) | M3/M6 |
 | P-21 | **Catch-all 404 route** | NotFound.tsx con lazy loading en App.tsx | M2 |
 | P-22 | **Deploy con branch validation** | `validate_production_branch()` bloquea deploy a producción desde branches no permitidos | M8 |
 
@@ -437,23 +393,23 @@ E2E detalle:
 | H-05: Password 6 chars | ✅ RESUELTO | 10 chars + complejidad máxima |
 | H-06: MFA off | ⚠️ PARCIAL | TOTP activo, Phone aún off |
 | H-07: secure_password_change off | ✅ RESUELTO | Ahora `true` |
-| H-08: Email rate 1s | ❌ NO RESUELTO | Sigue en `"1s"` |
+| H-08: Email rate 1s | ✅ RESUELTO | `max_frequency="60s"` |
 | H-09: No branch validation | ⚠️ PARCIAL | Valida producción, no staging |
-| H-10: Integration mocked | ❌ NO RESUELTO | Sigue con `vi.fn()` |
-| H-11: Triple supabase-js | ❌ NO RESUELTO | 2.39.3 / ^2.78.0 / ^2.95.3 |
-| H-12: React types mismatch | ❌ NO RESUELTO | ^19.2.8 vs ^18.3.12 |
+| H-10: Integration mocked | ✅ RESUELTO | Tests reclasificados a `tests/contract/` |
+| H-11: Triple supabase-js | ⚠️ PARCIAL | Edge `2.49.4` / FE `^2.78.0` / Root `^2.95.3` |
+| H-12: React types mismatch | ✅ RESUELTO | Root y FE alineados a `@types/react@^18.3.12` |
 
 ### Hallazgos Medios → Parcialmente Resueltos
 
 | Original | Estado 2026-02-15 | Detalle |
 |----------|-------------------|---------|
-| H-13: ESTADO_ACTUAL incompleto | ⚠️ PARCIAL | Migraciones y funciones actualizados (39/39, 13). Faltan métricas de páginas, componentes, tests |
+| H-13: ESTADO_ACTUAL incompleto | ✅ RESUELTO | Métricas de páginas/componentes/tests alineadas a filesystem |
 | H-14: Performance tests sintéticos | ❌ NO RESUELTO | Sigue mockFetch |
-| H-15: PII logging | ❌ NO RESUELTO | BD almacena recipients en texto plano |
-| H-16: 5 páginas sin tests | ✅ RESUELTO | 5 tests creados. Solo Ventas (nueva) y Tareas (parcial) pendientes |
-| H-17: Pre-commit no cubre Deno | ❌ NO RESUELTO | |
+| H-15: PII logging | ✅ RESUELTO | `cron-notifications` redacted: recipients hash SHA-256 + data sanitizada |
+| H-16: 5 páginas sin tests | ✅ RESUELTO | Páginas de negocio con tests (Ventas/Tareas incluidos) |
+| H-17: Pre-commit no cubre Deno | ✅ RESUELTO | `deno check` agregado |
 | H-18: No catch-all 404 | ✅ RESUELTO | NotFound.tsx implementado |
-| H-19: extractUserRole dead code | ❌ NO RESUELTO | |
+| H-19: extractUserRole dead code | ✅ RESUELTO | extractUserRole eliminado |
 
 ### Correcciones Factuales de la Auditoría Original
 
@@ -465,10 +421,10 @@ E2E detalle:
 | 13 páginas | **15 páginas** (+ Ventas.tsx, NotFound.tsx) |
 | 1 archivo E2E | **4 archivos E2E** |
 | ~87 decisiones | **106 decisiones** (D-001 a D-106) |
-| 21 frontend test files | **27 frontend test files** |
+| 21 frontend test files | **30 frontend test files** |
 | ErrorMessage 9/13 contradicción | **14/14** (todas las páginas principales lo usan) |
 | config.toml líneas incorrectas | Ver tabla completa en Sección 9 |
-| 74 archivos de test total | **84 archivos de test** |
+| 74 archivos de test total | **89 archivos de test** |
 
 ---
 
@@ -484,8 +440,7 @@ E2E detalle:
 - Catch-all 404 implementado
 
 **Debilidades:**
-- Triple versión de @supabase/supabase-js (H-11)
-- React types mismatch en root (H-12)
+- Triple versión de @supabase/supabase-js (H-11) — drift aún presente (Edge/FE/Root)
 - `"main": "cypress.config.js"` residual (B-01)
 
 ### M2: Frontend (9/10)
@@ -496,13 +451,10 @@ E2E detalle:
 - RBAC client-side deny-by-default (P-03)
 - Code splitting via React.lazy (15 páginas)
 - Catch-all 404 route (P-21)
-- 13 de 15 páginas con tests
+- 14 de 15 páginas con tests (NotFound es utilitaria)
 
 **Debilidades:**
-- Ventas.tsx sin test (H-NEW-02)
-- Dead code `extractUserRole()` (H-19)
-- Barrel export incompleto (H-NEW-03)
-- Pedidos.tsx import inconsistente (H-NEW-04)
+- `console.error` residual en `Pedidos.tsx` (H-L1)
 
 ### M3: Backend (8/10)
 
@@ -511,23 +463,22 @@ E2E detalle:
 - CORS estricto en APIs principales (P-07)
 - Input validation con whitelist (P-15)
 - Request ID end-to-end (P-08)
-- 10/13 funciones con auth guard (P-20)
+- 13/13 funciones con auth guard (P-20)
 
 **Debilidades:**
-- 3 funciones restantes sin auth (H-NEW-01): cron-testing-suite, alertas-vencimientos, reposicion-sugerida
-- PII almacenada sin cifrar en BD (H-15)
+- CORS wildcard en `scraper-maxiconsumo` (H-M1) (anti-patrón; mitigado por `validateApiSecret`)
 
 ### M4: Base de Datos (8/10)
 
 **Fortalezas:**
-- RLS con 33+ policies, 60/60 PASS (P-02)
+- RLS con 33+ policies en tablas de negocio, 60/60 PASS (P-02)
 - Vault pattern para secrets (P-14)
 - Migraciones consistentes (39 archivos)
-- Anon access revocado
+- Bloqueo efectivo en tablas internas con RLS+sin policies (service_role bypass)
 
 **Debilidades:**
-- ESQUEMA_BASE_DATOS_ACTUAL.md puede tener tablas faltantes
-- PII en tabla `cron_jobs_notifications` sin cifrar
+- P0: 3 tablas internas sin RLS (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) (H-C1)
+- P0: `public.sp_aplicar_precio` SECURITY DEFINER sin `search_path` fijo (H-C2)
 
 ### M5: Testing (6/10)
 
@@ -535,34 +486,31 @@ E2E detalle:
 - Security tests ahora REALES (no tautológicos) — gate legítimo (P-10, P-17)
 - POS E2E tests genuinos con Playwright (P-04)
 - Coverage alineado a 80% y bloqueante (P-17)
-- 47 unit tests + 27 frontend tests = base sólida
+- 47 unit tests + 30 frontend test files = base sólida
 - 4 archivos E2E (POS, auth, tareas, smoke)
-- 13/15 páginas con tests
+- 14/15 páginas con tests
 
 **Debilidades:**
-- 38 integration tests 100% mockeados (H-10)
-- 5 performance tests sintéticos (H-14)
-- Ventas.tsx sin test (H-NEW-02)
-- usePedidos sin test file
+- Contract/performance suites siguen siendo mayormente sintéticas (H-14)
 
 ### M6: Seguridad (7/10)
 
 **Fortalezas:**
 - Auth flow robusto en api-minimarket (P-01)
-- RLS comprehensivo (P-02)
+- RLS robusto en tablas de negocio (P-02)
 - CORS estricto en APIs principales (P-07)
 - Zero XSS/secrets/console.log (P-11, P-12, P-13)
 - Password 10+ chars con complejidad máxima (P-18)
 - MFA TOTP habilitado (P-19)
 - Email confirmation habilitada
 - Secure password change habilitado
-- 10/13 funciones protegidas (P-20)
+- 13/13 funciones protegidas (P-20)
 - Input validation (P-15)
 
 **Debilidades:**
-- 3 funciones sin auth guard (H-NEW-01)
-- Email rate 1s (H-08)
-- PII en BD sin cifrar (H-15)
+- P0: 3 tablas internas sin RLS (H-C1)
+- P0: `sp_aplicar_precio` sin `search_path` fijo (H-C2)
+- CORS wildcard en `scraper-maxiconsumo` (H-M1)
 
 ### M7: Documentación (6/10)
 
@@ -671,12 +619,12 @@ cron-notif     ──── requireServiceRoleAuth (L624) ───────�
 cron-health    ──── requireServiceRoleAuth (L105) ─────────── SEGURO ← NUEVO
 cron-maxicons  ──── requireServiceRoleAuth (L118) ─────────── SEGURO ← NUEVO
 
-cron-testing   ──── NINGUNO ─── test execution ────────────── MEDIO
-alertas-venc   ──── NINGUNO ─── alertas vencimientos ──────── MEDIO
-reposicion     ──── NINGUNO ─── cálculo reposiciones ──────── MEDIO
+cron-testing   ──── requireServiceRoleAuth ────────────────── SEGURO (internal)
+alertas-venc   ──── requireServiceRoleAuth ────────────────── SEGURO (internal)
+reposicion     ──── requireServiceRoleAuth ────────────────── SEGURO (internal)
 ```
 
-**10/13 funciones protegidas. 3 restantes sin capacidad destructiva significativa.**
+**13/13 funciones protegidas.**
 
 ---
 
@@ -702,22 +650,20 @@ El Mini Market System ha experimentado una **mejora sustancial** entre el 2026-0
 2. **Security tests reales**: Los 14 tests tautológicos fueron reescritos con lógica real de auth/CORS. El gate de seguridad en CI ahora es un gate legítimo.
 3. **Coverage alineado**: Las 3 fuentes (CLAUDE.md, vitest.config.ts, CI) ahora coinciden en 80% y el pipeline lo enforza.
 4. **Seguridad de autenticación**: Password 10+ chars con complejidad máxima, email confirmation activa, MFA TOTP habilitado, secure password change activo.
-5. **Frontend completo**: 14/14 páginas con ErrorMessage, 13/15 con tests, catch-all 404.
+5. **Frontend completo**: 14/14 páginas con ErrorMessage, 14/15 con tests (NotFound utilitaria), catch-all 404.
 
-### Lo que QUEDA pendiente (impacto medio-bajo):
-1. **3 funciones sin auth** (cron-testing-suite, alertas-vencimientos, reposicion-sugerida) — sin capacidad destructiva pero invocables públicamente.
-2. **Email rate 1s** — permite flooding.
-3. **Dependencias desalineadas** — triple supabase-js, React types mismatch.
-4. **Tests etiquetados incorrectamente** — 38 "integration" que son contract tests.
-5. **Performance tests sintéticos** — no miden rendimiento real.
-6. **PII en BD** — recipients sin cifrar en cron_jobs_notifications.
-7. **Documentación desactualizada** — ESTADO_ACTUAL.md con datos viejos.
+### Lo que QUEDA pendiente (P0/P1):
+1. **P0 RLS:** 3 tablas internas sin RLS (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated` (ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`).
+2. **P0 SECURITY DEFINER:** `public.sp_aplicar_precio` sin `SET search_path = public` en su última redefinición (mutable search_path).
+3. **P1 Performance tests:** siguen siendo sintéticos (útiles para resiliencia, no para performance real).
+4. **P1 Dependencias:** triple versión de `@supabase/supabase-js` (Edge/FE/Root) requiere decisión (unificar o aceptar drift).
+5. **P1 CORS:** wildcard en `scraper-maxiconsumo` (mitigado por `validateApiSecret`, pero anti-patrón).
 
 ### Veredicto Final
 
-**78/100 — APROBADO CON RESERVAS MENORES**
+**78/100 (pre-addendum) — CON RESERVAS (P0 seguridad abierto)**
 
-El sistema presenta una arquitectura sólida con controles de seguridad robustos en las capas críticas (auth, RLS, RBAC, input validation). Los hallazgos restantes son de impacto medio-bajo y ninguno constituye una brecha de seguridad crítica. La remediación de los 5 hallazgos altos (R-01 a R-05) elevaría el score a ~85/100.
+El sistema presenta una arquitectura sólida en las capas críticas (auth, RBAC, validación de inputs, gates y CI). Sin embargo, hay **2 hallazgos P0 de seguridad** (RLS + mutable search_path) que deben cerrarse antes de sostener un “GO” a piloto.
 
 ---
 

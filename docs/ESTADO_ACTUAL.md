@@ -1,14 +1,15 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 **Ultima actualizacion:** 2026-02-15  
-**Estado:** CON RESERVAS NO CRITICAS (defendible para produccion piloto)  
-**Score operativo:** 86/100  
+**Estado:** CON RESERVAS (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`)  
+**Score operativo:** 86/100 (pre-hallazgo; requiere re-evaluación tras cerrar P0 RLS)  
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.
 - Reserva vigente: ninguna (Gate 4 revalidado con evidencia externa). Higiene recomendada: revocar key anterior en SendGrid si aún está activa.
+- **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad abierto (RLS interno sin RLS + `sp_aplicar_precio` sin `search_path` fijo). Ver `docs/SECURITY_AUDIT_REPORT.md` y `docs/closure/OPEN_ISSUES.md`.
 
 ## 2) Estado Real Verificado (sesion 2026-02-15)
 
@@ -17,7 +18,7 @@
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
-- Archivos de test: 84 (47 unit + 27 component + 3 contract + 1 security + 1 performance + 1 api-contracts + 4 e2e).
+- Archivos de test: 89 (47 unit + 30 frontend + 3 contract + 2 e2e-smoke + 1 security + 1 performance + 1 api-contracts + 4 e2e-playwright).
 - Evidencia:
   - `supabase migration list --linked`
   - `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi`
