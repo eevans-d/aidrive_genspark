@@ -1,15 +1,15 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 **Ultima actualizacion:** 2026-02-15  
-**Estado:** CON RESERVAS (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`)  
-**Score operativo:** 86/100 (pre-hallazgo; requiere re-evaluación tras cerrar P0 RLS)  
+**Estado:** APROBADO (todos los P0 cerrados; ver `docs/closure/OPEN_ISSUES.md`)
+**Score operativo:** 92/100 (post-fix P0 RLS + search_path, 2026-02-15)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.
 - Reserva vigente: ninguna (Gate 4 revalidado con evidencia externa). Higiene recomendada: revocar key anterior en SendGrid si aún está activa.
-- **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad abierto (RLS interno sin RLS + `sp_aplicar_precio` sin `search_path` fijo). Ver `docs/SECURITY_AUDIT_REPORT.md` y `docs/closure/OPEN_ISSUES.md`.
+- **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad **CERRADO**. Migración de hardening: `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql`. RLS habilitado en 3 tablas internas + grants revocados a anon/authenticated + search_path fijado en `sp_aplicar_precio`. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. Pendiente: aplicar migración a remoto (`supabase db push`).
 
 ## 2) Estado Real Verificado (sesion 2026-02-15)
 
