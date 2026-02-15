@@ -1,7 +1,9 @@
 # Plan Ejecutable: Sentry para Observabilidad UI
 
+> [DEPRECADO: 2026-02-14] Gate 16 (Sentry) **CERRADO**. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
+
 **Fecha:** 2026-02-09
-**Estado:** ⚠️ BLOCKED (Sin DSN) — Plan de integración definido y listo para ejecución.
+**Estado (historico):** ⚠️ BLOCKED (Sin DSN) — Plan de integración definido y listo para ejecución.
 **Verificado:** 2026-02-11 — Integración `legacy-tests` en CI completada. Sentry requiere DSN para proceder.
 
 ---

@@ -1,7 +1,8 @@
 # EVIDENCIA M6.S2 - Cierre owner (Sentry + SendGrid) (T09)
 
 **Fecha:** 2026-02-13  
-**Estado:** BLOCKED (dependencia externa real)
+**Estado (2026-02-13):** BLOCKED (dependencia externa real)  
+**Update (2026-02-15):** ✅ CERRADO (Gate 16 + Gate 4 cerrados con evidencia externa)
 
 ## Alcance
 
@@ -13,6 +14,10 @@
 
 - **Sentry:** código integrado, pero sin evidencia de DSN operativo en entorno objetivo.
 - **SendGrid/SMTP:** queda pendiente confirmación de rotación final en entorno owner-managed.
+
+> Update 2026-02-15: ambas dependencias externas quedaron cerradas con evidencia:
+> - Gate 16 (Sentry): `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`
+> - Gate 4 (SendGrid/SMTP): `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 
 ## Evidencia previa relacionada
 

@@ -28,4 +28,6 @@ Sincronizar estado canónico post ejecución T01..T10 con trazabilidad de eviden
 
 ## Riesgo residual
 
-- Sin `VITE_SENTRY_DSN` operativo y sin rotación final SendGrid/SMTP validada por owner, no se puede declarar “sin reservas”.
+- (Histórico al 2026-02-13) Sin `VITE_SENTRY_DSN` operativo y sin rotación final SendGrid/SMTP validada por owner, no se puede declarar “sin reservas”.
+
+> Update 2026-02-15: Gate 16 (Sentry) y Gate 4 (SendGrid/SMTP) quedaron cerrados con evidencia externa. Referencias: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`, `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.

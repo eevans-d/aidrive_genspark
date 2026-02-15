@@ -1,9 +1,9 @@
 # Plan de Rotacion de Secretos
 
 **Fecha:** 2026-02-09
-**Estado:** PARCIALMENTE EJECUTADO — `API_PROVEEDOR_SECRET` rotado (2026-02-13), pendiente SendGrid
+**Estado:** EJECUTADO (P1) — `API_PROVEEDOR_SECRET` rotado (2026-02-13) + SendGrid rotado con delivery confirmado (2026-02-15). Higiene recomendada: revocar key anterior.
 **Riesgo:** SIN VALORES — este documento NO contiene secrets, solo nombres y procedimiento.
-**Ultima verificacion:** 2026-02-13 — 13 secrets confirmados + rotación P1 parcial aplicada.
+**Ultima verificacion:** 2026-02-15 — SendGrid aplicado en Supabase + smoke real + Email Activity `delivered`.
 
 ---
 
@@ -20,9 +20,9 @@
 | `SMTP_FROM` | Email address | No rotar (config) | — |
 | `SMTP_HOST` | Hostname | No rotar (config) | — |
 | `SMTP_PORT` | Port number | No rotar (config) | — |
-| `SMTP_USER` | Username (SendGrid) | **SI rotar** (junto con API key) | — |
+| `SMTP_USER` | Username (SendGrid) | No rotar (config) | Valor esperado: `apikey` |
 | `SMTP_PASS` | Password (= API key) | **SI rotar** (mismo valor que SENDGRID_API_KEY) | — |
-| `NOTIFICATIONS_MODE` | Flag (test/production) | No rotar (config) | — |
+| `NOTIFICATIONS_MODE` | Flag (simulation/real) | No rotar (config) | En `production`, `simulation` bloquea `/send` y `/test` |
 | `ALLOWED_ORIGINS` | CSV de origenes | No rotar (config) | — |
 
 ## 2) Secrets que requieren rotacion
@@ -41,7 +41,15 @@
   - `api-proveedor/status` con secreto nuevo -> 200
   - `api-proveedor/status` con secreto anterior -> 401
 - Evidencia: `docs/closure/SECRET_ROTATION_2026-02-13_031253.md`.
-- ⚠️ Pendiente owner: rotación de `SENDGRID_API_KEY`/`SMTP_PASS` desde SendGrid Dashboard.
+
+### Addendum 2026-02-15 (ejecutado)
+
+- ✅ SendGrid: API key nueva creada en SendGrid (permiso Mail Send) y aplicada en Supabase via env-file seguro.
+- ✅ Redeploy ejecutado: `cron-notifications` + `notificaciones-tareas`.
+- ✅ Smoke real OK: `cron-notifications/send` -> HTTP `200`, `status=sent`, `messageId` no vacio.
+- Evidencia: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.
+- ✅ Evidencia externa OK: Email Activity `delivered` post-smoke (ver evidencia 2026-02-15).
+- ⚠️ Higiene recomendada: revocar la key anterior si aún está activa (evitar llaves huérfanas).
 
 ## 3) Procedimientos de rotacion
 
@@ -65,16 +73,19 @@
 ```
 1. En SendGrid Dashboard: crear nueva API key con mismos permisos.
 2. Establecer en Supabase (los 3 juntos):
-   supabase secrets set \
-     SENDGRID_API_KEY=<nueva_key> \
-     SMTP_PASS=<nueva_key> \
-     SMTP_USER=<nuevo_user_si_aplica> \
-     --project-ref dqaygmjpzoqjjrywdsxi
+   Opcion segura recomendada (no expone valores en shell history):
+   - Crear `backups/.env.sendgrid.rotate.local` (gitignored) a partir de `backups/.env.sendgrid.rotate.template`
+     - Nota: el valor de API key de SendGrid empieza con `SG` seguido de `.` y debe pegarse completo.
+   - Ejecutar: `scripts/apply-sendgrid-secrets-from-env.sh backups/.env.sendgrid.rotate.local`
+
+   Opcion manual (solo si se entiende el riesgo de exposición en terminal):
+   supabase secrets set SENDGRID_API_KEY=<nueva_key> SMTP_PASS=<nueva_key> SMTP_USER=apikey --project-ref dqaygmjpzoqjjrywdsxi
 3. Redeployar funciones de notificacion:
    supabase functions deploy notificaciones-tareas --use-api
+   supabase functions deploy cron-notifications --use-api
 4. Validar:
-   - Enviar notificacion de prueba (depende de NOTIFICATIONS_MODE=test)
-   - Verificar en SendGrid Activity que el email llego
+   - Enviar notificacion real de prueba (en `production` requiere `NOTIFICATIONS_MODE=real`)
+   - Verificar en SendGrid Activity que el email fue procesado/entregado
 5. Si falla: rollback con valores anteriores.
 6. Revocar la API key antigua en SendGrid Dashboard.
 ```

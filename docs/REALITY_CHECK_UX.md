@@ -1,4 +1,6 @@
 # RealityCheck Report
+> [DEPRECADO: 2026-02-14] Reporte historico (2026-02-12). Estado canonico: `docs/ESTADO_ACTUAL.md` + `docs/closure/OPEN_ISSUES.md`.
+
 **Fecha:** 2026-02-12 (post-ejecución gates) | **Scope:** full (frontend + backend + docs + linked Supabase) | **Score UX:** 8/10
 
 ## Clasificacion de Estado

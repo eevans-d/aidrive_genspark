@@ -3,6 +3,10 @@
 **Fecha:** 2026-02-12
 **Estado:** PASS
 
+> Nota 2026-02-14: este PASS es **histórico**; luego se detectó regresión por rotación SendGrid (bloqueo 401). Evidencia histórica: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-14.md`.
+>
+> Nota 2026-02-15: regresión removida; smoke técnico OK (HTTP 200, `status=sent`, `messageId` no vacio) + Email Activity `delivered` confirmado. Evidencia: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.
+
 ## Descripcion
 
 Canal real de notificaciones implementado con envio via SendGrid HTTP API.

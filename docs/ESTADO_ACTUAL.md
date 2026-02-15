@@ -6,9 +6,9 @@
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
 ## 1) Veredicto Consolidado
-- Mega Plan T01..T10: completado con 9 tareas PASS y 1 tarea PARCIAL externa (owner).
+- Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.
-- Reserva vigente: SendGrid/SMTP (capturar evidencia externa en SendGrid Email Activity + revocar key anterior).
+- Reserva vigente: ninguna (Gate 4 revalidado con evidencia externa). Higiene recomendada: revocar key anterior en SendGrid si aún está activa.
 
 ## 2) Estado Real Verificado (sesion 2026-02-15)
 
@@ -64,7 +64,7 @@
 | T06 (M2.S1) | PASS | `docs/closure/EVIDENCIA_M2_S1_2026-02-13.md` |
 | T07 (M2.S2) | PASS | `docs/closure/EVIDENCIA_M2_S2_2026-02-13.md` |
 | T08 (M3.S2) | PASS | `docs/closure/EVIDENCIA_M3_S2_2026-02-13.md` |
-| T09 (M6.S2) | PARCIAL (owner) | `docs/closure/EVIDENCIA_M6_S2_2026-02-13.md`, `docs/closure/SECRET_ROTATION_2026-02-13_031253.md` |
+| T09 (M6.S2) | PASS | `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`, `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`, `docs/closure/EVIDENCIA_M6_S2_2026-02-13.md` |
 | T10 (M7) | PASS | `docs/closure/EVIDENCIA_M7_CIERRE_2026-02-13.md` |
 
 Checkpoints:
@@ -100,10 +100,9 @@ Archivos modificados/creados:
 - `CLAUDE.md` (terminología honesta)
 
 ## 6) Pendientes Reales (Owner)
-1. SendGrid/SMTP (post-rotacion): capturar evidencia externa en SendGrid Email Activity y (luego) revocar la API key anterior.
-   - Estado tecnico (2026-02-15): smoke real OK (HTTP 200, `status=sent`, `messageId` no vacio).
-   - Evidencia tecnica: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
-   - Paso final (externo, navegador): verificar `processed/delivered` en Email Activity (timestamp posterior al smoke) y registrar evidencia.
+1. SendGrid/SMTP: **CERRADO** (rotacion + secrets + redeploy + smoke + evidencia externa).
+   - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
+2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
 
 Referencia operativa:
 - `docs/closure/OPEN_ISSUES.md`
@@ -114,13 +113,26 @@ Referencia operativa:
 - No usar comandos destructivos de git.
 - `api-minimarket` debe mantenerse con `verify_jwt=false` en redeploy (`--no-verify-jwt`).
 
-## 8) Nota De Historial
+## 8) Sistema de Continuidad entre Sesiones
+
+**Documento maestro de continuidad:** `docs/closure/CONTINUIDAD_SESIONES.md`
+
+Este documento es el punto de entrada unico para cualquier sesion nueva (Claude Code, Copilot, u otro agente IA). Contiene:
+- Plan activo con tareas pendientes priorizadas.
+- Registro de sesiones recientes con pasos completados.
+- Protocolo de inicio/cierre de sesion.
+- Context prompt listo para copiar/pegar en nuevas ventanas IA.
+- Inventario de CONTEXT_PROMPT disponibles para tareas especificas.
+
+Context prompts disponibles en `docs/closure/CONTEXT_PROMPT_*.md` y `docs/CONTEXT_PROMPT_*.md`.
+
+## 9) Nota De Historial
 El estado historico previo (incluyendo cronologia extensa 2026-01..2026-02) se preserva en:
 - `docs/archive/ESTADO_ACTUAL_legacy_2026-02-13.md`
 
 Para decisiones actuales, este archivo es la unica fuente de verdad de estado.
 
-## 9) Auditoria Documental (DocuGuard)
+## 10) Auditoria Documental (DocuGuard)
 - Verificacion intensiva de consistencia documental completada el 2026-02-13.
 - Reporte: `docs/closure/AUDITORIA_DOCUMENTAL_ABSOLUTA_2026-02-13.md`.
 - Segunda pasada intensiva ejecutada:
@@ -132,7 +144,7 @@ Para decisiones actuales, este archivo es la unica fuente de verdad de estado.
   - Referencias de rutas inexistentes en backticks: `0`.
   - Quality gates recheck: `PASS` (`test-reports/quality-gates_20260213-061657.log`).
 
-## 10) Rigurosidad de Tests (Hardening 2026-02-13)
+## 11) Rigurosidad de Tests (Hardening 2026-02-13)
 - Security tests reforzados para situaciones reales:
   - auth interna por `Authorization` y `apikey`,
   - rechazo de credenciales malformadas/rotadas,
@@ -144,7 +156,7 @@ Para decisiones actuales, este archivo es la unica fuente de verdad de estado.
   - `test-reports/junit.auxiliary.xml`
   - `test-reports/quality-gates_20260213-061657.log`
 
-## 11) Activacion Sentry (2026-02-14)
+## 12) Activacion Sentry (2026-02-14)
 - `VITE_SENTRY_DSN` recibido y configurado en archivo local seguro (`minimarket-system/.env.production.local`, sin exponer valor).
 - Smoke CLI reproducible (post-correccion DSN):
   - `node scripts/sentry-smoke-event.mjs --env production` -> `SENTRY_SMOKE_STATUS=200`

@@ -1,4 +1,4 @@
-# Closure Canónico (Actualizado 2026-02-13)
+# Closure Canónico (Actualizado 2026-02-15)
 
 Este directorio contiene muchos artefactos históricos. Para iniciar una sesión nueva sin ruido, usar este orden:
 
@@ -33,10 +33,15 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 
 ## Estado operativo
 
-- Veredicto consolidado: `CON RESERVAS NO CRÍTICAS` (defendible para producción piloto; pendientes owner en Sentry/SendGrid).
+- Veredicto consolidado: `CON RESERVAS NO CRÍTICAS` (defendible para producción piloto; sin P0 bloqueantes).
 - Score operativo: `86/100`.
 - Snapshot vigente de gates: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 - Pendientes P0/P1 vigentes: `docs/closure/OPEN_ISSUES.md`.
+
+Notas:
+- Gate 16 (Sentry) cerrado con evidencia externa: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
+- Gate 4 (SendGrid/SMTP) cerrado con evidencia externa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.
+- Higiene recomendada: revocar API keys anteriores de SendGrid (si aún están activas) y registrar evidencia sin exponer valores.
 
 ## Artefactos históricos
 
