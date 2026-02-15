@@ -1,8 +1,10 @@
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # Checklist de Cierre - Plan de Ejecución
 
 **Fecha:** 2026-02-04  
 **Estado:** ⚠️ OPERATIVO con pendientes críticos (COMET 2026-02-04)  
-**Plan vigente:** ver `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/DECISION_LOG.md`
+**Plan vigente:** ver `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` y `docs/DECISION_LOG.md`
 
 ---
 
@@ -302,7 +304,7 @@ tests/
 
 | Documento | Estado | Notas |
 |-----------|--------|-------|
-| [ROADMAP.md](archive/ROADMAP.md) | 📦 Archivado | Histórico, movido a archive/ |
+| [docs/archive/README.md](archive/README.md) | 📦 Archivado | Índice de artefactos históricos en `docs/archive/` |
 | [DECISION_LOG.md](DECISION_LOG.md) | ✅ Vigente | Decisiones confirmadas |
 | [ESTADO_ACTUAL.md](ESTADO_ACTUAL.md) | ✅ Vigente | Progreso aproximado hacia producción |
 | [ESQUEMA_BASE_DATOS_ACTUAL.md](ESQUEMA_BASE_DATOS_ACTUAL.md) | ✅ Vigente | Schema alineado |
@@ -312,7 +314,7 @@ tests/
 | [ARCHITECTURE_DOCUMENTATION.md](ARCHITECTURE_DOCUMENTATION.md) | ✅ Vigente | Estado real reflejado (v2.1.0) |
 | [CRON_AUXILIARES.md](../supabase/functions/CRON_AUXILIARES.md) | ✅ Actualizado | Adopción real de _shared documentada |
 | [AUDITORIA_RLS_CHECKLIST.md](AUDITORIA_RLS_CHECKLIST.md) | ✅ Vigente | Auditoría completada 2026-01-23 |
-| [HOJA_RUTA_MADRE_2026-01-31.md](HOJA_RUTA_MADRE_2026-01-31.md) | ✅ Vigente | Checklist único y ruta a 100% |
+| [docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md](HOJA_RUTA_ACTUALIZADA_2026-02-08.md) | ✅ Vigente | Hoja de ruta actualizada (fuente operativa) |
 | [BUILD_VERIFICATION.md](closure/BUILD_VERIFICATION.md) | ✅ Histórico | Ejecución 2026-01-28 (ver detalles en el reporte) |
 
 ---

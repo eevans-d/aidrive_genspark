@@ -106,3 +106,30 @@ Crear en `docs/closure/`:
   - Validacion (health/smoke)
   - Acciones pendientes en SendGrid Dashboard (revocar key anterior)
 
+## Quality Gates
+
+- [ ] Baseline capturado antes de rotar.
+- [ ] Rollback preparado (valor anterior guardado en vault, NO en repo).
+- [ ] Secret rotado exitosamente (`supabase secrets set` exit 0).
+- [ ] Funciones afectadas redeployadas.
+- [ ] Health check post-deploy exitoso (200 OK).
+- [ ] Evidencia generada en `docs/closure/` sin valores expuestos.
+
+## Anti-Loop / Stop-Conditions
+
+**SI `supabase secrets set` falla:**
+1. NO reintentar automáticamente (impacto 3).
+2. Documentar error y proponer fix manual.
+3. Verificar que el valor anterior sigue activo.
+
+**SI health check falla post-rotacion:**
+1. Ejecutar rollback inmediato (re-set valor anterior).
+2. Documentar incidente con timestamp.
+3. NO intentar segunda rotacion sin diagnostico.
+
+**SI no hay acceso a SendGrid Dashboard:**
+1. Marcar rotacion SendGrid como BLOCKED.
+2. Generar checklist para el owner.
+3. Continuar con otros secrets si aplica.
+
+**NUNCA:** Exponer valores de secrets en logs, evidencia ni chat.

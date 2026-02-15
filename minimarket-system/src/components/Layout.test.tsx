@@ -52,7 +52,9 @@ vi.mock('@/hooks/useAlertas', () => ({
                 oportunidadesCompra: [],
                 ofertasSugeridas: [],
                 totalAlertas: 3,
-                isLoading: false
+                isLoading: false,
+                isLoadingCritical: false,
+                isLoadingInsights: false
         })
 }));
 

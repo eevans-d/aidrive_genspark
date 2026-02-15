@@ -2,6 +2,7 @@
 
 > Documento de arranque recomendado para nuevas sesiones con agentes.
 > Fuente consolidada de estado real post-ejecución Copilot + Antigravity + Codex.
+> Nota (2026-02-12): para estado vigente y camino restante a producción usar `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 
 ---
 

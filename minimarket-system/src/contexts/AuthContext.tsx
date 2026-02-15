@@ -72,18 +72,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (error) throw error
 
-    // Crear registro en tabla personal
-    if (data.user) {
-      await supabase
-        .from('personal')
-        .insert({
-          user_auth_id: data.user.id,
-          nombre: nombre,
-          email: email,
-          rol: 'Usuario',
-          activo: true
-        })
-    }
+    // Seguridad: `personal` es fuente de verdad y se endurece vía RLS.
+    // El alta/sync de empleados debe hacerse con Admin API + service role (scripts/).
 
     return data
   }

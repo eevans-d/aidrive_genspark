@@ -7,15 +7,15 @@ import { executeJob, createExecutionContext, getJobStatus } from './orchestrator
 import { getJobConfig, getAllJobConfigs } from './config.ts';
 import type { StructuredLog } from './types.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('cron-jobs-maxiconsumo:index');
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-request-id',
+const corsHeaders = getCorsHeaders({
   'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
   'Content-Type': 'application/json'
-};
+});
 
 function jsonResponse(data: unknown, status = 200): Response {
   return new Response(JSON.stringify(data), { status, headers: corsHeaders });
@@ -114,6 +114,16 @@ Deno.serve(async (req: Request): Promise<Response> => {
   try {
     const supabaseUrl = getEnvOrThrow('SUPABASE_URL');
     const serviceRoleKey = getEnvOrThrow('SUPABASE_SERVICE_ROLE_KEY');
+
+    const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+    if (!authCheck.authorized) {
+      logger.warn('UNAUTHORIZED_REQUEST', {
+        requestId,
+        hasAuthorization: Boolean(req.headers.get('authorization')),
+        hasApiKey: Boolean(req.headers.get('apikey')),
+      });
+      return authCheck.errorResponse as Response;
+    }
 
     switch (action) {
       case 'execute': return await handleExecute(req, supabaseUrl, serviceRoleKey, log);

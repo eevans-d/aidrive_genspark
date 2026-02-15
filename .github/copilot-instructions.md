@@ -39,7 +39,7 @@ supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
 supabase/migrations/   # Migraciones SQL versionadas
 supabase/config.toml   # Configuracion Supabase local
 
-tests/unit/            # Tests unitarios (Vitest) - imports de módulos reales
+tests/unit/            # Tests unitarios (Vitest) - 47 archivos, 829 tests
 ├── api-proveedor-routing.test.ts  # 17 tests
 ├── scraper-parsing.test.ts        # 10 tests
 ├── scraper-matching.test.ts       # 9 tests
@@ -121,14 +121,14 @@ npx vitest --coverage       # Unit tests con coverage
 | Estado del proyecto | `docs/CHECKLIST_CIERRE.md` |
 | Credenciales | `docs/OBTENER_SECRETOS.md` |
 
-## Estado Actual (Enero 2026 - verificado)
+## Estado Actual (Febrero 2026 - verificado)
 
 ### Proyecto Supabase ✅
 - **Nombre:** minimarket-system
 - **Ref:** dqaygmjpzoqjjrywdsxi
 - **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
 - **Edge Functions:** 13 desplegadas y funcionando
-- **Migraciones:** 12 versionadas (incluye 2 de 2026-01-31)
+- **Migraciones:** 39 versionadas
 
 ### Funciones Modularizadas
 1. **api-proveedor**: Router + handlers + schemas + validators + utils
@@ -136,19 +136,16 @@ npx vitest --coverage       # Unit tests con coverage
 3. **cron-jobs-maxiconsumo**: 4 jobs aislados + orchestrator
 
 ### Testing
-- Framework: **Vitest 4.0.16**
-- Tests unitarios: 646 passing
-- Tests frontend: 40 passing
-- Tests seguridad: 15 passing (con credenciales reales)
+- Framework: **Vitest**
+- Tests unitarios: 829 passing (47 archivos)
+- Coverage mínimo: 80%
 - Runner/scripts: `package.json` y `test.sh` alineados con Vitest
 
 ### CI/CD
 - Pipeline: `.github/workflows/ci.yml`
-- Jobs: lint → test → build → typecheck → edge-functions-check
+- Jobs: lint → test → build → typecheck → edge-functions-check → security-tests
 - Nota: workflow activo en `main` y edge-check estricto
 
-### Pendientes (ver `docs/HOJA_RUTA_MADRE_2026-01-31.md`)
-1. Habilitar leaked password protection (Auth settings)
-2. Confirmar WARN residual en Security Advisor
-3. Configurar secrets en GitHub (desbloquear CI integration/E2E)
-4. Revisión humana P0 de módulos críticos
+### Pendientes (ver `docs/ESTADO_ACTUAL.md`)
+1. Rotación SendGrid/SMTP (owner)
+2. Activación operativa de backups (GitHub Secrets)

@@ -123,7 +123,7 @@ bash /workspace/supabase/cron_jobs/deploy_master.sh
 
 ```bash
 # Supabase
-SUPABASE_URL=https://htvlwhisjpdagqkqnpxg.supabase.co
+SUPABASE_URL=https://dqaygmjpzoqjjrywdsxi.supabase.co
 SUPABASE_SERVICE_ROLE_KEY=<service_role_key>
 
 # Notificaciones
@@ -136,12 +136,12 @@ TWILIO_AUTH_TOKEN=<twilio_token>
 
 #### Health Check
 ```bash
-curl -X GET https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=health
+curl -X GET https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=health
 ```
 
 #### Estado de Jobs
 ```bash
-curl -X GET https://htvlwhisjpdagqkqnpxg.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=status
+curl -X GET https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxiconsumo?action=status
 ```
 
 #### Verificación en BD

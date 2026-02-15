@@ -7,6 +7,7 @@ import { useAlertas } from '../hooks/useAlertas'
 import { ofertasApi, tareasApi, preciosApi } from '../lib/apiClient'
 import type { ArbitrajeItem, OportunidadCompraItem } from '../lib/apiClient'
 import type { StockBajoItem, VencimientoItem, AlertaPrecioItem, TareaPendienteItem } from '../hooks/useAlertas'
+import { money } from '../utils/currency'
 
 interface AlertsDrawerProps {
   isOpen: boolean
@@ -201,8 +202,8 @@ function RiesgoPerdidaItem({ item, onApply }: { item: ArbitrajeItem; onApply: (i
         <div className="min-w-0 flex-1">
           <div className="text-sm font-medium text-gray-800 truncate">{item.nombre_producto}</div>
           <div className="text-xs text-gray-500">
-            Costo: ${item.costo_proveedor_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
-            {' | '}Venta: ${item.precio_venta_actual?.toLocaleString('es-AR', { minimumFractionDigits: 2 }) ?? 'N/A'}
+            Costo: ${money(item.costo_proveedor_actual)}
+            {' | '}Venta: ${item.precio_venta_actual != null ? money(item.precio_venta_actual) : 'N/A'}
           </div>
           <div className={`text-xs font-medium ${isNegative ? 'text-red-600' : 'text-orange-600'}`}>
             Margen: {margenLabel}
@@ -247,7 +248,7 @@ function OportunidadCompraItemRow({ item, onRemind }: { item: OportunidadCompraI
           <div className="text-sm font-medium text-gray-800 truncate">{item.nombre_producto}</div>
           <div className="text-xs text-gray-500">
             Stock: {item.cantidad_actual}/{item.stock_minimo}
-            {' | '}Costo: ${item.costo_proveedor_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            {' | '}Costo: ${money(item.costo_proveedor_actual)}
           </div>
           <div className="text-xs font-medium text-green-600">
             {deltaPct.toFixed(1)}% vs anterior
@@ -299,8 +300,8 @@ function ConfirmApplyModal({
         </h3>
         <div className="text-sm text-gray-600 space-y-1 mb-3">
           <p><span className="font-medium">{item.nombre_producto}</span></p>
-          <p>Costo proveedor: <span className="font-medium">${item.costo_proveedor_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span></p>
-          <p>Precio venta actual: <span className="font-medium">${item.precio_venta_actual?.toLocaleString('es-AR', { minimumFractionDigits: 2 }) ?? 'N/A'}</span></p>
+          <p>Costo proveedor: <span className="font-medium">${money(item.costo_proveedor_actual)}</span></p>
+          <p>Precio venta actual: <span className="font-medium">${item.precio_venta_actual != null ? money(item.precio_venta_actual) : 'N/A'}</span></p>
           <p>Margen actual: <span className={`font-medium ${(item.margen_vs_reposicion ?? 0) < 0 ? 'text-red-600' : 'text-orange-600'}`}>
             {item.margen_vs_reposicion?.toFixed(1) ?? 'N/A'}%
           </span></p>
@@ -341,7 +342,8 @@ function ConfirmApplyModal({
 export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
   const {
     stockBajo, vencimientos, alertasPrecios, tareasVencidas,
-    riesgoPerdida, oportunidadesCompra, ofertasSugeridas, totalAlertas, isLoading
+    riesgoPerdida, oportunidadesCompra, ofertasSugeridas, totalAlertas,
+    isLoadingCritical, isLoadingInsights
   } = useAlertas()
 
   const qc = useQueryClient()
@@ -468,10 +470,10 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
         {/* Content */}
         <div className="flex-1 overflow-y-auto">
           {/* Riesgo de Pérdida Section */}
-          {(isLoading || riesgoPerdida.length > 0) && (
+          {(isLoadingInsights || riesgoPerdida.length > 0) && (
             <div>
               <SectionHeader icon={TrendingDown} title="Riesgo de Perdida" count={riesgoPerdida.length} />
-              {isLoading ? (
+              {isLoadingInsights ? (
                 <LoadingState />
               ) : (
                 <div className="divide-y divide-gray-100">
@@ -488,10 +490,10 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           )}
 
           {/* Comprar Ahora Section */}
-          {(isLoading || oportunidadesCompra.length > 0) && (
+          {(isLoadingInsights || oportunidadesCompra.length > 0) && (
             <div className="border-t">
               <SectionHeader icon={ShoppingCart} title="Comprar Ahora" count={oportunidadesCompra.length} />
-              {isLoading ? (
+              {isLoadingInsights ? (
                 <LoadingState />
               ) : (
                 <div className="divide-y divide-gray-100">
@@ -510,7 +512,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           {/* Stock Bajo Section */}
           <div className={riesgoPerdida.length > 0 || oportunidadesCompra.length > 0 ? 'border-t' : ''}>
             <SectionHeader icon={Package} title="Stock Bajo" count={stockBajo.length} />
-            {isLoading ? (
+            {isLoadingCritical ? (
               <LoadingState />
             ) : stockBajo.length === 0 ? (
               <EmptyState />
@@ -526,7 +528,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           {/* Vencimientos Section */}
           <div className="border-t">
             <SectionHeader icon={Clock} title="Vencimientos" count={vencimientos.length} />
-            {isLoading ? (
+            {isLoadingCritical ? (
               <LoadingState />
             ) : vencimientos.length === 0 ? (
               <EmptyState />
@@ -548,7 +550,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           {/* Cambios de Precio Section */}
           <div className="border-t">
             <SectionHeader icon={AlertTriangle} title="Cambios de Precio" count={alertasPrecios.length} />
-            {isLoading ? (
+            {isLoadingCritical ? (
               <LoadingState />
             ) : alertasPrecios.length === 0 ? (
               <EmptyState />
@@ -564,7 +566,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           {/* Tareas Vencidas Section */}
           <div className="border-t">
             <SectionHeader icon={Clock} title="Tareas Vencidas" count={tareasVencidas.length} />
-            {isLoading ? (
+            {isLoadingCritical ? (
               <LoadingState />
             ) : tareasVencidas.length === 0 ? (
               <EmptyState />

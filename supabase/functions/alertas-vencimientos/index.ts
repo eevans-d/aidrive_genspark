@@ -1,5 +1,6 @@
 import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 import { ok, fail } from '../_shared/response.ts';
 
 interface StockItem {
@@ -26,6 +27,13 @@ Deno.serve(async (req) => {
 
     if (!supabaseUrl || !serviceRoleKey) {
       throw new Error('Configuración de Supabase faltante');
+    }
+
+    const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+    const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+    if (!authCheck.authorized) {
+      logger.warn('UNAUTHORIZED_REQUEST', { requestId });
+      return authCheck.errorResponse as Response;
     }
 
     const url = new URL(req.url);

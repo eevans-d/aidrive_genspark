@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # C1 — Mega Plan Modular (MPC v2.1)
 
 **Proyecto:** Mini Market System  

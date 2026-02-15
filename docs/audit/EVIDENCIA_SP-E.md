@@ -71,7 +71,7 @@
 | TypeScript check | `pnpm -C minimarket-system exec tsc --noEmit` | ✅ **PASS** | Ejecutado en 2026-02-11, sin errores de compilación TS | Revalidación Codex SP-E |
 | Edge Functions syntax | `deno check --no-lock` × 13 | BLOCKED | `deno` no está disponible en PATH de este host (`deno: command not found`) | Revalidación Codex SP-E |
 | Sin console.log debug | Grep console.log | ✅ **PASS** | No hay `console.log` de debug en paths críticos de deploy. `console.error` en `Pedidos.tsx` queda como logging controlado y convive con `toast.error` (HC-3 mitigado). | Revalidación Codex SP-E |
-| Sin secrets hardcodeados | Grep `eyJ\|sk_\|SG.` | ✅ **PASS** | 0 resultados en todo el codebase | Grep ejecutado |
+| Sin secrets hardcodeados | Grep `eyJ\|sk_\|SG\.` | ✅ **PASS** | 0 resultados en todo el codebase | Grep ejecutado |
 | CI pipeline | GitHub Actions ci.yml | ⚠️ **PARCIAL** | 6/6 jobs obligatorios. Suites legacy en job opcional (`workflow_dispatch` + `run_legacy`) con `continue-on-error`. | SP-A A3 |
 
 ### Supabase producción

@@ -213,9 +213,34 @@ export const productosApi = {
 // PROVEEDORES API
 // =============================================================================
 
+export interface CreateProveedorParams {
+        nombre: string;
+        contacto?: string | null;
+        email?: string | null;
+        telefono?: string | null;
+        direccion?: string | null;
+        cuit?: string | null;
+        sitio_web?: string | null;
+        productos_ofrecidos?: string[] | null;
+}
+
 export const proveedoresApi = {
         async dropdown(): Promise<DropdownItem[]> {
                 return apiRequest<DropdownItem[]>('/proveedores/dropdown');
+        },
+
+        async create(params: CreateProveedorParams): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>('/proveedores', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async update(id: string, params: Partial<CreateProveedorParams>): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>(`/proveedores/${id}`, {
+                        method: 'PUT',
+                        body: JSON.stringify(params),
+                });
         },
 };
 
@@ -672,10 +697,12 @@ export const ventasApi = {
                 });
         },
 
-        async list(params: { limit?: number; offset?: number } = {}): Promise<unknown[]> {
+        async list(params: { limit?: number; offset?: number; fecha_desde?: string; fecha_hasta?: string } = {}): Promise<unknown[]> {
                 const sp = new URLSearchParams();
                 if (params.limit != null) sp.set('limit', String(params.limit));
                 if (params.offset != null) sp.set('offset', String(params.offset));
+                if (params.fecha_desde) sp.set('fecha_desde', params.fecha_desde);
+                if (params.fecha_hasta) sp.set('fecha_hasta', params.fecha_hasta);
                 const qs = sp.toString();
                 return apiRequest<unknown[]>(qs ? `/ventas?${qs}` : '/ventas');
         },

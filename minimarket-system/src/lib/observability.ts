@@ -3,18 +3,20 @@
  * @description Reporter local y seguro. Captura errores con contexto enriquecido
  * (request-id, userId anonimizado, ruta, build version).
  *
- * Modo actual: dry-run (localStorage). Cuando VITE_SENTRY_DSN esté disponible,
- * los reportes se enviarán a Sentry además de guardarse localmente.
+ * Cuando VITE_SENTRY_DSN esta configurado, los errores se envian a Sentry
+ * ademas de guardarse localmente en localStorage.
  *
  * Variables de entorno:
  *   VITE_SENTRY_DSN   — DSN de Sentry (opcional; sin ella opera en dry-run)
  *   VITE_BUILD_ID     — Identificador de build (opcional; inyectado por CI)
  *
- * Política de PII:
- *   - userId se anonimiza con hash SHA-256 truncado (no se almacena el ID real).
+ * Politica de PII:
+ *   - userId se anonimiza con hash truncado (no se almacena el ID real).
  *   - No se capturan tokens, passwords ni datos de formulario.
  *   - Stack traces se incluyen solo en dev; en prod solo el mensaje.
  */
+
+import * as Sentry from '@sentry/react'
 
 export interface ObservabilityErrorPayload {
   error: unknown;
@@ -148,14 +150,14 @@ export const reportError = ({
   const next = [report, ...existing].slice(0, MAX_REPORTS);
   safeWriteReports(next);
 
-  // Sentry integration point (when VITE_SENTRY_DSN is available)
+  // Sentry integration: send error when DSN is configured
   const sentryDsn = import.meta.env.VITE_SENTRY_DSN as string | undefined;
   if (sentryDsn) {
-    // Future: Sentry.captureException(error, { tags: { source, requestId }, extra: context })
-    // For now, log intent so we know DSN is set but integration is pending
-    if (import.meta.env.DEV) {
-      console.info('[Observability] Sentry DSN configured — integration pending');
-    }
+    const err = error instanceof Error ? error : new Error(serialized.message);
+    Sentry.captureException(err, {
+      tags: { source, requestId, errorId: id },
+      extra: { ...context, route: report.route, buildVersion: report.buildVersion },
+    });
   }
 };
 

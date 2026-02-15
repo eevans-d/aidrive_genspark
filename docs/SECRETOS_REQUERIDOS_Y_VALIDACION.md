@@ -1,3 +1,5 @@
+> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+
 # Secretos Requeridos y Validacion (Mini Market)
 
 **Fecha:** 2026-02-01  

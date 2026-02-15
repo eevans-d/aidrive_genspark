@@ -8,6 +8,9 @@ import type { ArbitrajeItem, DropdownItem } from '../lib/apiClient'
 import { supabase } from '../lib/supabase'
 import BarcodeScanner from '../components/BarcodeScanner'
 import JsBarcode from 'jsbarcode'
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { money } from '../utils/currency'
 
 // ============================================================================
 // Types
@@ -30,6 +33,8 @@ type OfertaActivaRow = {
   precio_oferta: number
   activa: boolean
 }
+
+const EMPTY_DROPDOWN_ITEMS: DropdownItem[] = []
 
 // ============================================================================
 // Label Print Component
@@ -84,16 +89,16 @@ function LabelPreview({
           <div className="mb-2">
             {basePrice != null && (
               <div className="text-xs text-gray-500 line-through">
-                ${basePrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                ${money(basePrice)}
               </div>
             )}
             <div className="text-2xl font-black text-red-700">
-              ${offerPrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+              ${money(offerPrice)}
             </div>
           </div>
         ) : basePrice != null ? (
           <div className="text-2xl font-black text-gray-900 mb-2">
-            ${basePrice.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            ${money(basePrice)}
           </div>
         ) : (
           <div className="text-xs text-gray-500 mb-2">Sin precio</div>
@@ -127,7 +132,7 @@ function LabelPreview({
 // ============================================================================
 
 function PriceCheck({ product }: { product: ResolvedProduct }) {
-  const { data: insights, isLoading } = useQuery<ArbitrajeItem>({
+  const { data: insights, isLoading, isError, error, refetch, isFetching } = useQuery<ArbitrajeItem>({
     queryKey: ['pocket-insights', product.id],
     queryFn: () => insightsApi.producto(product.id),
     retry: false,
@@ -141,13 +146,25 @@ function PriceCheck({ product }: { product: ResolvedProduct }) {
     )
   }
 
+  if (isError) {
+    return (
+      <ErrorMessage
+        message={parseErrorMessage(error)}
+        type={detectErrorType(error)}
+        onRetry={() => refetch()}
+        isRetrying={isFetching}
+        size="sm"
+      />
+    )
+  }
+
   if (!insights) {
     return (
       <div className="bg-gray-50 rounded-xl p-4 text-center">
         <div className="text-gray-500 text-sm">Sin datos de arbitraje para este producto.</div>
         {product.precio_actual != null && (
           <div className="mt-2 text-lg font-bold text-gray-800">
-            Precio venta: ${product.precio_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            Precio venta: ${money(product.precio_actual)}
           </div>
         )}
       </div>
@@ -175,11 +192,11 @@ function PriceCheck({ product }: { product: ResolvedProduct }) {
       <div className="space-y-2 text-sm">
         <div className="flex justify-between">
           <span className="text-gray-600">Costo proveedor:</span>
-          <span className="font-semibold">${insights.costo_proveedor_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}</span>
+          <span className="font-semibold">${money(insights.costo_proveedor_actual)}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Precio venta:</span>
-          <span className="font-semibold">${insights.precio_venta_actual?.toLocaleString('es-AR', { minimumFractionDigits: 2 }) ?? 'N/A'}</span>
+          <span className="font-semibold">${insights.precio_venta_actual != null ? money(insights.precio_venta_actual) : 'N/A'}</span>
         </div>
         <div className="flex justify-between">
           <span className="text-gray-600">Margen:</span>
@@ -255,9 +272,8 @@ function StockUpdate({ product, onDone }: { product: ResolvedProduct; onDone: ()
         <button
           type="button"
           onClick={() => setTipo('entrada')}
-          className={`flex-1 py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2 ${
-            tipo === 'entrada' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
-          }`}
+          className={`flex-1 py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2 ${tipo === 'entrada' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-600'
+            }`}
         >
           <Plus className="w-5 h-5" />
           Entrada
@@ -265,9 +281,8 @@ function StockUpdate({ product, onDone }: { product: ResolvedProduct; onDone: ()
         <button
           type="button"
           onClick={() => setTipo('salida')}
-          className={`flex-1 py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2 ${
-            tipo === 'salida' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
-          }`}
+          className={`flex-1 py-3 rounded-xl font-semibold text-base flex items-center justify-center gap-2 ${tipo === 'salida' ? 'bg-red-600 text-white' : 'bg-gray-100 text-gray-600'
+            }`}
         >
           <Minus className="w-5 h-5" />
           Salida
@@ -292,9 +307,8 @@ function StockUpdate({ product, onDone }: { product: ResolvedProduct; onDone: ()
       <button
         type="submit"
         disabled={mutation.isPending}
-        className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 text-white disabled:opacity-50 ${
-          tipo === 'entrada' ? 'bg-green-600' : 'bg-red-600'
-        }`}
+        className={`w-full py-4 rounded-xl font-semibold text-lg flex items-center justify-center gap-2 text-white disabled:opacity-50 ${tipo === 'entrada' ? 'bg-green-600' : 'bg-red-600'
+          }`}
       >
         {mutation.isPending ? (
           <Loader2 className="w-5 h-5 animate-spin" />
@@ -320,11 +334,12 @@ export default function Pocket() {
   const [isResolving, setIsResolving] = useState(false)
 
   // Fetch products dropdown for barcode lookup
-  const { data: productos = [] } = useQuery({
+  const productosQuery = useQuery({
     queryKey: ['pocket-productos'],
     queryFn: () => apiClient.productos.dropdown(),
     staleTime: 1000 * 60 * 5,
   })
+  const productos = productosQuery.data ?? EMPTY_DROPDOWN_ITEMS
 
   const stockPrincipalQuery = useQuery<{ id: string } | null>({
     queryKey: ['pocket-stock-principal', resolvedProduct?.id],
@@ -452,6 +467,15 @@ export default function Pocket() {
         {/* Scanner View */}
         {view === 'scan' && (
           <>
+            {productosQuery.isError && (
+              <ErrorMessage
+                message={parseErrorMessage(productosQuery.error)}
+                type={detectErrorType(productosQuery.error)}
+                onRetry={() => productosQuery.refetch()}
+                isRetrying={productosQuery.isFetching}
+                size="sm"
+              />
+            )}
             <BarcodeScanner
               isActive={scannerActive}
               onScan={resolveProduct}
@@ -480,7 +504,7 @@ export default function Pocket() {
               </div>
               {resolvedProduct.precio_actual != null && (
                 <div className="text-xl font-black text-blue-600 mt-1">
-                  ${resolvedProduct.precio_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+                  ${money(resolvedProduct.precio_actual)}
                 </div>
               )}
             </div>

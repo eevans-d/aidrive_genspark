@@ -240,9 +240,14 @@ export async function fetchUserInfo(
 
     const userData = await response.json();
 
-    // Extract role from app_metadata ONLY (more secure)
+    // Extract role from app_metadata ONLY (more secure).
+    // Normalize legacy aliases to keep FE/BE consistent.
     const appRole = userData.app_metadata?.role;
-    const role = typeof appRole === 'string' ? appRole.toLowerCase() : null;
+    let role = typeof appRole === 'string' ? appRole.toLowerCase().trim() : null;
+
+    if (role === 'jefe' || role === 'administrador' || role === 'administrator') role = 'admin';
+    if (role === 'depósito' || role === 'warehouse') role = 'deposito';
+    if (role === 'vendedor' || role === 'sales') role = 'ventas';
 
     const user: UserInfo = {
       id: userData.id,

@@ -79,3 +79,31 @@ Crear en `docs/closure/`:
   - Verificacion (build + gates)
   - Impacto bundle/perf (baseline)
 
+## Quality Gates
+
+- [ ] DSN real verificado (presente en `.env.production`).
+- [ ] Dependencia `@sentry/react` instalada.
+- [ ] Integracion implementada (main.tsx, ErrorBoundary).
+- [ ] Build exitoso post-integracion.
+- [ ] Bundle size impact medido (delta vs baseline).
+- [ ] Si bundle crece >15% → WARNING documentado.
+- [ ] Evidencia generada en `docs/closure/`.
+
+## Anti-Loop / Stop-Conditions
+
+**SI DSN no disponible:**
+1. BLOQUEAR integracion (no instalar dependencia).
+2. Generar checklist para el owner (crear proyecto Sentry, obtener DSN).
+3. Marcar como BLOCKED y continuar con otras tareas.
+
+**SI bundle crece >20%:**
+1. Evaluar si el incremento es aceptable.
+2. Documentar alternativas (lazy loading de Sentry).
+3. NO revertir automaticamente; reportar para decision humana.
+
+**SI quality_gates.sh falla post-integracion:**
+1. Revertir cambios de Sentry.
+2. Documentar incompatibilidad.
+3. NO reintentar sin diagnostico previo.
+
+**NUNCA:** Instalar @sentry/react sin DSN real configurado.

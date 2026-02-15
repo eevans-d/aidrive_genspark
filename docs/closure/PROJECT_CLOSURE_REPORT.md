@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento histórico de contexto/snapshot. Usar solo para trazabilidad. Fuente vigente: `docs/ESTADO_ACTUAL.md` + `docs/closure/README_CANONICO.md`.
+
 # Project Closure Report - Sistema Mini Market
 
 ## Pre-cierre 2026-02-03 (EN DESARROLLO)

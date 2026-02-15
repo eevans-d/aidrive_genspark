@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # C2 — Subplan E5 Frontend Calidad (MPC v2.1)
 
 **Etapa:** E5  

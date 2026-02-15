@@ -6,6 +6,7 @@ import { useGlobalSearch } from '../hooks/useGlobalSearch'
 import { insightsApi, type ArbitrajeItem } from '../lib/apiClient'
 import type { SearchResultItem } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
+import { money } from '../utils/currency'
 
 interface GlobalSearchProps {
   isOpen: boolean
@@ -220,7 +221,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
       const parts: string[] = []
       if (item.sku) parts.push(item.sku)
       if (item.marca) parts.push(item.marca)
-      if (item.precio_actual) parts.push(`$${Number(item.precio_actual).toFixed(2)}`)
+      if (item.precio_actual) parts.push(`$${money(Number(item.precio_actual))}`)
       return parts.join(' · ')
     }
     if (category === 'proveedores') {
@@ -236,7 +237,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
       const parts: string[] = []
       if (item.estado) parts.push(item.estado)
       if (item.estado_pago) parts.push(item.estado_pago)
-      if (item.monto_total) parts.push(`$${Number(item.monto_total).toFixed(2)}`)
+      if (item.monto_total) parts.push(`$${money(Number(item.monto_total))}`)
       return parts.join(' · ')
     }
     if (category === 'clientes') {
@@ -256,10 +257,11 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
       <div
         className="fixed inset-0 bg-black/50"
         onClick={onClose}
+        aria-hidden="true"
       />
 
       {/* Modal */}
-      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl overflow-hidden">
+      <div className="relative w-full max-w-lg mx-4 bg-white rounded-xl shadow-2xl overflow-hidden" role="dialog" aria-modal="true" aria-label="Busqueda global">
         {/* Search Input */}
         <div className="flex items-center gap-3 px-4 py-3 border-b">
           <Search className="w-5 h-5 text-gray-400 shrink-0" />
@@ -272,6 +274,11 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
             placeholder="Buscar productos, pedidos, clientes, proveedores, tareas..."
             className="flex-1 text-sm outline-none placeholder:text-gray-400"
             autoComplete="off"
+            role="combobox"
+            aria-expanded={hasQuery && flatResults.length > 0}
+            aria-controls="search-results-list"
+            aria-activedescendant={hasQuery && flatResults[selectedIndex] ? `search-result-${selectedIndex}` : undefined}
+            aria-autocomplete="list"
           />
           {query && (
             <button
@@ -287,7 +294,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
         </div>
 
         {/* Content */}
-        <div ref={listRef} className="max-h-80 overflow-y-auto">
+        <div ref={listRef} className="max-h-80 overflow-y-auto" id="search-results-list" role="listbox">
           {/* No query: show recent searches + quick actions */}
           {!hasQuery && (
             <>
@@ -347,7 +354,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
 
           {/* Loading state */}
           {hasQuery && isLoading && (
-            <div className="px-4 py-8 text-center text-sm text-gray-400">
+            <div className="px-4 py-8 text-center text-sm text-gray-400" role="status" aria-live="polite">
               Buscando...
             </div>
           )}
@@ -383,6 +390,9 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
                         <button
                           key={`${category}-${item.id}`}
                           data-selected={isSelected}
+                          id={`search-result-${currentIdx}`}
+                          role="option"
+                          aria-selected={isSelected}
                           onClick={() => handleNavigateToResult({ item, category, index: currentIdx })}
                           className={`w-full flex items-center gap-3 px-4 py-2.5 text-left transition-colors ${
                             isSelected ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
@@ -427,7 +437,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
                 <div className="font-black text-gray-900 truncate">{productoAccion.nombre ?? 'Producto'}</div>
                 <div className="text-xs text-gray-500 truncate">
                   {productoAccion.sku ? `SKU: ${productoAccion.sku}` : productoAccion.codigo_barras ? `CB: ${productoAccion.codigo_barras}` : productoAccion.id}
-                  {typeof productoAccion.precio_actual === 'number' ? ` · $${productoAccion.precio_actual.toFixed(2)}` : ''}
+                  {typeof productoAccion.precio_actual === 'number' ? ` · $${money(productoAccion.precio_actual)}` : ''}
                 </div>
               </div>
               <button
@@ -538,9 +548,9 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
                         </div>
                         <div className="mt-3 grid grid-cols-2 gap-2 text-sm">
                           <div className="text-gray-600">Costo prov.</div>
-                          <div className="text-right font-semibold">${Number(it.costo_proveedor_actual).toFixed(2)}</div>
+                          <div className="text-right font-semibold">${money(Number(it.costo_proveedor_actual))}</div>
                           <div className="text-gray-600">Venta</div>
-                          <div className="text-right font-semibold">${Number(it.precio_venta_actual ?? 0).toFixed(2)}</div>
+                          <div className="text-right font-semibold">${money(Number(it.precio_venta_actual ?? 0))}</div>
                           <div className="text-gray-600">Margen</div>
                           <div className="text-right font-semibold">{Number(it.margen_vs_reposicion ?? 0).toFixed(1)}%</div>
                         </div>
@@ -611,7 +621,7 @@ function LabelPrintView({
         <div className="text-sm font-bold text-gray-800 mb-1 truncate">{producto.nombre ?? 'Producto'}</div>
         {typeof producto.precio_actual === 'number' ? (
           <div className="text-2xl font-black text-gray-900 mb-2">
-            ${producto.precio_actual.toLocaleString('es-AR', { minimumFractionDigits: 2 })}
+            ${money(producto.precio_actual)}
           </div>
         ) : (
           <div className="text-xs text-gray-500 mb-2">Sin precio</div>

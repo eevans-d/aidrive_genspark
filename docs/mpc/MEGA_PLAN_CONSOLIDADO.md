@@ -171,13 +171,13 @@ cron-jobs-maxiconsumo → scraper-maxiconsumo
 
 | # | Archivo | Subsistema |
 |---|---------|------------|
-| 1 | [SUB_PLAN_01_GATEWAY_API_MINIMARKET.md](file:///mpc/SUB_PLAN_01_GATEWAY_API_MINIMARKET.md) | Gateway |
-| 2 | [SUB_PLAN_02_FRONTEND_CORE.md](file:///mpc/SUB_PLAN_02_FRONTEND_CORE.md) | Frontend |
-| 3 | [SUB_PLAN_03_SCRAPER_MAXICONSUMO.md](file:///mpc/SUB_PLAN_03_SCRAPER_MAXICONSUMO.md) | Scraper |
-| 4 | [SUB_PLAN_04_CRON_JOBS.md](file:///mpc/SUB_PLAN_04_CRON_JOBS.md) | Cron Jobs |
-| 5 | [SUB_PLAN_05_API_PROVEEDOR.md](file:///mpc/SUB_PLAN_05_API_PROVEEDOR.md) | API Proveedor |
-| 6 | [SUB_PLAN_06_ALERTAS_NOTIFICACIONES.md](file:///mpc/SUB_PLAN_06_ALERTAS_NOTIFICACIONES.md) | Alertas |
-| 7 | [SUB_PLAN_07_SHARED_INFRASTRUCTURE.md](file:///mpc/SUB_PLAN_07_SHARED_INFRASTRUCTURE.md) | Shared |
+| 1 | [C2_SUBPLAN_E1 — Gateway](C2_SUBPLAN_E1_v1.1.0.md) | Gateway |
+| 2 | [C2_SUBPLAN_E2 — Frontend](C2_SUBPLAN_E2_v1.1.0.md) | Frontend |
+| 3 | [C2_SUBPLAN_E3 — Scraper](C2_SUBPLAN_E3_v1.1.0.md) | Scraper |
+| 4 | [C2_SUBPLAN_E4 — Cron Jobs](C2_SUBPLAN_E4_v1.1.0.md) | Cron Jobs |
+| 5 | [C2_SUBPLAN_E5 — API Proveedor](C2_SUBPLAN_E5_v1.1.0.md) | API Proveedor |
+| 6 | [C2_SUBPLAN_E6 — Alertas](C2_SUBPLAN_E6_v1.1.0.md) | Alertas |
+| 7 | [C2_SUBPLAN_E7 — Shared](C2_SUBPLAN_E7_v1.1.0.md) | Shared |
 
 ---
 

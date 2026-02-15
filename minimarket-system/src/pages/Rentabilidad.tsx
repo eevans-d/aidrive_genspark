@@ -5,6 +5,7 @@ import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { money } from '../utils/currency'
 
 type SortKey = 'margen' | 'utilidad' | 'nombre'
 
@@ -164,7 +165,7 @@ export default function Rentabilidad() {
           <div className="flex items-center justify-between">
             <div>
               <p className="text-sm text-gray-500">Utilidad promedio</p>
-              <p className="text-2xl font-semibold text-emerald-600">${metrics.utilidadPromedio}</p>
+              <p className="text-2xl font-semibold text-emerald-600">${money(metrics.utilidadPromedio)}</p>
             </div>
             <Banknote className="w-8 h-8 text-emerald-500" />
           </div>
@@ -277,10 +278,10 @@ export default function Rentabilidad() {
                     <div className="font-medium text-gray-900">{producto.nombre}</div>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{producto.categoria ?? '-'}</td>
-                  <td className="px-6 py-4 text-sm text-right text-gray-700">${producto.precio_actual ?? 0}</td>
-                  <td className="px-6 py-4 text-sm text-right text-gray-700">${producto.precio_costo ?? 0}</td>
+                  <td className="px-6 py-4 text-sm text-right text-gray-700">${money(producto.precio_actual ?? 0)}</td>
+                  <td className="px-6 py-4 text-sm text-right text-gray-700">${money(producto.precio_costo ?? 0)}</td>
                   <td className={`px-6 py-4 text-sm text-right ${utilidad < 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                    ${utilidad.toFixed(2)}
+                    ${money(utilidad)}
                   </td>
                   <td className={`px-6 py-4 text-sm text-right font-semibold ${isNegative ? 'text-red-600' : isLow ? 'text-yellow-700' : 'text-emerald-700'}`}>
                     {margen.toFixed(1)}%

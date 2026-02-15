@@ -18,6 +18,7 @@
 
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('cron-dashboard');
 // =====================================================
@@ -134,6 +135,17 @@ Deno.serve(async (req) => {
 
         if (!supabaseUrl || !serviceRoleKey) {
             throw new Error('Configuración de Supabase faltante');
+        }
+
+        const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+        const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+        if (!authCheck.authorized) {
+            logger.warn('UNAUTHORIZED_REQUEST', {
+                requestId,
+                hasAuthorization: Boolean(req.headers.get('authorization')),
+                hasApiKey: Boolean(req.headers.get('apikey')),
+            });
+            return authCheck.errorResponse as Response;
         }
 
         let response: Response;
@@ -815,12 +827,11 @@ async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string
 
     const executions = await response.json();
     
-    // Simular datos de performance (en implementación real vendrían del sistema)
     return executions.map((execution: any, index: number) => ({
         time: execution.start_time.split('T')[1]?.substring(0, 8) || '00:00:00',
-        responseTime: execution.duracion_ms || 1000 + Math.random() * 2000,
-        memoryUsage: 40 + Math.random() * 30, // Simulado
-        cpuUsage: 20 + Math.random() * 50 // Simulado
+        responseTime: execution.duracion_ms || null,
+        memoryUsage: null,
+        cpuUsage: null
     }));
 }
 

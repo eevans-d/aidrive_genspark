@@ -1,3 +1,5 @@
+> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+
 # Esquema de Base de Datos - Sistema Mini Market
 **Actualizado:** 2026-02-06 (Post Sistema Pedidos)
 
@@ -640,8 +642,8 @@ TABLE (
 - `idx_clientes_activo` (parcial: WHERE activo = TRUE)
 
 **RLS:** ENABLED (role-based vía `public.personal`).
-- SELECT: cualquier `authenticated`
-- INSERT/UPDATE: roles `admin|deposito|jefe`
+- SELECT: roles `admin|ventas`
+- INSERT/UPDATE: roles `admin|ventas`
 - DELETE: solo `admin`
 
 ---
@@ -690,8 +692,8 @@ TABLE (
 - `idx_pedidos_estado_fecha` (estado + fecha_pedido)
 
 **RLS:** ENABLED (role-based vía `public.personal`).
-- SELECT: staff activo (existe en `public.personal`)
-- INSERT/UPDATE: roles `admin|deposito|jefe|ventas`
+- SELECT: roles `admin|deposito|ventas`
+- INSERT/UPDATE: roles `admin|deposito|ventas`
 - DELETE: solo `admin`
 
 ---

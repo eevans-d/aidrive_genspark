@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-09
+**Última actualización:** 2026-02-15
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -78,152 +78,69 @@
 | D-071 | **MVs requeridas por alertas**: asegurar `mv_stock_bajo` + `mv_productos_proximos_vencer` en DB | Completada | 2026-02-08 | Hotfix migración `20260206235900_create_stock_materialized_views_for_alertas.sql`. |
 | D-072 | **Refresh de MVs de stock**: RPC + cron opcional | Completada | 2026-02-08 | Migración `20260208010000_add_refresh_stock_views_rpc_and_cron.sql` crea `fn_refresh_stock_views()` y agenda `refresh_stock_views` si existe `pg_cron`. |
 | D-073 | **x-request-id E2E**: frontend genera UUID y lo envía al backend, extrae server-side ID de respuesta, propaga en `ApiError`/`TimeoutError` y muestra "Ref:" en `ErrorMessage` | Completada | 2026-02-09 | PR #38. `apiClient.ts` + `ErrorMessage.tsx`. Tests: 6 unit + 3 component. |
-| D-074 | **SendGrid env var mismatch**: `cron-notifications` lee `EMAIL_FROM` pero secret es `SMTP_FROM`; causa fallback a `noreply@minimarket.com` | Bloqueada | 2026-02-09 | PR #44. Fix: agregar `EMAIL_FROM` alias o cambiar código a leer `SMTP_FROM`. Requiere SendGrid Dashboard. |
+| D-074 | **SendGrid env var mismatch**: `cron-notifications` lee `EMAIL_FROM` pero secret es `SMTP_FROM`; causa fallback a `noreply@minimarket.com` | Completada | 2026-02-09 | Fix aplicado (código ahora prioriza `SMTP_FROM`). Verificación operacional post-rotación: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`. |
 | D-075 | **Performance baseline establecida**: p50 ~700-900ms, p95 ~870-1350ms para endpoints api-minimarket | Completada | 2026-02-09 | PR #42. Script `scripts/perf-baseline.mjs`. Rate limiting (429) confirmado tras ~60 req secuenciales. |
 | D-076 | **Secret rotation plan documentado**: 3 secrets identificados para rotación (API_PROVEEDOR_SECRET, SENDGRID_API_KEY, SMTP_PASS) | Completada | 2026-02-09 | PR #43. `docs/SECRET_ROTATION_PLAN.md`. Procedimientos step-by-step con rollback. |
 | D-077 | **Sentry diferido hasta DSN**: plan de 6 pasos documentado, no instalar `@sentry/react` sin DSN | Aprobada | 2026-02-09 | PR #45. `docs/SENTRY_INTEGRATION_PLAN.md`. Bundle impact: +30KB gzip. |
+| D-078 | **Camino canónico restante a producción consolidado** | Aprobada | 2026-02-12 | Fuente operativa: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` + `docs/closure/OPEN_ISSUES.md`. |
+| D-079 | **Hardening mini plan 5 pasos cerrado y verificado** | Completada | 2026-02-12 | Evidencia en `scripts/verify_5steps.sh` + `docs/closure/CIERRE_5PASOS_2026-02-12.md`. |
+| D-080 | **Gate 3: E2E POS con Playwright route interception** | Completada | 2026-02-12 | 8/8 tests. Dataset determinista (3 productos). Mock gateway via `page.route()`. Fix: `getSession()` agregado a mock supabase. Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md`. |
+| D-081 | **Gate 4: Notificaciones reales vía SendGrid HTTP API** | Completada | 2026-02-12 | `sendEmail()` usa SendGrid REST API, `sendSlack()` usa webhook real, `sendWebhook()` POST real. Modo controlado por `NOTIFICATIONS_MODE`. Función desplegada. MessageIds reales confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md`. |
+| D-082 | **Gate 16: Sentry integrado, DSN pendiente del owner** | Parcial | 2026-02-12 | `@sentry/react@10.38.0` instalado. `Sentry.init()` en `main.tsx` condicional a `VITE_SENTRY_DSN`. `captureException()` en `observability.ts`. Sin DSN no tiene efecto. Build PASS. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-12.md`. |
+| D-083 | **Gate 18: Security tests como gate CI bloqueante** | Completada | 2026-02-12 | Nuevo job `security-tests` obligatorio en CI (sin `continue-on-error`). Security tests removidos de `legacy-tests`. Política GO/NO-GO documentada en YAML. 14/14 tests PASS. Evidencia: `docs/closure/EVIDENCIA_GATE18_2026-02-12.md`. |
+| D-084 | **Gate 15: Backup automatizado con retención + restore drill** | Completada | 2026-02-12 | `db-backup.sh` mejorado (gzip, retención 7d, rotación). `db-restore-drill.sh` creado. `backup.yml` GitHub Actions (cron 03:00 UTC). RPO 24h, RTO <15 min. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
+| D-085 | **Veredicto producción: CON RESERVAS** | Aprobada | 2026-02-12 | 4/5 gates cerrados, 1 parcial (Gate 16 DSN Sentry). Sistema defendible para producción piloto. Única acción del owner: configurar `VITE_SENTRY_DSN` + `SUPABASE_DB_URL` (backup). |
+| D-086 | **Policy verify_jwt (Edge Functions)**: solo `api-minimarket` puede tener `verify_jwt=false`. `cron-notifications` y `cron-testing-suite` deben permanecer `verify_jwt=true`. | Aprobada | 2026-02-12 | Fix aplicado: redeploy `cron-notifications` v15 (`verify_jwt=true`) y `cron-testing-suite` v12 (`verify_jwt=true`). Baseline actualizado (nota: `BASELINE_LOG_*.md` fue removido en D-109; ver historial git). |
+| D-087 | **RLS fine validation (P1)**: alinear policies a roles canónicos + endurecer `personal` (RLS self + unique `user_auth_id`) + `vista_cc_*` con `security_invoker=true` + `jefe` tratado como alias legacy de `admin` | Completada | 2026-02-12 | Migración `20260212130000_rls_fine_validation_lockdown.sql` aplicada. Batería `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y 0 FAIL. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. |
+| D-088 | **Revalidación RLS remota por pooler (workaround IPv6)**: cuando `psql $DATABASE_URL` falla contra `db.<ref>.supabase.co:5432`, ejecutar auditoría/validación con conexión pooler (`supabase/.temp/pooler-url`) y credenciales locales sin exponer secretos. | Completada | 2026-02-13 | Revalidación 2026-02-13: `scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` (`write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencias: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`. |
+| D-089 | **Ejecución formal Mega Plan T01..T10**: cierre por contrato de salida con evidencia por tarea y checkpoints cada 2 tareas. | Completada | 2026-02-13 | Evidencias T01..T09: `docs/closure/EVIDENCIA_M*_2026-02-13.md`; checkpoints: `docs/closure/CHECKPOINT_T*_2026-02-13.md`. |
+| D-090 | **Deploy producción con allowlist de rama obligatoria** | Completada | 2026-02-13 | `deploy.sh` falla en rama inválida y permite continuar en rama válida antes de prerequisitos de secretos. Evidencia: `docs/closure/EVIDENCIA_M8_S1_2026-02-13.md`. |
+| D-091 | **Security suite contractual real como baseline** | Completada | 2026-02-13 | `tests/security/security.vitest.test.ts` migra de mock global a helpers reales (auth/cors/validators). Evidencia: `docs/closure/EVIDENCIA_M5_S1_2026-02-13.md`. |
+| D-092 | **T09 owner dependencies se gestiona como BLOCKED formal** | Aprobada | 2026-02-13 | Cuando faltan accesos externos (Sentry DSN/rotación final SendGrid), se cierra ejecución técnica y se entrega checklist exacta para owner. Evidencia: `docs/closure/EVIDENCIA_M6_S2_2026-02-13.md`. |
+| D-093 | **Normalización canónica de documentación (DocuGuard intensivo)** | Completada | 2026-02-13 | Se actualizaron fuentes canónicas (`README.md`, `docs/AGENTS.md`, `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md`, `docs/closure/README_CANONICO.md`) según estado real verificado (gates, migraciones, functions). Evidencia: `docs/closure/AUDITORIA_DOCUMENTAL_ABSOLUTA_2026-02-13.md`. |
+| D-094 | **Preservación de historial documental previo al reset canónico** | Completada | 2026-02-13 | Snapshot legacy preservado en `docs/archive/README_legacy_2026-02-13.md`, `docs/archive/AGENTS_legacy_2026-02-13.md`, `docs/archive/ESTADO_ACTUAL_legacy_2026-02-13.md` para trazabilidad sin pérdida de contexto. |
+| D-095 | **SessionOps simulado y validado para consistencia operativa** | Completada | 2026-02-13 | Se ejecutó `session-end` + `session-start`, generando baseline seguro y artefactos de sesión actualizados en `.agent/sessions/current/*`. Evidencia: `BASELINE_LOG_*.md` removido en D-109 (ver historial git). |
+| D-096 | **Endurecimiento de tests de seguridad para escenarios reales** | Completada | 2026-02-13 | `tests/security/security.vitest.test.ts` ampliado con auth por `apikey`, rechazo de Bearer inválido/clave rotada, CORS sin `Origin` y smoke real multi-endpoint opcional (`RUN_REAL_TESTS`). Resultado: `npm run test:security` PASS + `gates all` PASS. |
+| D-097 | **Integridad total de enlaces markdown (incluye legacy)** | Completada | 2026-02-13 | Se corrigieron enlaces relativos rotos en `docs/archive/README_legacy_2026-02-13.md` (8 casos) y se revalidó documentación completa (`README.md` + `docs/**/*.md`) con resultado `0` enlaces rotos. Evidencia: `scripts/validate-doc-links.mjs`, chequeo completo interno, `docs/closure/AUDITORIA_DOCUMENTAL_ABSOLUTA_2026-02-13.md`. |
+| D-098 | **Gate 16 incidente detectado: rechazo `ProjectId` en ingest** | Completada (diagnostico) | 2026-02-14 | Se detecto mismatch de DSN en validacion inicial (respuesta `403 with_reason: ProjectId`) y se documento el bloqueo tecnico. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`. |
+| D-099 | **Gate 16 revalidado post-correccion DSN: ingest tecnico OK (`200`)** | Parcial (owner, cierre visual pendiente) | 2026-02-14 | Smoke CLI reproducible en `production` devuelve `SENTRY_SMOKE_STATUS=200` y `event_id` valido en ejecuciones consecutivas; bloqueo `ProjectId` removido. Estado histórico previo al cierre final documentado en D-100. Referencia: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`. |
+| D-100 | **Gate 16 cerrado: evidencia visual + alerta activa en Sentry** | Completada | 2026-02-14 | Cierre externo confirmado (Comet): issue `7265042116`, event `b8474593d35d95a9a752a87c67fe52e8`, `environment=production`, regla `Send a notification for high priority issues` en `Enabled` con filtro `environment=production`. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`. |
+| D-101 | **Auditoría pragmática: P0a Math.random() eliminado** | Completada | 2026-02-14 | `cron-dashboard/index.ts:830-835` — `memoryUsage` y `cpuUsage` generados con `Math.random()` reemplazados por `null`. Métricas falsas removidas del dashboard. |
+| D-102 | **Auditoría pragmática: P0b coverage 60%→80%** | Completada | 2026-02-14 | `vitest.config.ts:44-49` — threshold alineado con lo declarado en CLAUDE.md. 829/829 tests PASS post-cambio. |
+| D-103 | **Auditoría pragmática: P1a Proveedores CRUD completo** | Completada | 2026-02-14 | Backend: `handlers/proveedores.ts` (nuevo, POST/PUT). Frontend: `Proveedores.tsx` reescrito con modal crear/editar, `useMutation`, `sonner` toast, tag input para `productos_ofrecidos`. Cierra gap operativo real (antes solo lectura). |
+| D-104 | **Auditoría pragmática: P1b Reporte ventas diario** | Completada | 2026-02-14 | Backend: `handleListarVentas` con filtros `fecha_desde`/`fecha_hasta` via PostgREST `gte.`/`lte.`. Frontend: `Ventas.tsx` (nuevo) con presets Hoy/Semana/Mes/Custom, tabla, resumen, paginación. Ruta `/ventas` registrada en App.tsx y Layout.tsx. |
+| D-105 | **Auditoría pragmática: P3 terminología CLAUDE.md** | Completada | 2026-02-14 | Corregida representación del sistema agéntico: "Skills" → "Guías Operativas", "Workflows Autónomos" → "Workflows (guías de procedimiento)", "Reglas de Automatización" → "Reglas de Ejecución". Honestidad documental sobre la naturaleza de instrucciones markdown vs. automatización autónoma. |
+| D-106 | **Cobertura mínima actualizada a 80% global** | Aprobada | 2026-02-14 | Revierte D-006 parcialmente (60% total → 80% total). Justificación: alinear realidad (`vitest.config.ts`) con documentación (`CLAUDE.md`). |
+| D-107 | **Gate 4 revalidado post-rotación SendGrid**: secrets aplicados + redeploy + smoke real + Email Activity `delivered` | Completada | 2026-02-15 | Evidencia: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`. (Sin exponer secretos; solo nombres y trazas seguras). |
+| D-108 | **Auditoría forense definitiva: 7 correcciones + 18 remediaciones aplicadas** | Completada | 2026-02-15 | C-01..C-07 (correcciones documentales) + R-01..R-18 (correcciones de código). Verificación: 829 root tests PASS + 22 frontend tests nuevos + build OK. Commit: `9eb9267`. |
+| D-109 | **Limpieza documental masiva: 79 archivos obsoletos eliminados** | Completada | 2026-02-15 | Eliminados: 9 CONTEXT_PROMPT, 23 BASELINE_LOG, 10 TECHNICAL_ANALYSIS, 3 MEGA_PLAN drafts, 3 EXECUTION_LOG, 5 CHECKPOINT, 13 archive/legacy, 5 duplicados, 8 prompts/handoffs. `docs/` reducido de ~2.5MB a ~1.3MB. |
 
 ---
 
-## Siguientes Pasos (2026-02-09)
-
-### Post-backlog session — PRs pendientes de merge
-
-| PR | Tema | Estado | Bloqueador |
-|----|------|--------|------------|
-| #38 | x-request-id E2E (frontend) | Ready for review | — |
-| #39 | api-proveedor /health tests (12+1) | Ready for review | — |
-| #40 | /reservas integration tests (15 nuevos) | Ready for review | — |
-| #41 | Smoke /reservas script | BLOCKED | No products in DB |
-| #42 | Performance baseline script | Ready for review | — |
-| #43 | Secret rotation plan (doc) | Ready for review | — |
-| #44 | SendGrid verification (doc) | BLOCKED | Requires SendGrid Dashboard |
-| #45 | Sentry integration plan (doc) | Ready for review | — |
-| #46 | BUILD_VERIFICATION.md addendum | Ready for review | — |
+## Siguientes Pasos (2026-02-15)
 
 ### Acciones owner requeridas
 
 | Prioridad | Acción | Referencia |
 |-----------|--------|------------|
-| P0 | Resolver `EMAIL_FROM` vs `SMTP_FROM` mismatch | D-074, `docs/SENDGRID_VERIFICATION.md` |
-| P0 | Verificar sender en SendGrid Dashboard | `docs/SENDGRID_VERIFICATION.md` §4 |
-| P1 | Seed productos en DB (desbloquea PR #41) | `scripts/smoke-reservas.mjs` |
-| P1 | Rotar secrets según plan | `docs/SECRET_ROTATION_PLAN.md` |
-| P2 | Obtener Sentry DSN cuando listo | `docs/SENTRY_INTEGRATION_PLAN.md` |
+| P1 | Configurar `SUPABASE_DB_URL` para backup automatizado (Gate 15) | `docs/closure/EVIDENCIA_GATE15_2026-02-12.md` |
+| P2 | (Higiene) Revocar API key anterior de SendGrid si aún está activa (post-rotación) | `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` |
+| P2 | Monitoreo operativo post-release | `docs/OPERATIONS_RUNBOOK.md` |
+
+### Issues abiertos técnicos
+
+| Issue | Estado | Referencia |
+|-------|--------|------------|
+| `Proveedores.test.tsx` falta `QueryClientProvider` | Pre-existente | `minimarket-system/src/pages/Proveedores.test.tsx` |
+| lint-staged no encuentra `eslint` (solo en `minimarket-system/node_modules`) | Pre-existente | `.husky/pre-commit` + root `package.json` |
+| Leaked password protection requiere plan Pro | Bloqueado por plan | D-055 |
 
 ---
 
-## Siguientes Pasos (2026-02-01)
+## Histórico de Siguientes Pasos
 
-### Estado post-cierre (cierre condicionado por hallazgos 2026-02-02)
-
-| Prioridad | Tarea | Referencia | Estado |
-|-----------|-------|------------|--------|
-| P0 | Habilitar leaked password protection (Auth) | Supabase Dashboard → Auth → Settings | ⚠️ Re‑abierto 2026-02-02 (bloqueado por SMTP personalizado; ver D-051) |
-| P1 | Confirmar WARN residual en Security Advisor | Panel Supabase | ⚠️ Re‑abierto 2026-02-02 (pendiente evidencia visual) |
-| P1 | Validar migraciones en staging/prod | `migrate.sh status` | ✅ Completado (confirmación usuario) |
-| P1 | Configurar secrets en GitHub Actions | Settings → Secrets | ✅ Completado (confirmación usuario) |
-| P2 | Monitoreo operativo post-release | `docs/OPERATIONS_RUNBOOK.md` | En curso |
-
----
-
-## Siguientes Pasos (2026-01-31) — Histórico
-
-### Pendientes cerrados
-
-| Prioridad | Tarea | Referencia | Estado |
-|-----------|-------|------------|--------|
-| P1 | ~~Habilitar leaked password protection (Auth)~~ | Supabase Dashboard | Movido a 2026-02-01 |
-| P1 | ~~Aplicar/validar migración mitigaciones Advisor~~ | `supabase/migrations/20260131020000_security_advisor_mitigations.sql` | Aplicada en PROD |
-| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
-
----
-
-## Siguientes Pasos (2026-01-30)
-
-### Pendientes actuales
-
-| Prioridad | Tarea | Referencia | Estado |
-|-----------|-------|------------|--------|
-| P1 | Revisar Security Advisor (RLS/tabla pública) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | En verificación (gaps P0 detectados) |
-| P1 | Revalidar RLS post-remediación (snapshot literal + `scripts/rls_audit.sql`) | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Snapshot literal OK; auditoría completa pendiente |
-| P0 | Remediar policies/grants en `productos`, `proveedores`, `categorias` | `docs/archive/SECURITY_ADVISOR_REVIEW_2026-01-30.md` | Pendiente |
-| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
-
----
-
-## Siguientes Pasos (2026-01-29)
-
-### Pendientes actuales
-
-| Prioridad | Tarea | Referencia | Estado |
-|-----------|-------|------------|--------|
-| P1 | Evaluar rotación si hubo exposición histórica de claves | Supabase Dashboard | Pendiente |
-
-| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | ✅ Completado (2026-01-30) |
-## Siguientes Pasos (2026-01-25)
-
-### Pendientes actuales
-
-| Prioridad | Tarea | Referencia | Estado |
-|-----------|-------|------------|--------|
-| P1 | Probar rollback en staging (OPS-SMART-1) | `docs/DEPLOYMENT_GUIDE.md` | ✅ Completado (2026-01-30) |
-| P1 | Rotar credenciales expuestas históricamente en docs (Supabase keys) | Supabase Dashboard | Pendiente (manual) |
-| P1 | Sincronizar `TEST_PASSWORD` en Supabase Auth y revalidar E2E auth real | Supabase Dashboard | ✅ Completado (2026-01-26) |
-| P1 | Definir owners y rotacion de secretos (M10) | `docs/SECRETOS_REQUERIDOS_Y_VALIDACION.md` | ✅ Completado (2026-01-26) |
-
----
-
-## Siguientes Pasos (2026-01-13) - Histórico
-
-### Pendientes SIN credenciales (priorizados)
-
-| Prioridad | Tarea | Comando/Ruta | Estado |
-|-----------|-------|--------------|--------|
-| ~~P0~~ | ~~Refactor SCRAPER_READ_MODE (D-018)~~ | ~~`supabase/functions/scraper-maxiconsumo/storage.ts`, `index.ts`~~ | ✅ Completado |
-| P1 | Ampliar tests unitarios de scraper (HTML vacío, timeouts) | `tests/unit/scraper-*.test.ts` | Pendiente |
-| P1 | Migrar suites performance/security a Vitest | `tests/performance/`, `tests/security/` | Pendiente |
-| P2 | Documentar flujos E2E frontend en `minimarket-system/e2e/README.md` | Ya creado, ampliar | Parcial |
-
-### Pendientes CON credenciales (requieren `.env.test` o acceso Supabase)
-
-| Prioridad | Tarea | Checklist/Script | Bloqueador |
-|-----------|-------|------------------|------------|
-| P0 | ~~Ejecutar auditoría RLS (D-019)~~ | `docs/AUDITORIA_RLS_CHECKLIST.md`, `scripts/rls_audit.sql` | ✅ Completado 2026-01-23 |
-| P0 | ~~Verificar migraciones en staging/prod (WS3.1)~~ | `migrate.sh`, checklist en DEPLOYMENT_GUIDE | ✅ Completado 2026-01-23 |
-| P1 | ~~Tests de integración reales~~ | `npm run test:integration` | ✅ Completado 2026-01-23 |
-| P1 | ~~E2E smoke con Supabase local~~ | `npm run test:e2e` | ✅ Completado 2026-01-23 |
-| P2 | ~~Validación runtime de alertas/comparaciones (WS4.1)~~ | `cron-jobs-maxiconsumo/jobs/realtime-alerts.ts` | ✅ Completado 2026-01-23 |
-
-### Riesgos y mitigaciones
-
-| Riesgo | Impacto | Mitigación |
-|--------|---------|------------|
-| RLS no validada en tablas P0 | Alto - datos expuestos | Ejecutar `scripts/rls_audit.sql` al obtener credenciales |
-| ~~Service role expuesto en scraper~~ | ~~Medio - abuso potencial~~ | ✅ D-018 implementado |
-| Tests integration/E2E no corren en CI | Medio - regresiones ocultas | Activar `vars.RUN_INTEGRATION_TESTS` al tener secrets |
-| Migraciones no verificadas en prod | Alto - inconsistencia DB | WS3.1 con checklist obligatorio antes de deploy |
-
----
-
-## Resumen de sesión (2026-01-13)
-
-**Ejecutado (4 tareas sin credenciales):**
-1. ✅ E2E frontend: 8 tests Playwright con mocks (`minimarket-system/e2e/`)
-2. ✅ CI/Runbook: documentación E2E en OPERATIONS_RUNBOOK.md
-3. ✅ Hardening api-proveedor/scraper: +46 tests unitarios (D-017, D-018)
-4. ✅ Auditoría RLS: checklist + script SQL preparados (D-019)
-
-**Verificación post-ejecución:**
-- `npm test` → **193 tests unitarios OK** (13 archivos)
-- `pnpm test:e2e:frontend` → **8 tests Playwright OK**
-- Git status: 7 archivos modificados, 4 archivos nuevos (untracked)
-
-**Archivos nuevos:**
-- `tests/unit/api-proveedor-read-mode.test.ts` (34 tests)
-- `tests/unit/scraper-storage-auth.test.ts` (12 tests)
-- `docs/AUDITORIA_RLS_CHECKLIST.md` (368 líneas)
-- `minimarket-system/e2e/tareas.proveedores.spec.ts` (2 tests)
+> Las secciones históricas de "Siguientes Pasos" (2026-01-13 a 2026-02-09) fueron consolidadas y removidas en la limpieza documental D-109.
+> Para contexto histórico, consultar el historial de git de este archivo.
 
 ---
 
@@ -384,4 +301,3 @@ Si el proyecto escala >10K rps:
 - [ ] Modificar `_shared/rate-limit.ts` para usar RPC
 - [ ] Tests de concurrencia para verificar atomicidad
 - [ ] Benchmark de latencia en producción
-

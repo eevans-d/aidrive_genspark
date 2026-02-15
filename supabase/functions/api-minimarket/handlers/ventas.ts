@@ -205,17 +205,42 @@ export async function handleListarVentas(
   headers: ApiHeaders,
   responseHeaders: Record<string, string>,
   requestId: string,
-  params: { limit: number; offset: number },
+  params: { limit: number; offset: number; fecha_desde?: string; fecha_hasta?: string },
 ): Promise<Response> {
   try {
-    const { data, count } = await queryTableWithCount(
-      supabaseUrl,
-      'ventas',
-      headers,
-      {},
-      'id,created_at,metodo_pago,monto_total,cliente_id,clientes(nombre,telefono)',
-      { order: 'created_at.desc', limit: params.limit, offset: params.offset },
-    );
+    if (!params.fecha_desde && !params.fecha_hasta) {
+      const { data, count } = await queryTableWithCount(
+        supabaseUrl,
+        'ventas',
+        headers,
+        {},
+        'id,created_at,metodo_pago,monto_total,cliente_id,clientes(nombre,telefono)',
+        { order: 'created_at.desc', limit: params.limit, offset: params.offset },
+      );
+      return ok(data, 200, responseHeaders, { requestId, extra: { count } });
+    }
+
+    // Date range filters require manual URL construction (queryTableWithCount only supports eq.)
+    const sp = new URLSearchParams();
+    sp.set('select', 'id,created_at,metodo_pago,monto_total,cliente_id,clientes(nombre,telefono)');
+    sp.set('order', 'created_at.desc');
+    sp.set('limit', String(params.limit));
+    sp.set('offset', String(params.offset));
+    if (params.fecha_desde) sp.append('created_at', `gte.${params.fecha_desde}`);
+    if (params.fecha_hasta) sp.append('created_at', `lte.${params.fecha_hasta}`);
+
+    const res = await fetch(`${supabaseUrl}/rest/v1/ventas?${sp.toString()}`, {
+      headers: { ...headers, 'Prefer': 'count=exact' },
+    });
+
+    if (!res.ok) {
+      const body = await res.text();
+      throw new Error(`Error listando ventas: ${body}`);
+    }
+
+    const data = await res.json();
+    const contentRange = res.headers.get('content-range') || '*/0';
+    const count = parseInt(contentRange.split('/')[1] || '0', 10);
 
     return ok(data, 200, responseHeaders, { requestId, extra: { count } });
   } catch (error) {

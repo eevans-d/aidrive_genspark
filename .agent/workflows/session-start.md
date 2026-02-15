@@ -25,7 +25,7 @@ timeout: 10
 ## Pipeline
 
 ### Step 1: Load Context
-**Skill/Acción:** leer `CLAUDE.md`, `AGENTS.md`, `.agent/skills/ORCHESTRATOR.md`.
+**Skill/Acción:** leer `CLAUDE.md`, `AGENTS.md`, `.agent/skills/ORCHESTRATOR.md`, `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`.
 **Input:** workspace actual.
 **Output:** contexto mínimo cargado.
 **On failure:** continuar en modo mínimo y registrar warning.
@@ -38,7 +38,7 @@ timeout: 10
 
 ### Step 3: Freshness Check
 **Skill/Acción:** validar antigüedad de docs fuente de verdad.
-**Input:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`.
+**Input:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/closure/OPEN_ISSUES.md`.
 **Output:** lista de stale docs.
 **On failure:** marcar `BLOCKED` y continuar.
 

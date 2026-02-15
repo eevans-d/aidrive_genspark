@@ -37,3 +37,7 @@ export type { ProductoRentabilidad, RentabilidadResult } from './useRentabilidad
 export { useDeposito } from './useDeposito';
 export type { StockDepositoConProducto, DepositoResult } from './useDeposito';
 
+// Pedidos
+export { usePedidos, usePedido, useCreatePedido, useUpdateEstadoPedido, useUpdatePagoPedido, useUpdateItemPreparado } from './usePedidos';
+export type { PedidosFilters, PedidosResult } from './usePedidos';
+

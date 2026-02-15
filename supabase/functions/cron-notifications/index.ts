@@ -18,6 +18,7 @@
 import { FixedWindowRateLimiter } from '../_shared/rate-limit.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('cron-notifications');
 const environment = (Deno.env.get('ENVIRONMENT') ||
@@ -146,6 +147,31 @@ type ChannelLimiters = {
 };
 
 const CHANNEL_LIMITERS = new Map<string, ChannelLimiters>();
+
+async function hashValue(value: string): Promise<string> {
+    if (!value) return '';
+    const encoder = new TextEncoder();
+    const data = encoder.encode(value.toLowerCase().trim());
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return 'sha256:' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
+}
+
+async function redactRecipients(recipients: NotificationRequest['recipients']) {
+    return {
+        email: await Promise.all((recipients.email ?? []).map(hashValue)),
+        phone: await Promise.all((recipients.phone ?? []).map(hashValue)),
+        slack_channels: await Promise.all((recipients.slack_channels ?? []).map(hashValue)),
+        webhook_urls: (recipients.webhook_urls ?? []).map(() => '[redacted-url]'),
+    };
+}
+
+function redactData(data: Record<string, any>) {
+    return {
+        keys: Object.keys(data ?? {}),
+        size: JSON.stringify(data ?? {}).length,
+    };
+}
 
 // =====================================================
 // CONFIGURACIÓN DE TEMPLATES
@@ -503,6 +529,25 @@ const NOTIFICATION_CHANNELS: Record<string, NotificationChannel> = {
         }
     },
 
+    'webhook_default': {
+        id: 'webhook_default',
+        name: 'Webhook Operador',
+        type: 'webhook',
+        config: {
+            webhookUrl: Deno.env.get('WEBHOOK_URL'),
+            method: 'POST',
+            headers: {
+                'X-Source': 'cron-notifications'
+            }
+        },
+        // Auto-disable if not configured (prevents accidental failures in /send).
+        isActive: !!Deno.env.get('WEBHOOK_URL'),
+        rateLimit: {
+            maxPerHour: 50,
+            maxPerDay: 200
+        }
+    },
+
     'sms_critical': {
         id: 'sms_critical',
         name: 'SMS Alertas Críticas',
@@ -512,7 +557,8 @@ const NOTIFICATION_CHANNELS: Record<string, NotificationChannel> = {
             twilioAuthToken: Deno.env.get('TWILIO_AUTH_TOKEN'),
             fromNumber: Deno.env.get('TWILIO_FROM_NUMBER') || '+1234567890'
         },
-        isActive: true,
+        // Placeholder: channel exists but real Twilio delivery is not implemented yet.
+        isActive: false,
         rateLimit: {
             maxPerHour: 10,
             maxPerDay: 50
@@ -528,7 +574,7 @@ const NOTIFICATION_CHANNELS: Record<string, NotificationChannel> = {
             channel: '#alerts-minimarket',
             username: 'MiniMarket Bot'
         },
-        isActive: true,
+        isActive: !!Deno.env.get('SLACK_WEBHOOK_URL'),
         rateLimit: {
             maxPerHour: 50,
             maxPerDay: 200
@@ -575,6 +621,17 @@ Deno.serve(async (req) => {
 
         if (!supabaseUrl || !serviceRoleKey) {
             throw new Error('Configuración de Supabase faltante');
+        }
+
+        const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+        const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+        if (!authCheck.authorized) {
+            logger.warn('UNAUTHORIZED_REQUEST', {
+                requestId,
+                hasAuthorization: Boolean(req.headers.get('authorization')),
+                hasApiKey: Boolean(req.headers.get('apikey')),
+            });
+            return authCheck.errorResponse as Response;
         }
 
         let response: Response;
@@ -796,8 +853,8 @@ async function sendEmail(
     template: NotificationTemplate,
     request: NotificationRequest
 ): Promise<string> {
-    if (!channel.config.smtpHost || !channel.config.fromEmail) {
-        throw new Error('Configuración de email incompleta');
+    if (!channel.config.fromEmail) {
+        throw new Error('Configuración de email incompleta: fromEmail requerido');
     }
 
     // Generar contenido con variables
@@ -805,18 +862,61 @@ async function sendEmail(
     const textBody = processTemplate(template.textBody, request.data);
     const subject = processTemplate(template.subject || '', request.data);
 
-    // En implementación real, aquí se enviaría el email
-    // Por ahora simulamos el envío
-    logger.info('SIMULATION_EMAIL_SEND', { 
-        to: request.recipients.email?.join(', '),
+    const recipients = request.recipients.email ?? [];
+    if (recipients.length === 0) {
+        throw new Error('No hay destinatarios de email');
+    }
+
+    if (notificationsMode !== 'real') {
+        logger.info('SIMULATION_EMAIL_SEND', {
+            toCount: recipients.length,
+            previewChars: Math.min(200, htmlBody.length)
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return `email_sim_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    }
+
+    // Real email delivery via SendGrid HTTP API
+    const sendgridKey = Deno.env.get('SENDGRID_API_KEY');
+    if (!sendgridKey) {
+        throw new Error('SENDGRID_API_KEY no configurada para envio real');
+    }
+
+    const sgPayload = {
+        personalizations: [{ to: recipients.map(email => ({ email })) }],
+        from: {
+            email: channel.config.fromEmail,
+            name: channel.config.fromName || 'Sistema MiniMarket'
+        },
         subject,
-        preview: htmlBody.substring(0, 200)
+        content: [
+            { type: 'text/plain', value: textBody },
+            { type: 'text/html', value: htmlBody }
+        ]
+    };
+
+    const response = await fetch('https://api.sendgrid.com/v3/mail/send', {
+        method: 'POST',
+        headers: {
+            'Authorization': `Bearer ${sendgridKey}`,
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sgPayload),
     });
 
-    // Simular delay de envío
-    await new Promise(resolve => setTimeout(resolve, 100));
+    if (!response.ok) {
+        const body = await response.text().catch(() => 'no body');
+        throw new Error(`SendGrid API failed: ${response.status} ${body}`);
+    }
 
-    return `email_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    const messageId = response.headers.get('x-message-id') || `sg_${Date.now()}`;
+    logger.info('REAL_EMAIL_SEND', {
+        toCount: recipients.length,
+        messageId,
+        status: response.status
+    });
+
+    return messageId;
 }
 
 /**
@@ -837,8 +937,8 @@ async function sendSMS(
 
     // En implementación real, aquí se enviaría SMS via Twilio
     logger.info('SIMULATION_SMS_SEND', {
-        to: request.recipients.phone?.join(', '),
-        message
+        toCount: request.recipients.phone?.length ?? 0,
+        messageChars: message.length
     });
 
     // Simular delay de envío
@@ -891,14 +991,31 @@ async function sendSlack(
         ]
     };
 
-    // En implementación real, aquí se enviaría a Slack
-    logger.info('SIMULATION_SLACK_SEND', {
-        channel: channel.config.channel,
-        hasWebhook: !!channel.config.webhookUrl
+    if (notificationsMode !== 'real') {
+        logger.info('SIMULATION_SLACK_SEND', {
+            channel: channel.config.channel,
+            hasWebhook: !!channel.config.webhookUrl
+        });
+        await new Promise(resolve => setTimeout(resolve, 150));
+        return `slack_sim_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    }
+
+    // Real Slack webhook delivery
+    const response = await fetch(channel.config.webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message),
     });
 
-    // Simular delay de envío
-    await new Promise(resolve => setTimeout(resolve, 150));
+    if (!response.ok) {
+        const body = await response.text().catch(() => 'no body');
+        throw new Error(`Slack webhook failed: ${response.status} ${body}`);
+    }
+
+    logger.info('REAL_SLACK_SEND', {
+        channel: channel.config.channel,
+        status: response.status
+    });
 
     return `slack_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
@@ -925,14 +1042,51 @@ async function sendWebhook(
         recipients: request.recipients
     };
 
-    // En implementación real, aquí se enviaría el webhook
-    logger.info('SIMULATION_WEBHOOK_SEND', {
-        url: channel.config.webhookUrl,
-        payload
+    if (notificationsMode !== 'real') {
+        logger.info('SIMULATION_WEBHOOK_SEND', {
+            hasWebhook: !!channel.config.webhookUrl,
+            templateId: template.id,
+            priority: request.priority,
+            recipientCounts: {
+                email: request.recipients.email?.length ?? 0,
+                phone: request.recipients.phone?.length ?? 0,
+                slack_channels: request.recipients.slack_channels?.length ?? 0,
+                webhook_urls: request.recipients.webhook_urls?.length ?? 0
+            }
+        });
+        await new Promise(resolve => setTimeout(resolve, 100));
+        return `webhook_sim_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+    }
+
+    // Real webhook delivery
+    const method = (channel.config.method || 'POST').toUpperCase();
+    const headers = {
+        'Content-Type': 'application/json',
+        ...(channel.config.headers || {})
+    };
+
+    const response = await fetch(channel.config.webhookUrl, {
+        method,
+        headers,
+        body: JSON.stringify(payload),
     });
 
-    // Simular delay de envío
-    await new Promise(resolve => setTimeout(resolve, 100));
+    if (!response.ok) {
+        const body = await response.text().catch(() => 'no body');
+        throw new Error(`Webhook failed: ${response.status} ${body}`);
+    }
+
+    logger.info('REAL_WEBHOOK_SEND', {
+        status: response.status,
+        templateId: template.id,
+        priority: request.priority,
+        recipientCounts: {
+            email: request.recipients.email?.length ?? 0,
+            phone: request.recipients.phone?.length ?? 0,
+            slack_channels: request.recipients.slack_channels?.length ?? 0,
+            webhook_urls: request.recipients.webhook_urls?.length ?? 0
+        }
+    });
 
     return `webhook_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
 }
@@ -1074,8 +1228,8 @@ async function recordNotificationLog(
                 channel_id: channel.channelId,
                 priority: request.priority,
                 source: request.source,
-                recipients: request.recipients,
-                data: request.data,
+                recipients: await redactRecipients(request.recipients),
+                data: redactData(request.data),
                 status: channel.status,
                 message_id: channel.messageId,
                 error_message: channel.error,
@@ -1181,6 +1335,10 @@ async function testNotificationHandler(
 
     if (!template || !channel) {
         throw new Error('Template o canal no encontrado');
+    }
+
+    if (!channel.isActive) {
+        throw new Error('Canal inactivo: requiere configuracion del owner');
     }
 
     const testRequest: NotificationRequest = {

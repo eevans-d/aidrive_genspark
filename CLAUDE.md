@@ -45,7 +45,7 @@ scripts/                   # Scripts de automatizacion
 .agent/                    # Sistema agentico Protocol Zero
 ```
 
-## Sistema Agentico - Protocol Zero V4.0
+## Sistema de Instrucciones para Claude - Protocol Zero V4.0
 
 ### Auto-Deteccion de Rol
 
@@ -59,16 +59,16 @@ SI NO existe → ROL: CODEX
 - **CODEX:** Planifica, audita, genera briefings. NO implementa codigo profundo.
 - **EXECUTOR:** Ejecuta tareas, implementa, registra evidencia. NO debate.
 
-### Skills Disponibles (22)
+### Guias Operativas Disponibles (22)
 
-Skills instalados en `.agent/skills/*` (fuente real del sistema):
+Guias operativas definidas en `.agent/skills/*` (instrucciones para Claude):
 
 - APISync, BaselineOps, CodeCraft, CronFixOps, DebugHound, DependabotOps
 - DeployOps, DocuGuard, EnvAuditOps, ExtractionOps, MegaPlanner, MigrationOps
 - PerformanceWatch, ProductionGate, RealityCheck, SecretRotationOps, SecurityAudit
 - SendGridOps, SentryOps, SessionOps, TestMaster, UXFixOps
 
-### Auto-Seleccion de Skill
+### Auto-Seleccion de Guia
 
 Selecciona automaticamente segun palabras clave del usuario:
 
@@ -85,9 +85,9 @@ Selecciona automaticamente segun palabras clave del usuario:
 | openapi/swagger/api spec | APISync | -> DocuGuard |
 | seguridad/rls/vulnerabilidad | SecurityAudit | -> DocuGuard |
 
-### Sistema de Workflows Autónomos
+### Sistema de Workflows (guias de procedimiento)
 
-Este proyecto usa workflows automáticos en `.agent/workflows/`.
+Este proyecto usa workflows (guias para Claude) en `.agent/workflows/`.
 
 Referencias canónicas:
 - Router: `.agent/workflows/ROUTER.md`
@@ -103,7 +103,7 @@ Regla obligatoria del agente:
 3. Si falla un comando/test/build, ejecutar `error-recovery`.
 4. Antes de respuesta final/cierre, ejecutar `session-end` (no se omite).
 
-### Reglas de Automatizacion
+### Reglas de Ejecucion
 
 1. **Impacto 0-1:** Ejecutar 100% automatico. Sin pedir confirmacion.
 2. **Impacto 2:** Ejecutar con rollback preparado. Reportar al final.

@@ -1,486 +1,288 @@
-/**
- * SECURITY TESTS - Vitest Migration
- * 
- * Tests de seguridad para el sistema Mini Market.
- * Migrado de Jest a Vitest.
- * 
- * @module tests/security
- * @requires Vitest
- * 
- * Execution:
- *   npx vitest run --config vitest.auxiliary.config.ts tests/security
- * 
- * Environment:
- *   - RUN_REAL_TESTS=true: Enable tests with real network calls
- *   - By default, all tests use mocks (no credentials needed)
- */
+import { describe, it, expect } from 'vitest';
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+if (typeof globalThis.Deno === 'undefined') {
+  (globalThis as any).Deno = { env: { get: () => undefined } };
+}
 
-// ============================================================================
-// Test Configuration
-// ============================================================================
+import { requireServiceRoleAuth } from '../../supabase/functions/_shared/internal-auth.ts';
+import { validateOrigin, parseAllowedOrigins, createCorsErrorResponse } from '../../supabase/functions/_shared/cors.ts';
+import {
+  validatePreciosParams,
+  validateProductosParams,
+  validateComparacionParams,
+  validateSincronizacionParams,
+} from '../../supabase/functions/api-proveedor/validators.ts';
+
 const RUN_REAL_TESTS = process.env.RUN_REAL_TESTS === 'true';
-const SKIP_REAL = RUN_REAL_TESTS ? it : it.skip;
+const RUN_REAL_SENDGRID_SMOKE = process.env.RUN_REAL_SENDGRID_SMOKE === 'true';
+const CRON_ENDPOINTS = [
+  'cron-dashboard/dashboard',
+  'cron-health-monitor/status',
+  'cron-jobs-maxiconsumo/status',
+  'cron-notifications/channels',
+] as const;
 
-// Mock fetch for all tests
-const mockFetch = vi.fn();
+function makeUnsignedJwt(payload: Record<string, unknown>) {
+  // Unit-only: internal-auth does not verify signatures. In production, functions run with verify_jwt=true.
+  const header = { alg: 'HS256', typ: 'JWT' };
+  const encode = (value: unknown) => Buffer.from(JSON.stringify(value)).toString('base64url');
+  return `${encode(header)}.${encode(payload)}.sig`;
+}
 
-// ============================================================================
-// Security Payloads (Fixtures)
-// ============================================================================
-const SQL_INJECTION_PAYLOADS = [
-  "'; DROP TABLE precios_proveedor; --",
-  "1' OR '1'='1",
-  "' UNION SELECT * FROM usuarios --",
-  "admin'; DELETE FROM comparacion_precios; --",
-  "' OR 1=1 LIMIT 1 --",
-  "1; INSERT INTO logs_scraping VALUES ('hacked')",
-  "' AND (SELECT COUNT(*) FROM precios_proveedor) > 0 --"
-];
+describe('Security contracts (real helpers)', () => {
+  describe('Internal auth guard (cron sensibles)', () => {
+    it('devuelve 401 sin credenciales para todos los endpoints críticos', async () => {
+      for (const endpoint of CRON_ENDPOINTS) {
+        const req = new Request(`https://example.test/functions/v1/${endpoint}`, {
+          method: 'GET',
+        });
 
-const XSS_PAYLOADS = [
-  "<script>alert('xss')</script>",
-  "<img src=x onerror=alert('xss')>",
-  "javascript:alert('xss')",
-  "<svg onload=alert('xss')>",
-  "'\"><script>alert('xss')</script>",
-  "<body onload=alert('xss')>"
-];
+        const result = requireServiceRoleAuth(req, 'srv-test-key', {
+          'Content-Type': 'application/json',
+        }, 'req-unauth');
 
-const NUMERIC_INJECTION_PAYLOADS = [
-  "1; DROP TABLE estadisticas_scraping; --",
-  "0 OR 1=1",
-  "-1 UNION SELECT * FROM logs_scraping",
-  "9999999999999999999999999",
-  "-9223372036854775808"
-];
+        expect(result.authorized).toBe(false);
+        expect(result.errorResponse).toBeDefined();
+        expect(result.errorResponse?.status).toBe(401);
+      }
+    });
 
-const PROTECTED_ENDPOINTS = [
-  '/sincronizar',
-  '/configuracion',
-  '/estadisticas'
-];
+    it('permite 200 lógico con Authorization Bearer para todos los endpoints críticos', () => {
+      for (const endpoint of CRON_ENDPOINTS) {
+        const req = new Request(`https://example.test/functions/v1/${endpoint}`, {
+          method: 'GET',
+          headers: {
+            Authorization: 'Bearer srv-test-key',
+          },
+        });
 
-// ============================================================================
-// Mock Response Helpers
-// ============================================================================
-function mockSafeResponse(payload: string) {
-  return {
-    ok: true,
-    json: () => Promise.resolve({
-      success: true,
+        const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-auth');
+        expect(result.authorized).toBe(true);
+      }
+    });
+
+    it('acepta apikey para llamadas internas service-to-service', () => {
+      for (const endpoint of CRON_ENDPOINTS) {
+        const req = new Request(`https://example.test/functions/v1/${endpoint}`, {
+          method: 'GET',
+          headers: {
+            apikey: 'srv-test-key',
+          },
+        });
+
+        const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-apikey');
+        expect(result.authorized).toBe(true);
+      }
+    });
+
+    it('acepta JWT con claim role=service_role (fallback) si no coincide exactamente con la key', () => {
+      const jwt = makeUnsignedJwt({ role: 'service_role' });
+      const req = new Request('https://example.test/functions/v1/cron-notifications/channels', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-role-fallback');
+      expect(result.authorized).toBe(true);
+    });
+
+    it('rechaza JWT con role distinto de service_role en fallback', () => {
+      const jwt = makeUnsignedJwt({ role: 'anon' });
+      const req = new Request('https://example.test/functions/v1/cron-notifications/channels', {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${jwt}`,
+        },
+      });
+
+      const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-role-reject');
+      expect(result.authorized).toBe(false);
+      expect(result.errorResponse?.status).toBe(401);
+    });
+
+    it('rechaza Bearer malformado y claves rotadas/inválidas', async () => {
+      const malformedBearer = new Request('https://example.test/functions/v1/cron-dashboard/dashboard', {
+        method: 'GET',
+        headers: {
+          Authorization: 'Token srv-test-key',
+        },
+      });
+
+      const staleKey = new Request('https://example.test/functions/v1/cron-dashboard/dashboard', {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer srv-old-key',
+          apikey: 'srv-old-key',
+        },
+      });
+
+      const malformedResult = requireServiceRoleAuth(malformedBearer, 'srv-test-key', {}, 'req-malformed');
+      const staleResult = requireServiceRoleAuth(staleKey, 'srv-test-key', {}, 'req-stale');
+
+      expect(malformedResult.authorized).toBe(false);
+      expect(staleResult.authorized).toBe(false);
+      expect(malformedResult.errorResponse?.status).toBe(401);
+      expect(staleResult.errorResponse?.status).toBe(401);
+
+      const malformedBody = await malformedResult.errorResponse?.json();
+      expect(malformedBody?.error?.code).toBe('UNAUTHORIZED');
+    });
+  });
+
+  describe('CORS real (allowlist)', () => {
+    it('bloquea origen no permitido con respuesta CORS estándar', async () => {
+      const req = new Request('https://example.test/functions/v1/api-proveedor/precios', {
+        headers: { origin: 'https://evil.example' },
+      });
+
+      const cors = validateOrigin(req, parseAllowedOrigins('https://app.minimarket.local'));
+      expect(cors.allowed).toBe(false);
+      expect(cors.headers['Access-Control-Allow-Origin']).toBe('null');
+
+      const response = createCorsErrorResponse('req-cors', cors.headers);
+      const body = await response.json();
+
+      expect(response.status).toBe(403);
+      expect(body.success).toBe(false);
+      expect(body.error.code).toBe('CORS_ORIGIN_NOT_ALLOWED');
+    });
+
+    it('permite origen configurado en allowlist', () => {
+      const req = new Request('https://example.test/functions/v1/api-proveedor/precios', {
+        headers: { origin: 'https://app.minimarket.local' },
+      });
+
+      const cors = validateOrigin(req, parseAllowedOrigins('https://app.minimarket.local'));
+      expect(cors.allowed).toBe(true);
+      expect(cors.headers['Access-Control-Allow-Origin']).toBe('https://app.minimarket.local');
+    });
+
+    it('permite requests sin Origin (server-to-server) y aplica fallback seguro', () => {
+      const req = new Request('https://example.test/functions/v1/api-proveedor/precios');
+      const cors = validateOrigin(req, parseAllowedOrigins('https://app.minimarket.local'));
+
+      expect(cors.allowed).toBe(true);
+      expect(cors.origin).toBeNull();
+      expect(cors.headers['Access-Control-Allow-Origin']).toBe('https://app.minimarket.local');
+      expect(cors.headers['Vary']).toBe('Origin');
+    });
+  });
+
+  describe('Input abuse real (validators)', () => {
+    it('neutraliza payloads de SQLi/XSS en parámetros de búsqueda', () => {
+      const precios = validatePreciosParams(new URL('https://x.test?categoria=%27%20UNION%20SELECT%20*%20FROM%20usuarios--'));
+      const productos = validateProductosParams(new URL('https://x.test?busqueda=%3Cscript%3Ealert(1)%3C%2Fscript%3E&limit=9999999'));
+
+      expect(precios.categoria).not.toContain("'");
+      expect(precios.categoria.length).toBeLessThanOrEqual(100);
+      expect(productos.busqueda).not.toContain('<script>');
+      expect(productos.limite).toBe(1000);
+    });
+
+    it('acota parámetros numéricos y enums a rangos seguros', () => {
+      const comparacion = validateComparacionParams(new URL('https://x.test?min_diferencia=-100&limit=99999&orden=hacked'));
+      const sync = validateSincronizacionParams(new URL('https://x.test?priority=invalid-force&categoria=%3Cimg%20onerror%3Dalert(1)%3E'));
+
+      expect(comparacion.minDiferencia).toBe(0);
+      expect(comparacion.limite).toBe(500);
+      expect(comparacion.orden).toBe('diferencia_absoluta_desc');
+      expect(sync.priority).toBe('normal');
+      expect(sync.categoria).not.toContain('<img');
+    });
+  });
+});
+
+describe('Security smoke real (opcional con credenciales)', () => {
+  const maybeRun = RUN_REAL_TESTS ? it : it.skip;
+  const maybeSendgrid = RUN_REAL_SENDGRID_SMOKE ? it : it.skip;
+
+  maybeRun('verifica 401 reales sin auth en endpoints críticos', async () => {
+    const baseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!baseUrl || !serviceRoleKey) {
+      throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY para RUN_REAL_TESTS=true');
+    }
+
+    for (const endpoint of CRON_ENDPOINTS) {
+      const unauthorized = await fetch(`${baseUrl}/functions/v1/${endpoint}`);
+      expect(unauthorized.status).toBe(401);
+    }
+  });
+
+  maybeRun('verifica auth real service-role en endpoints críticos', async () => {
+    const baseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (!baseUrl || !serviceRoleKey) {
+      throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY para RUN_REAL_TESTS=true');
+    }
+
+    for (const endpoint of CRON_ENDPOINTS) {
+      const authorized = await fetch(`${baseUrl}/functions/v1/${endpoint}`, {
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      });
+
+      // El contrato principal de seguridad es auth: no debe caer en UNAUTHORIZED/FORBIDDEN.
+      expect(authorized.status).not.toBe(401);
+      expect(authorized.status).not.toBe(403);
+      // Si auth pasa, un 5xx sigue siendo incidente real que debemos detectar.
+      expect(authorized.status).toBeLessThan(500);
+    }
+  });
+
+  maybeSendgrid('envia email real via cron-notifications y retorna messageId (requiere NOTIFICATIONS_MODE=real en production)', async () => {
+    const baseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const emailTo = process.env.REAL_SMOKE_EMAIL_TO;
+
+    if (!baseUrl || !serviceRoleKey || !emailTo) {
+      throw new Error('Faltan SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY o REAL_SMOKE_EMAIL_TO para RUN_REAL_SENDGRID_SMOKE=true');
+    }
+
+    const requestId = `vitest-sendgrid-smoke-${Date.now()}`;
+    const payload = {
+      templateId: 'critical_alert',
+      channels: ['email_default'],
+      recipients: { email: [emailTo] },
       data: {
-        productos: [],
-        filtros_aplicados: { input: payload }  // Echo back sanitized
-      }
-    })
-  };
-}
+        alertType: 'SMOKE_TEST',
+        alertTitle: 'SendGrid smoke (vitest)',
+        alertDescription: 'Smoke test triggered from security suite to validate SendGrid delivery.',
+        jobId: 'sendgrid-smoke',
+        executionId: requestId,
+        timestamp: new Date().toISOString(),
+        severity: 'low',
+        recommendedAction: 'N/A',
+        dashboardUrl: 'https://example.invalid/dashboard',
+        logsUrl: 'https://example.invalid/logs',
+      },
+      priority: 'low',
+      source: 'vitest-smoke',
+      requiresEscalation: false,
+    };
 
-function mockAuthErrorResponse() {
-  return {
-    ok: false,
-    status: 401,
-    json: () => Promise.resolve({
-      success: false,
-      error: { code: 'AUTH_REQUIRED', message: 'Se requiere autenticación' }
-    })
-  };
-}
+    const res = await fetch(`${baseUrl}/functions/v1/cron-notifications/send`, {
+      method: 'POST',
+      headers: {
+        apikey: serviceRoleKey,
+        Authorization: `Bearer ${serviceRoleKey}`,
+        'Content-Type': 'application/json',
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify(payload),
+    });
 
-function mockRateLimitResponse() {
-  return {
-    ok: false,
-    status: 429,
-    json: () => Promise.resolve({
-      success: false,
-      error: { code: 'RATE_LIMIT', message: 'Demasiadas solicitudes' }
-    })
-  };
-}
+    expect(res.status).toBe(200);
 
-// ============================================================================
-// Security Tests (Mocked - No credentials needed)
-// ============================================================================
-describe('🔒 SECURITY TESTS - Vitest', () => {
-  
-  beforeEach(() => {
-    mockFetch.mockReset();
-    vi.stubGlobal('fetch', mockFetch);
+    const json = await res.json();
+    expect(json?.success).toBe(true);
+    expect(json?.data?.result?.channels?.[0]?.status).toBe('sent');
+    expect(json?.data?.result?.channels?.[0]?.messageId).toBeTruthy();
   });
-  
-  afterEach(() => {
-    vi.unstubAllGlobals();
-  });
-  
-  describe('💉 SQL Injection Prevention', () => {
-    
-    it('debe manejar payloads SQL injection sin error', async () => {
-      for (const payload of SQL_INJECTION_PAYLOADS) {
-        mockFetch.mockResolvedValueOnce(mockSafeResponse(payload));
-        
-        const url = `https://mock.supabase.co/functions/v1/api-proveedor/precios?categoria=${encodeURIComponent(payload)}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        // Should respond without DB error
-        expect(response.ok).toBe(true);
-        expect(data.success).toBe(true);
-        expect(data.data.productos).toBeDefined();
-        
-        // Should not contain SQL keywords in error
-        expect(JSON.stringify(data)).not.toContain('syntax error');
-        expect(JSON.stringify(data)).not.toContain('permission denied');
-      }
-      
-      expect(mockFetch).toHaveBeenCalledTimes(SQL_INJECTION_PAYLOADS.length);
-    });
-    
-    it('debe validar parámetros numéricos contra injection', async () => {
-      for (const payload of NUMERIC_INJECTION_PAYLOADS) {
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: {
-              productos: [],
-              paginacion: { limite: 50, offset: 0 }  // Default values
-            }
-          })
-        });
-        
-        const url = `https://mock.supabase.co/functions/v1/api-proveedor/precios?limit=${payload}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        expect(response.ok).toBe(true);
-        
-        // Should use default/safe values
-        expect(data.data.paginacion.limite).toBeLessThanOrEqual(500);
-        expect(data.data.paginacion.offset).toBeGreaterThanOrEqual(0);
-      }
-    });
-    
-  });
-  
-  describe('🛡️ XSS Prevention', () => {
-    
-    it('debe manejar payloads XSS sin ejecutar scripts', async () => {
-      for (const payload of XSS_PAYLOADS) {
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: {
-              productos: [{
-                nombre: payload,  // Echoed but should be sanitized client-side
-                precio: 100
-              }]
-            }
-          })
-        });
-        
-        const url = `https://mock.supabase.co/functions/v1/api-proveedor/productos?busqueda=${encodeURIComponent(payload)}`;
-        const response = await fetch(url);
-        const data = await response.json();
-        
-        expect(response.ok).toBe(true);
-        expect(data.success).toBe(true);
-        
-        // Note: XSS prevention is primarily client-side
-        // Server should not crash or error on these payloads
-      }
-    });
-    
-  });
-
-  describe('🌐 CORS y headers seguros', () => {
-    it('retorna headers CORS esperados en respuestas mock', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        headers: new Map([
-          ['access-control-allow-origin', 'https://permitido.com'],
-          ['access-control-allow-headers', 'authorization, x-api-secret']
-        ]),
-        json: () => Promise.resolve({ success: true })
-      });
-
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/status');
-
-      expect(response.ok).toBe(true);
-      expect(response.headers.get('access-control-allow-origin')).toBe('https://permitido.com');
-      expect(response.headers.get('access-control-allow-headers')).toContain('authorization');
-    });
-  });
-  
-  describe('🔐 Authentication & Authorization', () => {
-    
-    it('debe rechazar acceso sin autenticación a endpoints protegidos', async () => {
-      for (const endpoint of PROTECTED_ENDPOINTS) {
-        mockFetch.mockResolvedValueOnce(mockAuthErrorResponse());
-        
-        const url = `https://mock.supabase.co/functions/v1/api-proveedor${endpoint}`;
-        const response = await fetch(url);  // No auth header
-        
-        expect(response.ok).toBe(false);
-        expect(response.status).toBe(401);
-        
-        const data = await response.json();
-        expect(data.success).toBe(false);
-        expect(data.error.code).toBe('AUTH_REQUIRED');
-      }
-    });
-    
-    it('debe permitir acceso con autenticación válida', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: () => Promise.resolve({
-          success: true,
-          data: { authenticated: true }
-        })
-      });
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/status', {
-        headers: {
-          'Authorization': 'Bearer valid-token',
-          'x-api-secret': 'valid-secret'
-        }
-      });
-      
-      expect(response.ok).toBe(true);
-      
-      // Verify auth header was sent
-      const callArgs = mockFetch.mock.calls[0];
-      expect(callArgs[1].headers).toHaveProperty('Authorization');
-    });
-    
-  });
-  
-  describe('⏱️ Rate Limiting', () => {
-    
-    it('debe aplicar rate limiting después de muchas requests', async () => {
-      // First 60 requests succeed
-      for (let i = 0; i < 60; i++) {
-        mockFetch.mockResolvedValueOnce({
-          ok: true,
-          json: () => Promise.resolve({ success: true })
-        });
-      }
-      // 61st request is rate limited
-      mockFetch.mockResolvedValueOnce(mockRateLimitResponse());
-      
-      // Make 61 requests
-      let rateLimited = false;
-      for (let i = 0; i < 61; i++) {
-        const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/precios');
-        if (response.status === 429) {
-          rateLimited = true;
-          break;
-        }
-      }
-      
-      expect(rateLimited).toBe(true);
-    });
-    
-  });
-  
-  describe('Path Traversal Prevention', () => {
-    
-    const PATH_TRAVERSAL_PAYLOADS = [
-      '../../../etc/passwd',
-      '..\\..\\..\\windows\\system32\\config\\sam',
-      '....//....//....//etc/passwd',
-      '%2e%2e%2f%2e%2e%2f%2e%2e%2fetc%2fpasswd',
-      '..%252f..%252f..%252fetc/passwd',
-      '/var/log/../../../etc/shadow'
-    ];
-    
-    it('debe bloquear path traversal en parámetros de archivo', async () => {
-      for (const payload of PATH_TRAVERSAL_PAYLOADS) {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 400,
-          json: () => Promise.resolve({
-            success: false,
-            error: { code: 'INVALID_PATH', message: 'Ruta no válida' }
-          })
-        });
-        
-        const url = `https://mock.supabase.co/functions/v1/api-minimarket/reportes?file=${encodeURIComponent(payload)}`;
-        const response = await fetch(url);
-        
-        // Should reject or sanitize path traversal
-        expect(response.status).toBeGreaterThanOrEqual(400);
-      }
-    });
-    
-  });
-  
-  describe('🔄 SSRF Prevention', () => {
-    
-    const SSRF_PAYLOADS = [
-      'http://localhost:22',
-      'http://127.0.0.1:3306',
-      'http://169.254.169.254/latest/meta-data/',
-      'http://[::1]:80',
-      'file:///etc/passwd',
-      'gopher://localhost:25/'
-    ];
-    
-    it('debe bloquear URLs internas en webhooks', async () => {
-      for (const payload of SSRF_PAYLOADS) {
-        mockFetch.mockResolvedValueOnce({
-          ok: false,
-          status: 400,
-          json: () => Promise.resolve({
-            success: false,
-            error: { code: 'INVALID_URL', message: 'URL no permitida' }
-          })
-        });
-        
-        const response = await fetch('https://mock.supabase.co/functions/v1/cron-notifications/send', {
-          method: 'POST',
-          body: JSON.stringify({ webhookUrl: payload })
-        });
-        
-        expect(response.status).toBeGreaterThanOrEqual(400);
-      }
-    });
-    
-  });
-  
-  describe('💾 Input Validation', () => {
-    
-    it('debe rechazar JSON malformado', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'INVALID_JSON', message: 'JSON inválido' }
-        })
-      });
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/precios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: '{"invalid json'
-      });
-      
-      expect(response.status).toBe(400);
-    });
-    
-    it('debe limitar tamaño de payload', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 413,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'PAYLOAD_TOO_LARGE', message: 'Payload excede límite' }
-        })
-      });
-      
-      const largePayload = 'x'.repeat(10 * 1024 * 1024);  // 10MB
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/productos', {
-        method: 'POST',
-        body: JSON.stringify({ data: largePayload })
-      });
-      
-      expect(response.status).toBe(413);
-    });
-    
-    it('debe validar tipos de datos esperados', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 400,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'VALIDATION_ERROR', message: 'Tipo inválido' }
-        })
-      });
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-proveedor/precios', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ precio: 'not-a-number', cantidad: null })
-      });
-      
-      expect(response.status).toBe(400);
-    });
-    
-  });
-  
-  describe('🔑 JWT Validation', () => {
-    
-    it('debe rechazar JWT expirado', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'TOKEN_EXPIRED', message: 'Token expirado' }
-        })
-      });
-      
-      const expiredToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiZXhwIjoxNjAwMDAwMDAwfQ.invalid';
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/stock', {
-        headers: { 'Authorization': `Bearer ${expiredToken}` }
-      });
-      
-      expect(response.status).toBe(401);
-    });
-    
-    it('debe rechazar JWT con firma inválida', async () => {
-      mockFetch.mockResolvedValueOnce({
-        ok: false,
-        status: 401,
-        json: () => Promise.resolve({
-          success: false,
-          error: { code: 'INVALID_SIGNATURE', message: 'Firma inválida' }
-        })
-      });
-      
-      const tamperedToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwiYWRtaW4iOnRydWV9.tampered';
-      
-      const response = await fetch('https://mock.supabase.co/functions/v1/api-minimarket/admin', {
-        headers: { 'Authorization': `Bearer ${tamperedToken}` }
-      });
-      
-      expect(response.status).toBe(401);
-    });
-    
-  });
-  
-  describe('Real Security Tests (requires credentials)', () => {
-    
-    SKIP_REAL('debe validar auth real contra Supabase', async () => {
-      const url = process.env.SUPABASE_URL;
-      const key = process.env.SUPABASE_ANON_KEY;
-      
-      vi.unstubAllGlobals();
-      
-      // Test without auth - should return 401
-      const noAuthResponse = await fetch(`${url}/functions/v1/api-minimarket/health`);
-      
-      // api-minimarket health doesn't require auth, so test another endpoint
-      const noAuthProtected = await fetch(`${url}/functions/v1/api-minimarket/productos`);
-      expect(noAuthProtected.status).toBe(401);
-      
-      // Test with auth - health endpoint should work
-      const authResponse = await fetch(`${url}/functions/v1/api-minimarket/health`, {
-        headers: {
-          'Authorization': `Bearer ${key}`
-        }
-      });
-      
-      expect(authResponse.ok).toBe(true);
-    });
-    
-  });
-  
 });

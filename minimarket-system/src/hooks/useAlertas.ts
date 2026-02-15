@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { insightsApi, ofertasApi, type ArbitrajeItem, type OportunidadCompraItem, type OfertaSugeridaItem } from '../lib/apiClient'
@@ -142,31 +143,62 @@ export function useAlertas() {
     staleTime: STALE_TIME,
   })
 
-  const stockBajo = stockBajoQuery.data ?? []
-  const vencimientos = vencimientosQuery.data ?? []
-  const alertasPrecios = alertasPreciosQuery.data ?? []
-  const tareasVencidas = tareasVencidasQuery.data ?? []
-  const riesgoPerdida = (arbitrajeQuery.data ?? []).filter(r => r.riesgo_perdida)
-  const margenBajo = (arbitrajeQuery.data ?? []).filter(r => r.margen_bajo && !r.riesgo_perdida)
-  const oportunidadesCompra = oportunidadesQuery.data ?? []
-  const ofertasSugeridas = ofertasSugeridasQuery.data ?? []
+  const {
+    stockBajo,
+    vencimientos,
+    alertasPrecios,
+    tareasVencidas,
+    riesgoPerdida,
+    margenBajo,
+    oportunidadesCompra,
+    ofertasSugeridas,
+    totalAlertas,
+  } = useMemo(() => {
+    const sb = stockBajoQuery.data ?? []
+    const vc = vencimientosQuery.data ?? []
+    const ap = alertasPreciosQuery.data ?? []
+    const tv = tareasVencidasQuery.data ?? []
+    const arb = arbitrajeQuery.data ?? []
+    const rp = arb.filter(r => r.riesgo_perdida)
+    const mb = arb.filter(r => r.margen_bajo && !r.riesgo_perdida)
+    const oc = oportunidadesQuery.data ?? []
+    const os = ofertasSugeridasQuery.data ?? []
 
-  const totalAlertas =
-    stockBajo.length +
-    vencimientos.length +
-    alertasPrecios.length +
-    tareasVencidas.length +
-    riesgoPerdida.length +
-    oportunidadesCompra.length
+    const total = sb.length + vc.length + ap.length + tv.length + rp.length + oc.length
 
-  const isLoading =
+    return {
+      stockBajo: sb,
+      vencimientos: vc,
+      alertasPrecios: ap,
+      tareasVencidas: tv,
+      riesgoPerdida: rp,
+      margenBajo: mb,
+      oportunidadesCompra: oc,
+      ofertasSugeridas: os,
+      totalAlertas: total,
+    }
+  }, [
+    stockBajoQuery.data,
+    vencimientosQuery.data,
+    alertasPreciosQuery.data,
+    tareasVencidasQuery.data,
+    arbitrajeQuery.data,
+    oportunidadesQuery.data,
+    ofertasSugeridasQuery.data,
+  ])
+
+  const isLoadingCritical =
     stockBajoQuery.isLoading ||
     vencimientosQuery.isLoading ||
     alertasPreciosQuery.isLoading ||
-    tareasVencidasQuery.isLoading ||
+    tareasVencidasQuery.isLoading
+
+  const isLoadingInsights =
     arbitrajeQuery.isLoading ||
     oportunidadesQuery.isLoading ||
     ofertasSugeridasQuery.isLoading
+
+  const isLoading = isLoadingCritical || isLoadingInsights
 
   return {
     stockBajo,
@@ -179,5 +211,7 @@ export function useAlertas() {
     ofertasSugeridas,
     totalAlertas,
     isLoading,
+    isLoadingCritical,
+    isLoadingInsights,
   }
 }

@@ -17,10 +17,12 @@ const Stock = lazy(() => import('./pages/Stock'))
 const Tareas = lazy(() => import('./pages/Tareas'))
 const Productos = lazy(() => import('./pages/Productos'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
+const Ventas = lazy(() => import('./pages/Ventas'))
 const Pedidos = lazy(() => import('./pages/Pedidos'))
 const Pocket = lazy(() => import('./pages/Pocket'))
 const Pos = lazy(() => import('./pages/Pos'))
 const Clientes = lazy(() => import('./pages/Clientes'))
+const NotFound = lazy(() => import('./pages/NotFound'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth()
@@ -47,7 +49,7 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
   return <>{children}</>
 }
 
-function AppRoutes() {
+export function AppRoutes() {
   const { user } = useAuth()
 
   return (
@@ -144,6 +146,16 @@ function AppRoutes() {
           }
         />
         <Route
+          path="/ventas"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Ventas />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/pedidos"
           element={
             <ProtectedRoute>
@@ -175,6 +187,16 @@ function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Clientes />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <NotFound />
               </Layout>
             </ProtectedRoute>
           }

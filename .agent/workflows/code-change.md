@@ -2,7 +2,7 @@
 name: code-change
 description: >
   Pipeline automático tras cambios de código: seguridad, impacto, tests y documentación.
-version: 1.0.0
+version: 1.1.0
 trigger:
   automatic:
     - modificación/creación de archivos de código
@@ -13,12 +13,17 @@ trigger:
   schedule: []
 priority: 2
 timeout: 20
+auto_execution: true
 ---
+
+// turbo-all
 
 # Workflow: Code Change
 
 ## Cuándo se ejecuta
-- Después de cambios significativos de código backend/frontend/sql.
+- **AUTOMÁTICAMENTE** después de cambios significativos de código backend/frontend/sql.
+- El agente DEBE ejecutar este pipeline sin esperar instrucción del usuario.
+- Si el agente modificó archivos `.tsx`, `.ts`, `.sql`, `.md` de docs, DEBE activar este workflow.
 
 ## Pipeline
 

@@ -2,7 +2,8 @@ import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
 import { AlertTriangle, DollarSign, Edit3, Loader2, MessageCircle, Plus, Search } from 'lucide-react'
-
+import { ErrorMessage } from '../components/ErrorMessage'
+import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import {
   clientesApi,
   cuentasCorrientesApi,
@@ -10,10 +11,7 @@ import {
   type ClienteSaldoItem,
 } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
-
-function money(n: number): string {
-  return n.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-}
+import { money } from '../utils/currency'
 
 function whatsappUrl(e164: string): string {
   const digits = e164.replace(/[^\d]/g, '')
@@ -157,7 +155,13 @@ export default function Clientes() {
         </div>
         <div className="divide-y">
           {clientesQuery.isError && (
-            <div className="p-6 text-red-700 bg-red-50">Error cargando clientes</div>
+            <ErrorMessage
+              message={parseErrorMessage(clientesQuery.error)}
+              type={detectErrorType(clientesQuery.error)}
+              onRetry={() => clientesQuery.refetch()}
+              isRetrying={clientesQuery.isFetching}
+              size="sm"
+            />
           )}
           {!clientesQuery.isLoading && clientes.length === 0 && (
             <div className="p-10 text-center text-gray-500">Sin resultados</div>
@@ -303,10 +307,10 @@ function ClienteModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden">
+      <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title-client">
         <div className="p-4 border-b flex items-center justify-between">
-          <div className="font-bold text-gray-900">{mode === 'create' ? 'Nuevo Cliente' : 'Editar Cliente'}</div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">✕</button>
+          <div id="modal-title-client" className="font-bold text-gray-900">{mode === 'create' ? 'Nuevo Cliente' : 'Editar Cliente'}</div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
@@ -435,10 +439,10 @@ function PagoModal({
 
   return (
     <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden">
+      <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title-payment">
         <div className="p-4 border-b flex items-center justify-between">
-          <div className="font-bold text-gray-900">Registrar Pago</div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100">✕</button>
+          <div id="modal-title-payment" className="font-bold text-gray-900">Registrar Pago</div>
+          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
           <div className="rounded-xl border p-3 bg-gray-50">
