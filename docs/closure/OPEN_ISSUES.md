@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-13 (revalidación SQL RLS cerrada)
+**Última actualización:** 2026-02-13 (cierre mega plan + verificación DocuGuard)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -49,16 +49,26 @@ Checkpoints obligatorios:
 
 ---
 
+## P2 (mejoras de rigor y mantenimiento)
+
+| Pendiente | Estado | Siguiente acción |
+|-----------|--------|------------------|
+| Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
+| Consolidación de artefactos históricos | ⚠️ RECOMENDADO | Unificar índice temático de `docs/closure/` y `docs/archive/` para reducir ruido en sesiones nuevas. |
+
+---
+
 ## Notas operativas
 
 - Migraciones: `39/39` local=remoto (actualización 2026-02-13, incluye `20260213030000`).
-- Baseline histórico 2026-02-12: 13 funciones activas; `api-minimarket v21` con `verify_jwt=false`.
-- Snapshot remoto actual 2026-02-13: `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
+- Baseline remoto actual 2026-02-13: 13 funciones activas; `api-minimarket v22`.
+- Snapshot remoto actual: `docs/closure/BASELINE_LOG_2026-02-13_061916.md`.
 - `cron-notifications` actualizada: envío real vía SendGrid cuando `NOTIFICATIONS_MODE=real`.
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 13/13 en páginas no-test).
 - Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`) y SQL fina remota en PASS (`60/60`, `0 FAIL`).
-- **Veredicto: CON RESERVAS** — sistema defendible para producción piloto.
+- Gates sesión 2026-02-13 en PASS: `test-reports/quality-gates_20260213-061657.log`.
+- **Veredicto: CON RESERVAS NO CRÍTICAS** — sistema defendible para producción piloto (score 86/100).
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)
 

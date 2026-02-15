@@ -29,6 +29,7 @@
 import { getCorsHeaders, handleCors } from '../_shared/cors.ts'
 import { ok, fail } from '../_shared/response.ts'
 import { createLogger } from '../_shared/logger.ts'
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts'
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 const logger = createLogger('reposicion-sugerida');
@@ -59,18 +60,31 @@ Deno.serve(async (req: Request) => {
 
   try {
     logger.info('=== Reposicion Sugerida: Inicio ===')
-    const url = new URL(req.url)
-    
-    // Parse query params
-    const diasAnalisis = parseInt(url.searchParams.get('dias_analisis') || '30')
-    const umbralReposicion = parseInt(url.searchParams.get('umbral_reposicion') || '100')
-    const incluirProximo = url.searchParams.get('incluir_proximo') !== 'false'
-    
-    logger.info('Parametros', { diasAnalisis, umbralReposicion, incluirProximo })
 
     // Initialize Supabase client
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
     const supabaseKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Configuración de Supabase faltante')
+    }
+
+    const requestId = req.headers.get('x-request-id') || crypto.randomUUID()
+    const authCheck = requireServiceRoleAuth(req, supabaseKey, corsHeaders, requestId)
+    if (!authCheck.authorized) {
+      logger.warn('UNAUTHORIZED_REQUEST', { requestId })
+      return authCheck.errorResponse as Response
+    }
+
+    const url = new URL(req.url)
+
+    // Parse query params
+    const diasAnalisis = parseInt(url.searchParams.get('dias_analisis') || '30')
+    const umbralReposicion = parseInt(url.searchParams.get('umbral_reposicion') || '100')
+    const incluirProximo = url.searchParams.get('incluir_proximo') !== 'false'
+
+    logger.info('Parametros', { diasAnalisis, umbralReposicion, incluirProximo })
+
     const supabase = createClient(supabaseUrl, supabaseKey)
 
     // 1. Get stock data with product info

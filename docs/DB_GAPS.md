@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento historico/referencial. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/MEGA_PLAN_2026-02-13_042956.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # DB GAPS (objetos sin migracion versionada)
 
 **Estado:** ✅ RESUELTO - Todos los gaps cubiertos en migraciones  

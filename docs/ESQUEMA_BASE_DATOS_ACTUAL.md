@@ -1,3 +1,5 @@
+> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+
 # Esquema de Base de Datos - Sistema Mini Market
 **Actualizado:** 2026-02-06 (Post Sistema Pedidos)
 

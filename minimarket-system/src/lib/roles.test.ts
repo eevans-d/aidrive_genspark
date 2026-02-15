@@ -2,7 +2,6 @@ import { describe, it, expect } from 'vitest';
 import {
         canAccessRoute,
         getRoutesForRole,
-        extractUserRole,
         ROUTE_CONFIG,
         PUBLIC_ROLES,
         UserRole,
@@ -153,36 +152,6 @@ describe('getRoutesForRole', () => {
                 expect(routes).not.toContain('/deposito');
                 expect(routes).not.toContain('/kardex');
                 expect(routes).not.toContain('/pocket');
-        });
-});
-
-describe('extractUserRole', () => {
-        it('retorna usuario para null', () => {
-                expect(extractUserRole(null)).toBe('usuario');
-        });
-
-        it('retorna usuario si no hay metadata de rol', () => {
-                expect(extractUserRole({ user_metadata: {} })).toBe('usuario');
-        });
-
-        it('mapea admin y administrador a admin', () => {
-                expect(extractUserRole({ user_metadata: { rol: 'admin' } })).toBe('admin');
-                expect(extractUserRole({ user_metadata: { rol: 'administrador' } })).toBe('admin');
-                expect(extractUserRole({ user_metadata: { rol: 'Admin' } })).toBe('admin');
-        });
-
-        it('mapea deposito y variantes a deposito', () => {
-                expect(extractUserRole({ user_metadata: { rol: 'deposito' } })).toBe('deposito');
-                expect(extractUserRole({ user_metadata: { rol: 'depósito' } })).toBe('deposito');
-        });
-
-        it('mapea ventas y vendedor a ventas', () => {
-                expect(extractUserRole({ user_metadata: { rol: 'ventas' } })).toBe('ventas');
-                expect(extractUserRole({ user_metadata: { rol: 'vendedor' } })).toBe('ventas');
-        });
-
-        it('retorna usuario para rol desconocido', () => {
-                expect(extractUserRole({ user_metadata: { rol: 'gerente' } })).toBe('usuario');
         });
 });
 

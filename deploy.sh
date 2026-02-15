@@ -26,6 +26,7 @@ COMMIT_SHA=${3:-$(git rev-parse --short HEAD 2>/dev/null || echo "manual")}
 DRY_RUN=${4:-false}
 FORCE_DEPLOY=${5:-false}
 ALLOWED_PROD_BRANCHES=${ALLOWED_PROD_BRANCHES:-main}
+ALLOWED_STAGING_BRANCHES=${ALLOWED_STAGING_BRANCHES:-main,staging}
 
 # Directorios
 BUILD_DIR="dist"
@@ -58,7 +59,7 @@ log_deploy() {
 }
 
 validate_production_branch() {
-    if [ "$DEPLOY_ENV" != "production" ]; then
+    if [ "$DEPLOY_ENV" != "production" ] && [ "$DEPLOY_ENV" != "staging" ]; then
         return 0
     fi
 
@@ -70,8 +71,15 @@ validate_production_branch() {
     local current_branch
     current_branch="$(git rev-parse --abbrev-ref HEAD 2>/dev/null || echo "unknown")"
 
+    local branch_list
+    if [ "$DEPLOY_ENV" = "production" ]; then
+        branch_list="$ALLOWED_PROD_BRANCHES"
+    else
+        branch_list="$ALLOWED_STAGING_BRANCHES"
+    fi
+
     local allowed=false
-    IFS=',' read -ra branches <<< "$ALLOWED_PROD_BRANCHES"
+    IFS=',' read -ra branches <<< "$branch_list"
     for branch in "${branches[@]}"; do
         local trimmed
         trimmed="$(echo "$branch" | xargs)"
@@ -82,12 +90,12 @@ validate_production_branch() {
     done
 
     if [ "$allowed" != "true" ]; then
-        log_error "Branch '$current_branch' no permitida para deploy productivo"
-        log_error "ALLOWED_PROD_BRANCHES=$ALLOWED_PROD_BRANCHES"
+        log_error "Branch '$current_branch' no permitida para deploy a $DEPLOY_ENV"
+        log_error "Branches permitidas: $branch_list"
         return 1
     fi
 
-    log_success "Branch '$current_branch' permitida para producción"
+    log_success "Branch '$current_branch' permitida para $DEPLOY_ENV"
     return 0
 }
 

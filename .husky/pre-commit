@@ -1,2 +1,4 @@
 cd minimarket-system && npx tsc --noEmit --pretty 2>&1 | head -30
+cd ..
 npx lint-staged
+deno check --no-lock supabase/functions/*/index.ts 2>&1 | head -30

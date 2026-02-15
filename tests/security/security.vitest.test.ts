@@ -52,6 +52,48 @@ describe('Security contracts (real helpers)', () => {
         expect(result.authorized).toBe(true);
       }
     });
+
+    it('acepta apikey para llamadas internas service-to-service', () => {
+      for (const endpoint of CRON_ENDPOINTS) {
+        const req = new Request(`https://example.test/functions/v1/${endpoint}`, {
+          method: 'GET',
+          headers: {
+            apikey: 'srv-test-key',
+          },
+        });
+
+        const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-apikey');
+        expect(result.authorized).toBe(true);
+      }
+    });
+
+    it('rechaza Bearer malformado y claves rotadas/inválidas', async () => {
+      const malformedBearer = new Request('https://example.test/functions/v1/cron-dashboard/dashboard', {
+        method: 'GET',
+        headers: {
+          Authorization: 'Token srv-test-key',
+        },
+      });
+
+      const staleKey = new Request('https://example.test/functions/v1/cron-dashboard/dashboard', {
+        method: 'GET',
+        headers: {
+          Authorization: 'Bearer srv-old-key',
+          apikey: 'srv-old-key',
+        },
+      });
+
+      const malformedResult = requireServiceRoleAuth(malformedBearer, 'srv-test-key', {}, 'req-malformed');
+      const staleResult = requireServiceRoleAuth(staleKey, 'srv-test-key', {}, 'req-stale');
+
+      expect(malformedResult.authorized).toBe(false);
+      expect(staleResult.authorized).toBe(false);
+      expect(malformedResult.errorResponse?.status).toBe(401);
+      expect(staleResult.errorResponse?.status).toBe(401);
+
+      const malformedBody = await malformedResult.errorResponse?.json();
+      expect(malformedBody?.error?.code).toBe('UNAUTHORIZED');
+    });
   });
 
   describe('CORS real (allowlist)', () => {
@@ -80,6 +122,16 @@ describe('Security contracts (real helpers)', () => {
       const cors = validateOrigin(req, parseAllowedOrigins('https://app.minimarket.local'));
       expect(cors.allowed).toBe(true);
       expect(cors.headers['Access-Control-Allow-Origin']).toBe('https://app.minimarket.local');
+    });
+
+    it('permite requests sin Origin (server-to-server) y aplica fallback seguro', () => {
+      const req = new Request('https://example.test/functions/v1/api-proveedor/precios');
+      const cors = validateOrigin(req, parseAllowedOrigins('https://app.minimarket.local'));
+
+      expect(cors.allowed).toBe(true);
+      expect(cors.origin).toBeNull();
+      expect(cors.headers['Access-Control-Allow-Origin']).toBe('https://app.minimarket.local');
+      expect(cors.headers['Vary']).toBe('Origin');
     });
   });
 
@@ -110,7 +162,7 @@ describe('Security contracts (real helpers)', () => {
 describe('Security smoke real (opcional con credenciales)', () => {
   const maybeRun = RUN_REAL_TESTS ? it : it.skip;
 
-  maybeRun('verifica 401/200 reales para cron-dashboard', async () => {
+  maybeRun('verifica 401 reales sin auth en endpoints críticos', async () => {
     const baseUrl = process.env.SUPABASE_URL;
     const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -118,17 +170,33 @@ describe('Security smoke real (opcional con credenciales)', () => {
       throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY para RUN_REAL_TESTS=true');
     }
 
-    const unauthorized = await fetch(`${baseUrl}/functions/v1/cron-dashboard/dashboard`);
-    expect(unauthorized.status).toBe(401);
+    for (const endpoint of CRON_ENDPOINTS) {
+      const unauthorized = await fetch(`${baseUrl}/functions/v1/${endpoint}`);
+      expect(unauthorized.status).toBe(401);
+    }
+  });
 
-    const authorized = await fetch(`${baseUrl}/functions/v1/cron-dashboard/dashboard`, {
-      headers: {
-        apikey: serviceRoleKey,
-        Authorization: `Bearer ${serviceRoleKey}`,
-      },
-    });
+  maybeRun('verifica auth real service-role en endpoints críticos', async () => {
+    const baseUrl = process.env.SUPABASE_URL;
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
-    expect(authorized.status).toBeGreaterThanOrEqual(200);
-    expect(authorized.status).toBeLessThan(300);
+    if (!baseUrl || !serviceRoleKey) {
+      throw new Error('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY para RUN_REAL_TESTS=true');
+    }
+
+    for (const endpoint of CRON_ENDPOINTS) {
+      const authorized = await fetch(`${baseUrl}/functions/v1/${endpoint}`, {
+        headers: {
+          apikey: serviceRoleKey,
+          Authorization: `Bearer ${serviceRoleKey}`,
+        },
+      });
+
+      // El contrato principal de seguridad es auth: no debe caer en UNAUTHORIZED/FORBIDDEN.
+      expect(authorized.status).not.toBe(401);
+      expect(authorized.status).not.toBe(403);
+      // Si auth pasa, un 5xx sigue siendo incidente real que debemos detectar.
+      expect(authorized.status).toBeLessThan(500);
+    }
   });
 });

@@ -116,6 +116,14 @@ jobs:
           cache: 'pnpm'
           cache-dependency-path: minimarket-system/pnpm-lock.yaml
 
+      - name: Cache root npm dependencies
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-npm-root-${{ hashFiles('package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-root-
+
       - name: Install dependencies (frontend)
         working-directory: minimarket-system
         run: pnpm install --frozen-lockfile
@@ -355,18 +363,18 @@ jobs:
           fi
           echo "✅ All required secrets are configured"
 
-      - name: Run integration tests
-        run: npx vitest run tests/integration/ --reporter=verbose
+      - name: Run contract tests
+        run: npx vitest run tests/contract/ --reporter=verbose
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
 
-      - name: Upload integration results
+      - name: Upload contract test results
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: integration-results
+          name: contract-test-results
           path: test-reports/junit.integration.xml
           retention-days: 7
 

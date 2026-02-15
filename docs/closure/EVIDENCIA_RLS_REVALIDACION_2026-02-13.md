@@ -9,7 +9,7 @@ La limitación previa de `psql` hacia `db.<project-ref>.supabase.co:5432` (IPv6)
 1. `supabase migration list --linked`
    - ✅ sincronizado local/remoto (`39/39`), incluyendo `20260213030000_drop_legacy_columns_precios_historicos.sql`.
 2. `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi`
-   - ✅ 13 funciones activas (snapshot vigente en `docs/closure/BASELINE_LOG_2026-02-13_031900.md`).
+   - ✅ 13 funciones activas (snapshot vigente en `docs/closure/BASELINE_LOG_2026-02-13_061916.md`).
 3. Smoke por rol (gateway)
    - ✅ PASS en `/clientes` y `/pedidos`.
    - Evidencia: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`.

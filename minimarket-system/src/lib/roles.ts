@@ -57,26 +57,3 @@ export function getRoutesForRole(userRole: UserRole | null): string[] {
                 .filter(([_, roles]) => roles.includes(userRole))
                 .map(([path]) => path);
 }
-
-/**
- * Extrae el rol del usuario desde user_metadata o tabla personal
- * Por defecto retorna 'usuario' si no se encuentra
- */
-export function extractUserRole(user: { user_metadata?: { rol?: string } } | null): UserRole {
-        if (!user) return 'usuario';
-
-        const rolFromMetadata = user.user_metadata?.rol?.toLowerCase();
-
-        // Mapear posibles valores a roles válidos
-        if (rolFromMetadata === 'admin' || rolFromMetadata === 'administrador') {
-                return 'admin';
-        }
-        if (rolFromMetadata === 'deposito' || rolFromMetadata === 'depósito') {
-                return 'deposito';
-        }
-        if (rolFromMetadata === 'ventas' || rolFromMetadata === 'vendedor') {
-                return 'ventas';
-        }
-
-        return 'usuario';
-}

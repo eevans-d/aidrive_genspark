@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento histórico de contexto/snapshot. Usar solo para trazabilidad. Fuente vigente: `docs/ESTADO_ACTUAL.md` + `docs/closure/README_CANONICO.md`.
+
 # Prompt de Contexto para Proxima Sesion
 
 **Generado:** 2026-02-09 (sesion 2)

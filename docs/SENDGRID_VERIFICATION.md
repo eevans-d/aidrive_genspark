@@ -1,3 +1,5 @@
+> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+
 # Verificacion Sender/Dominio SendGrid
 
 **Fecha:** 2026-02-09

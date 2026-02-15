@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/MEGA_PLAN_2026-02-13_042956.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # Auditoría RLS - Ejecución Completa
 **Fecha:** 2026-01-31 03:33 UTC  
 **Ejecutado por:** GitHub Copilot (MCP Supabase)  

@@ -95,4 +95,4 @@ SentryOps -> TestMaster -> PerformanceWatch -> DocuGuard
 
 ## Pendientes
 - Alinear `session-workflow.md` legacy con `session-start/session-end` para evitar ambigüedad en ejecución.
-- Opcional: añadir wrapper ejecutable (`.agent/scripts/run_workflow.sh`) para ejecutar workflows por nombre en CLI.
+- Wrapper actual recomendado: `.agent/scripts/p0.sh` (`route`, `kickoff`, `extract`) en lugar de `run_workflow.sh`.

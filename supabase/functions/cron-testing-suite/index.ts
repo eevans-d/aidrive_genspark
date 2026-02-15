@@ -17,6 +17,8 @@
  */
 
 import { createLogger } from '../_shared/logger.ts';
+import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
+import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
 
 const logger = createLogger('cron-testing-suite');
 const SUPABASE_PROJECT_REF = 'dqaygmjpzoqjjrywdsxi';
@@ -1389,69 +1391,38 @@ export async function runTestCategory(category: 'unit' | 'integration' | 'perfor
 }
 
 // =====================================================
-// EJECUCIÓN PRINCIPAL
+// HTTP HANDLER (Edge Function entry point with auth guard)
 // =====================================================
 
-if (import.meta.main) {
-    const testType = Deno.args[0] || 'complete';
-    
-    logger.info('TEST_SUITE_RUN_START', { testType });
-    logger.info('TEST_SUITE_BANNER', { line: '='.repeat(80) });
+Deno.serve(async (req: Request) => {
+    const corsHeaders = getCorsHeaders();
+    const preflight = handleCors(req, corsHeaders);
+    if (preflight) return preflight;
+
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    if (!serviceRoleKey) {
+        return new Response(JSON.stringify({ error: 'Server configuration error' }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
+    }
+
+    const requestId = req.headers.get('x-request-id') || crypto.randomUUID();
+    const authCheck = requireServiceRoleAuth(req, serviceRoleKey, corsHeaders, requestId);
+    if (!authCheck.authorized) {
+        logger.warn('UNAUTHORIZED_REQUEST', { requestId });
+        return authCheck.errorResponse as Response;
+    }
 
     try {
-        let report: TestReport;
-
-        switch (testType) {
-            case 'unit':
-                report = await runTestCategory('unit');
-                break;
-            case 'integration':
-                report = await runTestCategory('integration');
-                break;
-            case 'performance':
-                report = await runTestCategory('performance');
-                break;
-            case 'recovery':
-                report = await runTestCategory('recovery');
-                break;
-            default:
-                report = await runCompleteTestSuite();
-        }
-
-        // Guardar reporte
-        const reportData = {
-            ...report,
-            generatedBy: 'MiniMax Cron Jobs Test Suite',
-            version: '3.0.0'
-        };
-
-        logger.info('TEST_SUITE_REPORT', {
-            successRate: report.summary.successRate,
-            coverage: report.summary.coverage,
-            durationMs: report.summary.duration
+        const report = await runCompleteTestSuite();
+        return new Response(JSON.stringify(report), {
+            status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
         });
-
-        if (report.summary.failed > 0) {
-            logger.warn('TEST_SUITE_FAILED', { failed: report.summary.failed });
-            report.failedTests.forEach(test => {
-                logger.warn('TEST_FAILED_DETAIL', {
-                    suite: test.suite,
-                    test: test.test,
-                    error: test.error
-                });
-            });
-        }
-
-        if (report.recommendations.length > 0) {
-            report.recommendations.forEach(rec => logger.info('TEST_RECOMMENDATION', { message: rec }));
-        }
-
-        // En un entorno real, aquí se guardaría el reporte en archivo
-        logger.info('TEST_SUITE_RUN_COMPLETE', { status: 'success' });
-
     } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
-        logger.error('TEST_SUITE_RUN_FAILED', { error: message });
-        Deno.exit(1);
+        logger.error('TEST_SUITE_HTTP_FAILED', { error: message, requestId });
+        return new Response(JSON.stringify({ error: message }), {
+            status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        });
     }
-}
+});

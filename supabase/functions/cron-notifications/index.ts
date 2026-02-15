@@ -148,17 +148,20 @@ type ChannelLimiters = {
 
 const CHANNEL_LIMITERS = new Map<string, ChannelLimiters>();
 
-function maskValue(value: string): string {
+async function hashValue(value: string): Promise<string> {
     if (!value) return '';
-    if (value.length <= 4) return '*'.repeat(value.length);
-    return `${value.slice(0, 2)}***${value.slice(-2)}`;
+    const encoder = new TextEncoder();
+    const data = encoder.encode(value.toLowerCase().trim());
+    const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+    const hashArray = Array.from(new Uint8Array(hashBuffer));
+    return 'sha256:' + hashArray.map(b => b.toString(16).padStart(2, '0')).join('').slice(0, 16);
 }
 
-function redactRecipients(recipients: NotificationRequest['recipients']) {
+async function redactRecipients(recipients: NotificationRequest['recipients']) {
     return {
-        email: (recipients.email ?? []).map(maskValue),
-        phone: (recipients.phone ?? []).map(maskValue),
-        slack_channels: (recipients.slack_channels ?? []).map(maskValue),
+        email: await Promise.all((recipients.email ?? []).map(hashValue)),
+        phone: await Promise.all((recipients.phone ?? []).map(hashValue)),
+        slack_channels: await Promise.all((recipients.slack_channels ?? []).map(hashValue)),
         webhook_urls: (recipients.webhook_urls ?? []).map(() => '[redacted-url]'),
     };
 }
@@ -1225,7 +1228,7 @@ async function recordNotificationLog(
                 channel_id: channel.channelId,
                 priority: request.priority,
                 source: request.source,
-                recipients: redactRecipients(request.recipients),
+                recipients: await redactRecipients(request.recipients),
                 data: redactData(request.data),
                 status: channel.status,
                 message_id: channel.messageId,

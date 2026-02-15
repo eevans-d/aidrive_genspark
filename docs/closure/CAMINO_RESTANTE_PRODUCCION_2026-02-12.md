@@ -7,12 +7,12 @@
 ## 1) Estado real confirmado (base 2026-02-13)
 
 - Baseline remoto: 13 Edge Functions activas, `api-minimarket v22 verify_jwt=false`.
-  Evidencia: `docs/ESTADO_ACTUAL.md`, `docs/closure/BASELINE_LOG_2026-02-13_031900.md`.
+  Evidencia: `docs/ESTADO_ACTUAL.md`, `docs/closure/BASELINE_LOG_2026-02-13_061916.md`.
 - Revalidacion remota en vivo (2026-02-13): `supabase migration list --linked` y `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi` confirman `39/39` y versiones vigentes.
 - Mini plan de hardening 5/5 cerrado (credenciales, links, fallback cron, baseline, ErrorMessage 13/13).
   Evidencia: `scripts/verify_5steps.sh`, `docs/closure/CIERRE_5PASOS_2026-02-12.md`.
 - Quality gates locales en PASS (unit + frontend tests + build).
-  Evidencia: `test-reports/quality-gates_20260212-032946.log`.
+  Evidencia: `test-reports/quality-gates_20260213-061657.log`.
 - Validación fina de RLS por rol (P1) cerrada: `supabase/migrations/20260212130000_rls_fine_validation_lockdown.sql` + `scripts/rls_fine_validation.sql` ejecutado (`write_tests=1`) con **0 FAIL**.
   Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`.
 - Rotación de `API_PROVEEDOR_SECRET` completada con éxito y rollback controlado.
@@ -43,7 +43,7 @@
 1. Confirmar que `@sentry/react` está instalado y que `Sentry.init()` es condicional.
 2. Ejecutar `pnpm -C minimarket-system build` y validar que el build sigue en PASS.
 3. Disparar un error controlado (solo en staging/dev) para generar un evento y confirmar que aparece en Sentry.
-4. Documentar cierre en `docs/closure/EVIDENCIA_GATE16_YYYY-MM-DD.md` (sin pegar DSN).
+4. Documentar cierre actualizando `docs/closure/EVIDENCIA_GATE16_2026-02-12.md` (o creando nuevo archivo fechado, sin pegar DSN).
 
 **Definition of Done (Gate 16):** evento visible en Sentry + alerta operativa confirmada.
 

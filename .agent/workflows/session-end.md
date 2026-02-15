@@ -54,8 +54,14 @@ timeout: 12
 **Output:** reporte de sesión.
 **On failure:** dejar reporte mínimo en `docs/closure/`.
 
+### Step 6: Audit Snapshot
+**Skill/Acción:** actualizar o regenerar reporte de consistencia documental.
+**Input:** estado final de `docs/` y `.agent/`.
+**Output:** `docs/closure/AUDITORIA_DOCUMENTAL_ABSOLUTA_<fecha>.md`.
+**On failure:** registrar hallazgos pendientes en `docs/closure/OPEN_ISSUES.md`.
+
 ## Diagrama de Flujo
-`Summarize -> DocuGuard -> ESTADO_ACTUAL -> DECISION_LOG -> Session Report`
+`Summarize -> DocuGuard -> ESTADO_ACTUAL -> DECISION_LOG -> Session Report -> Audit Snapshot`
 
 ## Manejo de Errores
 | Error | Acción |

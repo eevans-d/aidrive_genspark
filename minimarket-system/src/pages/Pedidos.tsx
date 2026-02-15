@@ -19,7 +19,7 @@ import {
         DropdownItem
 } from '../lib/apiClient';
 import { useQuery } from '@tanstack/react-query';
-import ErrorMessage from '../components/ErrorMessage';
+import { ErrorMessage } from '../components/ErrorMessage';
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
 import { toast } from 'sonner';

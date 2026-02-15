@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento histórico de contexto/snapshot. Usar solo para trazabilidad. Fuente vigente: `docs/ESTADO_ACTUAL.md` + `docs/closure/README_CANONICO.md`.
+
 # MISIÓN: ANÁLISIS TÉCNICO INTEGRAL DEL PROYECTO
 
 - Fecha (UTC): `2026-02-09 11:41:44`

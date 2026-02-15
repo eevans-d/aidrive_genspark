@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/MEGA_PLAN_2026-02-13_042956.md`, `docs/closure/OPEN_ISSUES.md`.
+
 # PLANIFICACION DEFINITIVA MEJORAS MINIMARKET (2026-02-07)
 
 **Archivo a crear (por el agente ejecutor):** `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`  

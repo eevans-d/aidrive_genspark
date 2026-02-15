@@ -32,7 +32,7 @@ export default defineConfig({
     // Exclude legacy Jest files and other suites
     exclude: [
       'tests/unit/**',
-      'tests/integration/**',
+      'tests/contract/**',
       'tests/e2e/**',
       'tests/**/*.test.js',  // Legacy Jest files
       'node_modules/**'
