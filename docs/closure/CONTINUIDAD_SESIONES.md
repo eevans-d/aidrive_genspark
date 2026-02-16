@@ -55,8 +55,10 @@
 |---|-------|-----------|--------|------|------------------|
 | 1 | SendGrid: (higiene) revocar API key anterior (si aun esta activa) | P2 | RECOMENDADO (owner/externo) | Manual/navegador | Ver `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` seccion "Paso 2" |
 | 2 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
-| 3 | Ejecutar smoke real periódico de seguridad (`RUN_REAL_TESTS=true`) | P2 | RECOMENDADO | QA/Operación | Programar corrida nightly/pre-release y anexar evidencia en `docs/closure/` |
-| 4 | Deuda técnica: `Proveedores.test.tsx` sin `QueryClientProvider` | P2 | ABIERTO | Frontend tests | Corregir harness del test para cerrar issue técnico conocido |
+| 3 | `precios_proveedor`: trazar en repo el RLS que ya está activo en remoto | P2 | ABIERTO | DB/migraciones | Crear migración idempotente `ENABLE RLS` + alineación de grants/policies para eliminar drift canónico. |
+| 4 | `scraper-maxiconsumo`: remover default CORS wildcard (`*`) residual | P2 | ABIERTO | Edge Function hardening | Refactor menor en headers default para que solo `validateOrigin()` defina el origen. |
+| 5 | Ejecutar smoke real periódico de seguridad (`RUN_REAL_TESTS=true`) | P2 | RECOMENDADO | QA/Operación | Programar corrida nightly/pre-release y anexar evidencia en `docs/closure/`. |
+| 6 | Deuda técnica: `Proveedores.test.tsx` sin `QueryClientProvider` | P2 | ABIERTO | Frontend tests | Corregir harness del test para cerrar issue técnico conocido. |
 
 ### 3.2 Auditoria Forense (C-01..C-07, R-01..R-18)
 
@@ -70,6 +72,8 @@ Estado actual (2026-02-16): **CERRADO + VERIFICADO EN REMOTO**. Referencias:
 |-------|-----------|---------|
 | Smoke real periodico (`RUN_REAL_TESTS=true`) | P2 | Programar nightly o pre-release |
 | Consolidacion artefactos historicos | P2 | Unificar indice de `docs/closure/` y `docs/archive/` |
+| `precios_proveedor` RLS drift (repo vs remoto) | P2 | Agregar migración explícita para trazabilidad |
+| `scraper-maxiconsumo` CORS default `*` | P2 | Limpieza cosmética/hardening de headers default |
 | Domain Authentication SendGrid | P3 | DNS para `minimarket-system.com` |
 
 ---

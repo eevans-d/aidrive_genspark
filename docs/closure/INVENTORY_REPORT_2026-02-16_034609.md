@@ -1,5 +1,9 @@
 # MISIÓN: INVENTARIO COMPLETO DE RECURSOS DEL PROYECTO
 
+> [SNAPSHOT_INTERMEDIO: 2026-02-16] Inventario generado en una rama de integración previa al merge final en `main`.
+> Se conserva como evidencia histórica de sesión. Para estado actual usar:
+> `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md`, `docs/closure/CONTINUIDAD_SESIONES.md`.
+
 - Fecha (UTC): `2026-02-16 03:46:11`
 - Repo: `.`
 - Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-16_034546.md`

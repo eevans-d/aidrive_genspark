@@ -1,5 +1,9 @@
 # MISIÓN: ANÁLISIS TÉCNICO INTEGRAL DEL PROYECTO
 
+> [SNAPSHOT_INTERMEDIO: 2026-02-16] Reporte generado antes del cierre final en `main` (`17b00f7`).
+> Puede contener métricas transitorias de rama/sesión (por ejemplo quality-gates o conteos parciales).
+> Estado canónico vigente: `docs/ESTADO_ACTUAL.md` + `docs/closure/OPEN_ISSUES.md`.
+
 - Fecha (UTC): `2026-02-16 03:46:09`
 - Repo: `.`
 - Branch: `integrate/p0-sync-2026-02-15`

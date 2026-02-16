@@ -115,6 +115,7 @@
 | D-108 | **Auditoría forense definitiva: 7 correcciones + 18 remediaciones aplicadas** | Completada | 2026-02-15 | C-01..C-07 (correcciones documentales) + R-01..R-18 (correcciones de código). Verificación: 829 root tests PASS + 22 frontend tests nuevos + build OK. Commit: `9eb9267`. |
 | D-109 | **Limpieza documental masiva: 79 archivos obsoletos eliminados** | Completada | 2026-02-15 | Eliminados: 9 CONTEXT_PROMPT, 23 BASELINE_LOG, 10 TECHNICAL_ANALYSIS, 3 MEGA_PLAN drafts, 3 EXECUTION_LOG, 5 CHECKPOINT, 13 archive/legacy, 5 duplicados, 8 prompts/handoffs. `docs/` reducido de ~2.5MB a ~1.3MB. |
 | D-110 | **DocuGuard full-sync 2026-02-16**: normalización canónica post Prompt 1/2/3 (estado/score/migraciones/continuidad) + deprecación explícita de reportes forenses supersedidos | Completada | 2026-02-16 | Se alinearon `README.md`, `docs/AGENTS.md`, `docs/closure/README_CANONICO.md`, `docs/closure/CONTINUIDAD_SESIONES.md`, `docs/closure/OPEN_ISSUES.md`, `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`, `docs/API_README.md`, `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`. Evidencia: `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-16.md`. |
+| D-111 | **Reanudación post-cierre abrupto de sesión + verificación complementaria** | Completada | 2026-02-16 | Se verificó estado final en `main` (`17b00f7`) y se incorporaron dos P2 canónicos no bloqueantes: (1) drift de trazabilidad RLS en `precios_proveedor` (activo en remoto, sin migración explícita en repo), (2) `DEFAULT_CORS_HEADERS` con `*` en `scraper-maxiconsumo` como anti-patrón cosmético (mitigado por `validateOrigin`). |
 
 ---
 
@@ -127,6 +128,8 @@
 | P1 | Configurar `SUPABASE_DB_URL` para backup automatizado (Gate 15) | `docs/closure/EVIDENCIA_GATE15_2026-02-12.md` |
 | P2 | (Higiene) Revocar API key anterior de SendGrid si aún está activa (post-rotación) | `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` |
 | P2 | Monitoreo operativo post-release | `docs/OPERATIONS_RUNBOOK.md` |
+| P2 | Agregar migración explícita para `precios_proveedor` con RLS habilitado (eliminar drift repo/remoto) | `docs/closure/OPEN_ISSUES.md` |
+| P2 | Remover `Access-Control-Allow-Origin: '*'` del default en `scraper-maxiconsumo` (hardening cosmético) | `docs/closure/OPEN_ISSUES.md` |
 
 ### Issues abiertos técnicos
 

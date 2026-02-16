@@ -100,6 +100,8 @@ Archivos modificados/creados:
 1. SendGrid/SMTP: **CERRADO** (rotacion + secrets + redeploy + smoke + evidencia externa).
    - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
+3. (P2 técnico) `precios_proveedor`: agregar migración explícita de RLS para eliminar drift repo/remoto.
+4. (P2 técnico) `scraper-maxiconsumo`: remover wildcard `*` en `DEFAULT_CORS_HEADERS` (anti-patrón cosmético).
 
 Referencia operativa:
 - `docs/closure/OPEN_ISSUES.md`
