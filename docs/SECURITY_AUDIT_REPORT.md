@@ -15,22 +15,23 @@
 2. **Grants revocados** a `anon`/`authenticated` en las 3 tablas; solo `service_role` retiene acceso (PART 2).
 3. **`search_path = public`** fijado en `sp_aplicar_precio(uuid, numeric, numeric)` (PART 3).
 
-### Estado RLS post-fix (esperado tras `supabase db push`)
+### Estado RLS post-fix (VERIFICADO EN REMOTO 2026-02-15)
 | Tabla | RLS Habilitado | Grants anon/authenticated | Estado |
 |-------|----------------|---------------------------|--------|
 | `circuit_breaker_state` | Si | Ninguno (REVOKE ALL) | **PROTEGIDA** |
 | `rate_limit_state` | Si | Ninguno (REVOKE ALL) | **PROTEGIDA** |
 | `cron_jobs_locks` | Si | Ninguno (REVOKE ALL) | **PROTEGIDA** |
 
-### SECURITY DEFINER post-fix
+### SECURITY DEFINER post-fix (VERIFICADO EN REMOTO 2026-02-15)
 | Funcion | search_path | Estado |
 |---------|-------------|--------|
 | `sp_aplicar_precio` | `public` | **CORREGIDA** |
+| (20 funciones SECURITY DEFINER total) | todas `public` | **OK** |
 
 ### Evidencia
 - Pre-fix: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`
-- Post-fix: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`
-- Pendiente: evidencia remota post-`supabase db push` (re-ejecutar `scripts/rls_audit.sql`).
+- Post-fix local: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`
+- **Post-fix remoto:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md` (6/6 checks PASS via Supabase Management API)
 
 ---
 

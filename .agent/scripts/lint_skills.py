@@ -22,6 +22,8 @@ import yaml
 REPO_ROOT = Path(__file__).resolve().parents[2]
 SKILLS_ROOT = REPO_ROOT / ".agent" / "skills"
 CONFIG_PATH = SKILLS_ROOT / "project_config.yaml"
+SKILL_SOFT_MAX_LINES = 300
+SKILL_HARD_MAX_LINES = 500
 
 
 def _load_yaml(path: Path) -> dict[str, Any]:
@@ -110,9 +112,18 @@ def lint() -> LintResult:
 
         # Basic structure sanity checks (keep skills consistent and skimmable).
         body = _read_body(skill_md)
+        body_lines = len(body.splitlines())
         for header in ("## Guardrails", "## Activacion"):
             if header not in body:
                 warnings.append(f"{d}/SKILL.md: missing section '{header}'")
+        if body_lines > SKILL_HARD_MAX_LINES:
+            warnings.append(
+                f"{d}/SKILL.md: {body_lines} lines (> {SKILL_HARD_MAX_LINES}); move detailed procedures to references/ to reduce context load"
+            )
+        elif body_lines > SKILL_SOFT_MAX_LINES and not (d / "references").is_dir():
+            warnings.append(
+                f"{d}/SKILL.md: {body_lines} lines and no references/ folder; consider progressive disclosure for better Codex efficiency"
+            )
 
         ui_yaml = d / "agents" / "openai.yaml"
         if not ui_yaml.is_file():

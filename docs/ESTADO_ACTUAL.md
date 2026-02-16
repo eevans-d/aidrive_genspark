@@ -9,12 +9,12 @@
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.
 - Reserva vigente: ninguna (Gate 4 revalidado con evidencia externa). Higiene recomendada: revocar key anterior en SendGrid si aún está activa.
-- **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad **CERRADO**. Migración de hardening: `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql`. RLS habilitado en 3 tablas internas + grants revocados a anon/authenticated + search_path fijado en `sp_aplicar_precio`. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. Pendiente: aplicar migración a remoto (`supabase db push`).
+- **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad **CERRADO Y VERIFICADO EN REMOTO**. Migración de hardening: `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql`. RLS habilitado en 3 tablas internas + grants revocados a anon/authenticated + search_path fijado en `sp_aplicar_precio`. Migración aplicada via `supabase db push` el 2026-02-15. Evidencia local: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. Evidencia remota: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md` (6/6 checks PASS).
 
 ## 2) Estado Real Verificado (sesion 2026-02-15)
 
 ### Baseline remoto
-- Migraciones: 39/39 local=remoto.
+- Migraciones: 40/40 local=remoto.
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
