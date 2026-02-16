@@ -49,8 +49,8 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
-| ~~`precios_proveedor`: RLS habilitado en remoto pero sin migración explícita en repo (drift de trazabilidad)~~ | ✅ CERRADO | Migración idempotente `supabase/migrations/20260216040000_rls_precios_proveedor.sql` creada (RLS + revoke anon/authenticated + grant service_role). Alineada con estado remoto verificado. Pendiente: `supabase db push` para registrar en remoto. |
-| ~~`scraper-maxiconsumo`: `DEFAULT_CORS_HEADERS` usa `Access-Control-Allow-Origin: '*'` (anti-patrón cosmético, mitigado por `validateOrigin`)~~ | ✅ CERRADO | Constante renombrada a `SCRAPER_CORS_OVERRIDES`, wildcard `*` eliminado. Headers ahora se construyen exclusivamente desde `validateOrigin()`. Archivo: `supabase/functions/scraper-maxiconsumo/index.ts`. |
+| ~~`precios_proveedor`: RLS habilitado en remoto pero sin migración explícita en repo (drift de trazabilidad)~~ | ✅ CERRADO | Migración `20260216040000_rls_precios_proveedor.sql` aplicada en remoto via `supabase db push`. RLS=true, grants revocados, service_role OK. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
+| ~~`scraper-maxiconsumo`: `DEFAULT_CORS_HEADERS` usa `Access-Control-Allow-Origin: '*'` (anti-patrón cosmético, mitigado por `validateOrigin`)~~ | ✅ CERRADO | Wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`. Desplegado en remoto via `supabase functions deploy`. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
 | Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
 | Consolidación de artefactos históricos | ✅ CERRADO | Limpieza D-109 (2026-02-15): 79 archivos obsoletos eliminados. `docs/` reducido de ~2.5MB a ~1.3MB. |
 
@@ -86,7 +86,7 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 
 ## Notas operativas
 
-- Migraciones: `41` local, `40` remoto (pendiente: `supabase db push` para `20260216040000`).
+- Migraciones: `41/41` local=remoto (actualización 2026-02-16, incluye `20260216040000`).
 - Snapshot remoto actual 2026-02-15: 13 funciones activas; `api-minimarket v26`, `cron-notifications v24`, `notificaciones-tareas v18`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
