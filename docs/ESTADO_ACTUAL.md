@@ -47,7 +47,7 @@
 - Auxiliary tests: 45/45 PASS + 4 skipped (3 archivos; contract/performance/api-contracts).
 - Integration tests: 38/38 PASS.
 - E2E smoke: 5/5 PASS.
-- Frontend component tests: 150/150 PASS.
+- Frontend component tests: 171/171 PASS (30 archivos).
 - Lint frontend: PASS.
 - Build frontend: PASS.
 - Quality gates: PASS.
@@ -87,7 +87,7 @@ Auditoría de pragmatismo real vs. aspiracional ejecutada con remediaciones comp
 | P1b: Reporte de ventas diario | COMPLETADO | Backend: filtros fecha en `handleListarVentas` (PostgREST gte/lte). Frontend: `Ventas.tsx` con presets Hoy/Semana/Mes, tabla, resumen, paginación |
 | P3: Terminología CLAUDE.md | COMPLETADO | "Skills" → "Guías Operativas", "Workflows Autónomos" → "Workflows (guías de procedimiento)", "Reglas de Automatización" → "Reglas de Ejecución" |
 
-Verificación: Build PASS (9.24s), 829/829 tests PASS.
+Verificación al momento de la auditoría (2026-02-14): Build PASS (9.24s), 829/829 tests PASS. Nota: conteo previo a D-114/D-116 que elevaron a 1165/1165.
 
 Archivos modificados/creados:
 - `supabase/functions/api-minimarket/handlers/proveedores.ts` (nuevo)

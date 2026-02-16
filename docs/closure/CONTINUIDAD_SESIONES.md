@@ -30,7 +30,7 @@
 | Stack | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | Ref Supabase | dqaygmjpzoqjjrywdsxi |
 | Veredicto operativo | APROBADO (P0 cerrados/verificados) |
-| Score | 92/100 operativo, 78/100 forense snapshot |
+| Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
 | Tests | 1165/1165 PASS (root), 45 auxiliary PASS + 4 skipped, frontend build PASS |
 | Edge Functions | 13 activas (`api-minimarket v26`, `scraper-maxiconsumo v19`) |
 | Migraciones | 41/41 local=remoto |
@@ -111,7 +111,7 @@ ROL
 Eres un agente tecnico ejecutor del proyecto Mini Market System.
 
 CONTEXTO
-- Repo: usar la ruta real del checkout activo (ejemplo actual: /home/eevan/ProyectosIA_OLD_BACKUP/aidrive_genspark)
+- Repo: usar la ruta real del checkout activo (ejemplo actual: /home/eevan/ProyectosIA/aidrive_genspark)
 - Branch objetivo: main
 - Estado: APROBADO (P0 cerrados; ver OPEN_ISSUES)
 - Tests base: 1165/1165 PASS (root)

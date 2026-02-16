@@ -40,12 +40,14 @@ pnpm -C minimarket-system test:components
 - Skills locales en `.agent/skills`: 22
 - Workflows `.agent/workflows/*.md`: 12
 
-## Calidad Verificada (ultimo recheck 2026-02-15)
-- Unit: 829/829 PASS
+## Calidad Verificada (ultimo recheck 2026-02-16)
+- Unit: 1165/1165 PASS (58 archivos)
+- Auxiliary: 45/45 PASS + 4 skipped (3 archivos)
+- Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines
+- Frontend: 171/171 PASS (30 archivos)
 - E2E smoke: 5/5 PASS
-- Frontend component tests: 150/150 PASS
+- Build frontend: PASS
 - Gates: PASS
-- Evidencia: `test-reports/quality-gates_20260213-061657.log`
 
 ## Documentacion Canonica
 - `docs/ESTADO_ACTUAL.md`
