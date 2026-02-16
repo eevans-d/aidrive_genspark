@@ -1,4 +1,4 @@
-# Closure Canónico (Actualizado 2026-02-15)
+# Closure Canónico (Actualizado 2026-02-16)
 
 Este directorio contiene muchos artefactos históricos. Para iniciar una sesión nueva sin ruido, usar este orden:
 
@@ -30,14 +30,15 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 
 ## Estado operativo
 
-- Veredicto consolidado: `CON RESERVAS` (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`).
-- Score operativo: `86/100`.
+- Veredicto consolidado: `APROBADO` (P0 cerrados y verificados en remoto; ver `docs/closure/OPEN_ISSUES.md`).
+- Score operativo: `92/100`.
 - Snapshot vigente de gates: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
 - Pendientes P0/P1 vigentes: `docs/closure/OPEN_ISSUES.md`.
 
 Notas:
 - Gate 16 (Sentry) cerrado con evidencia externa: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
 - Gate 4 (SendGrid/SMTP) cerrado con evidencia externa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.
+- Cierre P0 RLS/search_path verificado en remoto: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`.
 - Higiene recomendada: revocar API keys anteriores de SendGrid (si aún están activas) y registrar evidencia sin exponer valores.
 
 ## Artefactos históricos
@@ -47,6 +48,7 @@ Notas:
 - Regla práctica:
 	- Si el archivo incluye timestamp en nombre (`*_YYYY-MM-DD*` o `_*HHMMSS*`), tratarlo como snapshot histórico de esa fecha.
 	- Si existe más de una versión del mismo tipo de artefacto, usar siempre la más nueva y conservar el resto como evidencia.
+	- Los snapshots históricos pueden mostrar métricas previas (por ejemplo `39/39` migraciones); no reemplazan el estado canónico actual (`40/40`).
 - Directorios de soporte histórico:
 	- `docs/archive/README.md`
 	- `docs/mpc/README.md`

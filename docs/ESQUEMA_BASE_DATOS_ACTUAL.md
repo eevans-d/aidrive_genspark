@@ -1,7 +1,20 @@
-> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+> [ACTIVO_VERIFICADO: 2026-02-16] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Esquema de Base de Datos - Sistema Mini Market
-**Actualizado:** 2026-02-06 (Post Sistema Pedidos)
+**Actualizado:** 2026-02-15 (post-fix de seguridad RLS + search_path)
+
+## Addendum 2026-02-16 (estado canónico vigente)
+
+- Migraciones: **40/40** local=remoto (`supabase migration list --linked`), incluyendo `20260215100000_p0_rls_internal_tables_and_search_path.sql`.
+- Hardening aplicado:
+  - `public.rate_limit_state`, `public.circuit_breaker_state`, `public.cron_jobs_locks` con RLS habilitado.
+  - grants a `anon`/`authenticated` revocados en tablas internas.
+  - `public.sp_aplicar_precio(uuid, numeric, numeric)` con `search_path = public`.
+- Evidencia canónica:
+  - `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`
+  - `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`
+
+> Nota: las secciones detalladas de este documento preservan contexto histórico de modelado. Para estado operativo inmediato, priorizar `docs/ESTADO_ACTUAL.md` + evidencias de `docs/closure/`.
 
 ## 📊 Resumen Ejecutivo
 

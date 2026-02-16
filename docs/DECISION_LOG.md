@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-15
+**Última actualización:** 2026-02-16
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -93,7 +93,7 @@
 | D-086 | **Policy verify_jwt (Edge Functions)**: solo `api-minimarket` puede tener `verify_jwt=false`. `cron-notifications` y `cron-testing-suite` deben permanecer `verify_jwt=true`. | Aprobada | 2026-02-12 | Fix aplicado: redeploy `cron-notifications` v15 (`verify_jwt=true`) y `cron-testing-suite` v12 (`verify_jwt=true`). Baseline actualizado (nota: `BASELINE_LOG_*.md` fue removido en D-109; ver historial git). |
 | D-087 | **RLS fine validation (P1)**: alinear policies a roles canónicos + endurecer `personal` (RLS self + unique `user_auth_id`) + `vista_cc_*` con `security_invoker=true` + `jefe` tratado como alias legacy de `admin` | Completada | 2026-02-12 | Migración `20260212130000_rls_fine_validation_lockdown.sql` aplicada. Batería `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y 0 FAIL. Evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-12.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-12.log`. |
 | D-088 | **Revalidación RLS remota por pooler (workaround IPv6)**: cuando `psql $DATABASE_URL` falla contra `db.<ref>.supabase.co:5432`, ejecutar auditoría/validación con conexión pooler (`supabase/.temp/pooler-url`) y credenciales locales sin exponer secretos. | Completada | 2026-02-13 | Revalidación 2026-02-13: `scripts/rls_audit.sql` + `scripts/rls_fine_validation.sql` (`write_tests=1`) en PASS (`60/60`, `0 FAIL`). Evidencias: `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`. |
-| D-089 | **Ejecución formal Mega Plan T01..T10**: cierre por contrato de salida con evidencia por tarea y checkpoints cada 2 tareas. | Completada | 2026-02-13 | Evidencias T01..T09: `docs/closure/EVIDENCIA_M*_2026-02-13.md`; checkpoints: `docs/closure/CHECKPOINT_T*_2026-02-13.md`. |
+| D-089 | **Ejecución formal Mega Plan T01..T10**: cierre por contrato de salida con evidencia por tarea y checkpoints cada 2 tareas. | Completada | 2026-02-13 | Evidencias T01..T09: `docs/closure/EVIDENCIA_M*_2026-02-13.md`; checkpoints removidos en D-109 (trazabilidad en historial git). |
 | D-090 | **Deploy producción con allowlist de rama obligatoria** | Completada | 2026-02-13 | `deploy.sh` falla en rama inválida y permite continuar en rama válida antes de prerequisitos de secretos. Evidencia: `docs/closure/EVIDENCIA_M8_S1_2026-02-13.md`. |
 | D-091 | **Security suite contractual real como baseline** | Completada | 2026-02-13 | `tests/security/security.vitest.test.ts` migra de mock global a helpers reales (auth/cors/validators). Evidencia: `docs/closure/EVIDENCIA_M5_S1_2026-02-13.md`. |
 | D-092 | **T09 owner dependencies se gestiona como BLOCKED formal** | Aprobada | 2026-02-13 | Cuando faltan accesos externos (Sentry DSN/rotación final SendGrid), se cierra ejecución técnica y se entrega checklist exacta para owner. Evidencia: `docs/closure/EVIDENCIA_M6_S2_2026-02-13.md`. |
@@ -114,10 +114,11 @@
 | D-107 | **Gate 4 revalidado post-rotación SendGrid**: secrets aplicados + redeploy + smoke real + Email Activity `delivered` | Completada | 2026-02-15 | Evidencia: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`. (Sin exponer secretos; solo nombres y trazas seguras). |
 | D-108 | **Auditoría forense definitiva: 7 correcciones + 18 remediaciones aplicadas** | Completada | 2026-02-15 | C-01..C-07 (correcciones documentales) + R-01..R-18 (correcciones de código). Verificación: 829 root tests PASS + 22 frontend tests nuevos + build OK. Commit: `9eb9267`. |
 | D-109 | **Limpieza documental masiva: 79 archivos obsoletos eliminados** | Completada | 2026-02-15 | Eliminados: 9 CONTEXT_PROMPT, 23 BASELINE_LOG, 10 TECHNICAL_ANALYSIS, 3 MEGA_PLAN drafts, 3 EXECUTION_LOG, 5 CHECKPOINT, 13 archive/legacy, 5 duplicados, 8 prompts/handoffs. `docs/` reducido de ~2.5MB a ~1.3MB. |
+| D-110 | **DocuGuard full-sync 2026-02-16**: normalización canónica post Prompt 1/2/3 (estado/score/migraciones/continuidad) + deprecación explícita de reportes forenses supersedidos | Completada | 2026-02-16 | Se alinearon `README.md`, `docs/AGENTS.md`, `docs/closure/README_CANONICO.md`, `docs/closure/CONTINUIDAD_SESIONES.md`, `docs/closure/OPEN_ISSUES.md`, `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`, `docs/API_README.md`, `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`. Evidencia: `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-16.md`. |
 
 ---
 
-## Siguientes Pasos (2026-02-15)
+## Siguientes Pasos (2026-02-16)
 
 ### Acciones owner requeridas
 

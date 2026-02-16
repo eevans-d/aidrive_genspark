@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-15 (full-audit complementario: nuevo P0 RLS detectado; ver tabla P0)
+**Última actualización:** 2026-02-16 (sin P0 abiertos; cierre verificado en remoto)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -22,7 +22,7 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 
 ---
 
-## P0 (bloquean cierre Piloto)
+## P0 (histórico: bloqueantes ya cerrados)
 
 | Pendiente | Gate | Estado | Evidencia actual | Siguiente acción |
 |-----------|------|--------|------------------|------------------|

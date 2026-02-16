@@ -4,22 +4,23 @@
 **Fecha de auditoría:** 2026-02-15 (verificación final)
 **Auditoría original:** 2026-02-13
 **Método:** Verificación READ-ONLY contra filesystem real (cero archivos modificados)
-**Nota:** Este documento REEMPLAZA las versiones del 2026-02-13 y la verificación del 2026-02-15. Refleja el estado REAL del filesystem a fecha 2026-02-15.
+**Nota:** Este documento REEMPLAZA las versiones del 2026-02-13 y la verificación del 2026-02-15. El score forense (`78/100`) corresponde al corte pre-remediación P0; el estado operativo vigente está en `docs/ESTADO_ACTUAL.md` y `docs/closure/OPEN_ISSUES.md`.
 
 ---
 
-## SCORE TOTAL: 78/100 — APROBADO CON RESERVAS (ver Addendum 2026-02-15)
+## SCORE FORENSE (SNAPSHOT): 78/100 — APROBADO CON RESERVAS (ver Addendum de Cierre P0)
 
 > **Cambio respecto a auditoría original (55/100):** +23 puntos. Se resolvieron 4 de los 4 hallazgos críticos originales, 6 de los 8 hallazgos altos, y 3 de los 7 medios. Los hallazgos restantes no bloqueantes.
 
 ---
 
-### Addendum 2026-02-15 — Correcciones Post-Remediación + Hallazgos Complementarios
+### Addendum 2026-02-15 (post-fix remoto) — Cierre de P0 de Seguridad
 
 1. **Inventario frontend actualizado:** `Ventas.tsx` y `Tareas.tsx` tienen tests completos (`Ventas.test.tsx`, `Tareas.test.tsx`) y `usePedidos` tiene `usePedidos.test.ts`.
 2. **Auth guards:** las 13 Edge Functions tienen `requireServiceRoleAuth` o `validateApiSecret` (incluye `alertas-vencimientos`, `reposicion-sugerida`, `cron-testing-suite`).
-3. **P0 seguridad (RLS):** evidencia remota muestra 3 tablas internas sin RLS (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated`. Ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` y `docs/SECURITY_AUDIT_REPORT.md`.
-4. **Security definer:** `public.sp_aplicar_precio` queda definido sin `SET search_path = public` en `supabase/migrations/20260212100000_pricing_module_integrity.sql` (mutable search_path).
+3. **P0 seguridad (RLS):** cerrado en remoto. Las 3 tablas internas (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) quedaron con RLS habilitado y sin grants a `anon`/`authenticated`.
+4. **Security definer:** cerrado en remoto. `public.sp_aplicar_precio` quedó con `SET search_path = public`.
+5. **Evidencia de cierre P0:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md` + `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`.
 
 ## 1. EVALUACIÓN POR MÓDULOS
 
@@ -152,9 +153,9 @@
 | 7 | maintenance_cleanup | cron-jobs-maxiconsumo | `0 4 * * 0` (Sunday 4AM) | Vault Bearer token |
 | 8 | fn_refresh_stock_views | SQL RPC | `7 * * * *` (hourly :07) | service_role (SQL) |
 
-### 2.4 Migraciones SQL (39)
+### 2.4 Migraciones SQL (40)
 
-Total: **39 archivos** en `supabase/migrations/`. Desde `20250101000000_version_sp_aplicar_precio.sql` hasta `20260213030000_drop_legacy_columns_precios_historicos.sql`.
+Total: **40 archivos** en `supabase/migrations/`. Desde `20250101000000_version_sp_aplicar_precio.sql` hasta `20260215100000_p0_rls_internal_tables_and_search_path.sql`.
 
 ### 2.5 Tests — Inventario Completo
 
@@ -297,14 +298,16 @@ E2E detalle:
   - Sección 1/3: RLS `DISABLED` en estas 3 tablas.
   - Sección 6: grants a `anon`/`authenticated`.
 - **Impacto:** potencial acceso vía Data API/PostgREST sin restricciones RLS.
-- **Estado:** 🔴 P0 ABIERTO (ver `docs/closure/OPEN_ISSUES.md`).
+- **Estado al cierre forense:** 🔴 P0 ABIERTO.
+- **Estado vigente:** ✅ CERRADO EN REMOTO (ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`).
 
 #### H-C2: SECURITY DEFINER sin `search_path` fijo (mutable search_path)
 - **Módulo:** M4/M6
 - **Objeto:** `public.sp_aplicar_precio(...)`
 - **Evidencia:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log` (sección 5) marca `sp_aplicar_precio` como “⚠️ SIN search_path”.
 - **Fuente en repo:** `supabase/migrations/20260212100000_pricing_module_integrity.sql` redefine la función con `SECURITY DEFINER;` sin `SET search_path = public`.
-- **Estado:** 🔴 P0 ABIERTO.
+- **Estado al cierre forense:** 🔴 P0 ABIERTO.
+- **Estado vigente:** ✅ CERRADO EN REMOTO (ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`).
 
 ### 4.2 ALTOS (1)
 
@@ -652,18 +655,17 @@ El Mini Market System ha experimentado una **mejora sustancial** entre el 2026-0
 4. **Seguridad de autenticación**: Password 10+ chars con complejidad máxima, email confirmation activa, MFA TOTP habilitado, secure password change activo.
 5. **Frontend completo**: 14/14 páginas con ErrorMessage, 14/15 con tests (NotFound utilitaria), catch-all 404.
 
-### Lo que QUEDA pendiente (P0/P1):
-1. **P0 RLS:** 3 tablas internas sin RLS (`circuit_breaker_state`, `rate_limit_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated` (ver `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`).
-2. **P0 SECURITY DEFINER:** `public.sp_aplicar_precio` sin `SET search_path = public` en su última redefinición (mutable search_path).
-3. **P1 Performance tests:** siguen siendo sintéticos (útiles para resiliencia, no para performance real).
-4. **P1 Dependencias:** triple versión de `@supabase/supabase-js` (Edge/FE/Root) requiere decisión (unificar o aceptar drift).
-5. **P1 CORS:** wildcard en `scraper-maxiconsumo` (mitigado por `validateApiSecret`, pero anti-patrón).
+### Lo que QUEDA pendiente (estado vigente):
+1. **P1 Performance tests:** siguen siendo sintéticos (útiles para resiliencia, no para performance real).
+2. **P1 Dependencias:** triple versión de `@supabase/supabase-js` (Edge/FE/Root) requiere decisión (unificar o aceptar drift).
+3. **P1 CORS:** wildcard en `scraper-maxiconsumo` (mitigado por `validateApiSecret`, pero anti-patrón).
+4. **P0 históricos ya cerrados:** RLS interno + `sp_aplicar_precio` (`search_path`) se cerraron en remoto el 2026-02-15 con evidencia.
 
 ### Veredicto Final
 
-**78/100 (pre-addendum) — CON RESERVAS (P0 seguridad abierto)**
+**78/100 (snapshot forense pre-remediación) — CON RESERVAS**
 
-El sistema presenta una arquitectura sólida en las capas críticas (auth, RBAC, validación de inputs, gates y CI). Sin embargo, hay **2 hallazgos P0 de seguridad** (RLS + mutable search_path) que deben cerrarse antes de sostener un “GO” a piloto.
+El sistema presenta una arquitectura sólida en las capas críticas (auth, RBAC, validación de inputs, gates y CI). Los P0 de seguridad detectados por esta auditoría fueron cerrados posteriormente y verificados en remoto (ver `docs/closure/OPEN_ISSUES.md`).
 
 ---
 

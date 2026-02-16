@@ -287,6 +287,28 @@ Si alguien reporta “52 endpoints”, no existe inventario en el repo; el crite
 
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
+
+Inventario verificado (13 activas en remoto; 11 independientes a este gateway):
+
+| Function | Auth de entrada | Uso principal |
+|---|---|---|
+| `alertas-stock` | `requireServiceRoleAuth` | Alertas de stock bajo |
+| `alertas-vencimientos` | `requireServiceRoleAuth` | Alertas de vencimientos |
+| `cron-dashboard` | `requireServiceRoleAuth` | Métricas/estado de cron jobs |
+| `cron-health-monitor` | `requireServiceRoleAuth` | Health checks de cron |
+| `cron-jobs-maxiconsumo` | `requireServiceRoleAuth` | Orquestación scraping/alertas/trends |
+| `cron-notifications` | `requireServiceRoleAuth` | Envío de notificaciones (email/slack/webhook) |
+| `cron-testing-suite` | `requireServiceRoleAuth` | Suite de tests operativos |
+| `notificaciones-tareas` | `requireServiceRoleAuth` | Notificaciones de tareas |
+| `reportes-automaticos` | `requireServiceRoleAuth` | Reportes programados |
+| `reposicion-sugerida` | `requireServiceRoleAuth` | Sugerencias de reposición |
+| `scraper-maxiconsumo` | `validateApiSecret` (`x-api-secret`) | Scraping proveedor externo |
+
+Funciones no incluidas en esta tabla:
+- `api-minimarket` (documentada en este archivo como gateway principal).
+- `api-proveedor` (documentada en su sección específica).
+
+Ejemplos de endpoints independientes:
 ```bash
 GET /reposicion-sugerida           # Edge Function: reposicion-sugerida
   # Query params:

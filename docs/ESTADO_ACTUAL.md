@@ -1,6 +1,6 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-15  
+**Ultima actualizacion:** 2026-02-16  
 **Estado:** APROBADO (todos los P0 cerrados; ver `docs/closure/OPEN_ISSUES.md`)
 **Score operativo:** 92/100 (post-fix P0 RLS + search_path, 2026-02-15)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
@@ -121,7 +121,7 @@ Este documento es el punto de entrada unico para cualquier sesion nueva (Claude 
 - Context prompt listo para copiar/pegar en nuevas ventanas IA.
 - Inventario de CONTEXT_PROMPT disponibles para tareas especificas.
 
-Context prompts disponibles en `docs/closure/CONTEXT_PROMPT_*.md` y `docs/CONTEXT_PROMPT_*.md`.
+Context prompts disponibles en `docs/closure/CONTEXT_PROMPT_*.md` (los prompts ad-hoc de raíz fueron removidos en D-109).
 
 ## 9) Nota De Historial
 El estado historico previo (incluyendo cronologia extensa 2026-01..2026-02) se preserva en:
