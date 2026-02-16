@@ -84,7 +84,7 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 
 ## Notas operativas
 
-- Migraciones: `39/39` local=remoto (actualización 2026-02-13, incluye `20260213030000`).
+- Migraciones: `40/40` local=remoto (actualización 2026-02-15, incluye `20260215100000`).
 - Snapshot remoto actual 2026-02-15: 13 funciones activas; `api-minimarket v26`, `cron-notifications v24`, `notificaciones-tareas v18`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
