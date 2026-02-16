@@ -2,7 +2,7 @@
 
 # OPERATIONS RUNBOOK - MINI MARKET SYSTEM
 
-**Fecha:** 2026-02-01  
+**Fecha:** 2026-02-10  
 **Estado:** Documento operativo
 
 ---
@@ -11,8 +11,9 @@
 Runbook operativo para soporte diario, validaciones basicas y ejecucion de tests.
 
 Fuentes de verdad:
+- `AGENTS.md` (raíz, Protocol Zero)
 - `docs/ESTADO_ACTUAL.md`
-- `docs/HOJA_RUTA_MADRE_2026-01-31.md`
+- `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
 - `docs/archive/ROADMAP.md` (histórico)
 - `docs/DEPLOYMENT_GUIDE.md`
 - `docs/C4_HANDOFF_MINIMARKET_TEC.md`
@@ -36,14 +37,12 @@ Nota: No versionar `.env.test`.
 
 ### 3.1 Frontend (dev)
 ```bash
-cd minimarket-system
-npm run dev
+pnpm -C minimarket-system dev
 ```
 
 ### 3.2 Build
 ```bash
-cd minimarket-system
-npm run build
+pnpm -C minimarket-system build
 ```
 
 ### 3.3 Health checks

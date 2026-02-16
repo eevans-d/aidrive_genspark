@@ -61,6 +61,9 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Validate repository paths
+        run: scripts/validate-paths.sh
+
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
@@ -72,6 +75,12 @@ jobs:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'pnpm'
           cache-dependency-path: minimarket-system/pnpm-lock.yaml
+
+      - name: Validate doc links
+        run: node scripts/validate-doc-links.mjs
+
+      - name: Validate METRICS up-to-date
+        run: node scripts/metrics.mjs --check
 
       - name: Install dependencies (frontend)
         working-directory: minimarket-system

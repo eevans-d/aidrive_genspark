@@ -13,6 +13,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 import unicodedata
 from dataclasses import dataclass
@@ -34,6 +35,78 @@ def _normalize(text: str) -> str:
     text = unicodedata.normalize("NFKD", text)
     text = "".join(ch for ch in text if not unicodedata.combining(ch))
     return " ".join(text.split())
+
+
+def _normalize_phrase(text: str) -> str:
+    # Normalize punctuation to spaces for robust token-boundary matching.
+    base = _normalize(text)
+    base = "".join(ch if ch.isalnum() else " " for ch in base)
+    return " ".join(base.split())
+
+
+def _split_skill_name_tokens(skill_name: str) -> list[str]:
+    # Convert "CodeCraft" -> ["code", "craft"], "APISync" -> ["api", "sync"].
+    token_pattern = re.compile(r"[A-Z]+(?![a-z])|[A-Z]?[a-z]+|\d+")
+    tokens: list[str] = []
+    for chunk in re.split(r"[^A-Za-z0-9]+", skill_name):
+        if not chunk:
+            continue
+        parts = token_pattern.findall(chunk)
+        if parts:
+            tokens.extend(p.lower() for p in parts if p)
+        else:
+            tokens.append(chunk.lower())
+    return [t for t in tokens if t]
+
+
+def _skill_aliases(skill_name: str) -> list[str]:
+    aliases: set[str] = set()
+    norm_skill = _normalize_phrase(skill_name)
+    if norm_skill:
+        aliases.add(norm_skill)
+        aliases.add(norm_skill.replace(" ", ""))
+
+    tokens = _split_skill_name_tokens(skill_name)
+    if len(tokens) > 1:
+        aliases.add(" ".join(tokens))
+        aliases.add("".join(tokens))
+        aliases.add("-".join(tokens))
+        aliases.add("_".join(tokens))
+
+    # Keep only meaningful aliases to avoid accidental matches.
+    clean = []
+    for alias in aliases:
+        a = _normalize_phrase(alias)
+        if len(a) >= 3:
+            clean.append(a)
+    return sorted(set(clean), key=lambda x: (-len(x), x))
+
+
+def _first_alias_hit(text: str, aliases: list[str]) -> tuple[int, str] | None:
+    best: tuple[int, int, str] | None = None
+    for alias in aliases:
+        if not alias:
+            continue
+        m = re.search(rf"(?<![a-z0-9]){re.escape(alias)}(?![a-z0-9])", text)
+        if not m:
+            continue
+        candidate = (m.start(), -len(alias), alias)
+        if best is None or candidate < best:
+            best = candidate
+    if best is None:
+        return None
+    return best[0], best[2]
+
+
+def _dedupe_keep_order(items: list[str]) -> list[str]:
+    seen: set[str] = set()
+    out: list[str] = []
+    for item in items:
+        if item in seen:
+            continue
+        seen.add(item)
+        out.append(item)
+    return out
 
 
 def _read_text_arg(text_arg: str | None) -> str:
@@ -123,10 +196,13 @@ class Selection:
     role: str
     selected_skill: str
     defaulted: bool
+    selection_mode: str
+    explicit_alias: str | None
     matched_keywords: list[str]
     intent: str | None
     chain_pre_check: list[str]
     chain_on_complete: list[str]
+    chain_full: list[str]
     skill_md: str
     config_path: str
     impact_max: int | None
@@ -140,7 +216,8 @@ def select_skill(config: dict[str, Any], user_text: str, *, top_n: int = 3) -> S
     default_skill = orchestrator.get("default_skill") or "RealityCheck"
 
     norm_text = _normalize(user_text)
-    scored: list[tuple[int, int, str, list[str], str | None]] = []
+    norm_phrase_text = _normalize_phrase(user_text)
+    scored: list[dict[str, Any]] = []
     for skill_name, spec in (trigger_patterns.items() if isinstance(trigger_patterns, dict) else []):
         if not isinstance(spec, dict):
             continue
@@ -156,17 +233,48 @@ def select_skill(config: dict[str, Any], user_text: str, *, top_n: int = 3) -> S
             if n_kw and n_kw in norm_text:
                 matches.append(kw)
                 total_len += len(n_kw)
-        if matches:
-            intent = spec.get("intent") if isinstance(spec.get("intent"), str) else None
-            scored.append((len(matches), total_len, skill_name, matches, intent))
+        intent = spec.get("intent") if isinstance(spec.get("intent"), str) else None
+        alias_hit = _first_alias_hit(norm_phrase_text, _skill_aliases(skill_name))
+        explicit_alias = alias_hit[1] if alias_hit else None
+        explicit_pos = alias_hit[0] if alias_hit else sys.maxsize
+        if matches or explicit_alias:
+            scored.append(
+                {
+                    "skill": skill_name,
+                    "match_count": len(matches),
+                    "match_len": total_len,
+                    "matched_keywords": matches,
+                    "intent": intent,
+                    "explicit_alias": explicit_alias,
+                    "explicit_pos": explicit_pos,
+                }
+            )
 
-    scored_sorted = sorted(scored, key=lambda x: (-x[0], -x[1], x[2].lower()))
+    scored_sorted = sorted(
+        scored,
+        key=lambda x: (
+            0 if x["explicit_alias"] else 1,
+            x["explicit_pos"],
+            -x["match_count"],
+            -x["match_len"],
+            x["skill"].lower(),
+        ),
+    )
     if scored_sorted:
-        # Highest match count, then longest total match length, then stable name.
-        _, _, skill, matches, intent = scored_sorted[0]
+        top = scored_sorted[0]
+        skill = top["skill"]
+        matches = top["matched_keywords"]
+        intent = top["intent"]
+        explicit_alias = top["explicit_alias"]
+        selection_mode = "explicit-skill-mention" if explicit_alias else "keyword"
         defaulted = False
     else:
-        skill, matches, intent, defaulted = default_skill, [], None, True
+        skill = default_skill
+        matches = []
+        intent = None
+        explicit_alias = None
+        selection_mode = "default"
+        defaulted = True
 
     graph = config.get("skill_graph") or {}
     chains = graph.get("chains") or {}
@@ -177,19 +285,21 @@ def select_skill(config: dict[str, Any], user_text: str, *, top_n: int = 3) -> S
         pre = chain_spec.get("pre_check") or []
         on = chain_spec.get("on_complete") or []
         if isinstance(pre, list):
-            chain_pre_check = [x for x in pre if isinstance(x, str)]
+            chain_pre_check = _dedupe_keep_order([x for x in pre if isinstance(x, str)])
         if isinstance(on, list):
-            chain_on_complete = [x for x in on if isinstance(x, str)]
+            chain_on_complete = _dedupe_keep_order([x for x in on if isinstance(x, str)])
+    chain_full = _dedupe_keep_order(chain_pre_check + [skill] + chain_on_complete)
 
     candidates: list[dict[str, Any]] = []
-    for mc, tl, sn, m, it in scored_sorted[: max(0, top_n)]:
+    for item in scored_sorted[: max(0, top_n)]:
         candidates.append(
             {
-                "skill": sn,
-                "match_count": mc,
-                "match_len": tl,
-                "matched_keywords": m,
-                "intent": it,
+                "skill": item["skill"],
+                "match_count": item["match_count"],
+                "match_len": item["match_len"],
+                "matched_keywords": item["matched_keywords"],
+                "intent": item["intent"],
+                "explicit_alias": item["explicit_alias"],
             }
         )
 
@@ -202,10 +312,13 @@ def select_skill(config: dict[str, Any], user_text: str, *, top_n: int = 3) -> S
         role=_detect_role(),
         selected_skill=skill,
         defaulted=defaulted,
+        selection_mode=selection_mode,
+        explicit_alias=explicit_alias,
         matched_keywords=matches,
         intent=intent,
         chain_pre_check=chain_pre_check,
         chain_on_complete=chain_on_complete,
+        chain_full=chain_full,
         skill_md=os.fspath(skill_md.relative_to(REPO_ROOT)) if skill_md.exists() else os.fspath(skill_md),
         config_path=os.fspath(CONFIG_PATH.relative_to(REPO_ROOT)) if CONFIG_PATH.exists() else os.fspath(CONFIG_PATH),
         impact_max=impact_max,
@@ -215,7 +328,7 @@ def select_skill(config: dict[str, Any], user_text: str, *, top_n: int = 3) -> S
 
 
 def _to_markdown(sel: Selection) -> str:
-    chain = sel.chain_pre_check + [sel.selected_skill] + sel.chain_on_complete
+    chain = sel.chain_full
     suggested_cmds = {
         "SessionOps": '.agent/scripts/p0.sh kickoff "<objetivo>" --with-gates --with-supabase',
         "BaselineOps": ".agent/scripts/p0.sh baseline",
@@ -231,6 +344,9 @@ def _to_markdown(sel: Selection) -> str:
     lines.append("")
     lines.append(f"- Role detected: `{sel.role}`")
     lines.append(f"- Selected skill: `{sel.selected_skill}`" + (" (default)" if sel.defaulted else ""))
+    lines.append(f"- Selection mode: `{sel.selection_mode}`")
+    if sel.explicit_alias:
+        lines.append(f"- Explicit mention: `{sel.explicit_alias}`")
     if sel.intent:
         lines.append(f"- Intent: {sel.intent}")
     if sel.skill_role:
@@ -269,8 +385,9 @@ def _to_markdown(sel: Selection) -> str:
         lines.append("## Top Candidates")
         lines.append("")
         for c in sel.candidates:
+            explicit = f" explicit={c['explicit_alias']}" if c.get("explicit_alias") else ""
             lines.append(
-                f"- `{c['skill']}` score={c['match_count']}/{c['match_len']} keywords={len(c['matched_keywords'])}"
+                f"- `{c['skill']}` score={c['match_count']}/{c['match_len']} keywords={len(c['matched_keywords'])}{explicit}"
             )
         lines.append("")
     return "\n".join(lines)
@@ -304,6 +421,8 @@ def main(argv: list[str]) -> int:
             "role": sel.role,
             "selected_skill": sel.selected_skill,
             "defaulted": sel.defaulted,
+            "selection_mode": sel.selection_mode,
+            "explicit_alias": sel.explicit_alias,
             "matched_keywords": sel.matched_keywords,
             "intent": sel.intent,
             "impact_max": sel.impact_max,
@@ -311,7 +430,7 @@ def main(argv: list[str]) -> int:
             "chain": {
                 "pre_check": sel.chain_pre_check,
                 "on_complete": sel.chain_on_complete,
-                "full": sel.chain_pre_check + [sel.selected_skill] + sel.chain_on_complete,
+                "full": sel.chain_full,
             },
             "paths": {
                 "skill_md": sel.skill_md,

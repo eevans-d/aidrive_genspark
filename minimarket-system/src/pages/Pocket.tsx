@@ -334,12 +334,17 @@ export default function Pocket() {
   const [isResolving, setIsResolving] = useState(false)
 
   // Fetch products dropdown for barcode lookup
-  const productosQuery = useQuery({
+  const {
+    data: productos = [],
+    isError: isProductosError,
+    error: productosError,
+    refetch: refetchProductos,
+    isFetching: isFetchingProductos
+  } = useQuery({
     queryKey: ['pocket-productos'],
     queryFn: () => apiClient.productos.dropdown(),
     staleTime: 1000 * 60 * 5,
   })
-  const productos = productosQuery.data ?? EMPTY_DROPDOWN_ITEMS
 
   const stockPrincipalQuery = useQuery<{ id: string } | null>({
     queryKey: ['pocket-stock-principal', resolvedProduct?.id],
@@ -467,12 +472,12 @@ export default function Pocket() {
         {/* Scanner View */}
         {view === 'scan' && (
           <>
-            {productosQuery.isError && (
+            {isProductosError && (
               <ErrorMessage
-                message={parseErrorMessage(productosQuery.error)}
-                type={detectErrorType(productosQuery.error)}
-                onRetry={() => productosQuery.refetch()}
-                isRetrying={productosQuery.isFetching}
+                message={parseErrorMessage(productosError, import.meta.env.PROD)}
+                type={detectErrorType(productosError)}
+                onRetry={() => refetchProductos()}
+                isRetrying={isFetchingProductos}
                 size="sm"
               />
             )}

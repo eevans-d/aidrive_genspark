@@ -3,9 +3,9 @@
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
 ## Estado Actual
-- Fecha de referencia: 2026-02-15
-- Veredicto: CON RESERVAS (P0 seguridad pendiente; ver `docs/closure/OPEN_ISSUES.md`)
-- Score operativo: 86/100
+- Fecha de referencia: 2026-02-16
+- Veredicto: APROBADO (P0 cerrados y verificados en remoto; ver `docs/closure/OPEN_ISSUES.md`)
+- Score operativo: 92/100
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 
 ## Inicio Rapido
@@ -34,9 +34,9 @@ pnpm -C minimarket-system build
 pnpm -C minimarket-system test:components
 ```
 
-## Arquitectura (snapshot 2026-02-13)
+## Arquitectura (snapshot 2026-02-16)
 - Edge Functions activas: 13
-- Migraciones SQL: 39 (local/remoto 39/39)
+- Migraciones SQL: 40 (local/remoto 40/40)
 - Skills locales en `.agent/skills`: 22
 - Workflows `.agent/workflows/*.md`: 12
 

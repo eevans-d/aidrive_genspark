@@ -1,0 +1,308 @@
+SET
+=============================================================
+AUDITORÍA RLS - Mini Market
+Fecha:  postgres
+=============================================================
+
+=== 1. RLS STATUS POR TABLA ===
+Muestra qué tablas tienen RLS habilitado
+
+             tablename              | rls_status  
+------------------------------------+-------------
+ alertas_cambios_precios            | ✅ ENABLED
+ bitacora_turnos                    | ✅ ENABLED
+ cache_proveedor                    | ✅ ENABLED
+ categorias                         | ✅ ENABLED
+ clientes                           | ✅ ENABLED
+ comparacion_precios                | ✅ ENABLED
+ configuracion_proveedor            | ✅ ENABLED
+ cron_jobs_alerts                   | ✅ ENABLED
+ cron_jobs_config                   | ✅ ENABLED
+ cron_jobs_execution_log            | ✅ ENABLED
+ cron_jobs_health_checks            | ✅ ENABLED
+ cron_jobs_metrics                  | ✅ ENABLED
+ cron_jobs_monitoring_history       | ✅ ENABLED
+ cron_jobs_notification_preferences | ✅ ENABLED
+ cron_jobs_notifications            | ✅ ENABLED
+ cron_jobs_tracking                 | ✅ ENABLED
+ cuentas_corrientes_movimientos     | ✅ ENABLED
+ detalle_pedidos                    | ✅ ENABLED
+ estadisticas_scraping              | ✅ ENABLED
+ movimientos_deposito               | ✅ ENABLED
+ notificaciones_tareas              | ✅ ENABLED
+ ofertas_stock                      | ✅ ENABLED
+ ordenes_compra                     | ✅ ENABLED
+ pedidos                            | ✅ ENABLED
+ personal                           | ✅ ENABLED
+ precios_historicos                 | ✅ ENABLED
+ precios_proveedor                  | ✅ ENABLED
+ productos                          | ✅ ENABLED
+ productos_faltantes                | ✅ ENABLED
+ proveedores                        | ✅ ENABLED
+ stock_deposito                     | ✅ ENABLED
+ stock_reservado                    | ✅ ENABLED
+ tareas_pendientes                  | ✅ ENABLED
+ venta_items                        | ✅ ENABLED
+ ventas                             | ✅ ENABLED
+ circuit_breaker_state              | ❌ DISABLED
+ cron_jobs_locks                    | ❌ DISABLED
+ rate_limit_state                   | ❌ DISABLED
+(38 rows)
+
+
+=== 2. POLÍTICAS RLS EXISTENTES ===
+Detalle de políticas configuradas por tabla
+
+           tablename            |              policyname              |  type  |   applies_to    | operation |                    using_clause                    
+--------------------------------+--------------------------------------+--------+-----------------+-----------+----------------------------------------------------
+ bitacora_turnos                | bitacora_turnos_insert_base          | PERMIT | {authenticated} | INSERT    | (all)
+ bitacora_turnos                | bitacora_turnos_select_admin         | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ categorias                     | categorias_delete_admin_deposito     | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ categorias                     | categorias_insert_admin_deposito     | PERMIT | {authenticated} | INSERT    | (all)
+ categorias                     | categorias_select_base               | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ categorias                     | categorias_update_admin_deposito     | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ clientes                       | clientes_delete_admin_only           | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text])
+ clientes                       | clientes_insert_admin_ventas         | PERMIT | {authenticated} | INSERT    | (all)
+ clientes                       | clientes_select_base_roles           | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'ventas'::t
+ clientes                       | clientes_update_admin_ventas         | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'ventas'::t
+ cuentas_corrientes_movimientos | cc_mov_select_base                   | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ detalle_pedidos                | detalle_pedidos_delete_admin_only    | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text])
+ detalle_pedidos                | detalle_pedidos_insert_staff         | PERMIT | {authenticated} | INSERT    | (all)
+ detalle_pedidos                | detalle_pedidos_select_staff         | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'deposito':
+ detalle_pedidos                | detalle_pedidos_update_staff         | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'deposito':
+ movimientos_deposito           | movimientos_deposito_insert_stock    | PERMIT | {authenticated} | INSERT    | (all)
+ movimientos_deposito           | movimientos_deposito_select_base     | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ notificaciones_tareas          | notificaciones_tareas_select_own     | PERMIT | {authenticated} | SELECT    | (usuario_destino_id = auth.uid())
+ notificaciones_tareas          | notificaciones_tareas_update_own     | PERMIT | {authenticated} | UPDATE    | (usuario_destino_id = auth.uid())
+ ofertas_stock                  | ofertas_stock_select_base            | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ ordenes_compra                 | ordenes_compra_delete_ventas         | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ ordenes_compra                 | ordenes_compra_insert_ventas         | PERMIT | {authenticated} | INSERT    | (all)
+ ordenes_compra                 | ordenes_compra_select_base           | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ ordenes_compra                 | ordenes_compra_update_ventas         | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ pedidos                        | pedidos_delete_admin_only            | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text])
+ pedidos                        | pedidos_insert_staff                 | PERMIT | {authenticated} | INSERT    | (all)
+ pedidos                        | pedidos_select_staff                 | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'deposito':
+ pedidos                        | pedidos_update_staff                 | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'deposito':
+ personal                       | personal_insert_own_authenticated    | PERMIT | {authenticated} | INSERT    | (all)
+ personal                       | personal_select_own_authenticated    | PERMIT | {authenticated} | SELECT    | (user_auth_id = auth.uid())
+ personal                       | personal_select_self                 | PERMIT | {authenticated} | SELECT    | (user_auth_id = auth.uid())
+ precios_historicos             | precios_historicos_select_base       | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos                      | productos_delete_staff               | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos                      | productos_insert_staff               | PERMIT | {authenticated} | INSERT    | (all)
+ productos                      | productos_select_base                | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos                      | productos_update_staff               | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos_faltantes            | productos_faltantes_delete_staff     | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos_faltantes            | productos_faltantes_insert_base      | PERMIT | {authenticated} | INSERT    | (all)
+ productos_faltantes            | productos_faltantes_select_base      | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ productos_faltantes            | productos_faltantes_update_staff     | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ proveedores                    | proveedores_delete_admin_deposito    | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ proveedores                    | proveedores_insert_admin_deposito    | PERMIT | {authenticated} | INSERT    | (all)
+ proveedores                    | proveedores_select_base              | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ proveedores                    | proveedores_update_admin_deposito    | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ stock_deposito                 | stock_deposito_select_base           | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ stock_reservado                | stock_reservado_select_authenticated | PERMIT | {authenticated} | SELECT    | true
+ tareas_pendientes              | tareas_pendientes_delete_staff       | PERMIT | {authenticated} | DELETE    | has_personal_role(ARRAY['admin'::text, 'administra
+ tareas_pendientes              | tareas_pendientes_insert_staff       | PERMIT | {authenticated} | INSERT    | (all)
+ tareas_pendientes              | tareas_pendientes_select_base        | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ tareas_pendientes              | tareas_pendientes_update_staff       | PERMIT | {authenticated} | UPDATE    | has_personal_role(ARRAY['admin'::text, 'administra
+ venta_items                    | venta_items_select_base              | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+ ventas                         | ventas_select_base                   | PERMIT | {authenticated} | SELECT    | has_personal_role(ARRAY['admin'::text, 'administra
+(52 rows)
+
+
+=== 3. ⚠️ ALERTA: TABLAS SIN RLS HABILITADO ===
+Estas tablas permiten acceso sin restricciones de fila
+
+   ❌ Tabla sin RLS    
+-----------------------
+ circuit_breaker_state
+ cron_jobs_locks
+ rate_limit_state
+(3 rows)
+
+
+=== 4. ⚠️ ALERTA: TABLAS CON RLS PERO SIN POLÍTICAS ===
+Estas tablas bloquean TODO acceso excepto service_role
+
+ 🔒 Tabla bloqueada (sin políticas) 
+------------------------------------
+ alertas_cambios_precios
+ cache_proveedor
+ comparacion_precios
+ configuracion_proveedor
+ cron_jobs_alerts
+ cron_jobs_config
+ cron_jobs_execution_log
+ cron_jobs_health_checks
+ cron_jobs_metrics
+ cron_jobs_monitoring_history
+ cron_jobs_notification_preferences
+ cron_jobs_notifications
+ cron_jobs_tracking
+ estadisticas_scraping
+ precios_proveedor
+(15 rows)
+
+
+=== 5. FUNCIONES SECURITY DEFINER ===
+Funciones que ejecutan con permisos elevados
+
+             function_name              |      security_config       
+----------------------------------------+----------------------------
+ fn_actualizar_monto_pedido             | search_path=public
+ fn_dashboard_metrics                   | search_path=public
+ fn_refresh_stock_views                 | search_path=public
+ fnc_deteccion_cambios_significativos   | search_path=public
+ fnc_limpiar_datos_antiguos             | search_path=public
+ refresh_tareas_metricas                | search_path=public
+ sp_acquire_job_lock                    | search_path=public
+ sp_aplicar_oferta_stock                | search_path=public
+ sp_aplicar_precio                      | ⚠️ SIN search_path (riesgo)
+ sp_check_rate_limit                    | search_path=public
+ sp_circuit_breaker_check               | search_path=public
+ sp_circuit_breaker_record              | search_path=public
+ sp_cleanup_rate_limit_state            | search_path=public
+ sp_crear_pedido                        | search_path=public
+ sp_desactivar_oferta_stock             | search_path=public
+ sp_procesar_venta_pos                  | search_path=public
+ sp_registrar_pago_cc                   | search_path=public
+ sp_release_job_lock                    | search_path=public
+ sp_reservar_stock                      | search_path=public
+ trg_clientes_limite_credito_only_admin | search_path=public
+(20 rows)
+
+
+=== 6. RESUMEN DE PERMISOS POR ROL ===
+
+    grantee    |             table_name             |                          permissions                          
+---------------+------------------------------------+---------------------------------------------------------------
+ authenticated | alertas_cambios_precios            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | alertas_cambios_precios            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | bitacora_turnos                    | INSERT, SELECT
+ service_role  | bitacora_turnos                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cache_proveedor                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cache_proveedor                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | categorias                         | DELETE, INSERT, SELECT, UPDATE
+ service_role  | categorias                         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | circuit_breaker_state              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | circuit_breaker_state              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | circuit_breaker_state              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | clientes                           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | clientes                           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | comparacion_precios                | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | comparacion_precios                | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | configuracion_proveedor            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | configuracion_proveedor            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_alerts                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_alerts                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_config                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_config                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_execution_log            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_execution_log            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_health_checks            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_health_checks            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | cron_jobs_locks                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_locks                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_locks                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_metrics                  | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_metrics                  | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_monitoring_history       | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_monitoring_history       | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_notification_preferences | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_notification_preferences | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_notifications            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_notifications            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cron_jobs_tracking                 | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cron_jobs_tracking                 | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | cuentas_corrientes_movimientos     | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | cuentas_corrientes_movimientos     | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | detalle_pedidos                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | detalle_pedidos                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | estadisticas_scraping              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | estadisticas_scraping              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | movimientos_deposito               | INSERT, SELECT
+ service_role  | movimientos_deposito               | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | notificaciones_tareas              | SELECT, UPDATE
+ service_role  | notificaciones_tareas              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | ofertas_stock                      | SELECT
+ service_role  | ofertas_stock                      | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | ordenes_compra                     | DELETE, INSERT, SELECT, UPDATE
+ service_role  | ordenes_compra                     | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | pedidos                            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | pedidos                            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | personal                           | REFERENCES, SELECT, TRIGGER, TRUNCATE
+ service_role  | personal                           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | precios_historicos                 | SELECT
+ service_role  | precios_historicos                 | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | precios_proveedor                  | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | precios_proveedor                  | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | productos                          | DELETE, INSERT, SELECT, UPDATE
+ service_role  | productos                          | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | productos_faltantes                | DELETE, INSERT, SELECT, UPDATE
+ service_role  | productos_faltantes                | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | proveedores                        | DELETE, INSERT, SELECT, UPDATE
+ service_role  | proveedores                        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | rate_limit_state                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | rate_limit_state                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | rate_limit_state                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | stock_deposito                     | SELECT
+ service_role  | stock_deposito                     | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | stock_reservado                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | stock_reservado                    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | tareas_pendientes                  | DELETE, INSERT, SELECT, UPDATE
+ service_role  | tareas_pendientes                  | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | venta_items                        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | venta_items                        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | ventas                             | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | ventas                             | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_alertas_activas              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_alertas_activas              | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | vista_arbitraje_producto           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_arbitraje_producto           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_arbitraje_producto           | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | vista_cc_resumen                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_cc_resumen                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_cc_resumen                   | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | vista_cc_saldos_por_cliente        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_cc_saldos_por_cliente        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_cc_saldos_por_cliente        | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_cron_jobs_alertas_activas    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_cron_jobs_alertas_activas    | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_cron_jobs_dashboard          | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_cron_jobs_dashboard          | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_cron_jobs_metricas_semanales | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_cron_jobs_metricas_semanales | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | vista_ofertas_sugeridas            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_ofertas_sugeridas            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_ofertas_sugeridas            | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_oportunidades_ahorro         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_oportunidades_ahorro         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ anon          | vista_oportunidades_compra         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ authenticated | vista_oportunidades_compra         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+ service_role  | vista_oportunidades_compra         | DELETE, INSERT, REFERENCES, SELECT, TRIGGER, TRUNCATE, UPDATE
+(104 rows)
+
+
+=== 7. TABLAS CRÍTICAS P0 - VERIFICACIÓN ESPECIAL ===
+
+      tablename       | rls | num_policies |    status    
+----------------------+-----+--------------+--------------
+ categorias           | ✅  |            4 | ✅ Protegida
+ movimientos_deposito | ✅  |            2 | ✅ Protegida
+ personal             | ✅  |            3 | ✅ Protegida
+ precios_historicos   | ✅  |            1 | ✅ Protegida
+ productos            | ✅  |            4 | ✅ Protegida
+ proveedores          | ✅  |            4 | ✅ Protegida
+ stock_deposito       | ✅  |            1 | ✅ Protegida
+(7 rows)
+
+
+=============================================================
+AUDITORÍA COMPLETADA
+
+Próximos pasos:
+1. Revisar tablas marcadas con ❌ o ⚠️
+2. Crear políticas RLS para tablas P0 sin protección
+3. Verificar funciones sin search_path
+4. Guardar este output en docs/evidencias/
+=============================================================

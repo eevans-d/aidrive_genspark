@@ -2,9 +2,9 @@
 
 **Proposito:** Este documento es el UNICO punto de entrada para cualquier sesion nueva (Claude Code, Copilot, u otro agente IA). Contiene todo lo necesario para retomar el trabajo sin perdida de contexto.
 
-**Ultima actualizacion:** 2026-02-15T06:27:33Z
+**Ultima actualizacion:** 2026-02-16T04:10:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE`
-**Branch:** `main`
+**Branch:** `integrate/p0-sync-2026-02-15`
 
 ---
 
@@ -28,22 +28,22 @@
 | **Proyecto** | Mini Market System (inventario, ventas, tareas, proveedores) |
 | **Stack** | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | **Ref Supabase** | dqaygmjpzoqjjrywdsxi |
-| **Veredicto** | CON RESERVAS (P0 seguridad pendiente; ver OPEN_ISSUES) |
-| **Score** | 86/100 (operativo, pre-hallazgo) / 78/100 (forense, pre-addendum) |
+| **Veredicto** | APROBADO (P0 cerrados y verificados en remoto; ver OPEN_ISSUES) |
+| **Score** | 92/100 (operativo post-fix) / 78/100 (forense histórico pre-remediación) |
 | **Tests** | 829/829 PASS, Build PASS, Lint PASS |
 | **Edge Functions** | 13 activas (api-minimarket v26) |
-| **Migraciones** | 39/39 local=remoto |
+| **Migraciones** | 40/40 local=remoto |
 
 ### Fuentes de verdad canonicas:
 | Documento | Ruta | Para que sirve |
 |-----------|------|----------------|
 | Estado real | `docs/ESTADO_ACTUAL.md` | Estado tecnico actual verificado |
-| Decisiones | `docs/DECISION_LOG.md` | Historial de 73+ decisiones |
+| Decisiones | `docs/DECISION_LOG.md` | Historial de 109+ decisiones |
 | Issues abiertos | `docs/closure/OPEN_ISSUES.md` | Pendientes categorizados (P0/P1/P2) |
 | Camino a produccion | `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` | Plan paso a paso |
 | Auditoria forense | `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` | Auditoria completa con hallazgos y remediaciones |
 | Acta ejecutiva | `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` | Resumen ejecutivo de cierre |
-| Navegacion closure | `docs/closure/README_CANONICO.md` | Indice de 150+ docs de cierre |
+| Navegacion closure | `docs/closure/README_CANONICO.md` | Indice canónico de docs de cierre |
 
 ---
 
@@ -54,13 +54,13 @@
 | # | Tarea | Prioridad | Estado | Tipo | Siguiente accion |
 |---|-------|-----------|--------|------|------------------|
 | 1 | SendGrid: (higiene) revocar API key anterior (si aun esta activa) | P2 | RECOMENDADO (owner/externo) | Manual/navegador | Ver `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` seccion "Paso 2" |
-| 2 | P0 seguridad: RLS interno + mutable search_path | P0 | ABIERTO | DB/migraciones | Ver `docs/closure/OPEN_ISSUES.md` + `docs/SECURITY_AUDIT_REPORT.md` (acción: migración hardening + re-ejecutar `scripts/rls_audit.sql`) |
-| 3 | Auditoria forense: C-01..C-07 + R-01..R-18 | P2 | CERRADO | Docs/codigo | Ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md` |
-| 4 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
+| 2 | Backups: activar/validar workflow (si aun no esta activado) | P1 | PENDIENTE (owner) | Config externa | Configurar `SUPABASE_DB_URL` en GitHub Secrets y ejecutar workflow (ver `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
+| 3 | Ejecutar smoke real periódico de seguridad (`RUN_REAL_TESTS=true`) | P2 | RECOMENDADO | QA/Operación | Programar corrida nightly/pre-release y anexar evidencia en `docs/closure/` |
+| 4 | Deuda técnica: `Proveedores.test.tsx` sin `QueryClientProvider` | P2 | ABIERTO | Frontend tests | Corregir harness del test para cerrar issue técnico conocido |
 
 ### 3.2 Auditoria Forense (C-01..C-07, R-01..R-18)
 
-Estado actual (2026-02-15): **CERRADO**. Referencias:
+Estado actual (2026-02-16): **CERRADO + VERIFICADO EN REMOTO**. Referencias:
 - `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
 - `docs/closure/OPEN_ISSUES.md`
 
@@ -78,12 +78,13 @@ Estado actual (2026-02-15): **CERRADO**. Referencias:
 
 | Fecha | Objetivo | Estado | Artefactos clave |
 |-------|----------|--------|------------------|
-| 2026-02-15 | Establecer sistema de continuidad documentada | EN CURSO | Este documento, BRIEFING actualizado |
+| 2026-02-16 | Integración P0 (sync + remote fix) y normalización documental | EN CURSO | `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`, `docs/closure/BASELINE_LOG_2026-02-16_034546.md` |
+| 2026-02-15 | Establecer sistema de continuidad documentada | COMPLETADA | Este documento, BRIEFING actualizado |
 | 2026-02-14 | Auditoria pragmatica + remediaciones (P0a/P0b/P1a/P1b/P3) + Sentry | COMPLETADA | `ESTADO_ACTUAL.md` s5, `EVIDENCIA_GATE16_2026-02-14.md` |
 | 2026-02-13 | Verificacion final consistencia documental + rigor tests | COMPLETADA | Mega Plan T01-T10, Baseline, Session archive |
 | 2026-02-12 | Ejecucion gates (3,4,15,18) + hardening 5 pasos | COMPLETADA | Evidencias Gate3/4/15/18 |
 
-### Sesion actual (2026-02-15) — Pasos completados:
+### Sesion actual (2026-02-16) — Pasos completados:
 
 | # | Paso | Estado | Evidencia |
 |---|------|--------|-----------|
@@ -93,6 +94,8 @@ Estado actual (2026-02-15): **CERRADO**. Referencias:
 | 4 | Actualizar ESTADO_ACTUAL con referencia | COMPLETADO | `docs/ESTADO_ACTUAL.md` seccion 8 |
 | 5 | Crear SESSION_LOG con tracking en vivo | COMPLETADO | `.agent/sessions/current/SESSION_LOG.md` |
 | 6 | Validar sistema de continuidad | COMPLETADO | 80+ archivos referenciados verificados, 0 links rotos |
+| 7 | Aplicar remediación P0 RLS/search_path y verificar remoto | COMPLETADO | `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md` |
+| 8 | Sincronización documental canónica (DocuGuard) | EN CURSO | `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md`, `docs/closure/README_CANONICO.md` |
 
 ---
 
@@ -142,9 +145,9 @@ Eres un agente tecnico ejecutor trabajando en el proyecto Mini Market System.
 CONTEXTO RAPIDO
 - Repo: /home/eevan/ProyectosIA/aidrive_genspark
 - Stack: React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL
-- Estado: CON RESERVAS (P0 seguridad pendiente; ver OPEN_ISSUES)
+- Estado: APROBADO (P0 cerrados; ver OPEN_ISSUES)
 - Tests: 829/829 PASS, Build PASS
-- Branch actual: main
+- Branch actual: integrate/p0-sync-2026-02-15
 
 PRIMER PASO OBLIGATORIO
 Lee estos documentos en orden ANTES de hacer cualquier cosa:
@@ -179,4 +182,4 @@ instrucciones del usuario.
 
 ---
 
-_Documento generado: 2026-02-15. Mantener actualizado en cada sesion._
+_Documento generado: 2026-02-16. Mantener actualizado en cada sesion._

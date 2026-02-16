@@ -32,24 +32,34 @@ export default function Deposito() {
   const qCantidadRef = useRef<HTMLInputElement>(null)
 
   // Query para productos
-  const productosQuery = useQuery({
+  const {
+    data: productos = [],
+    isError: isProductosError,
+    error: productosError,
+    refetch: refetchProductos,
+    isFetching: isFetchingProductos
+  } = useQuery({
     queryKey: ['productos-deposito'],
     queryFn: async () => {
       return await apiClient.productos.dropdown()
     },
     staleTime: 1000 * 60 * 5,
   })
-  const productos = productosQuery.data ?? []
 
   // Query para proveedores
-  const proveedoresQuery = useQuery({
+  const {
+    data: proveedores = [],
+    isError: isProveedoresError,
+    error: proveedoresError,
+    refetch: refetchProveedores,
+    isFetching: isFetchingProveedores
+  } = useQuery({
     queryKey: ['proveedores-deposito'],
     queryFn: async () => {
       return await apiClient.proveedores.dropdown()
     },
     staleTime: 1000 * 60 * 10,
   })
-  const proveedores = proveedoresQuery.data ?? []
 
   // Auto-focus search input when switching to quick mode
   useEffect(() => {
@@ -215,29 +225,26 @@ export default function Deposito() {
     })
   }
 
+  const catalogError = productosError ?? proveedoresError
+  const hasCatalogError = isProductosError || isProveedoresError
+  const retryCatalogQueries = () => {
+    refetchProductos()
+    refetchProveedores()
+  }
+  const isRetryingCatalog = isFetchingProductos || isFetchingProveedores
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
 
       <h1 className="text-3xl font-bold text-gray-900">Gestion de Deposito</h1>
 
-      {productosQuery.isError && (
+      {hasCatalogError && (
         <ErrorMessage
-          message={parseErrorMessage(productosQuery.error)}
-          type={detectErrorType(productosQuery.error)}
-          onRetry={() => productosQuery.refetch()}
-          isRetrying={productosQuery.isFetching}
-          size="sm"
-        />
-      )}
-
-      {proveedoresQuery.isError && (
-        <ErrorMessage
-          message={parseErrorMessage(proveedoresQuery.error)}
-          type={detectErrorType(proveedoresQuery.error)}
-          onRetry={() => proveedoresQuery.refetch()}
-          isRetrying={proveedoresQuery.isFetching}
-          size="sm"
+          message={parseErrorMessage(catalogError, import.meta.env.PROD)}
+          type={detectErrorType(catalogError)}
+          onRetry={retryCatalogQueries}
+          isRetrying={isRetryingCatalog}
         />
       )}
 
@@ -245,20 +252,22 @@ export default function Deposito() {
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
         <button
           onClick={() => setActiveTab('rapido')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'rapido'
-            ? 'bg-white text-green-700 shadow-sm'
-            : 'text-gray-600 hover:text-gray-800'
-            }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'rapido'
+              ? 'bg-white text-green-700 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
         >
           <Zap className="w-4 h-4" />
           Ingreso Rapido
         </button>
         <button
           onClick={() => setActiveTab('normal')}
-          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${activeTab === 'normal'
-            ? 'bg-white text-blue-700 shadow-sm'
-            : 'text-gray-600 hover:text-gray-800'
-            }`}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'normal'
+              ? 'bg-white text-blue-700 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
         >
           Movimiento Normal
         </button>

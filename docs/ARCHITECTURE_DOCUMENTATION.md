@@ -9,7 +9,7 @@
 **Target:** Arquitectos, DevOps, Senior Engineers  
 
 > **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
-> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/HOJA_RUTA_MADRE_2026-01-31.md` y `docs/CHECKLIST_CIERRE.md`.
+> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/CHECKLIST_CIERRE.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
 
 ### Estado real (2026-01-25)
 - **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).
@@ -28,7 +28,7 @@
 > - Ver sección 3.4 para decisión arquitectónica pendiente.
 >
 > **2. React Query (P1-05) - Completado:**
-> - Hooks React Query implementados en páginas críticas (8/8 con data; Login no aplica) con caching y reintentos.
+> - Hooks React Query implementados en páginas críticas (ver conteos y lista en `docs/METRICS.md`) con caching y reintentos.
 > - Infraestructura consolidada (QueryClientProvider, queryKeys).
 >
 > **3. Roles (P0-04) - Completado:**

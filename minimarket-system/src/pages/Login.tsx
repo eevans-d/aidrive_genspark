@@ -87,8 +87,8 @@ export default function Login() {
           </button>
         </form>
 
-        <div className="mt-6 text-center text-sm text-gray-500">
-          <p>Acceso restringido a usuarios autorizados</p>
+        <div className="mt-6 text-center text-sm text-gray-600">
+          <p>Accede con una cuenta de prueba habilitada en el entorno.</p>
         </div>
       </div>
     </div>
