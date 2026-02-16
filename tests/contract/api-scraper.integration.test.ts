@@ -1,649 +1,440 @@
 /**
- * INTEGRATION TESTS - API + Web Scraper
- * Tests de integración end-to-end entre API y sistema de scraping
+ * INTEGRATION CONTRACTS - API-Proveedor + Scraper Maxiconsumo
+ *
+ * Tests que importan y ejecutan código REAL de ambos módulos para validar
+ * que la interfaz entre el scraper y la API proveedor es consistente.
+ *
+ * Cubre:
+ * 1. Validators: validación de query params en cada endpoint
+ * 2. Schemas: isEndpointName + endpointSchemas coherencia
+ * 3. Router: routeRequest dispatch correcto
+ * 4. Scraper alertas: buildAlertasDesdeComparaciones pipeline
+ * 5. Scraper parsing ↔ API validators: categorías coherentes
+ * 6. Shared utils: sanitizeSearchInput edge cases
+ *
+ * @module tests/contract/api-scraper.integration
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
-// Mock global
-global.fetch = vi.fn();
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 1: api-proveedor/validators — parameter extraction & clamping
+// ═══════════════════════════════════════════════════════════════════════════
 
-// URLs de testing
-const SUPABASE_URL = process.env.SUPABASE_URL || 'http://localhost:54321';
-const API_URL = `${SUPABASE_URL}/functions/v1/api-proveedor`;
-const SCRAPER_URL = `${SUPABASE_URL}/functions/v1/scraper-maxiconsumo`;
+describe('CONTRACT: api-proveedor validators', () => {
+  let validatePreciosParams: any;
+  let validateProductosParams: any;
+  let validateComparacionParams: any;
+  let validateSincronizacionParams: any;
+  let validateAlertasParams: any;
+  let validateEstadisticasParams: any;
 
-const mockResponse = (body: unknown, ok = true) => ({
-  ok,
-  json: () => Promise.resolve(body)
+  beforeEach(async () => {
+    ({
+      validatePreciosParams,
+      validateProductosParams,
+      validateComparacionParams,
+      validateSincronizacionParams,
+      validateAlertasParams,
+      validateEstadisticasParams,
+    } = await import('../../supabase/functions/api-proveedor/validators'));
+  });
+
+  // Helpers
+  const mkUrl = (path: string, params: Record<string, string> = {}) => {
+    const u = new URL(`http://localhost/${path}`);
+    for (const [k, v] of Object.entries(params)) u.searchParams.set(k, v);
+    return u;
+  };
+
+  describe('validatePreciosParams', () => {
+    it('returns defaults for empty query', () => {
+      const p = validatePreciosParams(mkUrl('precios'));
+      expect(p.categoria).toBe('todos');
+      expect(p.limite).toBe(50);
+      expect(p.offset).toBe(0);
+      expect(p.activo).toBe('true');
+    });
+
+    it('clamps limit to [1, 500]', () => {
+      expect(validatePreciosParams(mkUrl('precios', { limit: '0' })).limite).toBe(1);
+      expect(validatePreciosParams(mkUrl('precios', { limit: '999' })).limite).toBe(500);
+      expect(validatePreciosParams(mkUrl('precios', { limit: 'abc' })).limite).toBe(50);
+    });
+
+    it('rejects invalid activo values', () => {
+      expect(validatePreciosParams(mkUrl('precios', { activo: 'yes' })).activo).toBe('true');
+      expect(validatePreciosParams(mkUrl('precios', { activo: 'false' })).activo).toBe('false');
+    });
+  });
+
+  describe('validateProductosParams', () => {
+    it('returns defaults for empty query', () => {
+      const p = validateProductosParams(mkUrl('productos'));
+      expect(p.busqueda).toBe('');
+      expect(p.categoria).toBe('todos');
+      expect(p.marca).toBe('');
+      expect(p.limite).toBe(100);
+      expect(p.soloConStock).toBe(false);
+      expect(p.ordenarPor).toBe('nombre_asc');
+    });
+
+    it('clamps limit to [1, 1000]', () => {
+      expect(validateProductosParams(mkUrl('productos', { limit: '0' })).limite).toBe(1);
+      expect(validateProductosParams(mkUrl('productos', { limit: '5000' })).limite).toBe(1000);
+    });
+
+    it('validates ordering field', () => {
+      expect(validateProductosParams(mkUrl('productos', { ordenar_por: 'precio_desc' })).ordenarPor).toBe('precio_desc');
+      expect(validateProductosParams(mkUrl('productos', { ordenar_por: 'invalid_xyz' })).ordenarPor).toBe('nombre_asc');
+    });
+  });
+
+  describe('validateComparacionParams', () => {
+    it('parses boolean and numeric fields', () => {
+      const p = validateComparacionParams(mkUrl('comparacion', { solo_oportunidades: 'true', min_diferencia: '10.5' }));
+      expect(p.soloOportunidades).toBe(true);
+      expect(p.minDiferencia).toBe(10.5);
+    });
+
+    it('defaults orden to diferencia_absoluta_desc', () => {
+      const p = validateComparacionParams(mkUrl('comparacion'));
+      expect(p.orden).toBe('diferencia_absoluta_desc');
+    });
+
+    it('rejects invalid ordering', () => {
+      const p = validateComparacionParams(mkUrl('comparacion', { orden: 'not_valid' }));
+      expect(p.orden).toBe('diferencia_absoluta_desc');
+    });
+  });
+
+  describe('validateSincronizacionParams', () => {
+    it('defaults to normal priority', () => {
+      const p = validateSincronizacionParams(mkUrl('sincronizar'));
+      expect(p.categoria).toBe('todos');
+      expect(p.forceFull).toBe(false);
+      expect(p.priority).toBe('normal');
+    });
+
+    it('accepts valid priority values', () => {
+      expect(validateSincronizacionParams(mkUrl('sincronizar', { priority: 'alta' })).priority).toBe('alta');
+      expect(validateSincronizacionParams(mkUrl('sincronizar', { priority: 'baja' })).priority).toBe('baja');
+    });
+
+    it('rejects invalid priority', () => {
+      expect(validateSincronizacionParams(mkUrl('sincronizar', { priority: 'urgente' })).priority).toBe('normal');
+    });
+  });
+
+  describe('validateAlertasParams', () => {
+    it('defaults with soloNoProcesadas = true', () => {
+      const p = validateAlertasParams(mkUrl('alertas'));
+      expect(p.severidad).toBe('todos');
+      expect(p.tipo).toBe('todos');
+      expect(p.limite).toBe(20);
+      expect(p.soloNoProcesadas).toBe(true);
+    });
+
+    it('limits range to [1, 100]', () => {
+      expect(validateAlertasParams(mkUrl('alertas', { limit: '0' })).limite).toBe(1);
+      expect(validateAlertasParams(mkUrl('alertas', { limit: '500' })).limite).toBe(100);
+    });
+
+    it('validates severidad values', () => {
+      expect(validateAlertasParams(mkUrl('alertas', { severidad: 'critica' })).severidad).toBe('critica');
+      expect(validateAlertasParams(mkUrl('alertas', { severidad: 'nope' })).severidad).toBe('todos');
+    });
+
+    it('validates tipo values', () => {
+      expect(validateAlertasParams(mkUrl('alertas', { tipo: 'precio' })).tipo).toBe('precio');
+      expect(validateAlertasParams(mkUrl('alertas', { tipo: 'unknown' })).tipo).toBe('todos');
+    });
+  });
+
+  describe('validateEstadisticasParams', () => {
+    it('clamps dias to [1, 90]', () => {
+      expect(validateEstadisticasParams(mkUrl('estadisticas', { dias: '0' })).dias).toBe(1);
+      expect(validateEstadisticasParams(mkUrl('estadisticas', { dias: '200' })).dias).toBe(90);
+      expect(validateEstadisticasParams(mkUrl('estadisticas')).dias).toBe(7);
+    });
+
+    it('validates granularidad', () => {
+      expect(validateEstadisticasParams(mkUrl('estadisticas', { granularidad: 'semana' })).granularidad).toBe('semana');
+      expect(validateEstadisticasParams(mkUrl('estadisticas', { granularidad: 'year' })).granularidad).toBe('dia');
+    });
+  });
 });
 
-beforeEach(() => {
-  vi.resetAllMocks();
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 2: api-proveedor/schemas — endpoint registry integrity
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('CONTRACT: api-proveedor schemas', () => {
+  let isEndpointName: (v: string) => boolean;
+  let endpointList: string[];
+  let endpointSchemas: Record<string, { description: string; requiresAuth: boolean }>;
+
+  beforeEach(async () => {
+    ({ isEndpointName, endpointList, endpointSchemas } = await import(
+      '../../supabase/functions/api-proveedor/schemas'
+    ));
+  });
+
+  it('endpointList contains all 9 endpoints', () => {
+    const expected = ['precios', 'productos', 'comparacion', 'sincronizar', 'status', 'alertas', 'estadisticas', 'configuracion', 'health'];
+    expect(endpointList).toEqual(expect.arrayContaining(expected));
+    expect(endpointList.length).toBe(9);
+  });
+
+  it('isEndpointName returns true for valid, false for invalid', () => {
+    expect(isEndpointName('precios')).toBe(true);
+    expect(isEndpointName('health')).toBe(true);
+    expect(isEndpointName('nonexistent')).toBe(false);
+    expect(isEndpointName('')).toBe(false);
+  });
+
+  it('every endpoint in list has a schema entry', () => {
+    for (const ep of endpointList) {
+      expect(endpointSchemas[ep]).toBeDefined();
+      expect(endpointSchemas[ep].description).toBeTruthy();
+      expect(typeof endpointSchemas[ep].requiresAuth).toBe('boolean');
+    }
+  });
+
+  it('health is the only endpoint not requiring auth', () => {
+    const noAuth = endpointList.filter(ep => !endpointSchemas[ep].requiresAuth);
+    expect(noAuth).toEqual(['health']);
+  });
 });
 
-describe('🔄 INTEGRATION TESTS - API + Web Scraper', () => {
-  
-  describe('📊 Flujo Completo: Scraping → API → Comparación', () => {
-    
-    test('debe ejecutar scraping y exponer datos vía API', async () => {
-      // 1. Mock respuesta del web scraper
-      const scrapingResponse = {
-        success: true,
-        data: {
-          scraping_completo: true,
-          categoria_solicitada: 'todos',
-          estadisticas: {
-            productos_procesados: 2500,
-            productos_exitosos: 2450,
-            productos_con_error: 50,
-            tiempo_ejecucion: 180000
-          },
-          productos_extraidos: 2450,
-          productos_guardados: 2400,
-          alertas_generadas: 15,
-          errores: []
-        }
-      };
-      
-      // 2. Mock respuesta de comparación
-      const comparacionResponse = {
-        success: true,
-        data: {
-          comparaciones_realizadas: 1800,
-          oportunidades_ahorro: 320,
-          comparaciones: [
-            {
-              producto_id: 'prod-1',
-              nombre_producto: 'Coca Cola 500ml',
-              precio_actual: 280.00,
-              precio_proveedor: 220.00,
-              diferencia_absoluta: 60.00,
-              diferencia_porcentual: 27.27,
-              es_oportunidad_ahorro: true,
-              recomendacion: 'OPORTUNIDAD CRÍTICA: Ahorro potencial del 27.3% ($60.00)'
-            }
-          ]
-        }
-      };
-      
-      // 3. Mock respuesta de estado
-      const estadoResponse = {
-        success: true,
-        data: {
-          sistema: {
-            estado: 'operativo',
-            version: '1.0.0',
-            proveedor: 'Maxiconsumo Necochea'
-          },
-          estadisticas: {
-            ultima_ejecucion: '2025-11-01T10:00:00Z',
-            productos_totales: 12500,
-            oportunidades_activas: 320,
-            ultima_sincronizacion: '2025-11-01T09:30:00Z',
-            proximo_scrape_programado: '2025-11-01T16:00:00Z'
-          }
-        }
-      };
-      
-      // Simular secuencia de llamadas
-      fetch
-        .mockResolvedValueOnce({ // Scraping
-          ok: true,
-          json: () => Promise.resolve(scrapingResponse)
-        })
-        .mockResolvedValueOnce({ // Comparación
-          ok: true,
-          json: () => Promise.resolve(comparacionResponse)
-        })
-        .mockResolvedValueOnce({ // Estado
-          ok: true,
-          json: () => Promise.resolve(estadoResponse)
-        });
-      
-      // Ejecutar flujo completo
-      // Paso 1: Trigger scraping
-      const scrapingResult = await fetch(`${SCRAPER_URL}/scrape?categoria=todos`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ trigger_type: 'manual' })
-      });
-      
-      expect(scrapingResult.ok).toBe(true);
-      const scrapingData = await scrapingResult.json();
-      expect(scrapingData.data.productos_guardados).toBe(2400);
-      
-      // Paso 2: Generar comparaciones
-      const comparacionResult = await fetch(`${SCRAPER_URL}/compare`, {
-        method: 'POST'
-      });
-      
-      expect(comparacionResult.ok).toBe(true);
-      const comparacionData = await comparacionResult.json();
-      expect(comparacionData.data.oportunidades_ahorro).toBeGreaterThan(0);
-      
-      // Paso 3: Verificar estado vía API
-      const estadoResult = await fetch(`${API_URL}/status`);
-      
-      expect(estadoResult.ok).toBe(true);
-      const estadoData = await estadoResult.json();
-      expect(estadoData.data.sistema.estado).toBe('operativo');
-      expect(estadoData.data.estadisticas.productos_totales).toBeGreaterThan(0);
-      expect(estadoData.data.estadisticas.oportunidades_activas).toBeGreaterThan(0);
-    });
-    
-    test('debe manejar errores de scraping gracefully', async () => {
-      // Mock error en scraping
-      fetch
-        .mockResolvedValueOnce({ // Scraping falla
-          ok: false,
-          status: 500,
-          json: () => Promise.resolve({
-            success: false,
-            error: { message: 'Web scraping failed - Timeout' }
-          })
-        });
-      
-      const scrapingResult = await fetch(`${SCRAPER_URL}/scrape?categoria=bebidas`, {
-        method: 'POST'
-      });
-      
-      expect(scrapingResult.ok).toBe(false);
-      const errorData = await scrapingResult.json();
-      expect(errorData.error.message).toContain('Timeout');
-      
-      // API debería seguir funcionando para endpoints de estado
-      fetch.mockResolvedValueOnce({
-        ok: true,
-        json: () => Promise.resolve({
-          success: true,
-          data: {
-            sistema: { estado: 'error', proveedor: 'Maxiconsumo Necochea' },
-            estadisticas: { productos_totales: 0, oportunidades_activas: 0 }
-          }
-        })
-      });
-      
-      const estadoResult = await fetch(`${API_URL}/status`);
-      expect(estadoResult.ok).toBe(true);
-      
-      const estadoData = await estadoResult.json();
-      expect(estadoData.data.sistema.estado).toBe('error');
-    });
-    
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 3: api-proveedor/router — dispatch logic
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('CONTRACT: api-proveedor router', () => {
+  let routeRequest: any;
+
+  beforeEach(async () => {
+    ({ routeRequest } = await import('../../supabase/functions/api-proveedor/router'));
   });
-  
-  describe('💰 Integración API con Datos de Scraper', () => {
-    
-    test('debe exponer precios vía API después del scraping', async () => {
-      const productosScraped = [
-        {
-          id: '1',
-          sku: 'BEB001',
-          nombre: 'Coca Cola 500ml',
-          marca: 'Coca Cola',
-          categoria: 'bebidas',
-          precio_unitario: 250.50,
-          stock_disponible: 100,
-          ultima_actualizacion: '2025-11-01T10:00:00Z',
-          fuente: 'Maxiconsumo Necochea',
-          activo: true
-        },
-        {
-          id: '2',
-          sku: 'BEB002',
-          nombre: 'Pepsi 2L',
-          marca: 'Pepsi',
-          categoria: 'bebidas',
-          precio_unitario: 450.75,
-          stock_disponible: 50,
-          ultima_actualizacion: '2025-11-01T10:00:00Z',
-          fuente: 'Maxiconsumo Necochea',
-          activo: true
-        }
-      ];
-      
-      // Mock respuesta de API
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            productos: productosScraped,
-            filtros_aplicados: { categoria: 'bebidas' }
-          }
-        })
-      );
-      
-      // Llamar API de precios
-      const preciosResult = await fetch(`${API_URL}/precios?categoria=bebidas&limit=10`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      expect(preciosResult.ok).toBe(true);
-      const preciosData = await preciosResult.json();
-      
-      expect(preciosData.success).toBe(true);
-      expect(preciosData.data.productos).toHaveLength(2);
-      expect(preciosData.data.productos[0].categoria).toBe('bebidas');
-      expect(preciosData.data.productos[0].precio_unitario).toBe(250.50);
-      expect(preciosData.data.filtros_aplicados.categoria).toBe('bebidas');
-    });
-    
-    test('debe exponer comparaciones vía API', async () => {
-      const oportunidades = [
-        {
-          id: '1',
-          nombre_producto: 'Coca Cola 500ml',
-          precio_actual: 280.00,
-          precio_proveedor: 220.00,
-          diferencia_absoluta: 60.00,
-          diferencia_porcentual: 27.27,
-          recomendacion: 'OPORTUNIDAD CRÍTICA'
-        },
-        {
-          id: '2',
-          nombre_producto: 'Pepsi 2L',
-          precio_actual: 480.00,
-          precio_proveedor: 420.00,
-          diferencia_absoluta: 60.00,
-          diferencia_porcentual: 14.29,
-          recomendacion: 'BUENA OPORTUNIDAD'
-        }
-      ];
-      
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            oportunidades,
-            estadisticas: {
-              total_oportunidades: 2,
-              ahorro_total_estimado: 120,
-              mejor_oportunidad: { diferencia_porcentual: 27.27 }
-            }
-          }
-        })
-      );
-      
-      const comparacionResult = await fetch(`${API_URL}/comparacion?solo_oportunidades=true&min_diferencia=10`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      expect(comparacionResult.ok).toBe(true);
-      const comparacionData = await comparacionResult.json();
-      
-      expect(comparacionData.success).toBe(true);
-      expect(comparacionData.data.oportunidades).toHaveLength(2);
-      expect(comparacionData.data.estadisticas.total_oportunidades).toBe(2);
-      expect(comparacionData.data.estadisticas.ahorro_total_estimado).toBe(120);
-      expect(comparacionData.data.estadisticas.mejor_oportunidad.diferencia_porcentual).toBe(27.27);
-    });
-    
-    test('debe exponer alertas vía API', async () => {
-      const alertas = [
-        {
-          id: '1',
-          nombre_producto: 'Coca Cola 500ml',
-          tipo_cambio: 'aumento',
-          porcentaje_cambio: 35.00,
-          severidad: 'critica',
-          mensaje: 'Precio aumentó 35.0%',
-          accion_recomendada: 'Revisar estrategia de precios y márgenes',
-          fecha_alerta: '2025-11-01T10:00:00Z'
-        },
-        {
-          id: '2',
-          nombre_producto: 'Pepsi 2L',
-          tipo_cambio: 'disminucion',
-          porcentaje_cambio: -18.00,
-          severidad: 'alta',
-          mensaje: 'Precio disminuyó 18.0%',
-          accion_recomendada: 'Evaluar oportunidad de compra o reposición',
-          fecha_alerta: '2025-11-01T09:30:00Z'
-        }
-      ];
-      
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            alertas,
-            estadisticas: {
-              criticas: 1,
-              altas: 1,
-              aumentos: 1,
-              disminuciones: 1
-            }
-          }
-        })
-      );
-      
-      const alertasResult = await fetch(`${API_URL}/alertas?severidad=critica&limit=10`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      expect(alertasResult.ok).toBe(true);
-      const alertasData = await alertasResult.json();
-      
-      expect(alertasData.success).toBe(true);
-      expect(alertasData.data.alertas).toHaveLength(2);
-      expect(alertasData.data.estadisticas.criticas).toBe(1);
-      expect(alertasData.data.estadisticas.altas).toBe(1);
-      expect(alertasData.data.estadisticas.aumentos).toBe(1);
-      expect(alertasData.data.estadisticas.disminuciones).toBe(1);
-    });
-    
+
+  it('dispatches to correct handler', async () => {
+    const mockContext = {} as any;
+    const handlerResult = new Response('ok', { status: 200 });
+    const handlers: any = {
+      health: async () => handlerResult,
+      precios: async () => new Response('precios', { status: 200 }),
+      productos: async () => new Response('productos'),
+      comparacion: async () => new Response('comparacion'),
+      sincronizar: async () => new Response('sincronizar'),
+      status: async () => new Response('status'),
+      alertas: async () => new Response('alertas'),
+      estadisticas: async () => new Response('estadisticas'),
+      configuracion: async () => new Response('configuracion'),
+    };
+
+    const res = await routeRequest('health', mockContext, handlers);
+    expect(res).toBe(handlerResult);
   });
-  
-  describe('🔄 Sincronización Manual Completa', () => {
-    
-    test('debe ejecutar sincronización manual end-to-end', async () => {
-      const mockAuth = 'Bearer valid-test-token';
-      
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            sincronizacion: {
-              data: {
-                productos_guardados: 1450
-              }
-            },
-            comparacion_generada: {
-              data: {
-                oportunidades_ahorro: 180
-              }
-            },
-            parametros: {
-              categoria: 'bebidas',
-              force_full: true
-            }
-          }
-        })
-      );
-      
-      // Llamar endpoint de sincronización
-      const syncResult = await fetch(`${API_URL}/sincronizar?categoria=bebidas&force_full=true`, {
-        method: 'POST',
-        headers: { 
-          'Authorization': mockAuth,
-          'Content-Type': 'application/json'
-        }
-      });
-      
-      expect(syncResult.ok).toBe(true);
-      const syncData = await syncResult.json();
-      
-      expect(syncData.success).toBe(true);
-      expect(syncData.data.parametros.categoria).toBe('bebidas');
-      expect(syncData.data.parametros.force_full).toBe(true);
-      expect(syncData.data.sincronizacion.data.productos_guardados).toBe(1450);
-      expect(syncData.data.comparacion_generada.data.oportunidades_ahorro).toBe(180);
-    });
-    
-    test('debe requerir autenticación para sincronización', async () => {
-      fetch.mockResolvedValueOnce(
-        mockResponse(
-          {
-            success: false,
-            error: { code: 'AUTH_REQUIRED' }
-          },
-          false
-        )
-      );
-      const syncResult = await fetch(`${API_URL}/sincronizar`, {
-        method: 'POST'
-        // Sin headers de autenticación
-      });
-      
-      expect(syncResult.ok).toBe(false);
-      
-      const errorData = await syncResult.json();
-      expect(errorData.success).toBe(false);
-      expect(errorData.error.code).toBe('AUTH_REQUIRED');
-    });
-    
+
+  it('throws for unsupported endpoint', async () => {
+    const handlers = {} as any;
+    await expect(
+      routeRequest('nonexistent' as any, {} as any, handlers)
+    ).rejects.toThrow();
   });
-  
-  describe('📈 Métricas Integradas', () => {
-    
-    test('debe exponer estadísticas de scraping vía API', async () => {
-      const estadisticasScraping = [
-        {
-          id: '1',
-          fuente: 'Maxiconsumo Necochea',
-          categoria_procesada: 'bebidas',
-          productos_encontrados: 1200,
-          productos_nuevos: 150,
-          productos_actualizados: 1050,
-          tiempo_ejecucion_ms: 45000,
-          errores_encontrados: 3,
-          status: 'exitoso',
-          created_at: '2025-11-01T10:00:00Z'
-        },
-        {
-          id: '2',
-          fuente: 'Maxiconsumo Necochea',
-          categoria_procesada: 'almacen',
-          productos_encontrados: 800,
-          productos_nuevos: 100,
-          productos_actualizados: 700,
-          tiempo_ejecucion_ms: 35000,
-          errores_encontrados: 2,
-          status: 'exitoso',
-          created_at: '2025-11-01T09:00:00Z'
-        }
-      ];
-      
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            ejecuciones: estadisticasScraping,
-            metricas_agregadas: {
-              total_ejecuciones: 2,
-              productos_promedio: 1000,
-              tasa_exito: 100,
-              tiempo_promedio_ms: 40000
-            },
-            parametros: {
-              dias_analizados: 7,
-              categoria: 'bebidas'
-            }
-          }
-        })
-      );
-      
-      const statsResult = await fetch(`${API_URL}/estadisticas?dias=7&categoria=bebidas`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      expect(statsResult.ok).toBe(true);
-      const statsData = await statsResult.json();
-      
-      expect(statsData.success).toBe(true);
-      expect(statsData.data.metricas_agregadas.total_ejecuciones).toBe(2);
-      expect(statsData.data.metricas_agregadas.productos_promedio).toBe(1000);
-      expect(statsData.data.metricas_agregadas.tasa_exito).toBe(100);
-      expect(statsData.data.metricas_agregadas.tiempo_promedio_ms).toBe(40000);
-      expect(statsData.data.parametros.dias_analizados).toBe(7);
-      expect(statsData.data.parametros.categoria).toBe('bebidas');
-    });
-    
-  });
-  
-  describe('⚙️ Configuración Unificada', () => {
-    
-    test('debe exponer configuración del proveedor vía API', async () => {
-      const configuracion = {
-        id: 'config-1',
-        nombre: 'Maxiconsumo Necochea',
-        url_base: 'https://maxiconsumo.com/sucursal_necochea/',
-        activo: true,
-        frecuencia_scraping: 'diaria',
-        ultima_sincronizacion: '2025-11-01T09:30:00Z',
-        proxima_sincronizacion: '2025-11-02T09:30:00Z',
-        configuraciones: {
-          categorias_soportadas: ['almacen', 'bebidas', 'limpieza', 'frescos'],
-          timeout_request: 15000,
-          max_reintentos: 3,
-          umbral_alertas: '15%'
-        },
-        headers_personalizados: {
-          'User-Agent': 'Mozilla/5.0 (Scraper Bot)',
-          'Accept': 'text/html,application/xhtml+xml'
-        },
-        created_at: '2025-10-31T00:00:00Z',
-        updated_at: '2025-11-01T09:30:00Z'
-      };
-      
-      fetch.mockResolvedValueOnce(
-        mockResponse({
-          success: true,
-          data: {
-            configuracion,
-            parametros_disponibles: {
-              frecuencia_scraping: ['diaria', 'semanal'],
-              severidad_alertas: ['critica', 'alta', 'media', 'baja']
-            }
-          }
-        })
-      );
-      
-      const configResult = await fetch(`${API_URL}/configuracion`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      expect(configResult.ok).toBe(true);
-      const configData = await configResult.json();
-      
-      expect(configData.success).toBe(true);
-      expect(configData.data.configuracion.nombre).toBe('Maxiconsumo Necochea');
-      expect(configData.data.configuracion.frecuencia_scraping).toBe('diaria');
-      expect(configData.data.parametros_disponibles.frecuencia_scraping).toContain('diaria');
-      expect(configData.data.parametros_disponibles.severidad_alertas).toContain('critica');
-    });
-    
-  });
-  
-  describe('🔄 Flujo de Actualización Continua', () => {
-    
-    test('debe mantener consistencia entre scraping y API', async () => {
-      const productosEnScraper = [
-        { sku: 'PROD001', nombre: 'Producto 1', precio_unitario: 100, categoria: 'cat1' },
-        { sku: 'PROD002', nombre: 'Producto 2', precio_unitario: 200, categoria: 'cat2' }
-      ];
-      
-      // Simular que el scraper actualizó productos
-      fetch
-        .mockResolvedValueOnce(
-          mockResponse({
-            success: true,
-            data: { productos: productosEnScraper }
-          })
-        )
-        .mockResolvedValueOnce(
-          mockResponse({
-            success: true,
-            data: {
-              oportunidades: [
-                {
-                  diferencia_absoluta: 20,
-                  diferencia_porcentual: 20,
-                  es_oportunidad_ahorro: true
-                }
-              ]
-            }
-          })
-        );
-      
-      // Verificar que la API refleja los cambios del scraper
-      const productosResult = await fetch(`${API_URL}/productos?busqueda=Producto`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      const productosData = await productosResult.json();
-      expect(productosData.data.productos).toHaveLength(2);
-      
-      // Verificar que las oportunidades se actualizaron
-      const comparacionResult = await fetch(`${API_URL}/comparacion`, {
-        headers: { 'Authorization': 'Bearer test-token' }
-      });
-      
-      const comparacionData = await comparacionResult.json();
-      expect(comparacionData.data.oportunidades).toHaveLength(1);
-    });
-    
-    test('debe manejar concurrencia entre scraping y consultas API', async () => {
-      let scrapingActive = false;
-      
-      // Mock para simular que el scraping está en progreso
-      fetch.mockImplementation(async (url, options) => {
-        if (url.includes('/scrape')) {
-          scrapingActive = true;
-          await new Promise(resolve => setTimeout(resolve, 100)); // Simular scraping
-          scrapingActive = false;
-          
-          return {
-            ok: true,
-            json: () => Promise.resolve({
-              success: true,
-              data: { productos_guardados: 100 }
-            })
-          };
-        }
-        
-        if (scrapingActive) {
-          return {
-            ok: true,
-            json: () => Promise.resolve({
-              success: true,
-              data: {
-                productos: [],
-                estadisticas: { scraping_en_progreso: true }
-              }
-            })
-          };
-        }
-        
-        return {
-          ok: true,
-          json: () => Promise.resolve({
-            success: true,
-            data: { productos: [{ id: '1', nombre: 'Test' }] }
-          })
-        };
-      });
-      
-      // Iniciar scraping
-      const scrapingPromise = fetch(`${SCRAPER_URL}/scrape`, { method: 'POST' });
-      
-      // Mientras scrappeando, hacer consultas
-      const consultaPromise = fetch(`${API_URL}/productos`);
-      
-      const [scrapingResult, consultaResult] = await Promise.all([
-        scrapingPromise,
-        consultaPromise
-      ]);
-      
-      expect(scrapingResult.ok).toBe(true);
-      expect(consultaResult.ok).toBe(true);
-      
-      const consultaData = await consultaResult.json();
-      // La consulta podría estar vacía durante el scraping
-      expect(Array.isArray(consultaData.data.productos)).toBe(true);
-    });
-    
-  });
-  
 });
 
-// Setup global
-beforeAll(() => {
-  // Configurar entorno de testing
-  process.env.NODE_ENV = 'test';
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 4: scraper-maxiconsumo/alertas — alerta pipeline
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('CONTRACT: scraper alertas pipeline', () => {
+  let buildAlertasDesdeComparaciones: any;
+
+  beforeEach(async () => {
+    ({ buildAlertasDesdeComparaciones } = await import(
+      '../../supabase/functions/scraper-maxiconsumo/alertas'
+    ));
+  });
+
+  it('builds alerts from valid comparisons', () => {
+    const comparaciones = [
+      {
+        producto_id: 'p1',
+        nombre_producto: 'Coca Cola 500ml',
+        precio_actual: 280,
+        precio_proveedor: 220,
+        diferencia_absoluta: 60,
+        diferencia_porcentual: 27.27,
+      },
+      {
+        producto_id: 'p2',
+        nombre_producto: 'Pepsi 2L',
+        precio_actual: 400,
+        precio_proveedor: 420,
+        diferencia_absoluta: 20,
+        diferencia_porcentual: 5,
+      },
+    ];
+
+    const alertas = buildAlertasDesdeComparaciones(comparaciones, new Set());
+
+    expect(alertas).toHaveLength(2);
+    // p1: 27.27% → critica, direction > 0 (280-220) → disminucion
+    expect(alertas[0].severidad).toBe('critica');
+    expect(alertas[0].tipo_cambio).toBe('disminucion');
+    // p2: 5% → media, direction < 0 (400-420) → aumento
+    expect(alertas[1].severidad).toBe('media');
+    expect(alertas[1].tipo_cambio).toBe('aumento');
+  });
+
+  it('skips products already in existingIds', () => {
+    const comparaciones = [
+      { producto_id: 'p1', nombre_producto: 'Test', precio_actual: 100, precio_proveedor: 50, diferencia_porcentual: 50 },
+    ];
+    const alertas = buildAlertasDesdeComparaciones(comparaciones, new Set(['p1']));
+    expect(alertas).toHaveLength(0);
+  });
+
+  it('skips comparisons with missing data', () => {
+    const comparaciones = [
+      { producto_id: '', nombre_producto: '', precio_actual: 0, precio_proveedor: 0, diferencia_porcentual: 0 },
+      { producto_id: 'p1', nombre_producto: '', precio_actual: 100, precio_proveedor: 50, diferencia_porcentual: 50 },
+    ];
+    const alertas = buildAlertasDesdeComparaciones(comparaciones, new Set());
+    expect(alertas).toHaveLength(0);
+  });
+
+  it('assigns correct severity by percentage thresholds', () => {
+    const makeComp = (id: string, pct: number) => ({
+      producto_id: id,
+      nombre_producto: `Prod ${id}`,
+      precio_actual: 200,
+      precio_proveedor: 100,
+      diferencia_porcentual: pct,
+    });
+    const comparaciones = [
+      makeComp('a', 3),   // baja (< 5)
+      makeComp('b', 8),   // media (5-14)
+      makeComp('c', 18),  // alta (15-24)
+      makeComp('d', 30),  // critica (>= 25)
+    ];
+    const alertas = buildAlertasDesdeComparaciones(comparaciones, new Set());
+    expect(alertas.map((a: any) => a.severidad)).toEqual(['baja', 'media', 'alta', 'critica']);
+  });
+
+  it('each alert has required output fields', () => {
+    const comparaciones = [
+      { producto_id: 'p1', nombre_producto: 'Test', precio_actual: 300, precio_proveedor: 200, diferencia_porcentual: 33 },
+    ];
+    const [alerta] = buildAlertasDesdeComparaciones(comparaciones, new Set());
+    expect(alerta).toHaveProperty('producto_id');
+    expect(alerta).toHaveProperty('nombre_producto');
+    expect(alerta).toHaveProperty('tipo_cambio');
+    expect(alerta).toHaveProperty('valor_anterior');
+    expect(alerta).toHaveProperty('valor_nuevo');
+    expect(alerta).toHaveProperty('porcentaje_cambio');
+    expect(alerta).toHaveProperty('severidad');
+    expect(alerta).toHaveProperty('mensaje');
+    expect(alerta).toHaveProperty('accion_recomendada');
+    expect(alerta).toHaveProperty('fecha_alerta');
+    // fecha_alerta should be ISO
+    expect(new Date(alerta.fecha_alerta).toISOString()).toBe(alerta.fecha_alerta);
+  });
 });
 
-afterAll(() => {
-  vi.clearAllMocks();
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 5: Cross-module coherence (scraper parsing ↔ API validators)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('CONTRACT: Cross-module coherence', () => {
+  let generarSKU: any;
+  let sanitizeProductName: any;
+  let sanitizeSearchInput: any;
+
+  beforeEach(async () => {
+    ({ generarSKU, sanitizeProductName } = await import(
+      '../../supabase/functions/scraper-maxiconsumo/parsing'
+    ));
+    ({ sanitizeSearchInput } = await import(
+      '../../supabase/functions/api-proveedor/utils/params'
+    ));
+  });
+
+  it('sanitizeSearchInput strips XSS but keeps product names searchable', () => {
+    expect(sanitizeSearchInput('Coca Cola 500ml')).toBe('Coca Cola 500ml');
+    expect(sanitizeSearchInput('<script>alert(1)</script>')).toBe('alert(1)');
+    expect(sanitizeSearchInput("O'Brien")).toBe('OBrien');
+  });
+
+  it('sanitizeSearchInput truncates to 100 chars', () => {
+    const long = 'a'.repeat(200);
+    expect(sanitizeSearchInput(long).length).toBe(100);
+  });
+
+  it('sanitizeSearchInput handles null/undefined safely', () => {
+    expect(sanitizeSearchInput('')).toBe('');
+    expect(sanitizeSearchInput(null as any)).toBe('');
+    expect(sanitizeSearchInput(undefined as any)).toBe('');
+  });
+
+  it('scraper SKU generation produces searchable strings', () => {
+    const nombre = sanitizeProductName('Coca Cola Zero');
+    const sku = generarSKU(nombre, 'Bebidas');
+    // SKU should be a non-empty string safe for DB search
+    expect(typeof sku).toBe('string');
+    expect(sku.length).toBeGreaterThan(0);
+    // SKU should not contain characters that sanitizeSearchInput would strip
+    expect(sanitizeSearchInput(sku)).toBe(sku);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SECTION 6: Constants contract — lists are non-empty and valid
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('CONTRACT: Constants registry coherence', () => {
+  let PRODUCT_ORDER_FIELDS: readonly string[];
+  let COMPARACION_ORDER_FIELDS: readonly string[];
+  let SINCRONIZACION_PRIORIDADES: readonly string[];
+  let ALERTA_SEVERIDADES: readonly string[];
+  let ALERTA_TIPOS: readonly string[];
+  let ESTADISTICAS_GRANULARIDADES: readonly string[];
+
+  beforeEach(async () => {
+    ({
+      PRODUCT_ORDER_FIELDS,
+      COMPARACION_ORDER_FIELDS,
+      SINCRONIZACION_PRIORIDADES,
+      ALERTA_SEVERIDADES,
+      ALERTA_TIPOS,
+      ESTADISTICAS_GRANULARIDADES,
+    } = await import('../../supabase/functions/api-proveedor/utils/constants'));
+  });
+
+  it('every constant list is non-empty', () => {
+    expect(PRODUCT_ORDER_FIELDS.length).toBeGreaterThan(0);
+    expect(COMPARACION_ORDER_FIELDS.length).toBeGreaterThan(0);
+    expect(SINCRONIZACION_PRIORIDADES.length).toBeGreaterThan(0);
+    expect(ALERTA_SEVERIDADES.length).toBeGreaterThan(0);
+    expect(ALERTA_TIPOS.length).toBeGreaterThan(0);
+    expect(ESTADISTICAS_GRANULARIDADES.length).toBeGreaterThan(0);
+  });
+
+  it('severidades includes "todos" wildcard', () => {
+    expect(ALERTA_SEVERIDADES).toContain('todos');
+  });
+
+  it('tipos includes "todos" wildcard', () => {
+    expect(ALERTA_TIPOS).toContain('todos');
+  });
+
+  it('prioridades includes normal as default', () => {
+    expect(SINCRONIZACION_PRIORIDADES).toContain('normal');
+  });
+
+  it('granularidades includes dia as default', () => {
+    expect(ESTADISTICAS_GRANULARIDADES).toContain('dia');
+  });
 });

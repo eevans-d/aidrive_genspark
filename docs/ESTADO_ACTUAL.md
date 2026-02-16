@@ -11,17 +11,17 @@
 - Reserva vigente: ninguna (Gate 4 revalidado con evidencia externa). Higiene recomendada: revocar key anterior en SendGrid si aún está activa.
 - **Addendum 2026-02-15 (full-audit complementario):** P0 seguridad **CERRADO Y VERIFICADO EN REMOTO**. Migración de hardening: `supabase/migrations/20260215100000_p0_rls_internal_tables_and_search_path.sql`. RLS habilitado en 3 tablas internas + grants revocados a anon/authenticated + search_path fijado en `sp_aplicar_precio`. Migración aplicada via `supabase db push` el 2026-02-15. Evidencia local: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`. Evidencia remota: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md` (6/6 checks PASS).
 
-## 2) Estado Real Verificado (sesion 2026-02-15)
+## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 40/40 local=remoto.
+- Migraciones: 41/41 local=remoto.
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
-- Archivos de test: 89 (47 unit + 30 frontend + 3 contract + 2 e2e-smoke + 1 security + 1 performance + 1 api-contracts + 4 e2e-playwright).
+- Archivos de test: 100 (58 unit + 30 frontend + 3 contract + 2 e2e-smoke + 1 security + 1 performance + 1 api-contracts + 4 e2e-playwright).
 - Evidencia:
   - `supabase migration list --linked`
-  - `supabase functions list --project-ref dqaygmjpzoqjjrywdsxi`
+  - `supabase functions list`
   - Nota: `docs/closure/BASELINE_LOG_*.md` fue removido en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 
 ### Snapshot de Functions
@@ -39,10 +39,12 @@
 | notificaciones-tareas | v18 | ACTIVE |
 | reportes-automaticos | v16 | ACTIVE |
 | reposicion-sugerida | v16 | ACTIVE |
-| scraper-maxiconsumo | v18 | ACTIVE |
+| scraper-maxiconsumo | v19 | ACTIVE |
 
 ## 3) Resultado De Calidad (hoy)
-- Unit tests: 829/829 PASS.
+- Unit tests: 1165/1165 PASS (58 archivos).
+- Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines (threshold 80% global).
+- Auxiliary tests: 45/45 PASS + 4 skipped (3 archivos; contract/performance/api-contracts).
 - Integration tests: 38/38 PASS.
 - E2E smoke: 5/5 PASS.
 - Frontend component tests: 150/150 PASS.
@@ -51,6 +53,8 @@
 - Quality gates: PASS.
 - Evidencia: `test-reports/quality-gates_20260213-061657.log`.
 - Recheck frontend 2026-02-14: PASS (`test-reports/quality-gates_20260214-042354.log`).
+- **Recheck tests 2026-02-16 (D-114, D-115):** 7 archivos de test reescritos FAKE→REAL + auditoría intensiva con cross-reference de 12+ módulos fuente. 891 unit PASS (16.09s), 45 auxiliary PASS (1.20s).
+- **Coverage hardening 2026-02-16 (D-116):** 11 test files nuevos cubriendo 11 módulos críticos. 891→1165 unit tests (58 archivos). Coverage global ≥80% en las 4 métricas. Evidencia: `test-reports/junit.xml`.
 
 ## 4) Mega Plan (T01..T10)
 **Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).
@@ -100,8 +104,8 @@ Archivos modificados/creados:
 1. SendGrid/SMTP: **CERRADO** (rotacion + secrets + redeploy + smoke + evidencia externa).
    - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
-3. (P2 técnico) `precios_proveedor`: agregar migración explícita de RLS para eliminar drift repo/remoto.
-4. (P2 técnico) `scraper-maxiconsumo`: remover wildcard `*` en `DEFAULT_CORS_HEADERS` (anti-patrón cosmético).
+3. (Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.
+4. Issues técnicos preexistentes no bloqueantes: `Proveedores.test.tsx` requiere `QueryClientProvider` y `lint-staged` puede fallar por resolución de `eslint` fuera de `minimarket-system/node_modules`.
 
 Referencia operativa:
 - `docs/closure/OPEN_ISSUES.md`
@@ -127,9 +131,9 @@ Context prompts disponibles en `docs/closure/CONTEXT_PROMPT_*.md` (los prompts a
 
 ## 9) Nota De Historial
 El estado historico previo (incluyendo cronologia extensa 2026-01..2026-02) se preserva en:
-- `docs/archive/ESTADO_ACTUAL_legacy_2026-02-13.md`
+- `docs/archive/README.md` (índice histórico; los snapshots legacy nominales fueron removidos en D-109 y quedan trazables en historial git).
 
-Para decisiones actuales, este archivo es la unica fuente de verdad de estado.
+Para decisiones actuales, esta hoja es la fuente de verdad de estado; el detalle histórico se consulta desde `docs/archive/README.md` y el historial git.
 
 ## 10) Auditoria Documental (DocuGuard)
 - Verificacion intensiva de consistencia documental completada el 2026-02-13.

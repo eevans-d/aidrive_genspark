@@ -22,6 +22,12 @@
 4. **Security definer:** cerrado en remoto. `public.sp_aplicar_precio` quedó con `SET search_path = public`.
 5. **Evidencia de cierre P0:** `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md` + `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`.
 
+### Addendum 2026-02-16 (post-forense P2)
+
+1. **Drift de trazabilidad RLS (`precios_proveedor`):** cerrado con migración `supabase/migrations/20260216040000_rls_precios_proveedor.sql` aplicada en remoto.
+2. **CORS wildcard cosmético en `scraper-maxiconsumo`:** cerrado (se eliminó `*` del default y se desplegó `scraper-maxiconsumo v19`).
+3. **Estado canónico vigente:** `docs/ESTADO_ACTUAL.md` y `docs/closure/OPEN_ISSUES.md` son la referencia operativa actual; este reporte mantiene score forense snapshot (`78/100`).
+
 ## 1. EVALUACIÓN POR MÓDULOS
 
 | Módulo | Score /10 | Críticos | Altos | Medios | Bajos |
@@ -550,7 +556,7 @@ E2E detalle:
 | # | Acción | Archivos | Esfuerzo |
 |---|--------|----------|----------|
 | R-01 | Subir `max_frequency` de emails a `"60s"` | `supabase/config.toml` L182 | Bajo |
-| R-02 | Reclasificar 38 integration tests como contract/unit-api | `tests/integration/` → `tests/contract/` | Bajo |
+| R-02 | Reclasificar 38 integration tests como contract/unit-api | tests/integration (eliminado) → `tests/contract/` | Bajo |
 | R-03 | Actualizar @supabase/supabase-js en Edge Functions (2.39.3 → actual) | `supabase/functions/deno.json` | Medio |
 | R-04 | Alinear React types en root a `@types/react@^18.x` | root `package.json` | Bajo |
 | R-05 | Agregar auth guard a `cron-testing-suite`, `alertas-vencimientos`, `reposicion-sugerida` | 3 archivos index.ts | Bajo |

@@ -48,7 +48,7 @@ Notas:
 - Regla práctica:
 	- Si el archivo incluye timestamp en nombre (`*_YYYY-MM-DD*` o `_*HHMMSS*`), tratarlo como snapshot histórico de esa fecha.
 	- Si existe más de una versión del mismo tipo de artefacto, usar siempre la más nueva y conservar el resto como evidencia.
-	- Los snapshots históricos pueden mostrar métricas previas (por ejemplo `39/39` migraciones); no reemplazan el estado canónico actual (`40/40`).
+	- Los snapshots históricos pueden mostrar métricas previas (por ejemplo `39/39` migraciones); no reemplazan el estado canónico actual (`41/41`).
 - Directorios de soporte histórico:
 	- `docs/archive/README.md`
 	- `docs/mpc/README.md`

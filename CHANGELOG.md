@@ -5,6 +5,50 @@ Todos los cambios notables de este proyecto se documentan aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.9.0] - 2026-02-16
+
+### Added
+- **11 test files nuevos para coverage real de módulos críticos** (D-116):
+  - `tests/unit/auth-fetchuser.test.ts` — `fetchUserInfo` cache, breaker, role normalization
+  - `tests/unit/helpers-supabase.test.ts` — PostgREST helpers (`queryTable`, `insertTable`, `callFunction`, etc.)
+  - `tests/unit/cb-rpc-coverage.test.ts` — `CircuitBreaker` class + RPC functions
+  - `tests/unit/errors-coverage.test.ts` — `AppError`, PGRST/SQLSTATE mapping, `getErrorStatus`
+  - `tests/unit/rate-limit-coverage.test.ts` — `FixedWindowRateLimiter`, `AdaptiveRateLimiter`, RPC
+  - `tests/unit/scraper-anti-detection-coverage.test.ts` — headers, delays, retry, captcha detection
+  - `tests/unit/scraper-storage-coverage.test.ts` — bulk DB operations
+  - `tests/unit/scraper-types-coverage.test.ts` — URL validation, slug sanitization
+  - `tests/unit/handlers-ventas-coverage.test.ts` — POS sales handler branches
+  - `tests/unit/handlers-ofertas-coverage.test.ts` — anti-waste offers handler
+  - `tests/unit/api-proveedor-auth-coverage.test.ts` — shared secret validation, origin allowlist
+- 274 tests nuevos (891→1165 unit tests, 58 archivos).
+
+### Changed
+- Coverage global subida de 64.37% stmts / 56.87% branch a **89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines** (threshold 80% cumplido en las 4 métricas).
+- `vitest.config.ts`: excluido `minimarket-system/src/mocks/**` de coverage (infraestructura de test, no código de producción).
+
+## [1.8.0] - 2026-02-16
+
+### Changed
+- **Tests: 7 archivos reescritos de FAKE/SHALLOW a REAL** (D-114). Tests que verificaban mocks contra mocks reemplazados por imports y ejecución de código real del proyecto:
+  - `tests/unit/strategic-high-value.test.ts` — auth, pagination, validation, scraper parsing, response builders, error classification.
+  - `tests/unit/resilience-gaps.test.ts` — CircuitBreaker state machine, error wrapping, auth breaker, exponential backoff, CORS validation.
+  - `tests/unit/integration-contracts.test.ts` — cross-module contracts (scraper→storage, gateway→supabase, pagination→response, error pipeline, UUID).
+  - `tests/contract/api-scraper.integration.test.ts` — api-proveedor validators, schemas, router, alertas pipeline, constants.
+  - `tests/performance/load-testing.vitest.test.ts` — benchmarks reales a escala 40k productos.
+  - `tests/api-contracts/openapi-compliance.vitest.test.ts` — OpenAPI spec ↔ código.
+  - `tests/contract/msw-integration.test.ts` — MSW infrastructure + mock data shapes.
+
+### Fixed
+- 8 bugs de aserción descubiertos durante rewrite: `fail()` default status (400 no 500), `extraerMarcaDelNombre` first-match ordering, CircuitBreaker half_open→open threshold reset, `getStats()` property names, `calculateExponentialBackoff` positional args, `validateOrigin` Request object, OpenAPI health endpoint exclusion, performance `fail()` valid statuses.
+- `getRandomDelay` lower bound corregido: `Math.max(min, ...)` garantiza mínimo `min`, no `min - jitter` (D-115).
+
+### Added
+- 62 tests nuevos (829→891 unit tests) con cobertura real de módulos críticos.
+- Tests de case-insensitive role matching (`hasRole`, `hasAnyRole`).
+- Tests de `getErrorStatus` message-based inference (keywords → HTTP status).
+- Tests de `getStats()` shape completa (timing properties `openedAt`, `lastFailure`).
+- Test de `createRequestHeaders` null token fallback a anon key.
+
 ## [1.7.0] - 2026-02-09
 
 ### Added

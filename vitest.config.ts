@@ -38,7 +38,8 @@ export default defineConfig({
         '**/*.d.ts',
         'tests/**',
         '*.config.*',
-        'supabase/functions/**/*.legacy.ts'
+        'supabase/functions/**/*.legacy.ts',
+        'minimarket-system/src/mocks/**',
       ],
       thresholds: {
         global: {

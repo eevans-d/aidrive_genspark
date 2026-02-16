@@ -1,104 +1,140 @@
 /**
- * Integration Tests using MSW (Mock Service Worker)
- * @description Tests API interactions without real credentials
+ * MSW Infrastructure Smoke Tests + Mock Data Shape Validation
+ *
+ * Validates that:
+ * 1. MSW server boots and intercepts requests correctly
+ * 2. Mock data shapes are consistent with real DB schema expectations
+ * 3. Mock handlers respond with correct HTTP shapes (headers, status codes)
+ *
+ * This tests the mock infrastructure so frontend integration tests can rely on it.
+ *
+ * @module tests/contract/msw-integration
  */
+
 import { describe, it, expect, beforeAll, afterAll, afterEach } from 'vitest';
 import { server } from '../mocks/server';
-import { mockProductos, mockProveedores, mockTareas } from '../mocks/handlers';
+import { mockProductos, mockProveedores, mockTareas, mockStockDeposito } from '../mocks/handlers';
 
-// Environment setup
 const SUPABASE_URL = process.env.VITE_SUPABASE_URL || 'http://localhost';
 
-// Start MSW server before tests
 beforeAll(() => {
-        server.listen({ onUnhandledRequest: 'warn' });
+  server.listen({ onUnhandledRequest: 'warn' });
 });
 
-// Reset handlers after each test
 afterEach(() => {
-        server.resetHandlers();
+  server.resetHandlers();
 });
 
-// Close server after all tests
 afterAll(() => {
-        server.close();
+  server.close();
 });
 
-describe('MSW Integration Tests', () => {
-        describe('Productos API', () => {
-                it('should return mocked productos list', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/productos`);
-                        const data = await response.json();
+// ============================================================================
+// 1. Mock Data Shape Validation (against DB schema expectations)
+// ============================================================================
 
-                        expect(response.ok).toBe(true);
-                        expect(data).toHaveLength(2);
-                        expect(data[0].nombre).toBe('Producto Test 1');
-                        expect(data[1].nombre).toBe('Producto Test 2');
-                });
+describe('Mock data shapes match DB schema', () => {
+  it('mockProductos have required DB columns', () => {
+    for (const p of mockProductos) {
+      expect(p).toHaveProperty('id');
+      expect(p).toHaveProperty('nombre');
+      expect(p).toHaveProperty('categoria');
+      expect(p).toHaveProperty('codigo_barras');
+      expect(p).toHaveProperty('precio_actual');
+      expect(p).toHaveProperty('precio_costo');
+      expect(p).toHaveProperty('activo');
+      expect(typeof p.precio_actual).toBe('number');
+      expect(typeof p.precio_costo).toBe('number');
+      expect(p.precio_actual).toBeGreaterThan(0);
+      expect(p.margen_ganancia).toBeGreaterThan(0);
+    }
+  });
 
-                it('should include pagination headers', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/productos`);
+  it('mockProveedores have required fields', () => {
+    for (const prov of mockProveedores) {
+      expect(prov).toHaveProperty('id');
+      expect(prov).toHaveProperty('nombre');
+      expect(prov).toHaveProperty('activo');
+      expect(typeof prov.nombre).toBe('string');
+      expect(prov.nombre.length).toBeGreaterThan(0);
+    }
+  });
 
-                        expect(response.headers.get('Content-Range')).toBe('0-1/2');
-                        expect(response.headers.get('x-total-count')).toBe('2');
-                });
-        });
+  it('mockTareas have required fields', () => {
+    for (const t of mockTareas) {
+      expect(t).toHaveProperty('id');
+      expect(t).toHaveProperty('titulo');
+      expect(t).toHaveProperty('prioridad');
+      expect(t).toHaveProperty('estado');
+      expect(['urgente', 'alta', 'media', 'baja']).toContain(t.prioridad);
+    }
+  });
 
-        describe('Proveedores API', () => {
-                it('should return mocked proveedores list', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/proveedores`);
-                        const data = await response.json();
+  it('mockStockDeposito have required fields and valid ranges', () => {
+    for (const s of mockStockDeposito) {
+      expect(s).toHaveProperty('producto_id');
+      expect(s).toHaveProperty('cantidad_actual');
+      expect(s).toHaveProperty('stock_minimo');
+      expect(s).toHaveProperty('deposito_id');
+      expect(typeof s.cantidad_actual).toBe('number');
+      expect(typeof s.stock_minimo).toBe('number');
+      expect(s.cantidad_actual).toBeGreaterThanOrEqual(0);
+      expect(s.stock_minimo).toBeGreaterThanOrEqual(0);
+    }
+  });
 
-                        expect(response.ok).toBe(true);
-                        expect(data).toHaveLength(2);
-                        expect(data[0].nombre).toBe('Proveedor Uno');
-                });
-        });
+  it('mockStockDeposito correctly identifies low stock items', () => {
+    const lowStock = mockStockDeposito.filter(s => s.cantidad_actual < s.stock_minimo);
+    expect(lowStock.length).toBeGreaterThan(0);
+    // At least one item should be below minimum
+    expect(lowStock[0].cantidad_actual).toBeLessThan(lowStock[0].stock_minimo);
+  });
+});
 
-        describe('Tareas API', () => {
-                it('should return mocked tareas pendientes', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/tareas_pendientes`);
-                        const data = await response.json();
+// ============================================================================
+// 2. MSW Server Integration (handlers respond correctly)
+// ============================================================================
 
-                        expect(response.ok).toBe(true);
-                        expect(data).toHaveLength(1);
-                        expect(data[0].prioridad).toBe('urgente');
-                });
-        });
+describe('MSW server intercepts and responds', () => {
+  it('GET /productos returns array with pagination headers', async () => {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/productos`);
+    expect(response.ok).toBe(true);
 
-        describe('Stock API', () => {
-                it('should return mocked stock data', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/stock_deposito`);
-                        const data = await response.json();
+    const data = await response.json();
+    expect(Array.isArray(data)).toBe(true);
+    expect(data.length).toBe(mockProductos.length);
+    expect(data[0].nombre).toBe(mockProductos[0].nombre);
 
-                        expect(response.ok).toBe(true);
-                        expect(data).toHaveLength(2);
-                        expect(data[0].cantidad_actual).toBe(5);
-                });
+    // Pagination headers
+    expect(response.headers.get('Content-Range')).toBeTruthy();
+    expect(response.headers.get('x-total-count')).toBeTruthy();
+  });
 
-                it('should identify low stock items', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/rest/v1/stock_deposito`);
-                        const data = await response.json();
+  it('GET /proveedores returns array', async () => {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/proveedores`);
+    expect(response.ok).toBe(true);
 
-                        // Item with cantidad_actual < stock_minimo
-                        const lowStockItems = data.filter(
-                                (item: { cantidad_actual: number; stock_minimo: number }) =>
-                                        item.cantidad_actual < item.stock_minimo
-                        );
+    const data = await response.json();
+    expect(data).toHaveLength(mockProveedores.length);
+  });
 
-                        expect(lowStockItems).toHaveLength(1);
-                        expect(lowStockItems[0].producto_id).toBe('1');
-                });
-        });
+  it('GET /tareas_pendientes returns array', async () => {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/tareas_pendientes`);
+    const data = await response.json();
+    expect(data).toHaveLength(mockTareas.length);
+  });
 
-        describe('Health Check API', () => {
-                it('should return ok status from edge function', async () => {
-                        const response = await fetch(`${SUPABASE_URL}/functions/v1/api-minimarket/status`);
-                        const data = await response.json();
+  it('GET /stock_deposito returns array', async () => {
+    const response = await fetch(`${SUPABASE_URL}/rest/v1/stock_deposito`);
+    const data = await response.json();
+    expect(data).toHaveLength(mockStockDeposito.length);
+  });
 
-                        expect(response.ok).toBe(true);
-                        expect(data.status).toBe('ok');
-                        expect(data.timestamp).toBeDefined();
-                });
-        });
+  it('health check endpoint responds', async () => {
+    const response = await fetch(`${SUPABASE_URL}/functions/v1/api-minimarket/status`);
+    expect(response.ok).toBe(true);
+    const data = await response.json();
+    expect(data.status).toBe('ok');
+    expect(data.timestamp).toBeDefined();
+  });
 });

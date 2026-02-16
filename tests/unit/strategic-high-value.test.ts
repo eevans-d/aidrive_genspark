@@ -1,438 +1,602 @@
 /**
  * STRATEGIC HIGH-VALUE TESTS
- * 
- * Based on audit findings, these tests cover critical gaps:
- * - Error resilience
- * - Network failure handling
- * - Edge cases in business logic
- * 
+ *
+ * Tests that import and execute REAL project code to validate:
+ * - Auth error handling and resilience (extractBearerToken, requireRole, hasRole, hasAnyRole)
+ * - Validation logic (sanitizeTextParam, parseBooleanParam, parseISODate, validateAllowedFields)
+ * - Pagination real behavior (parsePagination, buildPaginationMeta)
+ * - Response builders (ok, fail) under edge conditions
+ * - Scraper parsing with adversarial inputs
+ *
  * @category PRIORITY: CRITICAL
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach } from 'vitest';
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRIORIDAD CRÍTICA #1: Tests de Resiliencia de Red
+// PRIORIDAD CRÍTICA #1: Auth — Extraer tokens y verificar roles
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe('🔥 RESILIENCIA - Network Error Handling', () => {
+describe('Auth — extractBearerToken (real import)', () => {
+  let extractBearerToken: (h: string | null) => string | null;
 
-        let originalFetch: typeof fetch;
+  beforeEach(async () => {
+    ({ extractBearerToken } = await import(
+      '../../supabase/functions/api-minimarket/helpers/auth'
+    ));
+  });
 
-        beforeEach(() => {
-                originalFetch = globalThis.fetch;
-        });
+  it('returns token from standard Bearer header', () => {
+    expect(extractBearerToken('Bearer abc123')).toBe('abc123');
+  });
 
-        afterEach(() => {
-                globalThis.fetch = originalFetch;
-                vi.restoreAllMocks();
-        });
+  it('is case-insensitive on "bearer" prefix', () => {
+    expect(extractBearerToken('bearer TOKEN')).toBe('TOKEN');
+    expect(extractBearerToken('BEARER TOKEN')).toBe('TOKEN');
+    expect(extractBearerToken('BeArEr TOKEN')).toBe('TOKEN');
+  });
 
-        describe('Timeout Handling', () => {
+  it('returns null for null or empty header', () => {
+    expect(extractBearerToken(null)).toBeNull();
+    expect(extractBearerToken('')).toBeNull();
+  });
 
-                // 📋 WHY: Previene que la app se cuelgue si un servicio externo no responde
-                // 🎯 WHAT: Verifica que AbortController timeout funciona correctamente
-                it('should abort request after timeout period', async () => {
-                        // ═══ ARRANGE ═══
-                        const timeoutMs = 100;
-                        let wasAborted = false;
+  it('returns null when prefix is present but token is empty', () => {
+    expect(extractBearerToken('Bearer ')).toBeNull();
+    expect(extractBearerToken('Bearer   ')).toBeNull();
+  });
 
-                        globalThis.fetch = vi.fn().mockImplementation(async (url, options) => {
-                                return new Promise((resolve, reject) => {
-                                        const timer = setTimeout(() => {
-                                                resolve(new Response('OK'));
-                                        }, 5000); // Would take 5s without abort
+  it('returns null for non-Bearer schemes', () => {
+    expect(extractBearerToken('Basic dXNlcjpwYXNz')).toBeNull();
+    expect(extractBearerToken('Digest realm="test"')).toBeNull();
+  });
 
-                                        options?.signal?.addEventListener('abort', () => {
-                                                wasAborted = true;
-                                                clearTimeout(timer);
-                                                reject(new DOMException('Aborted', 'AbortError'));
-                                        });
-                                });
-                        });
+  it('handles whitespace padding around header', () => {
+    expect(extractBearerToken('  Bearer tok  ')).toBe('tok');
+  });
 
-                        // ═══ ACT ═══
-                        const controller = new AbortController();
-                        const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  it('handles JWT-formatted tokens correctly', () => {
+    const jwt =
+      'eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiIxIn0.abc_signature';
+    expect(extractBearerToken('Bearer ' + jwt)).toBe(jwt);
+  });
+});
 
-                        let caughtError: Error | null = null;
-                        try {
-                                await fetch('https://example.com/slow', { signal: controller.signal });
-                        } catch (e) {
-                                caughtError = e as Error;
-                        }
-                        clearTimeout(timeoutId);
+describe('Auth — requireRole (real import)', () => {
+  let requireRole: (
+    user: { id: string; role: string | null } | null,
+    roles: readonly string[],
+  ) => void;
 
-                        // ═══ ASSERT ═══
-                        expect(wasAborted).toBe(true);
-                        expect(caughtError).toBeDefined();
-                        expect(caughtError?.name).toBe('AbortError');
-                });
-        });
+  beforeEach(async () => {
+    ({ requireRole } = await import(
+      '../../supabase/functions/api-minimarket/helpers/auth'
+    ));
+  });
 
-        describe('5XX Server Error Recovery', () => {
+  it('does not throw for user with matching role', () => {
+    expect(() =>
+      requireRole({ id: '1', role: 'admin' }, ['admin', 'ventas']),
+    ).not.toThrow();
+  });
 
-                // 📋 WHY: Servicios externos pueden fallar temporalmente
-                // 🎯 WHAT: Verifica que se maneja 500/502/503 sin crash
-                it('should handle 500 Internal Server Error gracefully', async () => {
-                        globalThis.fetch = vi.fn().mockResolvedValue(
-                                new Response(JSON.stringify({ error: 'Internal Server Error' }), {
-                                        status: 500,
-                                        headers: { 'Content-Type': 'application/json' }
-                                })
-                        );
+  it('throws 401 for null user', () => {
+    try {
+      requireRole(null, ['admin']);
+      expect.unreachable('should have thrown');
+    } catch (err: any) {
+      expect(err.status).toBe(401);
+    }
+  });
 
-                        const response = await fetch('https://api.example.com/data');
+  it('throws 403 for user with wrong role', () => {
+    try {
+      requireRole({ id: '1', role: 'ventas' }, ['admin']);
+      expect.unreachable('should have thrown');
+    } catch (err: any) {
+      expect(err.status).toBe(403);
+    }
+  });
 
-                        expect(response.ok).toBe(false);
-                        expect(response.status).toBe(500);
+  it('throws 403 for user with null role', () => {
+    try {
+      requireRole({ id: '1', role: null }, ['admin']);
+      expect.unreachable('should have thrown');
+    } catch (err: any) {
+      expect(err.status).toBe(403);
+    }
+  });
 
-                        const body = await response.json();
-                        expect(body.error).toBeDefined();
-                });
+  it('performs case-insensitive role matching', () => {
+    expect(() =>
+      requireRole({ id: '1', role: 'admin' }, ['ADMIN']),
+    ).not.toThrow();
+  });
+});
 
-                it('should handle 503 Service Unavailable with retry info', async () => {
-                        globalThis.fetch = vi.fn().mockResolvedValue(
-                                new Response('Service temporarily unavailable', {
-                                        status: 503,
-                                        headers: {
-                                                'Retry-After': '30',
-                                                'Content-Type': 'text/plain'
-                                        }
-                                })
-                        );
+describe('Auth — hasRole & hasAnyRole (real import)', () => {
+  let hasRole: (user: any, role: string) => boolean;
+  let hasAnyRole: (user: any, roles: readonly string[]) => boolean;
 
-                        const response = await fetch('https://api.example.com/data');
+  beforeEach(async () => {
+    ({ hasRole, hasAnyRole } = await import(
+      '../../supabase/functions/api-minimarket/helpers/auth'
+    ));
+  });
 
-                        expect(response.status).toBe(503);
-                        expect(response.headers.get('Retry-After')).toBe('30');
-                });
-        });
+  it('hasRole returns true for exact role match', () => {
+    expect(hasRole({ id: '1', role: 'admin' }, 'admin')).toBe(true);
+  });
 
-        describe('Network Failure Simulation', () => {
+  it('hasRole returns false for wrong role', () => {
+    expect(hasRole({ id: '1', role: 'ventas' }, 'admin')).toBe(false);
+  });
 
-                // 📋 WHY: Conexiones de red pueden fallar en cualquier momento
-                // 🎯 WHAT: Verifica manejo de TypeError (network error típico)
-                it('should handle network disconnection', async () => {
-                        globalThis.fetch = vi.fn().mockRejectedValue(
-                                new TypeError('Failed to fetch')
-                        );
+  it('hasRole returns false for null user or null role', () => {
+    expect(hasRole(null, 'admin')).toBe(false);
+    expect(hasRole({ id: '1', role: null }, 'admin')).toBe(false);
+  });
 
-                        let error: Error | null = null;
-                        try {
-                                await fetch('https://api.example.com/data');
-                        } catch (e) {
-                                error = e as Error;
-                        }
+  it('hasAnyRole returns true when user role matches any in list', () => {
+    expect(
+      hasAnyRole({ id: '1', role: 'deposito' }, ['admin', 'deposito']),
+    ).toBe(true);
+  });
 
-                        expect(error).toBeInstanceOf(TypeError);
-                        expect(error?.message).toContain('fetch');
-                });
+  it('hasAnyRole returns false when no roles match', () => {
+    expect(
+      hasAnyRole({ id: '1', role: 'ventas' }, ['admin', 'deposito']),
+    ).toBe(false);
+  });
 
-                it('should handle DNS resolution failure', async () => {
-                        globalThis.fetch = vi.fn().mockRejectedValue(
-                                new TypeError('getaddrinfo ENOTFOUND nonexistent.domain')
-                        );
+  it('hasRole is case-insensitive on the role parameter', () => {
+    expect(hasRole({ id: '1', role: 'admin' }, 'ADMIN')).toBe(true);
+    expect(hasRole({ id: '1', role: 'deposito' }, 'Deposito')).toBe(true);
+  });
 
-                        let error: Error | null = null;
-                        try {
-                                await fetch('https://nonexistent.domain/api');
-                        } catch (e) {
-                                error = e as Error;
-                        }
-
-                        expect(error).toBeDefined();
-                        expect(error?.message).toContain('ENOTFOUND');
-                });
-        });
+  it('hasAnyRole is case-insensitive on role parameters', () => {
+    expect(
+      hasAnyRole({ id: '1', role: 'deposito' }, ['ADMIN', 'DEPOSITO']),
+    ).toBe(true);
+    expect(
+      hasAnyRole({ id: '1', role: 'ventas' }, ['ADMIN', 'VENTAS']),
+    ).toBe(true);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRIORIDAD CRÍTICA #2: Tests de Lógica de Tendencias  
+// PRIORIDAD CRÍTICA #2: Pagination — parsePagination & buildPaginationMeta
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe('📊 BUSINESS LOGIC - Trend Calculation', () => {
+describe('Pagination — parsePagination (real import)', () => {
+  let parsePagination: any;
 
-        // Simular la función calculateWeeklyTrend del dashboard
-        function calculateWeeklyTrend(
-                thisWeekMetrics: { successRate?: number; executions?: number } | null,
-                lastWeekMetrics: { successRate?: number; executions?: number } | null
-        ): { trend: 'up' | 'down' | 'stable'; change: number } {
+  beforeEach(async () => {
+    ({ parsePagination } = await import(
+      '../../supabase/functions/api-minimarket/helpers/pagination'
+    ));
+  });
 
-                if (!thisWeekMetrics || !lastWeekMetrics) {
-                        return { trend: 'stable', change: 0 };
-                }
+  it('returns defaults when both params are null', () => {
+    const r = parsePagination(null, null, 20, 100);
+    expect(r.ok).toBe(true);
+    expect(r.params.limit).toBe(20);
+    expect(r.params.offset).toBe(0);
+  });
 
-                const thisWeekSuccess = thisWeekMetrics.successRate ?? 100;
-                const lastWeekSuccess = lastWeekMetrics.successRate ?? 100;
-                const successDiff = thisWeekSuccess - lastWeekSuccess;
+  it('caps limit at maxLimit', () => {
+    const r = parsePagination('500', '0', 20, 100);
+    expect(r.ok).toBe(true);
+    expect(r.params.limit).toBe(100);
+  });
 
-                const thisWeekExecs = thisWeekMetrics.executions ?? 0;
-                const lastWeekExecs = lastWeekMetrics.executions ?? 0;
-                const execDiff = lastWeekExecs > 0
-                        ? ((thisWeekExecs - lastWeekExecs) / lastWeekExecs) * 100
-                        : 0;
+  it('rejects non-integer limit', () => {
+    const r = parsePagination('abc', '0', 20, 100);
+    expect(r.ok).toBe(false);
+    expect(r.error.field).toBe('limit');
+  });
 
-                if (successDiff < -2) {
-                        return { trend: 'down', change: Math.round(successDiff * 10) / 10 };
-                }
-                if (successDiff > 2) {
-                        return { trend: 'up', change: Math.round(successDiff * 10) / 10 };
-                }
-                if (execDiff < -20) {
-                        return { trend: 'down', change: Math.round(execDiff) };
-                }
-                if (execDiff > 20) {
-                        return { trend: 'up', change: Math.round(execDiff) };
-                }
+  it('rejects negative offset', () => {
+    const r = parsePagination('10', '-5', 20, 100);
+    expect(r.ok).toBe(false);
+    expect(r.error.field).toBe('offset');
+  });
 
-                return { trend: 'stable', change: 0 };
-        }
+  it('rejects zero limit', () => {
+    const r = parsePagination('0', '0', 20, 100);
+    expect(r.ok).toBe(false);
+  });
 
-        describe('Success Rate Trends', () => {
+  it('accepts valid limit and offset', () => {
+    const r = parsePagination('50', '100', 20, 200);
+    expect(r.ok).toBe(true);
+    expect(r.params.limit).toBe(50);
+    expect(r.params.offset).toBe(100);
+  });
 
-                // 📋 WHY: Detectar degradación de calidad del sistema
-                // 🎯 WHAT: Verifica que caída de >2% success rate marca "down"
-                it('should detect downward trend when success rate drops >2%', () => {
-                        const thisWeek = { successRate: 95, executions: 100 };
-                        const lastWeek = { successRate: 98, executions: 100 };
+  it('handles empty strings like null', () => {
+    const r = parsePagination('', '', 25, 100);
+    expect(r.ok).toBe(true);
+    expect(r.params.limit).toBe(25);
+    expect(r.params.offset).toBe(0);
+  });
 
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
+  it('rejects float values for limit', () => {
+    const r = parsePagination('10.5', '0', 20, 100);
+    expect(r.ok).toBe(false);
+  });
+});
 
-                        expect(result.trend).toBe('down');
-                        expect(result.change).toBe(-3);
-                });
+describe('Pagination — buildPaginationMeta (real import)', () => {
+  let buildPaginationMeta: any;
 
-                it('should detect upward trend when success rate improves >2%', () => {
-                        const thisWeek = { successRate: 99, executions: 100 };
-                        const lastWeek = { successRate: 95, executions: 100 };
+  beforeEach(async () => {
+    ({ buildPaginationMeta } = await import(
+      '../../supabase/functions/api-minimarket/helpers/pagination'
+    ));
+  });
 
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
+  it('computes hasMore, page, totalPages correctly', () => {
+    const meta = buildPaginationMeta(100, 20, 0);
+    expect(meta.total).toBe(100);
+    expect(meta.hasMore).toBe(true);
+    expect(meta.page).toBe(1);
+    expect(meta.totalPages).toBe(5);
+  });
 
-                        expect(result.trend).toBe('up');
-                        expect(result.change).toBe(4);
-                });
+  it('returns hasMore=false on last page', () => {
+    const meta = buildPaginationMeta(100, 20, 80);
+    expect(meta.hasMore).toBe(false);
+    expect(meta.page).toBe(5);
+  });
 
-                it('should remain stable for minor fluctuations (<=2%)', () => {
-                        const thisWeek = { successRate: 97, executions: 100 };
-                        const lastWeek = { successRate: 98, executions: 100 };
+  it('omits total/hasMore when totalCount is null', () => {
+    const meta = buildPaginationMeta(null, 20, 0);
+    expect(meta.limit).toBe(20);
+    expect(meta.offset).toBe(0);
+    expect(meta).not.toHaveProperty('total');
+    expect(meta).not.toHaveProperty('hasMore');
+  });
 
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
-
-                        expect(result.trend).toBe('stable');
-                        expect(result.change).toBe(0);
-                });
-        });
-
-        describe('Execution Volume Trends', () => {
-
-                // 📋 WHY: Detectar si jobs dejaron de ejecutarse
-                // 🎯 WHAT: Verifica que caída de >20% ejecuciones marca "down"
-                it('should detect downward trend when executions drop >20%', () => {
-                        const thisWeek = { successRate: 100, executions: 70 };
-                        const lastWeek = { successRate: 100, executions: 100 };
-
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
-
-                        expect(result.trend).toBe('down');
-                        expect(result.change).toBe(-30);
-                });
-
-                it('should detect upward trend when executions increase >20%', () => {
-                        const thisWeek = { successRate: 100, executions: 150 };
-                        const lastWeek = { successRate: 100, executions: 100 };
-
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
-
-                        expect(result.trend).toBe('up');
-                        expect(result.change).toBe(50);
-                });
-        });
-
-        describe('Edge Cases', () => {
-
-                it('should return stable for null metrics', () => {
-                        expect(calculateWeeklyTrend(null, null)).toEqual({ trend: 'stable', change: 0 });
-                        expect(calculateWeeklyTrend({ successRate: 100 }, null)).toEqual({ trend: 'stable', change: 0 });
-                        expect(calculateWeeklyTrend(null, { successRate: 100 })).toEqual({ trend: 'stable', change: 0 });
-                });
-
-                it('should handle zero executions last week', () => {
-                        const thisWeek = { successRate: 100, executions: 50 };
-                        const lastWeek = { successRate: 100, executions: 0 };
-
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
-
-                        // No puede calcular % de cambio con 0 base
-                        expect(result.trend).toBe('stable');
-                });
-
-                it('should handle missing successRate gracefully', () => {
-                        const thisWeek = { executions: 100 }; // No successRate
-                        const lastWeek = { executions: 80 };
-
-                        const result = calculateWeeklyTrend(thisWeek, lastWeek);
-
-                        // Usa default 100% para ambos, así que debería ser stable o up por ejecuciones
-                        expect(['stable', 'up']).toContain(result.trend);
-                });
-        });
+  it('handles zero total correctly', () => {
+    const meta = buildPaginationMeta(0, 20, 0);
+    expect(meta.total).toBe(0);
+    expect(meta.hasMore).toBe(false);
+    expect(meta.totalPages).toBe(0);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRIORIDAD ALTA #3: Tests de Validación de Inputs Extremos
+// PRIORIDAD ALTA #3: Validation — funciones puras de validación
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe('🛡️ INPUT VALIDATION - Extreme Values', () => {
+describe('Validation — sanitizeTextParam (real import)', () => {
+  let sanitizeTextParam: (v: string) => string;
 
-        describe('Numeric Boundaries', () => {
+  beforeEach(async () => {
+    ({ sanitizeTextParam } = await import(
+      '../../supabase/functions/api-minimarket/helpers/validation'
+    ));
+  });
 
-                // 📋 WHY: Prevenir overflow/underflow en cálculos
-                // 🎯 WHAT: Verifica comportamiento con números extremos
-                it('should handle Number.MAX_SAFE_INTEGER', () => {
-                        const value = Number.MAX_SAFE_INTEGER;
+  it('removes HTML tags for XSS prevention', () => {
+    expect(sanitizeTextParam('<script>alert(1)</script>')).not.toContain('<');
+    expect(sanitizeTextParam('<img src=x onerror=alert(1)>')).not.toContain('<');
+  });
 
-                        expect(Number.isFinite(value)).toBe(true);
-                        expect(value + 1 !== value).toBe(true); // Still precise
-                });
+  it('removes SQL injection characters', () => {
+    const result = sanitizeTextParam("'; DROP TABLE users--");
+    expect(result).not.toContain("'");
+    expect(result).not.toContain(';');
+  });
 
-                it('should handle very small positive numbers', () => {
-                        const value = Number.MIN_VALUE;
+  it('allows alphanumeric, spaces, dots, underscores, hyphens', () => {
+    expect(sanitizeTextParam('Coca Cola 500ml')).toBe('Coca Cola 500ml');
+    expect(sanitizeTextParam('item_1-b.txt')).toBe('item_1-b.txt');
+  });
 
-                        expect(value > 0).toBe(true);
-                        expect(Number.isFinite(value)).toBe(true);
-                });
+  it('trims whitespace', () => {
+    expect(sanitizeTextParam('  hello  ')).toBe('hello');
+  });
+});
 
-                it('should detect Infinity', () => {
-                        expect(Number.isFinite(Infinity)).toBe(false);
-                        expect(Number.isFinite(-Infinity)).toBe(false);
-                        expect(Number.isFinite(1 / 0)).toBe(false);
-                });
+describe('Validation — parseBooleanParam (real import)', () => {
+  let parseBooleanParam: (v: string | null) => boolean | null;
 
-                it('should detect NaN correctly', () => {
-                        expect(Number.isNaN(NaN)).toBe(true);
-                        expect(Number.isNaN(0 / 0)).toBe(true);
-                        expect(Number.isNaN(parseInt('not a number'))).toBe(true);
-                });
-        });
+  beforeEach(async () => {
+    ({ parseBooleanParam } = await import(
+      '../../supabase/functions/api-minimarket/helpers/validation'
+    ));
+  });
 
-        describe('String Boundaries', () => {
+  it('parses "true" and "false" correctly', () => {
+    expect(parseBooleanParam('true')).toBe(true);
+    expect(parseBooleanParam('false')).toBe(false);
+  });
 
-                it('should handle empty string', () => {
-                        const value = '';
+  it('returns null for null input', () => {
+    expect(parseBooleanParam(null)).toBeNull();
+  });
 
-                        expect(value.length).toBe(0);
-                        expect(value.trim()).toBe('');
-                        expect(!value).toBe(true); // Falsy
-                });
+  it('returns null for non-standard truthy values', () => {
+    expect(parseBooleanParam('yes')).toBeNull();
+    expect(parseBooleanParam('1')).toBeNull();
+    expect(parseBooleanParam('TRUE')).toBeNull();
+  });
+});
 
-                it('should handle very long strings', () => {
-                        const longString = 'a'.repeat(100000);
+describe('Validation — parseISODate (real import)', () => {
+  let parseISODate: (v: string | null) => Date | null;
 
-                        expect(longString.length).toBe(100000);
-                        expect(longString.substring(0, 10)).toBe('aaaaaaaaaa');
-                });
+  beforeEach(async () => {
+    ({ parseISODate } = await import(
+      '../../supabase/functions/api-minimarket/helpers/validation'
+    ));
+  });
 
-                it('should handle strings with only whitespace', () => {
-                        const whitespace = '   \t\n\r  ';
+  it('parses valid ISO 8601 string', () => {
+    const d = parseISODate('2026-01-15T10:30:00Z');
+    expect(d).toBeInstanceOf(Date);
+    expect(d!.getFullYear()).toBe(2026);
+  });
 
-                        expect(whitespace.trim()).toBe('');
-                        expect(whitespace.length).toBeGreaterThan(0);
-                });
+  it('returns null for invalid/empty date strings', () => {
+    expect(parseISODate('not-a-date')).toBeNull();
+    expect(parseISODate('')).toBeNull();
+    expect(parseISODate(null)).toBeNull();
+  });
+});
 
-                it('should handle unicode characters', () => {
-                        const unicode = '🚀 Producto ñ café';
+describe('Validation — validateAllowedFields (real import)', () => {
+  let validateAllowedFields: any;
+  let PRODUCTO_UPDATE_FIELDS: Set<string>;
 
-                        expect(unicode.includes('🚀')).toBe(true);
-                        expect(unicode.includes('ñ')).toBe(true);
-                });
-        });
+  beforeEach(async () => {
+    ({ validateAllowedFields, PRODUCTO_UPDATE_FIELDS } = await import(
+      '../../supabase/functions/api-minimarket/helpers/validation'
+    ));
+  });
 
-        describe('Array Boundaries', () => {
+  it('accepts object with only allowed fields', () => {
+    const r = validateAllowedFields(
+      { nombre: 'X', precio_actual: 100 },
+      PRODUCTO_UPDATE_FIELDS,
+    );
+    expect(r.valid).toBe(true);
+    expect(r.unknownFields).toHaveLength(0);
+  });
 
-                it('should handle empty array', () => {
-                        const arr: unknown[] = [];
+  it('rejects object with unknown/dangerous fields', () => {
+    const r = validateAllowedFields(
+      { nombre: 'X', password: 'hack', is_admin: true },
+      PRODUCTO_UPDATE_FIELDS,
+    );
+    expect(r.valid).toBe(false);
+    expect(r.unknownFields).toContain('password');
+    expect(r.unknownFields).toContain('is_admin');
+  });
 
-                        expect(arr.length).toBe(0);
-                        expect(arr[0]).toBeUndefined();
-                        expect(arr.map(x => x)).toEqual([]);
-                });
+  it('returns valid for empty object', () => {
+    const r = validateAllowedFields({}, PRODUCTO_UPDATE_FIELDS);
+    expect(r.valid).toBe(true);
+  });
+});
 
-                it('should handle single element array', () => {
-                        const arr = [42];
+describe('Validation — isValidCodigo (real import)', () => {
+  let isValidCodigo: (v: string) => boolean;
 
-                        expect(arr.length).toBe(1);
-                        expect(arr[0]).toBe(42);
-                        expect(arr[-1]).toBeUndefined(); // No negative indexing in JS
-                });
-        });
+  beforeEach(async () => {
+    ({ isValidCodigo } = await import(
+      '../../supabase/functions/api-minimarket/helpers/validation'
+    ));
+  });
+
+  it('accepts alphanumeric codes with dashes and underscores', () => {
+    expect(isValidCodigo('ABC-123')).toBe(true);
+    expect(isValidCodigo('sku_item_01')).toBe(true);
+  });
+
+  it('rejects codes with special characters or spaces', () => {
+    expect(isValidCodigo('abc 123')).toBe(false);
+    expect(isValidCodigo('ab@c')).toBe(false);
+    expect(isValidCodigo('')).toBe(false);
+    expect(isValidCodigo("'; DROP--")).toBe(false);
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PRIORIDAD ALTA #4: Tests de Seguridad de Datos
+// PRIORIDAD ALTA #4: Scraper parsing — adversarial inputs
 // ═══════════════════════════════════════════════════════════════════════════
 
-describe('🔐 DATA SECURITY - Sensitive Data Handling', () => {
+describe('Scraper parsing — adversarial inputs (real import)', () => {
+  let calculateConfidenceScore: (p: any) => number;
+  let sanitizeProductName: (n: string) => string;
+  let extraerMarcaDelNombre: (n: string) => string;
+  let generarSKU: (n: string, c: string) => string;
 
-        describe('Token/Key Patterns', () => {
+  beforeEach(async () => {
+    ({
+      calculateConfidenceScore,
+      sanitizeProductName,
+      extraerMarcaDelNombre,
+      generarSKU,
+    } = await import(
+      '../../supabase/functions/scraper-maxiconsumo/parsing'
+    ));
+  });
 
-                // 📋 WHY: Prevenir logging accidental de tokens
-                // 🎯 WHAT: Verifica que patrones de tokens son detectables
-                it('should detect JWT format', () => {
-                        const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0.dozjgNryP4J3jVmNHl0w5N_XgL0n3I9PlFUP0THsR8U';
+  it('confidenceScore clamps between 0-100 for good product', () => {
+    const good = calculateConfidenceScore({
+      nombre: 'Coca Cola 500ml lata',
+      precio_unitario: 450,
+      sku: 'BEB-COCA-ABC123',
+      codigo_barras: '7790895000129',
+      stock_disponible: 50,
+    });
+    expect(good).toBeGreaterThanOrEqual(80);
+    expect(good).toBeLessThanOrEqual(100);
+  });
 
-                        const jwtPattern = /^[A-Za-z0-9-_]+\.[A-Za-z0-9-_]+\.[A-Za-z0-9-_]*$/;
+  it('confidenceScore remains low for bad product', () => {
+    const bad = calculateConfidenceScore({
+      nombre: 'X',
+      precio_unitario: -500,
+      sku: '',
+      codigo_barras: '',
+      stock_disponible: undefined,
+    });
+    expect(bad).toBeGreaterThanOrEqual(0);
+    expect(bad).toBeLessThanOrEqual(50);
+  });
 
-                        expect(jwtPattern.test(jwt)).toBe(true);
-                });
+  it('confidenceScore penalizes extremely long product names', () => {
+    const score = calculateConfidenceScore({
+      nombre: 'A'.repeat(250),
+      precio_unitario: 100,
+      sku: 'X',
+      codigo_barras: '123',
+      stock_disponible: 10,
+    });
+    expect(score).toBeLessThan(100);
+  });
 
-                it('should detect API key patterns', () => {
-                        const patterns = [
-                                'sk_live_51234567890abcdef', // Stripe-like
-                                'AKIAIOSFODNN7EXAMPLE', // AWS-like
-                                'ghp_xxxxxxxxxxxxxxxxxxxx', // GitHub
-                                'xoxb-123-456-AbCdEfGhIjKlMnOpQrStUv' // Slack
-                        ];
+  it('confidenceScore handles NaN/Infinity price', () => {
+    for (const price of [NaN, Infinity, -Infinity]) {
+      const score = calculateConfidenceScore({
+        nombre: 'Test Product Name',
+        precio_unitario: price,
+        sku: 'SKU1',
+        codigo_barras: '123',
+        stock_disponible: 0,
+      });
+      expect(score).toBeGreaterThanOrEqual(0);
+      expect(score).toBeLessThanOrEqual(100);
+    }
+  });
 
-                        for (const key of patterns) {
-                                expect(key.length).toBeGreaterThan(10);
-                                expect(/^[a-zA-Z0-9_-]+$/.test(key)).toBe(true);
-                        }
-                });
-        });
+  it('sanitizeProductName removes emojis and special chars', () => {
+    const cleaned = sanitizeProductName('🔥 ¡Oferta! Coca-Cola 500ml™');
+    expect(cleaned).not.toContain('🔥');
+    expect(cleaned).not.toContain('™');
+  });
 
-        describe('Data Sanitization', () => {
+  it('sanitizeProductName truncates at 255 chars', () => {
+    expect(sanitizeProductName('A'.repeat(500)).length).toBeLessThanOrEqual(255);
+  });
 
-                it('should identify potential SQL injection patterns', () => {
-                        const sqlPatterns = [
-                                "'; DROP TABLE",
-                                "SELECT 1",
-                                "UNION SELECT",
-                                "DELETE x",
-                                "UPDATE y"
-                        ];
+  it('sanitizeProductName collapses multiple spaces', () => {
+    expect(sanitizeProductName('Coca   Cola    500ml')).toBe('Coca Cola 500ml');
+  });
 
-                        const sqlIndicator = /(DROP|UNION|SELECT|INSERT|DELETE|UPDATE|--|\/\*)/i;
+  it('extraerMarcaDelNombre finds known brands', () => {
+    expect(extraerMarcaDelNombre('Coca Cola Zero 500ml')).toBe('Coca Cola');
+    expect(extraerMarcaDelNombre('Galletitas ARCOR 200g')).toBe('Arcor');
+    expect(extraerMarcaDelNombre('Pepsi lata 354ml')).toBe('Pepsi');
+  });
 
-                        for (const pattern of sqlPatterns) {
-                                expect(sqlIndicator.test(pattern)).toBe(true);
-                        }
-                });
+  it('extraerMarcaDelNombre falls back to first word for unknowns', () => {
+    const result = extraerMarcaDelNombre('MarcaDesconocida producto test');
+    expect(result).toBe('MarcaDesconocida');
+  });
 
-                it('should identify potential XSS patterns', () => {
-                        const xssPatterns = [
-                                '<script>',
-                                'javascript:',
-                                'onerror=',
-                                'onclick=',
-                                '<img src=x'
-                        ];
+  it('generarSKU produces string with category prefix', () => {
+    const sku = generarSKU('Coca Cola 500ml', 'Bebidas');
+    expect(sku.length).toBeGreaterThan(0);
+    expect(sku).toMatch(/^BEB-/);
+  });
+});
 
-                        const xssIndicator = /(<script|javascript:|on\w+\s*=|<img\s)/i;
+// ═══════════════════════════════════════════════════════════════════════════
+// PRIORIDAD ALTA #5: Response builders — ok/fail real behavior
+// ═══════════════════════════════════════════════════════════════════════════
 
-                        for (const pattern of xssPatterns) {
-                                expect(xssIndicator.test(pattern)).toBe(true);
-                        }
-                });
-        });
+describe('Response builders — ok/fail real behavior', () => {
+  let ok: any;
+  let fail: any;
+
+  beforeEach(async () => {
+    ({ ok, fail } = await import(
+      '../../supabase/functions/_shared/response'
+    ));
+  });
+
+  it('ok() returns status 200 with success: true', async () => {
+    const res = ok({ items: [1, 2, 3] });
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.success).toBe(true);
+    expect(body.data.items).toEqual([1, 2, 3]);
+  });
+
+  it('ok() with custom status and requestId', async () => {
+    const res = ok({ id: 1 }, 201, {}, { requestId: 'req-42' });
+    expect(res.status).toBe(201);
+    const body = await res.json();
+    expect(body.requestId).toBe('req-42');
+  });
+
+  it('ok() sets Content-Type: application/json', () => {
+    const res = ok(null);
+    expect(res.headers.get('Content-Type')).toContain('application/json');
+  });
+
+  it('fail() returns error shape with code and message', async () => {
+    const res = fail('VALIDATION_ERROR', 'Invalid input', 400);
+    expect(res.status).toBe(400);
+    const body = await res.json();
+    expect(body.success).toBe(false);
+    expect(body.error.code).toBe('VALIDATION_ERROR');
+    expect(body.error.message).toBe('Invalid input');
+  });
+
+  it('fail() defaults to status 400', async () => {
+    const res = fail('INTERNAL_ERROR', 'Something broke');
+    expect(res.status).toBe(400);
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PRIORIDAD ALTA #6: Error types — real error classification
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe('Error classification — toAppError real behavior', () => {
+  let toAppError: any;
+  let isAppError: (err: unknown) => boolean;
+  let getErrorStatus: (err: unknown) => number;
+
+  beforeEach(async () => {
+    ({ toAppError, isAppError, getErrorStatus } = await import(
+      '../../supabase/functions/_shared/errors'
+    ));
+  });
+
+  it('wraps plain Error into AppError with code and status', () => {
+    const appErr = toAppError(new Error('test'), 'TEST_ERR', 422);
+    expect(isAppError(appErr)).toBe(true);
+    expect(appErr.code).toBe('TEST_ERR');
+    expect(appErr.status).toBe(422);
+    expect(appErr.message).toBe('test');
+  });
+
+  it('wraps non-Error values (string, null, undefined)', () => {
+    expect(isAppError(toAppError('oops'))).toBe(true);
+    expect(isAppError(toAppError(null))).toBe(true);
+    expect(isAppError(toAppError(undefined))).toBe(true);
+  });
+
+  it('getErrorStatus returns the status from AppError', () => {
+    expect(getErrorStatus(toAppError(new Error('x'), 'X', 404))).toBe(404);
+  });
+
+  it('getErrorStatus defaults to 500 for plain Error', () => {
+    expect(getErrorStatus(new Error('random'))).toBe(500);
+  });
+
+  it('getErrorStatus infers status from plain Error message keywords', () => {
+    expect(getErrorStatus(new Error('no autorizado'))).toBe(401);
+    expect(getErrorStatus(new Error('unauthorized'))).toBe(401);
+    expect(getErrorStatus(new Error('acceso denegado'))).toBe(403);
+    expect(getErrorStatus(new Error('not found'))).toBe(404);
+    expect(getErrorStatus(new Error('ya existe'))).toBe(409);
+  });
 });

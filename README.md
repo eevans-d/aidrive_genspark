@@ -36,7 +36,7 @@ pnpm -C minimarket-system test:components
 
 ## Arquitectura (snapshot 2026-02-16)
 - Edge Functions activas: 13
-- Migraciones SQL: 40 (local/remoto 40/40)
+- Migraciones SQL: 41 (local/remoto 41/41)
 - Skills locales en `.agent/skills`: 22
 - Workflows `.agent/workflows/*.md`: 12
 
@@ -58,4 +58,4 @@ pnpm -C minimarket-system test:components
 - `docs/closure/README_CANONICO.md`
 
 ## Nota de Vigencia
-Los documentos fechados (por ejemplo `docs/closure/*`, `docs/mpc/*`, `docs/HOJA_RUTA_MADRE_2026-01-31.md`) son evidencia historica de su fecha. Para decisiones actuales, usar solo la documentacion canonica listada arriba.
+Los documentos fechados (por ejemplo `docs/closure/*`, `docs/mpc/*`, `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`) son evidencia historica de su fecha. Para decisiones actuales, usar solo la documentacion canonica listada arriba.

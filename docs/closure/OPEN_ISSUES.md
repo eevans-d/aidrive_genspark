@@ -84,11 +84,22 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 
 ---
 
+## Coverage Hardening (2026-02-16) — Cerrado
+
+| Tarea | Estado | Detalle |
+|---|---|---|
+| D-116: Coverage global ≥80% (11 test files nuevos) | ✅ CERRADO | 891→1165 unit tests (58 archivos). Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines. Exclusión de `minimarket-system/src/mocks/**`. |
+
+Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PASS + 4 skipped. Frontend lint PASS, build PASS.
+
+---
+
 ## Notas operativas
 
 - Migraciones: `41/41` local=remoto (actualización 2026-02-16, incluye `20260216040000`).
-- Snapshot remoto actual 2026-02-15: 13 funciones activas; `api-minimarket v26`, `cron-notifications v24`, `notificaciones-tareas v18`.
+- Snapshot remoto actual 2026-02-16: 13 funciones activas; `api-minimarket v26`, `cron-notifications v24`, `notificaciones-tareas v18`, `scraper-maxiconsumo v19`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
+- Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 14/14 en páginas principales; `NotFound.tsx` no aplica).
@@ -117,3 +128,4 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 - `minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).
 - Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.
 - Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).
+- Auditoria global de referencias en `docs/` (2026-02-16): 88 referencias en backticks apuntan a rutas historicas removidas o no aplicables fuera del set canonico. Impacto: no bloqueante mientras `ESTADO_ACTUAL` + `OPEN_ISSUES` + `README_CANONICO` se mantengan como fuente de verdad. Accion sugerida: limpieza incremental por lotes en docs historicos.
