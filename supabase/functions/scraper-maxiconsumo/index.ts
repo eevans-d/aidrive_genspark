@@ -73,8 +73,7 @@ function getScraperKeys(): ScraperKeys {
   };
 }
 
-const DEFAULT_CORS_HEADERS = {
-  'Access-Control-Allow-Origin': '*',
+const SCRAPER_CORS_OVERRIDES = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-api-secret, x-request-id',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS'
 };
@@ -95,7 +94,7 @@ function getEnvOrThrow(name: string): string {
 function jsonResponse(
   data: unknown,
   status = 200,
-  corsHeaders: Record<string, string> = DEFAULT_CORS_HEADERS,
+  corsHeaders: Record<string, string> = SCRAPER_CORS_OVERRIDES,
   requestId?: string
 ): Response {
   const headers: Record<string, string> = { ...corsHeaders, 'Content-Type': 'application/json' };
@@ -265,7 +264,7 @@ Deno.serve(async (request: Request): Promise<Response> => {
   const endpoint = url.pathname.split('/').filter(Boolean).pop() || '';
 
   const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
-  const corsResult = validateOrigin(request, allowedOrigins, DEFAULT_CORS_HEADERS);
+  const corsResult = validateOrigin(request, allowedOrigins, SCRAPER_CORS_OVERRIDES);
   const corsHeaders = { ...corsResult.headers, 'x-request-id': requestId };
 
   if (!corsResult.origin) {
