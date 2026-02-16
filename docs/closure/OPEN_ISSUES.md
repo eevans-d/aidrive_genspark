@@ -49,6 +49,8 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 
 | Pendiente | Estado | Siguiente acción |
 |-----------|--------|------------------|
+| `precios_proveedor`: RLS habilitado en remoto pero sin migración explícita en repo (drift de trazabilidad) | ⚠️ ABIERTO (no bloqueante) | Agregar migración idempotente en `supabase/migrations/` que garantice `ALTER TABLE public.precios_proveedor ENABLE ROW LEVEL SECURITY` y alinee grants/policies según estado canónico. Referencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md` + ausencia de `ENABLE RLS` para esa tabla en migraciones actuales. |
+| `scraper-maxiconsumo`: `DEFAULT_CORS_HEADERS` usa `Access-Control-Allow-Origin: '*'` (anti-patrón cosmético, mitigado por `validateOrigin`) | ⚠️ ABIERTO (no bloqueante) | Refactor menor: remover wildcard del default y construir headers solo desde `validateOrigin()`/allowlist para eliminar ambigüedad de lectura y riesgo de regresión futura. |
 | Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
 | Consolidación de artefactos históricos | ✅ CERRADO | Limpieza D-109 (2026-02-15): 79 archivos obsoletos eliminados. `docs/` reducido de ~2.5MB a ~1.3MB. |
 
@@ -110,6 +112,8 @@ Verificación local (2026-02-15): `npx vitest run` -> 829/829 PASS. Frontend: Ve
 
 ## Issues técnicos conocidos (no bloqueantes)
 
+- `precios_proveedor`: RLS activo en remoto sin migración explícita de habilitación en repo (deuda de trazabilidad).
+- `scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).
 - `minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).
 - Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.
 - Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).
