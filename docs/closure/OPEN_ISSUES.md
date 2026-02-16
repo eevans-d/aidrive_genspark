@@ -125,7 +125,8 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 - ~~`precios_proveedor`: RLS activo en remoto sin migración explícita de habilitación en repo (deuda de trazabilidad).~~ CERRADO: migración `20260216040000` creada.
 - ~~`scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).~~ CERRADO: wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`.
-- `minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).
-- Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.
+- ~~`minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).~~ CERRADO: `QueryClientProvider` + mocks de `apiClient`, `ErrorMessage`, `sonner` agregados.
+- ~~Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.~~ CERRADO: lint-staged apunta a `minimarket-system/node_modules/.bin/eslint`.
+- `minimarket-system/src/pages/Pedidos.test.tsx`: mock de `sonner` faltaba `Toaster` export (pre-existente, corregido).
 - Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).
 - Auditoria global de referencias en `docs/` (2026-02-16): 88 referencias en backticks apuntan a rutas historicas removidas o no aplicables fuera del set canonico. Impacto: no bloqueante mientras `ESTADO_ACTUAL` + `OPEN_ISSUES` + `README_CANONICO` se mantengan como fuente de verdad. Accion sugerida: limpieza incremental por lotes en docs historicos.

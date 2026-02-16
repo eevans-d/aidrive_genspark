@@ -121,6 +121,7 @@
 | D-114 | **Reescritura de 7 archivos de test FAKE/SHALLOW a REAL** — Tests que solo verificaban mocks contra mocks reemplazados por imports reales de código del proyecto (auth, pagination, validation, scraper, response, errors, circuit-breaker, CORS, anti-detection, validators, schemas, router, alertas, constants) | Completada | 2026-02-16 | 829→888 unit tests. 45 auxiliary tests. 8 bugs de aserción descubiertos y corregidos durante rewrite. Archivos: `strategic-high-value.test.ts`, `resilience-gaps.test.ts`, `integration-contracts.test.ts`, `api-scraper.integration.test.ts`, `load-testing.vitest.test.ts`, `openapi-compliance.vitest.test.ts`, `msw-integration.test.ts`. |
 | D-115 | **Auditoría intensiva post-rewrite: cross-reference source↔test** — Lectura completa de 12+ módulos fuente cruzada con 7 test files. 1 corrección (getRandomDelay lower bound), 5 mejoras (stats shape, auth fallback, case-insensitive roles, error status inference) | Completada | 2026-02-16 | 888→891 unit tests. Todos PASS: 47 files 891 unit + 3 files 45 auxiliary (4 skipped por credenciales). |
 | D-116 | **Coverage global ≥80%: 11 test files nuevos + exclusión mocks** — Cobertura real subida de 64.37% stmts / 56.87% branch a 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines. Módulos cubiertos: `helpers/auth.ts`, `helpers/supabase.ts`, `_shared/circuit-breaker.ts`, `_shared/errors.ts`, `_shared/rate-limit.ts`, `scraper/anti-detection.ts`, `scraper/storage.ts`, `scraper/types.ts`, `handlers/ventas.ts`, `handlers/ofertas.ts`, `api-proveedor/utils/auth.ts`. Exclusión de `minimarket-system/src/mocks/**` de coverage. | Completada | 2026-02-16 | 891→1165 unit tests (58 archivos). Todos PASS. Auxiliary 45 PASS + 4 skipped. Frontend lint PASS, build PASS. |
+| D-117 | **DX fixes: Proveedores.test.tsx + Pedidos.test.tsx + lint-staged eslint** — `Proveedores.test.tsx` envuelto con `QueryClientProvider` + mocks faltantes. `Pedidos.test.tsx` mock de `sonner` corregido (`Toaster` export). `lint-staged` apunta a `minimarket-system/node_modules/.bin/eslint` (antes fallaba por bin no encontrado). | Completada | 2026-02-16 | Frontend: 171/171 PASS (30 archivos). Root: 1165/1165 PASS. |
 
 ---
 
@@ -140,8 +141,8 @@
 
 | Issue | Estado | Referencia |
 |-------|--------|------------|
-| `Proveedores.test.tsx` falta `QueryClientProvider` | Pre-existente | `minimarket-system/src/pages/Proveedores.test.tsx` |
-| lint-staged no encuentra `eslint` (solo en `minimarket-system/node_modules`) | Pre-existente | `.husky/pre-commit` + root `package.json` |
+| ~~`Proveedores.test.tsx` falta `QueryClientProvider`~~ | ✅ CERRADO (D-117) | `minimarket-system/src/pages/Proveedores.test.tsx` |
+| ~~lint-staged no encuentra `eslint`~~ | ✅ CERRADO (D-117) | root `package.json` lint-staged config |
 | Leaked password protection requiere plan Pro | Bloqueado por plan | D-055 |
 
 ---

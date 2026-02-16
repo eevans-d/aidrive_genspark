@@ -54,14 +54,15 @@
 | 2 | Revocar API key anterior de SendGrid (si sigue activa) | P2 | RECOMENDADO (owner) | Operacion externa | Ejecutar revocacion en SendGrid y dejar evidencia sin valores |
 | 3 | Ejecutar smoke real periodico de seguridad (`RUN_REAL_TESTS=true`) | P2 | RECOMENDADO | QA/Operacion | Programar corrida nightly/pre-release y anexar evidencia en `docs/closure/` |
 | 4 | Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) | P2 | ABIERTO | Config/operacion | Decidir por entorno y documentar en `OPEN_ISSUES` + evidencia env audit |
-| 5 | Deuda tecnica: `Proveedores.test.tsx` sin `QueryClientProvider` | P2 | ABIERTO | Frontend tests | Corregir harness del test |
-| 6 | Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules` | P2 | ABIERTO | DX/Tooling | Ajustar hook o bin path para evitar `--no-verify` |
+| 5 | ~~Deuda tecnica: `Proveedores.test.tsx` sin `QueryClientProvider`~~ | P2 | ✅ CERRADO (D-117) | Frontend tests | — |
+| 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
 - P0 seguridad (RLS + `search_path`) cerrado y verificado en remoto (2026-02-15).
 - P2 `precios_proveedor` cerrado con migracion `20260216040000_rls_precios_proveedor.sql`.
 - P2 CORS cosmético en `scraper-maxiconsumo` cerrado; deploy remoto `v19`.
 - `.env.example` sincronizado con variables usadas (EnvAuditOps, 2026-02-16).
+- DX fixes (D-117): `Proveedores.test.tsx` + `Pedidos.test.tsx` + `lint-staged` eslint resolution.
 
 ---
 

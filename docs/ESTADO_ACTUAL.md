@@ -105,7 +105,7 @@ Archivos modificados/creados:
    - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
 3. (Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.
-4. Issues técnicos preexistentes no bloqueantes: `Proveedores.test.tsx` requiere `QueryClientProvider` y `lint-staged` puede fallar por resolución de `eslint` fuera de `minimarket-system/node_modules`.
+4. Issues técnicos preexistentes no bloqueantes: ~~`Proveedores.test.tsx` requiere `QueryClientProvider`~~ CERRADO (D-117). ~~`lint-staged` fallaba por resolución de `eslint`~~ CERRADO (D-117). `Pedidos.test.tsx` mock de `sonner` corregido (D-117).
 
 Referencia operativa:
 - `docs/closure/OPEN_ISSUES.md`

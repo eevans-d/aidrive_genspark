@@ -23,6 +23,7 @@ vi.mock('../utils/currency', () => ({
 
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), success: vi.fn() },
+  Toaster: () => null,
 }))
 
 import { usePedidos } from '../hooks/queries/usePedidos'
