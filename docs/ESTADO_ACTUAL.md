@@ -13,11 +13,22 @@
   - `20` operaciones regex (`if (path.match(...) && method === ...)`)
   - `55` guards de enrutamiento totales.
 - Recheck local quality-gates 2026-02-17: unit PASS, integración FAIL por `.env.test` ausente (`test-reports/quality-gates_20260217-032720.log:463-470`).
-- Recheck de contratos proveedor: `docs/api-proveedor-openapi-3.1.yaml` parsea OK, pero mantiene drift runtime/spec (`/health` faltante y `/scrape|/compare|/alerts` sobrantes).
+- ~~Recheck de contratos proveedor: `docs/api-proveedor-openapi-3.1.yaml` parsea OK, pero mantiene drift runtime/spec (`/health` faltante y `/scrape|/compare|/alerts` sobrantes).~~ CERRADO (D-129): 14 mismatches corregidos, 3 endpoints fantasma eliminados, `/health` agregado.
 - Recheck `reportes-automaticos`: usa `fecha_movimiento` y `tipo_movimiento` en código actual.
 - Paquete canonico "obra objetivo final" creado para contraste futuro: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/`.
 
 ## Addendum Pre-Mortem Hardening (2026-02-17)
+
+### Addendum Unificacion Canonica + Fase B Safety (D-128, D-129)
+- **D-128:** Unificacion canonica: `deploy.sh` VULN-001 corregido (`db push` staging/production, `db reset` solo dev local). Referencias rotas eliminadas. Subordinacion documental establecida. Roadmap unico canonico creado.
+- **D-129 Fase B Safety/Infra:**
+  - **VULN-003 cerrada:** `sp_movimiento_inventario` reescrito con `FOR UPDATE` en `stock_deposito` y `ordenes_compra`. Validacion de pendiente dentro del SP.
+  - **VULN-004 cerrada:** nuevo `sp_actualizar_pago_pedido` con `FOR UPDATE` en `pedidos`. Handler reescrito para usar SP.
+  - **Eje 5 cerrado:** HTTP method enforcement en `api-proveedor` via `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos).
+  - **Eje 4 cerrado:** OpenAPI `api-proveedor` sincronizado con runtime (14 mismatches corregidos, 3 endpoints fantasma eliminados).
+  - Migracion: `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).
+- **Validacion post-remediacion:** Veredicto PARCIAL (5/8 VULNs cerradas, 2 parciales, 1 abierta). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
+- **Tests post-validacion:** 1165/1165 PASS (root), 175/175 PASS (frontend), lint PASS, build PASS.
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
 - **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
   - CHECK constraint `stock_no_negativo` (`cantidad_actual >= 0`)
@@ -48,7 +59,7 @@
 ## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 42/42 local=remoto.
+- Migraciones: 43 local / 42 remoto (pendiente deploy de `20260217200000_vuln003_004_concurrency_locks.sql`).
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.

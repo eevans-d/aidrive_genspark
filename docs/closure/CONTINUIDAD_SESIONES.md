@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-17T06:05:00Z
+**Ultima actualizacion:** 2026-02-17T08:40:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -34,7 +34,7 @@
 | Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
 | Tests | 1165/1165 PASS (root), 45 auxiliary PASS + 4 skipped, frontend build PASS |
 | Edge Functions | 13 activas (`api-minimarket v26`, `scraper-maxiconsumo v20`) |
-| Migraciones | 42/42 local=remoto |
+| Migraciones | 43 local / 42 remoto (pendiente deploy de `20260217200000`) |
 
 ### Fuentes de verdad
 - `docs/ESTADO_ACTUAL.md`
@@ -74,6 +74,8 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Validacion post-remediacion D-130 | COMPLETADA | `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
+| 2026-02-17 | Fase B Safety/Infra: VULN-003/004 + method enforcement + OpenAPI sync (D-129) | COMPLETADA | D-129 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Unificacion canonica + remediacion VULN-001 (D-128) | COMPLETADA | `docs/closure/EVIDENCIA_UNIFICACION_CANONICA_2026-02-17.md` |
 | 2026-02-17 | Deploy hardening D-126 (migración + 5 edge functions) | COMPLETADA | `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md` |
 | 2026-02-17 | Pre-Mortem Hardening D-126 (17 fixes criticos) | COMPLETADA | D-126 en `docs/DECISION_LOG.md` |
