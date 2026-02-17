@@ -1,9 +1,21 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-16  
+**Ultima actualizacion:** 2026-02-17  
 **Estado:** APROBADO (todos los P0 cerrados; ver `docs/closure/OPEN_ISSUES.md`)
 **Score operativo:** 92/100 (post-fix P0 RLS + search_path, 2026-02-15)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+
+## Addendum de Verificacion Cruzada (2026-02-17)
+- Reporte auditado/sincronizado: `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md` (fe de verificación agregada 2026-02-17).
+- Conteo `git ls-files` actualizado: `606` (se incorporó `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` en inventario documental).
+- Criterio de endpoints del gateway explicitado y unificado:
+  - `35` operaciones literales (`if (path === ... && method === ...)`)
+  - `20` operaciones regex (`if (path.match(...) && method === ...)`)
+  - `55` guards de enrutamiento totales.
+- Recheck local quality-gates 2026-02-17: unit PASS, integración FAIL por `.env.test` ausente (`test-reports/quality-gates_20260217-032720.log:463-470`).
+- Recheck de contratos proveedor: `docs/api-proveedor-openapi-3.1.yaml` parsea OK, pero mantiene drift runtime/spec (`/health` faltante y `/scrape|/compare|/alerts` sobrantes).
+- Recheck `reportes-automaticos`: usa `fecha_movimiento` y `tipo_movimiento` en código actual.
+- Paquete canonico "obra objetivo final" creado para contraste futuro: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/`.
 
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
@@ -41,7 +53,7 @@
 | reposicion-sugerida | v16 | ACTIVE |
 | scraper-maxiconsumo | v19 | ACTIVE |
 
-## 3) Resultado De Calidad (hoy)
+## 3) Resultado De Calidad (snapshot 2026-02-16)
 - Unit tests: 1165/1165 PASS (58 archivos).
 - Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines (threshold 80% global).
 - Auxiliary tests: 45/45 PASS + 4 skipped (3 archivos; contract/performance/api-contracts).
@@ -53,6 +65,7 @@
 - Quality gates: PASS.
 - Evidencia: `test-reports/quality-gates_20260213-061657.log`.
 - Recheck frontend 2026-02-14: PASS (`test-reports/quality-gates_20260214-042354.log`).
+- Recheck local 2026-02-17: unit PASS + integración bloqueada por falta de `.env.test` (`test-reports/quality-gates_20260217-032720.log`).
 - **Recheck tests 2026-02-16 (D-114, D-115):** 7 archivos de test reescritos FAKE→REAL + auditoría intensiva con cross-reference de 12+ módulos fuente. 891 unit PASS (16.09s), 45 auxiliary PASS (1.20s).
 - **Coverage hardening 2026-02-16 (D-116):** 11 test files nuevos cubriendo 11 módulos críticos. 891→1165 unit tests (58 archivos). Coverage global ≥80% en las 4 métricas. Evidencia: `test-reports/junit.xml`.
 

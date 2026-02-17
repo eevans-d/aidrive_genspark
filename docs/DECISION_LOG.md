@@ -1,6 +1,6 @@
 # DECISION LOG
 
-**Última actualización:** 2026-02-16
+**Última actualización:** 2026-02-17
 **Propósito:** registrar decisiones para evitar ambigüedad en futuras sesiones.
 
 | ID | Decisión | Estado | Fecha | Nota |
@@ -127,6 +127,9 @@
 | D-120 | **SLACK_WEBHOOK_URL recomendado en staging/production** — Canal más práctico para alertas de equipo en tiempo real. Sin él, alertas se registran solo en base de datos. | Aprobada | 2026-02-16 | Recomendación: crear webhook Slack → canal `#minimarket-alertas`. |
 | D-121 | **Matriz de canales opcionales por entorno documentada** — Análisis completo de 4 canales (email, webhook, slack, sms) con estado de implementación, auto-disable, rate limits y recomendaciones por entorno (dev/staging/prod). | Completada | 2026-02-16 | Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md`. |
 | D-122 | **Limpieza de 88 referencias stale en docs/** — 13 rutas a archivos removidos en D-109 anotadas con `[removido en D-109]` en 14 archivos de docs. Incluye: `PLAN_EJECUCION_PREMORTEM.md`, `HOJA_RUTA_MADRE_2026-01-31.md`, `AUDITORIA_RLS_EJECUTADA_2026-01-31.md`, `ROLLBACK_EVIDENCE_2026-01-29.md`, `PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`, `EXECUTION_LOG_*`, `supabase/seed/test-users.sql`, `.agent/sessions/current/EVIDENCE.md`. | Completada | 2026-02-16 | Issue D-113 cerrado. |
+| D-123 | **Sincronización final reporte↔código↔docs (pre-producción)** — Se unificó criterio técnico de enrutamiento del gateway (`35` literales + `20` regex = `55` guards), se corrigió inventario versionado (`605→606`) y se dejó explícita la condición local de quality-gates sin `.env.test`. | Completada | 2026-02-17 | Archivos alineados: `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md`, `docs/API_README.md`, `docs/ESTADO_ACTUAL.md`. Evidencia técnica: `test-reports/quality-gates_20260217-032720.log`, `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-17.md`, verificación actual `api-proveedor` YAML parseable + drift runtime/spec pendiente. |
+| D-124 | **Creación del paquete canónico "Obra Objetivo Final Producción"** — Se crea carpeta de referencia para contraste IA entre estado preproducción y estado objetivo final (mapa maestro + matriz de contraste + protocolo reproducible de sesión nueva). | Completada | 2026-02-17 | Carpeta: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/` con `README.md`, `MATRIZ_CONTRASTE_PREPROD_VS_OBJETIVO.md`, `PROTOCOLO_CONTRASTE_NUEVA_SESION_IA.md`. Enlaces actualizados en `docs/closure/README_CANONICO.md`, `docs/closure/CONTINUIDAD_SESIONES.md`, `docs/ESTADO_ACTUAL.md`. Reporte DocuGuard: `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-17_OBRA_OBJETIVO.md`. |
+| D-125 | **Revalidación profunda Obra↔Reporte↔Código real (DocuGuard+APISync)** — Se reforzó el paquete `OBRA_OBJETIVO_FINAL_PRODUCCION` con criterios verificables, se corrigió inventario API (`35` literal + `20` regex = `55` guards), y se marcaron en el reporte preprod los hallazgos históricos superados (`api-proveedor` YAML parseable, `reportes-automaticos` sin mismatch de columnas). | Completada | 2026-02-17 | Archivos ajustados: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md`, `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/MATRIZ_CONTRASTE_PREPROD_VS_OBJETIVO.md`, `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/PROTOCOLO_CONTRASTE_NUEVA_SESION_IA.md`, `docs/API_README.md`, `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md`, `docs/DECISION_LOG.md`. |
 
 ---
 

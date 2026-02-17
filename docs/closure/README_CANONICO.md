@@ -1,4 +1,4 @@
-# Closure Canónico (Actualizado 2026-02-16)
+# Closure Canónico (Actualizado 2026-02-17)
 
 Este directorio contiene muchos artefactos históricos. Para iniciar una sesión nueva sin ruido, usar este orden:
 
@@ -6,10 +6,11 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 2. `docs/ESTADO_ACTUAL.md`
 3. `docs/closure/OPEN_ISSUES.md`
 4. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
-5. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
-6. `docs/closure/CONTINUIDAD_SESIONES.md`
-7. `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico útil, modo RECHECK)
-8. `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md` (histórico útil)
+5. `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` (obra objetivo para contraste)
+6. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
+7. `docs/closure/CONTINUIDAD_SESIONES.md`
+8. `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico útil, modo RECHECK)
+9. `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md` (histórico útil)
 
 ## Cierre formal Mega Plan (2026-02-13)
 
@@ -39,6 +40,7 @@ Notas:
 - Gate 16 (Sentry) cerrado con evidencia externa: `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
 - Gate 4 (SendGrid/SMTP) cerrado con evidencia externa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`.
 - Cierre P0 RLS/search_path verificado en remoto: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`.
+- Paquete de contraste "pintura vs obra": `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/`.
 - Higiene recomendada: revocar API keys anteriores de SendGrid (si aún están activas) y registrar evidencia sin exponer valores.
 
 ## Artefactos históricos

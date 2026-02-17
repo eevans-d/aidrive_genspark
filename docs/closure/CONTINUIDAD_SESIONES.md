@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-16T08:00:00Z
+**Ultima actualizacion:** 2026-02-17T04:15:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -13,9 +13,10 @@
 ### Si eres un agente IA
 1. Leer este documento completo.
 2. Leer `docs/ESTADO_ACTUAL.md`.
-3. Leer `docs/closure/OPEN_ISSUES.md`.
-4. Ejecutar la primera tarea pendiente real del plan activo.
-5. Registrar evidencias y actualizar docs canonicos al cierre.
+3. Leer `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md`.
+4. Leer `docs/closure/OPEN_ISSUES.md`.
+5. Ejecutar la primera tarea pendiente real del plan activo.
+6. Registrar evidencias y actualizar docs canonicos al cierre.
 
 ### Si eres usuario
 - Para abrir una ventana nueva, usar la plantilla de la seccion 7.
@@ -40,6 +41,8 @@
 - `docs/closure/OPEN_ISSUES.md`
 - `docs/DECISION_LOG.md`
 - `docs/closure/README_CANONICO.md`
+- `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md`
+- `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/MATRIZ_CONTRASTE_PREPROD_VS_OBJETIVO.md`
 - `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
 
 ---
@@ -121,7 +124,8 @@ PRIMER PASO OBLIGATORIO
 Lee en este orden:
 1) docs/closure/CONTINUIDAD_SESIONES.md
 2) docs/ESTADO_ACTUAL.md
-3) docs/closure/OPEN_ISSUES.md
+3) docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md
+4) docs/closure/OPEN_ISSUES.md
 
 GUARDRAILS
 1. No exponer secretos/JWTs (solo nombres).

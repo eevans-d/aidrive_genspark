@@ -943,6 +943,7 @@ archive/
 # Session reports (use CHANGELOG.md instead)
 REPORTE_*.md
 !docs/REPORTE_ANALISIS_PROYECTO.md
+!docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md
 SINCRONIZACION_*.md
 GIT_SYNC_STATUS.md
 test-progress*.md
