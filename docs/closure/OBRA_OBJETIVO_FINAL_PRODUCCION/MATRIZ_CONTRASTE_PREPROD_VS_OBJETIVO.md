@@ -34,7 +34,7 @@
 | 15 | Continuidad entre sesiones IA | ALINEADO | mantener disciplina de cierre y handoff | `docs/closure/CONTINUIDAD_SESIONES.md`, este paquete |
 | 16 | Coherencia temporal del reporte preprod | ALINEADO | Addendum D-132 agregado al reporte: 8 hallazgos historicos marcados como SUPERADO con referencia a remediacion (D-126..D-131). Cuerpo original preservado por trazabilidad. | `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md` |
 | 17 | Estado `reportes-automaticos` | ALINEADO | no gap de esquema detectado hoy en consulta de movimientos | `supabase/functions/reportes-automaticos/index.ts` |
-| 18 | Veredicto GO 100/100 | PARCIAL | 13/18 ALINEADO, 4/18 PARCIAL (1,9,10,13), 1/18 NO_ALINEADO (eje 12: `.env.test` owner). Ejes criticos 4, 5 cerrados. Deploy D-132 completado (43/43 migrations, api-proveedor v19, api-minimarket v27). | esta matriz + `docs/ESTADO_ACTUAL.md` |
+| 18 | Veredicto GO 100/100 | PARCIAL | 12/18 ALINEADO, 5/18 PARCIAL (1,9,10,13,18), 1/18 NO_ALINEADO (eje 12: `.env.test` owner). Ejes criticos 4, 5 cerrados. Deploy D-132 completado (43/43 migrations, api-proveedor v19, api-minimarket v27). 8/8 VULNs SRE CERRADO. | esta matriz + `docs/ESTADO_ACTUAL.md` |
 
 ---
 

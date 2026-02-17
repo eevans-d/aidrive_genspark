@@ -32,7 +32,7 @@
 | Ref Supabase | dqaygmjpzoqjjrywdsxi |
 | Veredicto operativo | APROBADO (P0 cerrados/verificados) |
 | Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
-| Tests | 1165/1165 PASS (root), 45 auxiliary PASS + 4 skipped, frontend build PASS |
+| Tests | 1225/1225 PASS (root), 45 auxiliary PASS + 4 skipped, 175/175 frontend PASS, build PASS |
 | Edge Functions | 13 activas (`api-minimarket v27`, `api-proveedor v19`, `scraper-maxiconsumo v20`) |
 | Migraciones | 43 local / 43 remoto (sincronizado) |
 
@@ -61,6 +61,7 @@
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
+- Auditoria final D-133: 9 desalineaciones documentales corregidas, branch coverage 75.75%→80.21% (60 tests nuevos), lint warning Ventas.tsx corregido (2026-02-17).
 - Pre-Mortem Hardening D-126: 17 fixes criticos implementados, migración SQL + 5 edge functions desplegadas en remoto (2026-02-17). Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`.
 - P0 seguridad (RLS + `search_path`) cerrado y verificado en remoto (2026-02-15).
 - P2 `precios_proveedor` cerrado con migracion `20260216040000_rls_precios_proveedor.sql`.
@@ -74,6 +75,7 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Auditoria final D-133: doc drift + branch coverage + lint fix | COMPLETADA | D-133 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Deploy D-132 + drift documental + matriz contraste actualizada | COMPLETADA | D-132 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Fase C Observabilidad: VULN-005/006/007 cerradas (D-131) | COMPLETADA | D-131 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Validacion post-remediacion D-130 | COMPLETADA | `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
@@ -112,6 +114,10 @@
 
 - `docs/closure/CONTEXT_PROMPT_DEPLOY_HARDENING_2026-02-17.md` — Deploy migracion + 5 edge functions + smoke tests + documentacion (COMPLETADO)
 - `docs/closure/CONTEXT_PROMPT_COVERAGE_AND_HARDENING_2026-02-16.md` — 25 tareas: coverage ≥80%, DX fixes, docs (COMPLETADO)
+- `docs/closure/CONTEXT_PROMPT_AUDITORIA_AVANZADA_PRODUCCION_2026-02-17_ULTRA_SHORT.md` — Auditoria avanzada read-only anti-drift (ACTIVO)
+- `docs/closure/CONTEXT_PROMPT_VALIDACION_POST_REMEDIACION_2026-02-17_ULTRA_SHORT.md` — Revalidacion post-remediacion + coherencia canonica (ACTIVO)
+- `docs/closure/CONTEXT_PROMPT_RECONCILIACION_CANONICA_D132_2026-02-17.md` — Reconciliacion documental final D-132 (NUEVO)
+- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (NUEVO)
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico, referencia)
 - Prompts ad-hoc antiguos: removidos en D-109
 

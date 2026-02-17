@@ -45,7 +45,7 @@
   },
   "lint-staged": {
     "minimarket-system/src/**/*.{ts,tsx}": [
-      "minimarket-system/node_modules/.bin/eslint --fix --max-warnings 0"
+      "minimarket-system/node_modules/.bin/eslint --config minimarket-system/eslint.config.js --fix --max-warnings 0"
     ]
   }
 }

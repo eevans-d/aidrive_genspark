@@ -99,14 +99,14 @@
 | reposicion-sugerida | v16 | ACTIVE |
 | scraper-maxiconsumo | v20 | ACTIVE |
 
-## 3) Resultado De Calidad (snapshot 2026-02-16)
-- Unit tests: 1165/1165 PASS (58 archivos).
-- Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines (threshold 80% global).
+## 3) Resultado De Calidad (snapshot 2026-02-17, D-133)
+- Unit tests: 1225/1225 PASS (59 archivos).
+- Coverage: 88.50% stmts / 80.21% branch / 92.28% funcs / 89.86% lines (threshold 80% global).
 - Auxiliary tests: 45/45 PASS + 4 skipped (3 archivos; contract/performance/api-contracts).
 - Integration tests: 38/38 PASS.
 - E2E smoke: 5/5 PASS.
-- Frontend component tests: 171/171 PASS (30 archivos).
-- Lint frontend: PASS.
+- Frontend component tests: 175/175 PASS (30 archivos).
+- Lint frontend: 0 errors, 0 warnings.
 - Build frontend: PASS.
 - Quality gates: PASS.
 - Evidencia: `test-reports/quality-gates_20260213-061657.log`.
@@ -114,6 +114,7 @@
 - Recheck local 2026-02-17: unit PASS + integración bloqueada por falta de `.env.test` (`test-reports/quality-gates_20260217-032720.log`).
 - **Recheck tests 2026-02-16 (D-114, D-115):** 7 archivos de test reescritos FAKE→REAL + auditoría intensiva con cross-reference de 12+ módulos fuente. 891 unit PASS (16.09s), 45 auxiliary PASS (1.20s).
 - **Coverage hardening 2026-02-16 (D-116):** 11 test files nuevos cubriendo 11 módulos críticos. 891→1165 unit tests (58 archivos). Coverage global ≥80% en las 4 métricas. Evidencia: `test-reports/junit.xml`.
+- **Auditoria final + branch coverage D-133 (2026-02-17):** 60 tests nuevos en `apiClient-branches.test.ts`. Branch coverage 75.75%→80.21%. Lint warning Ventas.tsx corregido. 9 desalineaciones documentales remediadas. 1165→1225 unit tests (59 archivos).
 
 ## 4) Mega Plan (T01..T10)
 **Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).

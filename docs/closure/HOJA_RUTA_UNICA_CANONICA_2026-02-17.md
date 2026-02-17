@@ -1,7 +1,7 @@
 # HOJA DE RUTA UNICA CANONICA — Camino a Produccion 100%
 
 **Fecha:** 2026-02-17
-**Estado base:** Score operativo 92/100. Todos los P0 cerrados. Deploy D-127 completado.
+**Estado base:** Score operativo 92/100. Todos los P0 cerrados. Deploy D-132 completado (43/43 migrations, api-proveedor v19, api-minimarket v27).
 **Fuentes consolidadas:**
 - `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md` (VULN-001..008)
 - `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/MATRIZ_CONTRASTE_PREPROD_VS_OBJETIVO.md` (18 ejes)
@@ -21,14 +21,14 @@ Cerrar todos los ejes NO_ALINEADO de la matriz de contraste y resolver las VULNs
 | # | Tarea | Severidad | Gate | DoD verificable | Dependencia |
 |---|---|---|---|---|---|
 | 1 | ~~Corregir `deploy.sh` (VULN-001)~~ | CRITICO | G13 | `grep "db reset --linked" deploy.sh` retorna 0 resultados | Ninguna. **CERRADO D-128** |
-| 2 | Enforcement de metodo HTTP en `api-proveedor` (Eje 5) | CRITICO | G3 | Cada endpoint responde 405 a metodos no permitidos | Ninguna |
-| 3 | Sincronizar OpenAPI `api-proveedor` con runtime (Eje 4) | CRITICO | G2 | `spec_only=[]`, `runtime_only=[]` en script de contraste | Depende de #2 |
+| 2 | ~~Enforcement de metodo HTTP en `api-proveedor` (Eje 5)~~ | CRITICO | G3 | Cada endpoint responde 405 a metodos no permitidos | Ninguna. **CERRADO D-129** |
+| 3 | ~~Sincronizar OpenAPI `api-proveedor` con runtime (Eje 4)~~ | CRITICO | G2 | `spec_only=[]`, `runtime_only=[]` en script de contraste | Depende de #2. **CERRADO D-129** |
 | 4 | Quality gates de integracion reproducibles (Eje 12) | CRITICO | G6 | `npm run test:integration` PASS con `.env.test` configurado | Owner: proveer `.env.test` |
-| 5 | Recepcion OC transaccional con lock (VULN-003) | ALTO | G3 | SP `sp_recepcionar_orden` con `FOR UPDATE` + test concurrente | Ninguna |
-| 6 | Pago de pedido atomico (VULN-004) | ALTO | G3 | SP `sp_actualizar_pago_pedido` con lock + test | Ninguna |
-| 7 | Health checks reales con probes (VULN-007) | MEDIO | G8 | `checkExternalDependencies()` hace fetch real con timeout | Ninguna |
-| 8 | Idempotencia en sincronizacion scraper (VULN-005 residual) | MEDIO | G3 | Retry por `request_id`, deduplicacion server-side | Ninguna |
-| 9 | Timeouts estandarizados en api-proveedor (VULN-006 residual) | MEDIO | G3 | Todos los handlers usan `fetchWithTimeout` | Depende de #8 |
+| 5 | ~~Recepcion OC transaccional con lock (VULN-003)~~ | ALTO | G3 | SP `sp_movimiento_inventario` con `FOR UPDATE` + test concurrente | Ninguna. **CERRADO D-129** |
+| 6 | ~~Pago de pedido atomico (VULN-004)~~ | ALTO | G3 | SP `sp_actualizar_pago_pedido` con lock + test | Ninguna. **CERRADO D-129** |
+| 7 | ~~Health checks reales con probes (VULN-007)~~ | MEDIO | G8 | `checkExternalDependencies()` hace fetch real con timeout | Ninguna. **CERRADO D-131** |
+| 8 | ~~Idempotencia en sincronizacion scraper (VULN-005 residual)~~ | MEDIO | G3 | Retry por `request_id`, deduplicacion server-side | Ninguna. **CERRADO D-131** |
+| 9 | ~~Timeouts estandarizados en api-proveedor (VULN-006 residual)~~ | MEDIO | G3 | Todos los handlers usan `fetchWithTimeout` | Depende de #8. **CERRADO D-131** |
 | 10 | Activar `NOTIFICATIONS_MODE=real` en produccion | MEDIO | G4 | Smoke test con `cron-notifications` retorna 200 (no 503) | Owner: configurar secrets |
 
 ---
@@ -49,7 +49,7 @@ Cerrar todos los ejes NO_ALINEADO de la matriz de contraste y resolver las VULNs
 - [x] #5: SP `sp_movimiento_inventario` con FOR UPDATE (VULN-003)
 - [x] #6: SP `sp_actualizar_pago_pedido` con lock atomico (VULN-004)
 
-### Fase C — Observabilidad + Calidad (COMPLETADA parcial D-131)
+### Fase C — Observabilidad + Calidad (3/4 completados D-131. Pendiente: #4 .env.test owner)
 - [ ] #4: Quality gates integracion (requiere `.env.test` del owner)
 - [x] #7: Health checks reales (VULN-007 cerrada D-131)
 - [x] #8: Idempotencia scraper (VULN-005 cerrada D-131)

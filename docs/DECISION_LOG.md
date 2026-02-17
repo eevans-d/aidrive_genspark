@@ -141,6 +141,8 @@
 
 | D-132 | **Deploy D-132 + drift documental + matriz de contraste actualizada** — (1) Migracion `20260217200000_vuln003_004_concurrency_locks.sql` aplicada en remoto (`supabase db push`). 43/43 synced. (2) `api-proveedor v19` desplegado (fetchWithTimeout, Idempotency-Key, health checks reales). (3) `api-minimarket v27` desplegado (handler pedidos con SP). (4) Drift documental DR-1..DR-5 verificados como cerrados. VALIDACION actualizada: coherencia OK, formula actualizada. (5) MATRIZ_CONTRASTE: ejes 3,4,5,6,7,8,11,14,16 movidos a ALINEADO (13/18 total). (6) Schema doc actualizado: 43/43, 5 SPs. (7) Reporte preprod: addendum de hallazgos historicos superados (8 items). | Completada | 2026-02-17 | Evidencia: `supabase migration list --linked`, `supabase functions list`. MATRIZ: 13 ALINEADO, 4 PARCIAL, 1 NO_ALINEADO. |
 
+| D-133 | **Auditoria final + remediacion documental + branch coverage** — (1) Auditoria READ-ONLY: 8/8 VULNs verificadas CERRADO con evidencia file:line. 9 desalineaciones documentales encontradas. (2) MAPEO doc actualizado: VULN-005/006/007 → CERRADO (D-131), resumen 8/8, tabla impacto corregida. (3) MATRIZ eje 18: conteo corregido 13→12 ALINEADO, 5 PARCIAL. (4) HOJA_RUTA: deploy ref D-127→D-132, Top 10 items #2-9 tachados, Fase C header actualizado. (5) VALIDACION: coherencia 43/42→43/43, D-130 conteo 6/8→5/8 (historico), deploy pendiente→CERRADO. (6) Ventas.tsx lint fix: `ventas` memoizado con `useMemo`. (7) Branch coverage 75.75%→80.21%: 60 tests nuevos en `apiClient-branches.test.ts`. | Completada | 2026-02-17 | Tests: 1225/1225 PASS (59 files). Coverage: 88.50% stmts, 80.21% branch, 92.28% funcs, 89.86% lines. Lint: 0 errors, 0 warnings. Build: PASS. |
+
 ---
 
 ### Acciones owner requeridas

@@ -73,7 +73,7 @@ export default function Ventas() {
     staleTime: 1000 * 60 * 2,
   })
 
-  const ventas: Venta[] = (data as Venta[]) || []
+  const ventas = useMemo(() => (data as Venta[]) || [], [data])
 
   const resumen = useMemo(() => {
     const totalVendido = ventas.reduce((sum, v) => sum + (v.monto_total || 0), 0)

@@ -83,7 +83,7 @@
 | `ESTADO_ACTUAL.md` ↔ `DECISION_LOG.md` | **OK** | DECISION_LOG tiene D-128+D-129+D-131 completos. ESTADO_ACTUAL tiene addenda para D-128, D-129, D-131. |
 | `DECISION_LOG.md` ↔ `OPEN_ISSUES.md` | **OK** | Ambos referencian auditoria SRE y roadmap. |
 | `README_CANONICO.md` ↔ `OPEN_ISSUES.md` | **OK** | Indice canonico incluye SRE report y roadmap. |
-| `CONTINUIDAD_SESIONES.md` ↔ `DECISION_LOG.md` | **OK** | Sesiones D-128, D-129, D-130, D-131 registradas. Migration count actualizado a 43/42. |
+| `CONTINUIDAD_SESIONES.md` ↔ `DECISION_LOG.md` | **OK** | Sesiones D-128, D-129, D-130, D-131, D-132 registradas. Migration count actualizado a 43/43 (synced D-132). |
 
 ---
 
@@ -91,7 +91,7 @@
 
 | ID | Decision | Estado |
 |----|----------|--------|
-| D-130 | **Validacion post-remediacion ejecutada**: 6/8 VULNs cerradas, 2 parciales, 1 abierta. Quality gates principales PASS. Drift documental menor (5 items). Veredicto: PARCIAL (VULNs pendientes de Fase C). | Completada |
+| D-130 | **Validacion post-remediacion ejecutada**: 5/8 VULNs cerradas al momento de D-130 (001,002,003,004,008). Las 3 restantes (005,006,007) cerradas en D-131. Veredicto actualizado: **8/8 CERRADO**. Quality gates principales PASS. Drift documental menor (5 items, corregidos D-131). | Completada |
 
 ---
 
@@ -105,7 +105,7 @@
 3. ~~Fase C item #8: Idempotencia scraper (VULN-005)~~ CERRADO (D-131)
 4. ~~Fase C item #9: Timeouts api-proveedor (VULN-006)~~ CERRADO (D-131)
 5. **Fase C item #4:** Quality gates integracion — requiere `.env.test` del owner. PENDIENTE (owner).
-6. **Deploy pendiente:** Migracion `20260217200000` + edge functions `api-proveedor` a remoto.
+6. ~~**Deploy pendiente:** Migracion `20260217200000` + edge functions `api-proveedor` a remoto.~~ **CERRADO (D-132):** 43/43 synced, api-proveedor v19, api-minimarket v27.
 
 ---
 
