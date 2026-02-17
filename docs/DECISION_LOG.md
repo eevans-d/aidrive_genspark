@@ -143,6 +143,8 @@
 
 | D-133 | **Auditoria final + remediacion documental + branch coverage** — (1) Auditoria READ-ONLY: 8/8 VULNs verificadas CERRADO con evidencia file:line. 9 desalineaciones documentales encontradas. (2) MAPEO doc actualizado: VULN-005/006/007 → CERRADO (D-131), resumen 8/8, tabla impacto corregida. (3) MATRIZ eje 18: conteo corregido 13→12 ALINEADO, 5 PARCIAL. (4) HOJA_RUTA: deploy ref D-127→D-132, Top 10 items #2-9 tachados, Fase C header actualizado. (5) VALIDACION: coherencia 43/42→43/43, D-130 conteo 6/8→5/8 (historico), deploy pendiente→CERRADO. (6) Ventas.tsx lint fix: `ventas` memoizado con `useMemo`. (7) Branch coverage 75.75%→80.21%: 60 tests nuevos en `apiClient-branches.test.ts`. | Completada | 2026-02-17 | Tests: 1225/1225 PASS (59 files). Coverage: 88.50% stmts, 80.21% branch, 92.28% funcs, 89.86% lines. Lint: 0 errors, 0 warnings. Build: PASS. |
 
+| D-134 | **Revalidacion post-remediacion (cierre tecnico-documental)** — Auditoria de cierre completa: (1) 8/8 VULNs revalidadas con lectura directa de codigo fuente y evidencia file:line actualizada. (2) Runtime verificado: 43/43 migraciones, 13 functions ACTIVE. (3) Quality gates ejecutados: 1225 unit PASS, 175 frontend PASS, coverage 80.21% branch, lint 0 warnings, build OK, doc-links 0 broken, integration PASS, E2E BLOCKED (infra). (4) Drift textual: 0 items vigentes (7 matches son registros historicos con contexto temporal). (5) Coherencia canonica: 7 pares de docs verificados OK. (6) VALIDACION_POST_REMEDIACION actualizada con veredicto APROBADO. | Completada | 2026-02-17 | Evidencia: `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (revalidacion D-134). |
+
 ---
 
 ### Acciones owner requeridas
