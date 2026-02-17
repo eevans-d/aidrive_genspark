@@ -43,12 +43,11 @@ Cerrar todos los ejes NO_ALINEADO de la matriz de contraste y resolver las VULNs
 - [x] Objetivo final consolidado (unico documento maestro)
 - [x] Mapeo VULN-SRE vs Matriz creado
 
-### Fase B — Safety/Infra (proxima sesion)
-- [ ] #2: Enforcement metodo HTTP en api-proveedor
-- [ ] #3: Sync OpenAPI proveedor
-- [ ] #5: SP `sp_recepcionar_orden` con lock
-- [ ] #6: SP `sp_actualizar_pago_pedido` con lock
-- Rollback: revertir migracion SQL si falla / rollback de PR
+### Fase B — Safety/Infra (D-129, COMPLETADA)
+- [x] #2: Enforcement metodo HTTP en api-proveedor (405 para metodos invalidos)
+- [x] #3: Sync OpenAPI proveedor (14 mismatches corregidos, 3 endpoints fantasma eliminados)
+- [x] #5: SP `sp_movimiento_inventario` con FOR UPDATE (VULN-003)
+- [x] #6: SP `sp_actualizar_pago_pedido` con lock atomico (VULN-004)
 
 ### Fase C — Observabilidad + Calidad (siguiente)
 - [ ] #4: Quality gates integracion (requiere `.env.test` del owner)
