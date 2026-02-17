@@ -70,13 +70,13 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - ANON_KEY y SERVICE_ROLE_KEY documentadas (redactadas) en `docs/OBTENER_SECRETOS.md` (valores reales en Dashboard/.env.test)
 - [x] **Auditoría RLS completa** ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
   - **Resultado:** Todas las tablas P0 protegidas
-  - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md) + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
+  - Evidencia: [`docs/AUDITORIA_RLS_CHECKLIST.md`](AUDITORIA_RLS_CHECKLIST.md) + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` [removido en D-109; ver historial git]
   - Script: [`scripts/rls_audit.sql`](../scripts/rls_audit.sql)
   - Tablas P0 verificadas: `productos`, `stock_deposito`, `movimientos_deposito`, `precios_historicos`, `proveedores`, `personal`, `categorias`
 - [x] **Usuarios de prueba** ✅ COMPLETADO 2026-01-23
   - 3 usuarios en Supabase Auth: admin, deposito, ventas
   - 3 registros en tabla `personal` con roles correspondientes
-  - Archivos: `.env.test`, `supabase/seed/test-users.sql`, `minimarket-system/e2e/helpers/auth.ts`
+  - Archivos: `.env.test`, `supabase/seed/test-users.sql` [no versionado; usuarios creados en Auth], `minimarket-system/e2e/helpers/auth.ts`
   - Nota: si se regenera `TEST_PASSWORD`, se debe resetear en Auth y revalidar.
 - [x] **E2E con auth real** ✅ COMPLETADO 2026-01-23
   - Spec `minimarket-system/e2e/auth.real.spec.ts`: 10 tests definidos (2 skip)
@@ -91,7 +91,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
   - Comando: `supabase db push`
 - [x] WS3.2 Rollback documentado → `docs/DEPLOYMENT_GUIDE.md` (2026-01-23).
 - [x] WS7.1 Auditoría RLS P0 ✅ COMPLETADO 2026-01-23 (revalidada 2026-01-31)
-  - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`
+  - Evidencia: `docs/AUDITORIA_RLS_CHECKLIST.md` + `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` [removido en D-109; ver historial git]
 - [x] WS7.2 Escaneo dependencias ✅ 2026-01-23
   - `npm audit` documentado en `docs/DECISION_LOG.md` (D-026)
   - Vulnerabilidades conocidas en dependencias dev (rollup, vite)
@@ -219,7 +219,7 @@ Pendientes críticos (re‑abiertos por COMET 2026-02-02):
 - [x] WS8.3 Reporte final de análisis actualizado → `docs/REPORTE_ANALISIS_PROYECTO.md` (2026-01-22).
 - [x] WS8.4 Backlog priorizado actualizado → `docs/BACKLOG_PRIORIZADO.md`.
 - [x] C4 Handoff/SLA/SLO/IR disponibles → `docs/C4_HANDOFF_MINIMARKET_TEC.md`, `docs/C4_SLA_SLO_MINIMARKET_TEC.md`, `docs/C4_INCIDENT_RESPONSE_MINIMARKET_TEC.md`.
-- [x] Rollback de create_stock_aggregations probado en Staging (2026-01-30). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+- [x] Rollback de create_stock_aggregations probado en Staging (2026-01-30). Ver `docs/ROLLBACK_EVIDENCE_2026-01-29.md` [removido en D-109; ver historial git].
 ---
 
 ## 📊 Métricas Finales

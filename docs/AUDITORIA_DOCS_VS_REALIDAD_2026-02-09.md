@@ -5,6 +5,8 @@
 **Metodología:** Comparación directa entre afirmaciones en docs y evidencia en filesystem/código  
 **Autor:** Auditoría automatizada (GitHub Copilot Coding Agent)
 
+> **Nota D-109:** Muchas de las rutas referenciadas en esta auditoría fueron removidas en la limpieza documental D-109 (2026-02-15). Ver historial git para trazabilidad.
+
 > Nota (actualización 2026-02-10): varias brechas detectadas aquí fueron resueltas posteriormente (CORS local, limpieza de paths, centralización de métricas, inventario de endpoints, etc.).  
 > Para conteos actuales, usar `docs/METRICS.md` como fuente única.
 

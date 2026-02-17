@@ -4,7 +4,7 @@
 
 **Última actualización:** 2026-02-01  
 **Estado:** ✅ Revalidado (última ejecución 2026-01-27: 7/7 PASS, 22.7s; spec actual 10 tests, 2 skip)  
-**Plan detallado:** ver `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`)
+**Plan detallado:** ver `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md` [removido en D-109])
 
 ---
 

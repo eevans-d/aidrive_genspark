@@ -122,6 +122,11 @@
 | D-115 | **Auditoría intensiva post-rewrite: cross-reference source↔test** — Lectura completa de 12+ módulos fuente cruzada con 7 test files. 1 corrección (getRandomDelay lower bound), 5 mejoras (stats shape, auth fallback, case-insensitive roles, error status inference) | Completada | 2026-02-16 | 888→891 unit tests. Todos PASS: 47 files 891 unit + 3 files 45 auxiliary (4 skipped por credenciales). |
 | D-116 | **Coverage global ≥80%: 11 test files nuevos + exclusión mocks** — Cobertura real subida de 64.37% stmts / 56.87% branch a 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines. Módulos cubiertos: `helpers/auth.ts`, `helpers/supabase.ts`, `_shared/circuit-breaker.ts`, `_shared/errors.ts`, `_shared/rate-limit.ts`, `scraper/anti-detection.ts`, `scraper/storage.ts`, `scraper/types.ts`, `handlers/ventas.ts`, `handlers/ofertas.ts`, `api-proveedor/utils/auth.ts`. Exclusión de `minimarket-system/src/mocks/**` de coverage. | Completada | 2026-02-16 | 891→1165 unit tests (58 archivos). Todos PASS. Auxiliary 45 PASS + 4 skipped. Frontend lint PASS, build PASS. |
 | D-117 | **DX fixes: Proveedores.test.tsx + Pedidos.test.tsx + lint-staged eslint** — `Proveedores.test.tsx` envuelto con `QueryClientProvider` + mocks faltantes. `Pedidos.test.tsx` mock de `sonner` corregido (`Toaster` export). `lint-staged` apunta a `minimarket-system/node_modules/.bin/eslint` (antes fallaba por bin no encontrado). | Completada | 2026-02-16 | Frontend: 171/171 PASS (30 archivos). Root: 1165/1165 PASS. |
+| D-118 | **Twilio SMS no se configura en ningún entorno** — Canal `sms_critical` tiene `isActive: false` hardcoded. No existe implementación de envío real. Variables `TWILIO_*` en `.env.example` son placeholder sin efecto. | Aprobada | 2026-02-16 | Acción futura: si se implementa SMS, cambiar `isActive` a `!!Deno.env.get('TWILIO_ACCOUNT_SID')`. |
+| D-119 | **WEBHOOK_URL es opcional en todos los entornos** — Canal genérico auto-deshabilitado si variable vacía. Configurar solo si existe endpoint receptor (n8n, Zapier, sistema interno). | Aprobada | 2026-02-16 | Sin impacto operativo. |
+| D-120 | **SLACK_WEBHOOK_URL recomendado en staging/production** — Canal más práctico para alertas de equipo en tiempo real. Sin él, alertas se registran solo en base de datos. | Aprobada | 2026-02-16 | Recomendación: crear webhook Slack → canal `#minimarket-alertas`. |
+| D-121 | **Matriz de canales opcionales por entorno documentada** — Análisis completo de 4 canales (email, webhook, slack, sms) con estado de implementación, auto-disable, rate limits y recomendaciones por entorno (dev/staging/prod). | Completada | 2026-02-16 | Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md`. |
+| D-122 | **Limpieza de 88 referencias stale en docs/** — 13 rutas a archivos removidos en D-109 anotadas con `[removido en D-109]` en 14 archivos de docs. Incluye: `PLAN_EJECUCION_PREMORTEM.md`, `HOJA_RUTA_MADRE_2026-01-31.md`, `AUDITORIA_RLS_EJECUTADA_2026-01-31.md`, `ROLLBACK_EVIDENCE_2026-01-29.md`, `PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`, `EXECUTION_LOG_*`, `supabase/seed/test-users.sql`, `.agent/sessions/current/EVIDENCE.md`. | Completada | 2026-02-16 | Issue D-113 cerrado. |
 
 ---
 
@@ -135,7 +140,7 @@
 | P2 | (Higiene) Revocar API key anterior de SendGrid si aún está activa (post-rotación) | `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md` |
 | P2 | Monitoreo operativo post-release | `docs/OPERATIONS_RUNBOOK.md` |
 | P2 | Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y dejar evidencia en `docs/closure/` | `docs/closure/OPEN_ISSUES.md` |
-| P2 | Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) sin exponer valores | `docs/closure/ENV_AUDIT_2026-02-16_045120.md` |
+| P2 | ~~Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`)~~ | ✅ CERRADO (D-121): `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` |
 
 ### Issues abiertos técnicos
 

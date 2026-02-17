@@ -10,7 +10,7 @@
 
 1. `docs/ESTADO_ACTUAL.md`  
    Estado real + checklist de “próximas 20 tareas” (priorizado).
-2. `docs/PLAN_EJECUCION_PREMORTEM.md`  
+2. `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109]
    Workstreams WS1–WS10, dependencias, riesgos y criterios.
 3. `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md`  
    Preflight + evidencias + bloqueos (incluye notas de conectividad DB).
@@ -194,7 +194,7 @@ Registro:
 ### 7/20 (P1): Definir store compartido (rate limit / circuit breaker)
 
 Touchpoints:
-- `docs/PLAN_EJECUCION_PREMORTEM.md` (WS3)
+- `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109] (WS3)
 - `docs/DECISION_LOG.md`
 
 Pasos:
@@ -211,7 +211,7 @@ Registro:
 
 Touchpoints:
 - `supabase/functions/_shared/rate-limit.ts` (o nuevo módulo compartido)
-- `docs/PLAN_EJECUCION_PREMORTEM.md`
+- `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109]
 
 Pasos:
 1. Implementar store compartido según decisión 7/20.
@@ -242,7 +242,7 @@ Registro:
 
 Touchpoints:
 - `supabase/functions/api-minimarket/helpers/auth.ts`
-- `docs/PLAN_EJECUCION_PREMORTEM.md` (WS4)
+- `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109] (WS4)
 
 Pasos:
 1. Definir enfoque: cache validación `/auth/v1/user` o verificación local JWT.

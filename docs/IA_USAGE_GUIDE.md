@@ -41,8 +41,8 @@ Esta guía está diseñada para **agentes de IA** (GitHub Copilot, ChatGPT, Clau
 ### Estado Actual (fuente de verdad)
 Ver `docs/ESTADO_ACTUAL.md` para métricas, entorno y pendientes actualizados.  
 Plan vigente: `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (post-plan).  
-Plan maestro (histórico): `docs/HOJA_RUTA_MADRE_2026-01-31.md`.  
-Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md`.
+Plan maestro (histórico): `docs/HOJA_RUTA_MADRE_2026-01-31.md` [removido en D-109].  
+Plan operativo específico (WARN residual Advisor): `docs/PLAN_MITIGACION_WARN_STAGING_2026-01-31.md` [removido en D-109].
 
 ### Contexto Importante
 - Proyecto en fase de **cierre avanzado** (RLS + Advisor mitigado en PROD)
@@ -515,8 +515,8 @@ npm run test:unit           # En raíz
 1. **SIEMPRE leer documentación existente primero**
    - `docs/ESTADO_ACTUAL.md` - Estado del proyecto (fuente de verdad)
    - `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` - Plan vigente (post-plan)
-   - `docs/HOJA_RUTA_MADRE_2026-01-31.md` - Plan maestro (histórico)
-   - `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` - Evidencia RLS + Advisor
+   - `docs/HOJA_RUTA_MADRE_2026-01-31.md` - Plan maestro (histórico) [removido en D-109]
+   - `docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` - Evidencia RLS + Advisor [removido en D-109]
    - `docs/ARCHITECTURE_DOCUMENTATION.md` - Arquitectura
    - `docs/API_README.md` - Endpoints disponibles
 
@@ -844,7 +844,7 @@ En **GitHub Settings → Secrets and variables → Actions**:
 
 1. **ESTADO_ACTUAL.md** - ⭐ Estado del proyecto, métricas, pendientes
 2. **HOJA_RUTA_ACTUALIZADA_2026-02-08.md** - Plan vigente (post-plan)
-3. **HOJA_RUTA_MADRE_2026-01-31.md** - Plan maestro (histórico)
+3. **HOJA_RUTA_MADRE_2026-01-31.md** - Plan maestro (histórico) [removido en D-109]
 4. **METRICS.md** - Conteos verificables (fuente única)
 5. **ARCHITECTURE_DOCUMENTATION.md** - Arquitectura técnica completa
 6. **API_README.md** - Todos los endpoints disponibles

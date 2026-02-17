@@ -4,7 +4,7 @@
 
 **Fecha:** 2026-02-08  
 **Baseline verificado:** branch `chore/closure-prep-20260202` (registrar el commit exacto con `git log -1 --oneline`; la implementación de Fases 0–6 + alineación remoto + refresh MVs quedó en `6584a1b`).  
-**Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`, `docs/closure/EXECUTION_LOG_2026-02-07.md`, `docs/PLAN_EJECUCION_PREMORTEM.md`.
+**Fuentes de verdad:** `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/PLANIFICACION_DEFINITIVA_MEJORAS_2026-02-07.md`, `docs/closure/EXECUTION_LOG_2026-02-07.md` [removido en D-109], `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109].
 
 ## 0) Objetivo
 Dejar el sistema **estable para producción** y cerrar los **gaps funcionales de UX** detectados, sin reimplementar lo existente.
@@ -212,7 +212,7 @@ Pendientes (no bloqueantes, recomendados pre-produccion):
 - [ ] Actualizar `docs/closure/EXECUTION_LOG_*.md` (registro auditable).
 
 ## 5) Mega planificación (secuencial, recomendada)
-1. ~~Fase 0 (preflight y baseline)~~: COMPLETADO (baseline en `docs/closure/EXECUTION_LOG_2026-02-08_ROADMAP.md`).
+1. ~~Fase 0 (preflight y baseline)~~: COMPLETADO (baseline en `docs/closure/EXECUTION_LOG_2026-02-08_ROADMAP.md` [removido en D-109]).
 2. ~~Fase 1 (hardening P0): A3 (auth resiliente) y A1 (rate limit compartido)~~: COMPLETADO (PR #33).
 3. ~~Fase 2 (hardening P1): A2 (breaker semi-persistente), A5 (hardening api-proveedor)~~: COMPLETADO (PR #33). A4 (pg_cron) pendiente verificacion.
 4. ~~Fase 3 (UX P1): B1, B2, B3, B4~~: COMPLETADO (PR #33, commit dc57704).

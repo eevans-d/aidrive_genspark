@@ -19,7 +19,7 @@
 
 - Migraciones verificadas: conteo repo actual 12 archivos (aplicación en entornos requiere verificación).
 - Rollback documentado en `docs/DEPLOYMENT_GUIDE.md`.
-- **Completado:** rollback real en staging (OPS-SMART-1, 2026-01-30). Checklist: `docs/archive/ROLLBACK_DRILL_STAGING.md`. Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md`.
+- **Completado:** rollback real en staging (OPS-SMART-1, 2026-01-30). Checklist: `docs/archive/ROLLBACK_DRILL_STAGING.md`. Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md` [removido en D-109].
 
 ---
 
@@ -46,7 +46,7 @@
 |---|---|---|---|
 | E3-T1 | Validar migraciones recientes | ✅ | `docs/CHECKLIST_CIERRE.md` |
 | E3-T2 | Documentar rollback | ✅ | `docs/DEPLOYMENT_GUIDE.md` |
-| E3-T3 | Probar rollback en staging | ✅ | Ejecutado 2026-01-30 (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md` |
+| E3-T3 | Probar rollback en staging | ✅ | Ejecutado 2026-01-30 (SQL manual). Evidencia: `docs/ROLLBACK_EVIDENCE_2026-01-29.md` [removido en D-109] |
 
 ---
 

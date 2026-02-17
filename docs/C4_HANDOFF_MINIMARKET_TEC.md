@@ -11,7 +11,7 @@
 
 Fuente de verdad y ruta de ejecución:
 - `docs/ESTADO_ACTUAL.md` (estado real + checklist próximas 20 tareas).
-- `docs/PLAN_EJECUCION_PREMORTEM.md` (workstreams, dependencias, riesgos).
+- `docs/PLAN_EJECUCION_PREMORTEM.md` [removido en D-109] (workstreams, dependencias, riesgos).
 - `docs/CHECKLIST_PREFLIGHT_PREMORTEM.md` (preflight + evidencias + bloqueos).
 - `docs/closure/OPEN_ISSUES.md` (issues activos y severidad).
 

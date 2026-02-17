@@ -144,7 +144,7 @@ Para decisiones actuales, esta hoja es la fuente de verdad de estado; el detalle
   - Clasificacion adicional de documentos activos vs historicos (marcadores `[ACTIVO_VERIFICADO: 2026-02-13]` y `[DEPRECADO: 2026-02-13]`).
 - Resultado de verificación final:
   - Links markdown rotos: `0` (incluyendo `docs/closure/`).
-  - Referencias de rutas inexistentes en backticks: `0`.
+  - Referencias de rutas inexistentes en backticks: 88 encontradas (D-113), anotadas con `[removido en D-109]` (D-122). Sin rutas opacas residuales.
   - Quality gates recheck: `PASS` (`test-reports/quality-gates_20260213-061657.log`).
 
 ## 11) Rigurosidad de Tests (Hardening 2026-02-13)

@@ -8,7 +8,7 @@
 |---|---|
 | Estado global | APROBADO (P0 cerrados y verificados en remoto; ver OPEN_ISSUES) |
 | Score operativo | 92/100 |
-| Migraciones | 40/40 (local=remoto) |
+| Migraciones | 41/41 (local=remoto) |
 | Edge Functions activas | 13 |
 | Skills locales | 22 |
 | Workflows documentados | 12 |
@@ -53,4 +53,4 @@
 - Regla: usar el skill correspondiente al tipo de tarea; en cambios documentales aplicar `DocuGuard`.
 
 ## Nota de Documentos Legacy
-`docs/HOJA_RUTA_MADRE_2026-01-31.md`, `docs/mpc/*`, `docs/CHECKLIST_CIERRE.md`, `docs/IA_USAGE_GUIDE.md` y similares son artefactos historicos. No usarlos como fuente primaria para estado actual.
+`docs/HOJA_RUTA_MADRE_2026-01-31.md` [removido en D-109], `docs/mpc/*`, `docs/CHECKLIST_CIERRE.md`, `docs/IA_USAGE_GUIDE.md` y similares son artefactos historicos. No usarlos como fuente primaria para estado actual.

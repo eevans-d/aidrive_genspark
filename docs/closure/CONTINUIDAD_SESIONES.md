@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-16T06:30:00Z
+**Ultima actualizacion:** 2026-02-16T08:00:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -53,7 +53,7 @@
 | 1 | Configurar `SUPABASE_DB_URL` para backup automatizado (Gate 15) | P1 | PENDIENTE (owner) | Config externa | Cargar secret en GitHub y ejecutar workflow (`docs/closure/EVIDENCIA_GATE15_2026-02-12.md`) |
 | 2 | Revocar API key anterior de SendGrid (si sigue activa) | P2 | RECOMENDADO (owner) | Operacion externa | Ejecutar revocacion en SendGrid y dejar evidencia sin valores |
 | 3 | Ejecutar smoke real periodico de seguridad (`RUN_REAL_TESTS=true`) | P2 | RECOMENDADO | QA/Operacion | Programar corrida nightly/pre-release y anexar evidencia en `docs/closure/` |
-| 4 | Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) | P2 | ABIERTO | Config/operacion | Decidir por entorno y documentar en `OPEN_ISSUES` + evidencia env audit |
+| 4 | ~~Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`)~~ | P2 | ✅ CERRADO (D-121) | Config/operacion | Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` |
 | 5 | ~~Deuda tecnica: `Proveedores.test.tsx` sin `QueryClientProvider`~~ | P2 | ✅ CERRADO (D-117) | Frontend tests | — |
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
@@ -70,6 +70,7 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-16 | Matriz canales opcionales por entorno (D-121) | COMPLETADA | `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` |
 | 2026-02-16 | Coverage global ≥80% (11 test files, 274 tests nuevos) | COMPLETADA | D-116, `test-reports/junit.xml` |
 | 2026-02-16 | Cierre P2 remoto + sync documental/env | COMPLETADA | `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`, `docs/closure/ENV_AUDIT_2026-02-16_045120.md` |
 | 2026-02-15 | Auditoria forense + remediaciones + limpieza | COMPLETADA | `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`, D-108/D-109 |

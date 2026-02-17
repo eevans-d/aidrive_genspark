@@ -33,7 +33,7 @@
 - `session-end` + `session-start` ejecutados en caliente.
 - Artefactos verificados:
   - `.agent/sessions/current/BRIEFING.md`
-  - `.agent/sessions/current/EVIDENCE.md`
+  - `.agent/sessions/current/EVIDENCE.md` [no persiste entre sesiones]
   - `.agent/sessions/current/SESSION_REPORT.md`
   - Nota: `docs/closure/BASELINE_LOG_*.md` fue removido en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 

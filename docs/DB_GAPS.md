@@ -58,4 +58,4 @@ Los hallazgos P0/P1/P2 mencionados anteriormente fueron resueltos con las siguie
 - `20260131000000_rls_role_based_policies_v2.sql`
 - `20260131020000_security_advisor_mitigations.sql`
 
-**Nota:** El documento `REPORTE_REVISION_DB.md` mencionado originalmente nunca fue creado; los hallazgos se documentaron directamente en las evidencias de auditoría RLS (`docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md`).
+**Nota:** El documento `REPORTE_REVISION_DB.md` mencionado originalmente nunca fue creado; los hallazgos se documentaron directamente en las evidencias de auditoría RLS (`docs/AUDITORIA_RLS_EJECUTADA_2026-01-31.md` [removido en D-109; ver historial git]).

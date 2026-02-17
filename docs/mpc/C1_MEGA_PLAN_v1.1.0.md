@@ -61,7 +61,7 @@
 | M4 Gateway & APIs | Robustez operativa, errores y timeouts | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E4_v1.1.0.md` |
 | M5 Frontend & UX/Data | React Query estable y UX coherente | Mantenimiento | P1 | N/A | `C2_SUBPLAN_E5_v1.1.0.md` |
 | M6 Testing & QA | Suites unit/integration/e2e + evidencia | Parcial | P1 | Credenciales | `C2_SUBPLAN_E2_v1.1.0.md` |
-| M7 Ops/Deployment | Rollback probado y runbooks operativos | Completado/Mantenimiento | P1 | Staging | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md`, `docs/ROLLBACK_EVIDENCE_2026-01-29.md` |
+| M7 Ops/Deployment | Rollback probado y runbooks operativos | Completado/Mantenimiento | P1 | Staging | `C2_SUBPLAN_E3_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md`, `docs/ROLLBACK_EVIDENCE_2026-01-29.md` [removido en D-109] |
 | M8 Seguridad & Compliance | Rotación de secretos y scanning controlado | Completado/Mantenimiento | P1 | Accesos | `C2_SUBPLAN_E4_v1.1.0.md`, `C2_SUBPLAN_E6_v1.1.0.md`, `C2_SUBPLAN_E9_v1.1.0.md` |
 | M9 Ingesta & Automatizaciones | Scraper/cron resilientes con métricas | Mantenimiento | P2 | Datos reales | `C2_SUBPLAN_E8_v1.1.0.md` |
 | M10 Gestion de secretos y accesos | Inventario, validacion y rotacion de secretos | Completado/Mantenimiento | P1 | Accesos | `C2_SUBPLAN_E9_v1.1.0.md` |
