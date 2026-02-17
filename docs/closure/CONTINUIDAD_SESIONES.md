@@ -74,8 +74,9 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Unificacion canonica + remediacion VULN-001 (D-128) | COMPLETADA | `docs/closure/EVIDENCIA_UNIFICACION_CANONICA_2026-02-17.md` |
 | 2026-02-17 | Deploy hardening D-126 (migración + 5 edge functions) | COMPLETADA | `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md` |
-| 2026-02-17 | Pre-Mortem Hardening D-126 (17 fixes criticos) | COMPLETADA | D-126, `.claude/plans/smooth-shimmying-canyon.md` |
+| 2026-02-17 | Pre-Mortem Hardening D-126 (17 fixes criticos) | COMPLETADA | D-126 en `docs/DECISION_LOG.md` |
 | 2026-02-16 | Matriz canales opcionales por entorno (D-121) | COMPLETADA | `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` |
 | 2026-02-16 | Coverage global ≥80% (11 test files, 274 tests nuevos) | COMPLETADA | D-116, `test-reports/junit.xml` |
 | 2026-02-16 | Cierre P2 remoto + sync documental/env | COMPLETADA | `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`, `docs/closure/ENV_AUDIT_2026-02-16_045120.md` |

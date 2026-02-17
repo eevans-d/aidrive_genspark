@@ -36,7 +36,7 @@
   - `errorMessageUtils.ts` — Propaga `ApiError.message` cuando `requestId` existe (errores tracked del backend)
   - `usePedidos.ts` — Optimistic updates en `useUpdateItemPreparado` con rollback en `onError`
 - **Tests:** 1165/1165 PASS (58 archivos). Build: CLEAN.
-- **Plan detallado:** `.claude/plans/smooth-shimmying-canyon.md`
+- **Plan detallado:** ver D-126 en `docs/DECISION_LOG.md` (plan original no persistido en filesystem)
 - **Deploy:** Migración + 5 edge functions desplegadas el 2026-02-17. Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`
 
 ## 1) Veredicto Consolidado

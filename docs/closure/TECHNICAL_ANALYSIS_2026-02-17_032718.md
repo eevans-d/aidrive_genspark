@@ -1,3 +1,6 @@
+> [SNAPSHOT PRE-DEPLOY: 2026-02-17] Este documento refleja el estado **antes** del deploy de hardening D-126/D-127.
+> Para estado post-deploy vigente, consultar `docs/ESTADO_ACTUAL.md` y `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`.
+
 # MISIÓN: ANÁLISIS TÉCNICO INTEGRAL DEL PROYECTO
 
 - Fecha (UTC): `2026-02-17 03:27:40`

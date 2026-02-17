@@ -97,12 +97,14 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 ## Notas operativas
 
-- Migraciones: `41/41` local=remoto (actualización 2026-02-16, incluye `20260216040000`).
-- Snapshot remoto actual 2026-02-16: 13 funciones activas; `api-minimarket v26`, `cron-notifications v24`, `notificaciones-tareas v18`, `scraper-maxiconsumo v19`.
+- Migraciones: `42/42` local=remoto (actualización 2026-02-17, incluye `20260217100000`).
+- Snapshot remoto actual 2026-02-17: 13 funciones activas; `api-minimarket v26`, `cron-notifications v25`, `notificaciones-tareas v19`, `scraper-maxiconsumo v20`, `alertas-stock v17`, `reportes-automaticos v17`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
+- Auditoria SRE (2026-02-17): 8 hallazgos (2 CRITICO, 4 ALTO, 2 MEDIO). VULN-001 y VULN-002 cerrados. Ver: `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md`.
+- Hoja de ruta unica: `docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 14/14 en páginas principales; `NotFound.tsx` no aplica).
 - Revalidación RLS 2026-02-13: smoke por rol en PASS (`/clientes`, `/pedidos`) y SQL fina remota en PASS (`60/60`, `0 FAIL`).
 - Gates sesión 2026-02-13 en PASS: `test-reports/quality-gates_20260213-061657.log`.

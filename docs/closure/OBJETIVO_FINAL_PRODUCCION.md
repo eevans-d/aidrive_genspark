@@ -1,6 +1,10 @@
 # OBJETIVO FINAL: SISTEMA MINI MARKET EN PRODUCCION
 
-> **Proposito:** Este documento describe el estado objetivo del proyecto 100% finalizado y operando en produccion. Es la referencia canonica ("Obra de Arte Original") contra la cual comparar el estado actual del sistema.
+> **[SUBORDINADO a `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md`]**
+> Este documento es un complemento operativo detallado. El documento canonico maestro para contraste IA es `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` (D-124).
+> En caso de contradiccion, el paquete `OBRA_OBJETIVO_FINAL_PRODUCCION/` prevalece.
+
+> **Proposito:** Este documento describe el estado objetivo del proyecto 100% finalizado y operando en produccion. Es una referencia operativa detallada con prerequisitos de activacion.
 
 - Fecha de creacion: `2026-02-17`
 - Basado en: auditoria pre-produccion `2026-02-16` + verificacion cruzada `2026-02-17`

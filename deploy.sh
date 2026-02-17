@@ -427,16 +427,27 @@ deploy_to_supabase() {
 }
 
 # Deploy de migraciones
+# IMPORTANTE: staging/production usan `db push` (aplica solo migraciones pendientes).
+# `db reset` solo se permite en dev local sin --linked (D-128).
 deploy_migrations() {
     log "Deploying migraciones..."
-    
+
     if [ -d "supabase/migrations" ]; then
         if command -v supabase &> /dev/null; then
             if [ "$DRY_RUN" != "true" ]; then
-                supabase db reset --linked || {
-                    log_error "Error en deploy de migraciones"
-                    exit 1
-                }
+                if [ "$DEPLOY_ENV" = "production" ] || [ "$DEPLOY_ENV" = "staging" ]; then
+                    log_info "Aplicando migraciones pendientes con db push (entorno: $DEPLOY_ENV)..."
+                    supabase db push --linked || {
+                        log_error "Error en deploy de migraciones (db push)"
+                        exit 1
+                    }
+                else
+                    log_info "Aplicando migraciones en entorno local (dev)..."
+                    supabase db reset || {
+                        log_error "Error en reset local de migraciones"
+                        exit 1
+                    }
+                fi
             else
                 log_info "[DRY-RUN] Would deploy migrations"
             fi

@@ -196,7 +196,7 @@ Si se tomo alguna decision adicional (ej: corregir stock negativo), registrarla 
 | Decision log | `docs/DECISION_LOG.md` |
 | Open issues | `docs/closure/OPEN_ISSUES.md` |
 | Continuidad sesiones | `docs/closure/CONTINUIDAD_SESIONES.md` |
-| Plan hardening | `.claude/plans/smooth-shimmying-canyon.md` |
+| Plan hardening | D-126 en `docs/DECISION_LOG.md` (plan original no persistido en filesystem) |
 | Migracion SQL | `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql` |
 | Obra objetivo | `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/` |
 

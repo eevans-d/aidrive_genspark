@@ -6,11 +6,13 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 2. `docs/ESTADO_ACTUAL.md`
 3. `docs/closure/OPEN_ISSUES.md`
 4. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
-5. `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` (obra objetivo para contraste)
-6. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
-7. `docs/closure/CONTINUIDAD_SESIONES.md`
-8. `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico útil, modo RECHECK)
-9. `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md` (histórico útil)
+5. `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` (obra objetivo canonico para contraste)
+6. `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md` (auditoria SRE con hallazgos VULN-001..008)
+7. `docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md` (roadmap unico de produccion)
+8. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
+9. `docs/closure/CONTINUIDAD_SESIONES.md`
+10. `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico útil, modo RECHECK)
+11. `docs/closure/CONTEXTO_CANONICO_AUDITORIA_2026-02-11.md` (histórico útil)
 
 ## Cierre formal Mega Plan (2026-02-13)
 
@@ -50,7 +52,7 @@ Notas:
 - Regla práctica:
 	- Si el archivo incluye timestamp en nombre (`*_YYYY-MM-DD*` o `_*HHMMSS*`), tratarlo como snapshot histórico de esa fecha.
 	- Si existe más de una versión del mismo tipo de artefacto, usar siempre la más nueva y conservar el resto como evidencia.
-	- Los snapshots históricos pueden mostrar métricas previas (por ejemplo `39/39` migraciones); no reemplazan el estado canónico actual (`41/41`).
+	- Los snapshots históricos pueden mostrar métricas previas (por ejemplo `39/39` migraciones); no reemplazan el estado canónico actual (`42/42`).
 - Directorios de soporte histórico:
 	- `docs/archive/README.md`
 	- `docs/mpc/README.md`
