@@ -27,7 +27,7 @@
   - **Eje 5 cerrado:** HTTP method enforcement en `api-proveedor` via `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos).
   - **Eje 4 cerrado:** OpenAPI `api-proveedor` sincronizado con runtime (14 mismatches corregidos, 3 endpoints fantasma eliminados).
   - Migracion: `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).
-- **Validacion post-remediacion:** Veredicto PARCIAL (5/8 VULNs cerradas, 2 parciales, 1 abierta). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
+- **Validacion post-remediacion:** Veredicto APROBADO (8/8 VULNs cerradas post-Fase C D-131). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
 - **Tests post-validacion:** 1165/1165 PASS (root), 175/175 PASS (frontend), lint PASS, build PASS.
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
 - **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
@@ -49,6 +49,13 @@
 - **Tests:** 1165/1165 PASS (58 archivos). Build: CLEAN.
 - **Plan detallado:** ver D-126 en `docs/DECISION_LOG.md` (plan original no persistido en filesystem)
 - **Deploy:** Migración + 5 edge functions desplegadas el 2026-02-17. Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`
+
+### Addendum Fase C Observabilidad (D-131)
+- **VULN-007 cerrada:** `checkExternalDependencies()` reescrito con probes HTTP reales (`fetchProbe` con timeout 3s). `checkScraperHealth` y `checkDatabaseHealth` usan `fetchWithTimeout` 5s.
+- **VULN-006 cerrada:** Todos los handlers de `api-proveedor` usan `fetchWithTimeout` (5s main queries, 3s stats/count/facetas). Zero bare `fetch()` en handlers. Incluye: `precios.ts`, `productos.ts`, `comparacion.ts`, `alertas.ts`, `estadisticas.ts`, `configuracion.ts`.
+- **VULN-005 cerrada:** `fetchWithRetry` hardened — usa `fetchWithTimeout` internamente (10s default), solo retry en 5xx/429/network (4xx devuelve response sin retry). `Idempotency-Key` en POST scrape/compare de `sincronizar.ts`.
+- **Tests post-Fase C:** 1165/1165 PASS (root), 175/175 PASS (frontend), build PASS.
+- **Resultado:** 8/8 VULNs SRE cerradas. Fase C completada (excepto item #4 que requiere `.env.test` del owner).
 
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).

@@ -74,6 +74,7 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Fase C Observabilidad: VULN-005/006/007 cerradas (D-131) | COMPLETADA | D-131 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Validacion post-remediacion D-130 | COMPLETADA | `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
 | 2026-02-17 | Fase B Safety/Infra: VULN-003/004 + method enforcement + OpenAPI sync (D-129) | COMPLETADA | D-129 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Unificacion canonica + remediacion VULN-001 (D-128) | COMPLETADA | `docs/closure/EVIDENCIA_UNIFICACION_CANONICA_2026-02-17.md` |

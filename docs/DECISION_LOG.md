@@ -137,6 +137,8 @@
 
 | D-130 | **Validacion post-remediacion**: 5/8 VULNs cerradas (001-004, 008), 2 parciales (005, 006), 1 abierta (007). Quality gates principales PASS (1165 unit, 175 frontend, lint, build). Integration/E2E bloqueados por `.env.test`. Drift documental menor corregido (5 items). Veredicto: PARCIAL. | Completada | 2026-02-17 | Evidencia: `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`. Proxima fase: Fase C del roadmap (health checks, idempotencia scraper, timeouts api-proveedor). |
 
+| D-131 | **Fase C Observabilidad — VULN-005/006/007 cerradas** — (1) VULN-007: `checkExternalDependencies()` reescrito con probes HTTP reales (`fetchProbe` con timeout 3s) a `supabase_api` y `scraper_endpoint`. `checkScraperHealth` y `checkDatabaseHealth` usan `fetchWithTimeout` 5s. (2) VULN-006: Todos los handlers de `api-proveedor` (`precios`, `productos`, `comparacion`, `alertas`, `estadisticas`, `configuracion`) usan `fetchWithTimeout` (5s main queries, 3s stats/count/facetas). Zero bare `fetch()` en handlers. (3) VULN-005: `fetchWithRetry` hardened — usa `fetchWithTimeout` internamente (10s default), solo retry en 5xx/429/network errors (4xx devuelve response sin retry). `Idempotency-Key` header agregado a POST scrape y compare en `sincronizar.ts`. Archivos: `utils/http.ts`, `utils/health.ts`, `handlers/health.ts`, `handlers/precios.ts`, `handlers/productos.ts`, `handlers/comparacion.ts`, `handlers/alertas.ts`, `handlers/estadisticas.ts`, `handlers/configuracion.ts`, `handlers/sincronizar.ts`. | Completada | 2026-02-17 | 8/8 VULNs SRE cerradas. Tests: 1165/1165 PASS (root), 175/175 PASS (frontend). Build: PASS. |
+
 ---
 
 ### Acciones owner requeridas

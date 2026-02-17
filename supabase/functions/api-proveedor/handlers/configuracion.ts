@@ -4,6 +4,7 @@ import {
     generateConfigHash,
     generateOptimizationSuggestions
 } from '../utils/config.ts';
+import { fetchWithTimeout } from '../utils/http.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateApiSecret, createAuthErrorResponse } from '../utils/auth.ts';
 import { ok } from '../../_shared/response.ts';
@@ -29,11 +30,12 @@ export async function getConfiguracionProveedorOptimizado(
     logger.info('CONFIG_REQUEST', { ...requestLog });
 
     try {
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `${supabaseUrl}/rest/v1/configuracion_proveedor?select=*&nombre=eq.Maxiconsumo Necochea`,
             {
                 headers: supabaseReadHeaders
-            }
+            },
+            5000
         );
 
         if (!response.ok) {

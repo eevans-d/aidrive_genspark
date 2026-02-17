@@ -72,12 +72,14 @@ export async function triggerSincronizacionOptimizado(
                 headers: {
                     'x-api-secret': secret,
                     'Content-Type': 'application/json',
-                    'X-Request-ID': requestLog.requestId
+                    'X-Request-ID': requestLog.requestId,
+                    'Idempotency-Key': `scrape-${requestLog.requestId}`
                 },
                 body: JSON.stringify(requestBody)
             },
             3,
-            1000
+            1000,
+            15000
         );
 
         if (!scrapingResponse.ok) {
@@ -104,7 +106,8 @@ export async function triggerSincronizacionOptimizado(
                         headers: {
                             'x-api-secret': secret,
                             'Content-Type': 'application/json',
-                            'X-Request-ID': requestLog.requestId
+                            'X-Request-ID': requestLog.requestId,
+                            'Idempotency-Key': `compare-${requestLog.requestId}`
                         },
                         body: JSON.stringify({
                             request_id: requestLog.requestId,
@@ -112,7 +115,8 @@ export async function triggerSincronizacionOptimizado(
                         })
                     },
                     2,
-                    2000
+                    2000,
+                    10000
                 );
 
                 if (comparacionResponse.ok) {

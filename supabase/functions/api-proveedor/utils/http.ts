@@ -1,14 +1,21 @@
-export async function fetchWithRetry(url: string, options: any, maxRetries: number, baseDelay: number): Promise<Response> {
+export async function fetchWithRetry(url: string, options: any, maxRetries: number, baseDelay: number, timeoutMs = 10000): Promise<Response> {
     let lastError: Error;
 
     for (let i = 0; i <= maxRetries; i++) {
         try {
-            const response = await fetch(url, options);
+            const response = await fetchWithTimeout(url, options, timeoutMs);
             if (response.ok) return response;
+
+            if (!isRetryableStatusCode(response.status)) {
+                return response;
+            }
 
             lastError = new Error(`HTTP ${response.status}: ${response.statusText}`);
         } catch (error) {
             lastError = error as Error;
+            if (!isRetryableAPIError(lastError)) {
+                throw lastError;
+            }
         }
 
         if (i < maxRetries) {
@@ -18,6 +25,10 @@ export async function fetchWithRetry(url: string, options: any, maxRetries: numb
     }
 
     throw lastError!;
+}
+
+function isRetryableStatusCode(status: number): boolean {
+    return status >= 500 || status === 429;
 }
 
 export async function fetchWithTimeout(url: string, options: any, timeoutMs: number): Promise<Response> {

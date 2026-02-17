@@ -7,9 +7,9 @@
 
 ---
 
-## 1. VEREDICTO GLOBAL: PARCIAL
+## 1. VEREDICTO GLOBAL: APROBADO (actualizado post-Fase C D-131)
 
-**Justificacion:** 6 de 8 VULNs cerradas con evidencia verificable en filesystem. 2 VULNs parciales y 1 abierta (Fase C del roadmap). Quality gates principales PASS; integration/e2e bloqueados por `.env.test`. Drift documental menor detectado (5 items) en documentos canonicos.
+**Justificacion:** 8 de 8 VULNs cerradas con evidencia verificable en filesystem. Quality gates principales PASS; integration/e2e bloqueados por `.env.test`. Drift documental corregido. Fase C items #7/#8/#9 completados.
 
 ---
 
@@ -36,18 +36,18 @@
 | VULN-002 | CRITICO | **CERRADO** | Migracion `20260217100000_hardening_concurrency_fixes.sql` — `sp_procesar_venta_pos` con `FOR UPDATE` en idempotency check + `EXCEPTION WHEN unique_violation`. | D-126 |
 | VULN-003 | ALTO | **CERRADO** | Migracion `20260217200000_vuln003_004_concurrency_locks.sql:11-113` — `sp_movimiento_inventario` reescrito con `FOR UPDATE` en `stock_deposito` (linea 45) y `ordenes_compra` (linea 83). Validacion de pendiente dentro del SP (linea 90). | D-129 |
 | VULN-004 | ALTO | **CERRADO** | Migracion `20260217200000_vuln003_004_concurrency_locks.sql:121-171` — `sp_actualizar_pago_pedido` con `FOR UPDATE` en `pedidos` (linea 143). Handler `pedidos.ts:349` reescrito para usar SP. | D-129 |
-| VULN-005 | ALTO | **PARCIAL** | `_shared/circuit-breaker.ts` y `_shared/rate-limit.ts` tienen `AbortSignal.timeout(3000)` (D-126). **Falta:** idempotencia por `request_id` en scraper sincronizacion. `api-proveedor/handlers/sincronizar.ts` no implementa deduplicacion server-side. | Fase C pendiente |
-| VULN-006 | ALTO | **PARCIAL** | `cron-notifications` tiene `AbortSignal.timeout` en 7 fetch calls (D-126). **Falta:** estandarizar `fetchWithTimeout` en handlers de `api-proveedor` (`precios.ts`, `productos.ts`, `comparacion.ts`, `alertas.ts`, `estadisticas.ts`). | Fase C pendiente |
-| VULN-007 | MEDIO | **ABIERTO** | `api-proveedor/utils/health.ts` sigue retornando `status: 'healthy', score: 100` hardcoded en `checkExternalDependencies()`. No hay probes reales con timeout. | Fase C pendiente |
+| VULN-005 | ALTO | **CERRADO** | `_shared/circuit-breaker.ts` y `_shared/rate-limit.ts` tienen `AbortSignal.timeout(3000)` (D-126). `fetchWithRetry` hardened con timeout per attempt + solo retry 5xx/429/network (D-131). `Idempotency-Key` header en POST scrape/compare en `sincronizar.ts` (D-131). | D-126 + D-131 |
+| VULN-006 | ALTO | **CERRADO** | `cron-notifications` tiene `AbortSignal.timeout` en 7 fetch calls (D-126). Todos los handlers de `api-proveedor` usan `fetchWithTimeout` (5s main, 3s stats/count). Zero bare `fetch()` en handlers (D-131). | D-126 + D-131 |
+| VULN-007 | MEDIO | **CERRADO** | `checkExternalDependencies()` reescrito con probes reales HTTP via `fetchProbe()` con timeout 3s. `checkScraperHealth` y `checkDatabaseHealth` usan `fetchWithTimeout` 5s (D-131). | D-131 |
 | VULN-008 | MEDIO | **CERRADO** | Frontend hardened (D-126): scanner race lock (`isProcessingScan` ref) en `Pos.tsx`, ESC guard, smart retry solo 5xx via `instanceof ApiError`, 401 refresh-before-signOut con lock en `AuthContext.tsx`, optimistic updates en `usePedidos.ts`. Nota: `refetchOnWindowFocus: false` en `queryClient.ts:21` permanece como decision de diseno documentada (offline-friendly). | D-126 |
 
 ### Resumen de estados
 
 | Estado | Cantidad | VULNs |
 |--------|----------|-------|
-| CERRADO | 5 | VULN-001, VULN-002, VULN-003, VULN-004, VULN-008 |
-| PARCIAL | 2 | VULN-005, VULN-006 |
-| ABIERTO | 1 | VULN-007 |
+| CERRADO | 8 | VULN-001, VULN-002, VULN-003, VULN-004, VULN-005, VULN-006, VULN-007, VULN-008 |
+| PARCIAL | 0 | — |
+| ABIERTO | 0 | — |
 
 ---
 

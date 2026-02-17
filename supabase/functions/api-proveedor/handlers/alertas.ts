@@ -12,6 +12,7 @@ import {
     generateAlertRecommendations,
     predictAlertTrends
 } from '../utils/alertas.ts';
+import { fetchWithTimeout } from '../utils/http.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
 import { fromFetchResponse, toAppError } from '../../_shared/errors.ts';
@@ -38,9 +39,9 @@ export async function getAlertasActivasOptimizado(
     try {
         const query = buildAlertasQuery(severidad, tipo, limite);
 
-        const response = await fetch(query, {
+        const response = await fetchWithTimeout(query, {
             headers: supabaseReadHeaders
-        });
+        }, 5000);
 
         if (!response.ok) {
             throw await fromFetchResponse(response, 'Error obteniendo alertas');

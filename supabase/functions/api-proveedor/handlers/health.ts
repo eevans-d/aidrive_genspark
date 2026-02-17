@@ -36,7 +36,7 @@ export async function getHealthCheckOptimizado(
             Promise.resolve(checkCacheHealth()),
             Promise.resolve(checkMemoryHealth()),
             Promise.resolve(checkAPIPerformance()),
-            checkExternalDependencies()
+            checkExternalDependencies(supabaseUrl, supabaseReadHeaders, apiSecret, requestLog.requestId)
         ]);
 
         const [dbHealth, scraperHealth, cacheHealth, memHealth, apiPerf, extDeps] = healthChecks;

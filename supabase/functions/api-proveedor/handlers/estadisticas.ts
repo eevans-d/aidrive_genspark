@@ -11,6 +11,7 @@ import {
     identifyAnomalies,
     predictPerformanceTrends
 } from '../utils/estadisticas.ts';
+import { fetchWithTimeout } from '../utils/http.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { validateEstadisticasParams } from '../validators.ts';
 import { ok } from '../../_shared/response.ts';
@@ -41,9 +42,9 @@ export async function getEstadisticasScrapingOptimizado(
 
         const query = buildEstadisticasQuery(fechaInicio, categoria, granularidad);
 
-        const response = await fetch(query, {
+        const response = await fetchWithTimeout(query, {
             headers: supabaseReadHeaders
-        });
+        }, 5000);
 
         if (!response.ok) {
             throw await fromFetchResponse(response, 'Error obteniendo estadísticas');

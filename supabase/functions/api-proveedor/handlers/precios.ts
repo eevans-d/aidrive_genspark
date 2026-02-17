@@ -1,5 +1,6 @@
 import { validatePreciosParams } from '../validators.ts';
 import { formatTiempoTranscurrido, getMemoryUsage } from '../utils/format.ts';
+import { fetchWithTimeout } from '../utils/http.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
 import { fromFetchError, fromFetchResponse, toAppError } from '../../_shared/errors.ts';
@@ -118,9 +119,9 @@ function buildPreciosQuery(
 
     query += `&order=ultima_actualizacion.desc&limit=${limite}&offset=${offset}`;
 
-    return fetch(query, {
+    return fetchWithTimeout(query, {
         headers: supabaseReadHeaders
-    });
+    }, 5000);
 }
 
 async function buildPreciosCountQuery(
@@ -135,9 +136,9 @@ async function buildPreciosCountQuery(
         query += `&categoria=eq.${encodeURIComponent(categoria)}`;
     }
 
-    const res = await fetch(query, {
+    const res = await fetchWithTimeout(query, {
         headers: supabaseReadHeaders
-    });
+    }, 3000);
 
     if (!res.ok) {
         throw await fromFetchResponse(res, 'Error obteniendo conteo de precios');
@@ -155,9 +156,9 @@ async function buildPreciosStatsQuery(
 ): Promise<any> {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=precio_actual,stock_disponible,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true${categoria !== 'todos' ? `&categoria=eq.${encodeURIComponent(categoria)}` : ''}`;
 
-    const res = await fetch(query, {
+    const res = await fetchWithTimeout(query, {
         headers: supabaseReadHeaders
-    });
+    }, 3000);
 
     if (!res.ok) {
         throw await fromFetchResponse(res, 'Error obteniendo estadísticas de precios');

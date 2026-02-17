@@ -1,5 +1,6 @@
 import { validateProductosParams } from '../validators.ts';
 import { calculateCompetitivenessScore, calculateRelevanceScore, formatPrecio, generateSearchTags, generateSlug } from '../utils/format.ts';
+import { fetchWithTimeout } from '../utils/http.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { ok } from '../../_shared/response.ts';
 import { fromFetchError, fromFetchResponse, toAppError } from '../../_shared/errors.ts';
@@ -28,9 +29,9 @@ export async function getProductosDisponiblesOptimizado(
         const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=*&fuente=eq.Maxiconsumo Necochea&activo=eq.true${filtros}${orden}&limit=${limite}`;
 
         const [productosResponse, statsResponse, facetasResponse] = await Promise.allSettled([
-            fetch(query, {
+            fetchWithTimeout(query, {
                 headers: supabaseReadHeaders
-            }),
+            }, 5000),
             obtenerEstadisticasCategoriasOptimizado(supabaseUrl, supabaseReadHeaders),
             obtenerFacetasProductos(supabaseUrl, supabaseReadHeaders)
         ]);
@@ -154,9 +155,9 @@ async function obtenerEstadisticasCategoriasOptimizado(
     supabaseReadHeaders: Record<string, string>
 ) {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=categoria,precio_actual,stock_disponible&fuente=eq.Maxiconsumo Necochea&activo=eq.true`;
-    const response = await fetch(query, {
+    const response = await fetchWithTimeout(query, {
         headers: supabaseReadHeaders
-    });
+    }, 3000);
 
     if (!response.ok) {
         throw await fromFetchResponse(response, 'Error obteniendo estadísticas de categorías');
@@ -183,9 +184,9 @@ async function obtenerFacetasProductos(
     supabaseReadHeaders: Record<string, string>
 ) {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=marca,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true`;
-    const response = await fetch(query, {
+    const response = await fetchWithTimeout(query, {
         headers: supabaseReadHeaders
-    });
+    }, 3000);
 
     if (!response.ok) {
         throw await fromFetchResponse(response, 'Error obteniendo facetas de productos');

@@ -49,11 +49,11 @@ Cerrar todos los ejes NO_ALINEADO de la matriz de contraste y resolver las VULNs
 - [x] #5: SP `sp_movimiento_inventario` con FOR UPDATE (VULN-003)
 - [x] #6: SP `sp_actualizar_pago_pedido` con lock atomico (VULN-004)
 
-### Fase C — Observabilidad + Calidad (siguiente)
+### Fase C — Observabilidad + Calidad (COMPLETADA parcial D-131)
 - [ ] #4: Quality gates integracion (requiere `.env.test` del owner)
-- [ ] #7: Health checks reales
-- [ ] #8: Idempotencia scraper
-- [ ] #9: Timeouts api-proveedor
+- [x] #7: Health checks reales (VULN-007 cerrada D-131)
+- [x] #8: Idempotencia scraper (VULN-005 cerrada D-131)
+- [x] #9: Timeouts api-proveedor (VULN-006 cerrada D-131)
 - Rollback: no destructivo (solo agrega funcionalidad)
 
 ### Fase D — Operacion Productiva (owner)

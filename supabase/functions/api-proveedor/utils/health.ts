@@ -1,4 +1,5 @@
 import { API_CACHE } from './cache.ts';
+import { fetchWithTimeout } from './http.ts';
 import {
     REQUEST_METRICS,
     calculateAvailability,
@@ -14,9 +15,9 @@ export async function checkDatabaseHealth(
 ): Promise<any> {
     try {
         const start = Date.now();
-        const response = await fetch(`${supabaseUrl}/rest/v1/precios_proveedor?select=count&limit=1`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/precios_proveedor?select=count&limit=1`, {
             headers: supabaseReadHeaders
-        });
+        }, 5000);
         const duration = Date.now() - start;
 
         return {
@@ -39,9 +40,9 @@ export async function checkScraperHealth(
         const headers: Record<string, string> = {};
         if (apiSecret) headers['x-api-secret'] = apiSecret;
         if (requestId) headers['x-request-id'] = String(requestId);
-        const response = await fetch(`${supabaseUrl}/functions/v1/scraper-maxiconsumo/health`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/scraper-maxiconsumo/health`, {
             headers
-        });
+        }, 5000);
 
         return {
             status: response.ok ? 'healthy' : 'degraded',
@@ -87,16 +88,72 @@ export function checkAPIPerformance(): any {
     };
 }
 
-export async function checkExternalDependencies(): Promise<any> {
+export async function checkExternalDependencies(
+    supabaseUrl?: string,
+    supabaseReadHeaders?: Record<string, string>,
+    apiSecret?: string | null,
+    requestId?: string
+): Promise<any> {
+    const PROBE_TIMEOUT_MS = 3000;
+    const probeEntries: Array<[string, Promise<{ ok: boolean }>]> = [];
+
+    if (supabaseUrl && supabaseReadHeaders) {
+        probeEntries.push(['supabase_api', fetchProbe(
+            `${supabaseUrl}/rest/v1/?limit=0`,
+            { headers: supabaseReadHeaders },
+            PROBE_TIMEOUT_MS
+        )]);
+    }
+
+    if (supabaseUrl) {
+        const scraperHeaders: Record<string, string> = {};
+        if (apiSecret) scraperHeaders['x-api-secret'] = apiSecret;
+        if (requestId) scraperHeaders['x-request-id'] = requestId;
+        probeEntries.push(['scraper_endpoint', fetchProbe(
+            `${supabaseUrl}/functions/v1/scraper-maxiconsumo/health`,
+            { headers: scraperHeaders },
+            PROBE_TIMEOUT_MS
+        )]);
+    }
+
+    if (probeEntries.length === 0) {
+        return { status: 'unknown', score: 0, dependencies: {} };
+    }
+
+    const keys = probeEntries.map(([k]) => k);
+    const results = await Promise.allSettled(probeEntries.map(([, p]) => p));
+
+    const dependencies: Record<string, string> = {};
+    let healthyCount = 0;
+
+    keys.forEach((key, i) => {
+        const result = results[i];
+        const isOk = result.status === 'fulfilled' && result.value.ok;
+        dependencies[key] = isOk ? 'healthy' : 'unhealthy';
+        if (isOk) healthyCount++;
+    });
+
+    const total = keys.length;
+    const score = Math.round((healthyCount / total) * 100);
+
     return {
-        status: 'healthy',
-        score: 100,
-        dependencies: {
-            supabase_api: 'healthy',
-            scraper_endpoint: 'healthy',
-            database_connection: 'healthy'
-        }
+        status: score === 100 ? 'healthy' : score >= 50 ? 'degraded' : 'unhealthy',
+        score,
+        dependencies
     };
+}
+
+async function fetchProbe(url: string, options: RequestInit, timeoutMs: number): Promise<{ ok: boolean }> {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { ...options, signal: controller.signal });
+        clearTimeout(timeoutId);
+        return { ok: response.ok };
+    } catch {
+        clearTimeout(timeoutId);
+        return { ok: false };
+    }
 }
 
 export function generateHealthAlerts(components: any, score: number): any[] {
