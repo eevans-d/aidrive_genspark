@@ -743,7 +743,7 @@ paths:
       parameters:
         - name: categoria
           in: query
-          description: Categoría específica a scrapear (default: todos)
+          description: "Categoría específica a scrapear (default: todos)"
           schema:
             type: string
             default: todos

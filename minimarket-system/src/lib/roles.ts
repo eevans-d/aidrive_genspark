@@ -33,6 +33,7 @@ export const ROUTE_CONFIG: Record<string, UserRole[]> = {
         '/pos': ['admin', 'ventas'],
         '/pocket': ['admin', 'deposito'],
         '/clientes': ['admin', 'ventas'],
+        '/ventas': ['admin', 'ventas'],
 };
 
 /**

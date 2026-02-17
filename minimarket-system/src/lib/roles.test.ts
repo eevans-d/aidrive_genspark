@@ -85,6 +85,11 @@ describe('canAccessRoute', () => {
                                 allowed: ['admin', 'ventas'],
                                 denied: ['deposito', 'usuario'],
                         },
+                        {
+                                path: '/ventas',
+                                allowed: ['admin', 'ventas'],
+                                denied: ['deposito', 'usuario'],
+                        },
                 ];
 
                 for (const { path, allowed, denied } of testCases) {
@@ -149,6 +154,7 @@ describe('getRoutesForRole', () => {
                 expect(routes).toContain('/pedidos');
                 expect(routes).toContain('/pos');
                 expect(routes).toContain('/clientes');
+                expect(routes).toContain('/ventas');
                 expect(routes).not.toContain('/deposito');
                 expect(routes).not.toContain('/kardex');
                 expect(routes).not.toContain('/pocket');
@@ -160,7 +166,7 @@ describe('ROUTE_CONFIG completitud', () => {
                 const requiredRoutes = [
                         '/', '/deposito', '/kardex', '/rentabilidad', '/stock',
                         '/tareas', '/productos', '/proveedores', '/pedidos',
-                        '/pos', '/pocket', '/clientes',
+                        '/pos', '/pocket', '/clientes', '/ventas',
                 ];
                 for (const route of requiredRoutes) {
                         expect(ROUTE_CONFIG).toHaveProperty(route);

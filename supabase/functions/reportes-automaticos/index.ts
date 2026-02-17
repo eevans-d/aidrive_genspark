@@ -65,7 +65,7 @@ Deno.serve(async (req) => {
         const hoy = new Date();
         hoy.setHours(0, 0, 0, 0);
         const movimientosResponse = await fetch(
-            `${supabaseUrl}/rest/v1/movimientos_deposito?fecha=gte.${hoy.toISOString()}&select=*`,
+            `${supabaseUrl}/rest/v1/movimientos_deposito?fecha_movimiento=gte.${hoy.toISOString()}&select=*`,
             {
                 headers: {
                     'apikey': serviceRoleKey,
@@ -76,8 +76,8 @@ Deno.serve(async (req) => {
 
         if (movimientosResponse.ok) {
             const movimientos = await movimientosResponse.json();
-            const entradas = movimientos.filter((m: any) => m.tipo === 'entrada');
-            const salidas = movimientos.filter((m: any) => m.tipo === 'salida');
+            const entradas = movimientos.filter((m: any) => m.tipo_movimiento === 'entrada');
+            const salidas = movimientos.filter((m: any) => m.tipo_movimiento === 'salida');
 
             reportData.movimientos = {
                 total: movimientos.length,
