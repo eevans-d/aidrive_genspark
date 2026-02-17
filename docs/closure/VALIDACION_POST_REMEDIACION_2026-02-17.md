@@ -53,15 +53,15 @@
 
 ## 4. DRIFT DOCUMENTAL RESIDUAL
 
-### 4.1 Drift detectado
+### 4.1 Drift detectado (todos CERRADOS post-D-131)
 
-| # | Documento | Drift | Severidad |
-|---|-----------|-------|-----------|
-| DR-1 | `docs/ESTADO_ACTUAL.md:16` | Dice "drift runtime/spec (`/health` faltante y `/scrape\|/compare\|/alerts` sobrantes)" pero fue corregido en D-129. Informacion stale. | MEDIA |
-| DR-2 | `docs/ESTADO_ACTUAL.md:51` | Dice "Migraciones: 42/42 local=remoto" pero son 43 local / 42 remoto (migracion `20260217200000` pendiente de deploy). | MEDIA |
-| DR-3 | `docs/closure/CONTINUIDAD_SESIONES.md:37` | Dice "Migraciones \| 42/42 local=remoto" — deberia ser 43 local / 42 remoto. | MEDIA |
-| DR-4 | `docs/closure/CONTINUIDAD_SESIONES.md` | Falta entrada de sesion para D-129 (Fase B Safety/Infra). | BAJA |
-| DR-5 | `docs/closure/OPEN_ISSUES.md:1` | Fecha "Ultima actualizacion: 2026-02-16" — deberia ser 2026-02-17 (se actualizaron notas pero no el header). | BAJA |
+| # | Documento | Drift | Severidad | Estado |
+|---|-----------|-------|-----------|--------|
+| DR-1 | `docs/ESTADO_ACTUAL.md:16` | Dice "drift runtime/spec" — corregido en D-129 (strikethrough + CERRADO). | MEDIA | ✅ CERRADO |
+| DR-2 | `docs/ESTADO_ACTUAL.md:69` | Migraciones actualizado a 43/42 con nota de pendiente. | MEDIA | ✅ CERRADO |
+| DR-3 | `docs/closure/CONTINUIDAD_SESIONES.md:37` | Migraciones actualizado a 43/42. | MEDIA | ✅ CERRADO |
+| DR-4 | `docs/closure/CONTINUIDAD_SESIONES.md:79` | Entrada D-129 agregada en registro de sesiones. | BAJA | ✅ CERRADO |
+| DR-5 | `docs/closure/OPEN_ISSUES.md:3` | Fecha actualizada a 2026-02-17. | BAJA | ✅ CERRADO |
 
 ### 4.2 Duplicidad documental
 
@@ -71,7 +71,7 @@
 | `docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md` | Unico roadmap canonico | OK — sin duplicados |
 | `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/MAPEO_VULN_SRE_VS_MATRIZ_2026-02-17.md` | Unico mapeo VULN-Matriz | OK — sin duplicados |
 
-**Conclusion drift:** No hay duplicidad no jerarquizada. Drift residual es menor y corregible en cierre de sesion.
+**Conclusion drift:** No hay duplicidad no jerarquizada. Todos los 5 drift items corregidos en D-131. Drift residual: 0.
 
 ---
 
@@ -79,11 +79,11 @@
 
 | Par de documentos | Coherente | Observacion |
 |-------------------|-----------|-------------|
-| `ESTADO_ACTUAL.md` ↔ `OPEN_ISSUES.md` | **PARCIAL** | ESTADO_ACTUAL no refleja D-128/D-129. OPEN_ISSUES tiene refs a SRE y roadmap pero fecha header stale. |
-| `ESTADO_ACTUAL.md` ↔ `DECISION_LOG.md` | **PARCIAL** | DECISION_LOG tiene D-128+D-129 completos. ESTADO_ACTUAL no tiene addendum para estas decisiones. |
+| `ESTADO_ACTUAL.md` ↔ `OPEN_ISSUES.md` | **OK** | Ambos reflejan D-128/D-129/D-131. Fecha header actualizada a 2026-02-17. |
+| `ESTADO_ACTUAL.md` ↔ `DECISION_LOG.md` | **OK** | DECISION_LOG tiene D-128+D-129+D-131 completos. ESTADO_ACTUAL tiene addenda para D-128, D-129, D-131. |
 | `DECISION_LOG.md` ↔ `OPEN_ISSUES.md` | **OK** | Ambos referencian auditoria SRE y roadmap. |
 | `README_CANONICO.md` ↔ `OPEN_ISSUES.md` | **OK** | Indice canonico incluye SRE report y roadmap. |
-| `CONTINUIDAD_SESIONES.md` ↔ `DECISION_LOG.md` | **PARCIAL** | Falta sesion D-129 en continuidad. Migration count desactualizado. |
+| `CONTINUIDAD_SESIONES.md` ↔ `DECISION_LOG.md` | **OK** | Sesiones D-128, D-129, D-130, D-131 registradas. Migration count actualizado a 43/42. |
 
 ---
 
@@ -97,14 +97,15 @@
 
 ## 7. SIGUIENTE PASO UNICO RECOMENDADO
 
-**Corregir drift documental (DR-1 a DR-5)** y luego ejecutar **Fase C del roadmap** (`docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md`):
+~~Corregir drift documental (DR-1 a DR-5)~~ **CERRADO** (D-131). ~~Ejecutar Fase C del roadmap~~ **CERRADO** (D-131).
 
-1. **Inmediato (esta sesion):** Actualizar `ESTADO_ACTUAL.md`, `CONTINUIDAD_SESIONES.md`, `OPEN_ISSUES.md` para reflejar estado post-D-129.
-2. **Fase C item #7:** Health checks reales — reemplazar `checkExternalDependencies()` hardcoded por probes reales con timeout (VULN-007).
-3. **Fase C item #8:** Idempotencia en scraper — implementar deduplicacion por `request_id` en sincronizacion (VULN-005 residual).
-4. **Fase C item #9:** Timeouts en api-proveedor — estandarizar `fetchWithTimeout` en todos los handlers (VULN-006 residual).
-5. **Fase C item #4:** Quality gates integracion — requiere `.env.test` del owner.
-6. **Deploy pendiente:** Migracion `20260217200000` + edge functions `api-minimarket` y `api-proveedor` a remoto.
+**Estado post-D-131:**
+1. ~~Inmediato: Actualizar docs canónicos~~ CERRADO (D-131)
+2. ~~Fase C item #7: Health checks reales (VULN-007)~~ CERRADO (D-131)
+3. ~~Fase C item #8: Idempotencia scraper (VULN-005)~~ CERRADO (D-131)
+4. ~~Fase C item #9: Timeouts api-proveedor (VULN-006)~~ CERRADO (D-131)
+5. **Fase C item #4:** Quality gates integracion — requiere `.env.test` del owner. PENDIENTE (owner).
+6. **Deploy pendiente:** Migracion `20260217200000` + edge functions `api-proveedor` a remoto.
 
 ---
 
@@ -112,12 +113,12 @@
 
 ```
 APROBADO = (
-    todos_VULN == CERRADO                    # actualmente 5/8
-    AND drift_documental == 0                # actualmente 5 items
-    AND unit_tests_PASS                      # OK
-    AND integration_tests_PASS               # BLOCKED
+    todos_VULN == CERRADO                    # 8/8 CERRADOS
+    AND drift_documental == 0                # 0 items (5/5 corregidos D-131)
+    AND unit_tests_PASS                      # OK (1165/1165)
+    AND integration_tests_PASS               # BLOCKED (requiere .env.test del owner)
     AND build_PASS                           # OK
-    AND migration_deployed                   # pendiente 20260217200000
+    AND migration_deployed                   # OK (43/43 synced, D-132)
 )
 ```
 

@@ -97,8 +97,8 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 ## Notas operativas
 
-- Migraciones: `43` local, `42` remoto (pendiente deploy de `20260217200000_vuln003_004_concurrency_locks.sql`).
-- Snapshot remoto actual 2026-02-17: 13 funciones activas; `api-minimarket v26`, `cron-notifications v25`, `notificaciones-tareas v19`, `scraper-maxiconsumo v20`, `alertas-stock v17`, `reportes-automaticos v17`.
+- Migraciones: `43` local, `43` remoto (sincronizado — deploy D-132).
+- Snapshot remoto actual 2026-02-17: 13 funciones activas; `api-minimarket v27`, `api-proveedor v19`, `cron-notifications v25`, `notificaciones-tareas v19`, `scraper-maxiconsumo v20`, `alertas-stock v17`, `reportes-automaticos v17`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).

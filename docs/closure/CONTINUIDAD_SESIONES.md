@@ -33,8 +33,8 @@
 | Veredicto operativo | APROBADO (P0 cerrados/verificados) |
 | Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
 | Tests | 1165/1165 PASS (root), 45 auxiliary PASS + 4 skipped, frontend build PASS |
-| Edge Functions | 13 activas (`api-minimarket v26`, `scraper-maxiconsumo v20`) |
-| Migraciones | 43 local / 42 remoto (pendiente deploy de `20260217200000`) |
+| Edge Functions | 13 activas (`api-minimarket v27`, `api-proveedor v19`, `scraper-maxiconsumo v20`) |
+| Migraciones | 43 local / 43 remoto (sincronizado) |
 
 ### Fuentes de verdad
 - `docs/ESTADO_ACTUAL.md`
@@ -74,6 +74,7 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Deploy D-132 + drift documental + matriz contraste actualizada | COMPLETADA | D-132 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Fase C Observabilidad: VULN-005/006/007 cerradas (D-131) | COMPLETADA | D-131 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Validacion post-remediacion D-130 | COMPLETADA | `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
 | 2026-02-17 | Fase B Safety/Infra: VULN-003/004 + method enforcement + OpenAPI sync (D-129) | COMPLETADA | D-129 en `docs/DECISION_LOG.md` |

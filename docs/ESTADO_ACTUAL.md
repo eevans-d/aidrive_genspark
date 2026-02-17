@@ -57,6 +57,12 @@
 - **Tests post-Fase C:** 1165/1165 PASS (root), 175/175 PASS (frontend), build PASS.
 - **Resultado:** 8/8 VULNs SRE cerradas. Fase C completada (excepto item #4 que requiere `.env.test` del owner).
 
+### Deploy D-132 (2026-02-17)
+- **Migracion `20260217200000_vuln003_004_concurrency_locks.sql`** aplicada en remoto (`supabase db push`). 43/43 synced.
+- **`api-proveedor v19`** desplegado: fetchWithTimeout en todos los handlers, fetchWithRetry hardened, Idempotency-Key en POST scrape/compare, health checks reales.
+- **`api-minimarket v27`** desplegado: handler pedidos actualizado con SP `sp_actualizar_pago_pedido`.
+- Evidencia: `supabase migration list --linked` + `supabase functions list`.
+
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.
@@ -66,7 +72,7 @@
 ## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 43 local / 42 remoto (pendiente deploy de `20260217200000_vuln003_004_concurrency_locks.sql`).
+- Migraciones: 43 local / 43 remoto (sincronizado).
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
@@ -81,8 +87,8 @@
 |---|---:|---|
 | alertas-stock | v17 | ACTIVE |
 | alertas-vencimientos | v16 | ACTIVE |
-| api-minimarket | v26 | ACTIVE |
-| api-proveedor | v18 | ACTIVE |
+| api-minimarket | v27 | ACTIVE |
+| api-proveedor | v19 | ACTIVE |
 | cron-dashboard | v16 | ACTIVE |
 | cron-health-monitor | v16 | ACTIVE |
 | cron-jobs-maxiconsumo | v18 | ACTIVE |

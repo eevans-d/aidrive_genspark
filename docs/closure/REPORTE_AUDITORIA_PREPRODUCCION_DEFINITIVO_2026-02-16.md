@@ -40,6 +40,23 @@
 - Si alguna seccion historica de este reporte contradice los bullets anteriores, tomar estos bullets como estado verificado vigente.
 - El cuerpo original se conserva por trazabilidad historica de la auditoria del `2026-02-16`.
 
+### Addendum de hallazgos historicos superados (D-132, 2026-02-17)
+
+Los siguientes hallazgos del reporte original han sido superados por remediaciones posteriores:
+
+| Hallazgo historico | Seccion | Estado actual | Remediacion |
+|-------------------|---------|---------------|-------------|
+| Drift contrato/runtime api-proveedor (`/health` faltante, endpoints fantasma) | FE §24, 3.x | **SUPERADO** | D-129: 14 mismatches corregidos, 3 endpoints fantasma eliminados, `/health` agregado. OpenAPI spec sincronizada. |
+| Falta enforcement de metodo HTTP en api-proveedor | 3.x | **SUPERADO** | D-129: `allowedMethods` en `schemas.ts` + validacion 405 en `router.ts`. |
+| Bare `fetch()` sin timeout en handlers | 3.x | **SUPERADO** | D-131: `fetchWithTimeout` en todos los handlers de `api-proveedor` (5s main, 3s stats). |
+| Health checks hardcoded (`checkExternalDependencies`) | 3.x | **SUPERADO** | D-131: probes HTTP reales via `fetchProbe()` con timeout 3s. |
+| Concurrencia sin locks en SP (`sp_procesar_venta_pos`) | 3.x | **SUPERADO** | D-126: FOR UPDATE + EXCEPTION WHEN unique_violation. |
+| Concurrencia sin locks en inventario/OC | 3.x | **SUPERADO** | D-129: `sp_movimiento_inventario` y `sp_actualizar_pago_pedido` con FOR UPDATE. |
+| `deploy.sh` usa `db reset --linked` en staging | 3.x | **SUPERADO** | D-128: staging/production usan `db push --linked`, `db reset` solo dev local. |
+| Frontend race conditions (POS scanner, auth refresh) | 3.x | **SUPERADO** | D-126: `isProcessingScan` ref lock, ESC guard, 401 refresh-before-signOut con promise lock. |
+
+**Nota:** El cuerpo original del reporte se preserva integro por trazabilidad. Para estado actual, consultar `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (8/8 VULNs CERRADAS).
+
 ---
 
 ## 1. IDENTIFICACION GENERAL DEL PROYECTO

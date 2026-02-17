@@ -1,11 +1,15 @@
 > [ACTIVO_VERIFICADO: 2026-02-16] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Esquema de Base de Datos - Sistema Mini Market
-**Actualizado:** 2026-02-15 (post-fix de seguridad RLS + search_path)
+**Actualizado:** 2026-02-17 (post-deploy D-132: migracion concurrency locks + edge functions)
 
-## Addendum 2026-02-16 (estado canónico vigente)
+## Addendum 2026-02-17 (estado canónico vigente)
 
-- Migraciones: **40/40** local=remoto (`supabase migration list --linked`), incluyendo `20260215100000_p0_rls_internal_tables_and_search_path.sql`.
+- Migraciones: **43/43** local=remoto (`supabase migration list --linked`).
+- Migraciones recientes:
+  - `20260216040000_rls_precios_proveedor.sql` — RLS habilitado en `precios_proveedor`.
+  - `20260217100000_hardening_concurrency_fixes.sql` — CHECK `stock_no_negativo`, `sp_procesar_venta_pos` hardened con FOR UPDATE + unique_violation.
+  - `20260217200000_vuln003_004_concurrency_locks.sql` — `sp_movimiento_inventario` con FOR UPDATE en `stock_deposito`/`ordenes_compra`, `sp_actualizar_pago_pedido` con FOR UPDATE en `pedidos`.
 - Hardening aplicado:
   - `public.rate_limit_state`, `public.circuit_breaker_state`, `public.cron_jobs_locks` con RLS habilitado.
   - grants a `anon`/`authenticated` revocados en tablas internas.
@@ -25,7 +29,7 @@
 | **Índices custom** | 16 |
 | **Constraints CHECK** | 50+ |
 | **Foreign Keys** | 8 |
-| **Stored Procedures** | 3 |
+| **Stored Procedures** | 5 |
 | **Tamaño total** | ~850 KB |
 
 ---
