@@ -143,7 +143,34 @@ export function useUpdateItemPreparado() {
         return useMutation({
                 mutationFn: ({ itemId, preparado }: UpdateItemPreparadoParams) =>
                         pedidosApi.updateItemPreparado(itemId, preparado),
-                onSuccess: () => {
+                onMutate: async ({ itemId, preparado }) => {
+                        await queryClient.cancelQueries({ queryKey: pedidosQueryKeys.all });
+                        const previousData = queryClient.getQueriesData({ queryKey: pedidosQueryKeys.all });
+                        queryClient.setQueriesData<PedidosResult>(
+                                { queryKey: pedidosQueryKeys.lists() },
+                                (old) => {
+                                        if (!old) return old;
+                                        return {
+                                                ...old,
+                                                pedidos: old.pedidos.map((p) => ({
+                                                        ...p,
+                                                        detalle_pedidos: p.detalle_pedidos?.map((item) =>
+                                                                item.id === itemId ? { ...item, preparado } : item,
+                                                        ),
+                                                })),
+                                        };
+                                },
+                        );
+                        return { previousData };
+                },
+                onError: (_err, _vars, context) => {
+                        if (context?.previousData) {
+                                for (const [key, data] of context.previousData) {
+                                        queryClient.setQueryData(key, data);
+                                }
+                        }
+                },
+                onSettled: () => {
                         queryClient.invalidateQueries({ queryKey: pedidosQueryKeys.all });
                 },
         });

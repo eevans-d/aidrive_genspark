@@ -1,3 +1,5 @@
+import { ApiError } from '../lib/apiClient'
+
 export type ErrorType = 'network' | 'server' | 'generic'
 
 /**
@@ -21,6 +23,10 @@ export function detectErrorType(error: unknown): ErrorType {
  */
 export function parseErrorMessage(error: unknown, isProd: boolean = import.meta.env.PROD): string {
   if (error instanceof Error) {
+    // If error is an ApiError with requestId, the backend message is tracked and safe to show
+    if (isProd && error instanceof ApiError && error.requestId) {
+      return error.message
+    }
     // Evitar exponer detalles técnicos en producción
     if (isProd) {
       if (error.message.includes('network') || error.message.includes('fetch')) {

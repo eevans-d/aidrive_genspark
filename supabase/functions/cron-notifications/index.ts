@@ -902,6 +902,7 @@ async function sendEmail(
             'Content-Type': 'application/json',
         },
         body: JSON.stringify(sgPayload),
+        signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -1005,6 +1006,7 @@ async function sendSlack(
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(message),
+        signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -1069,6 +1071,7 @@ async function sendWebhook(
         method,
         headers,
         body: JSON.stringify(payload),
+        signal: AbortSignal.timeout(10000),
     });
 
     if (!response.ok) {
@@ -1190,7 +1193,7 @@ async function checkChannelRateLimitDb(channelId: string, channel: NotificationC
 }
 
 async function fetchNotificationCount(url: string, headers: Record<string, string>): Promise<number> {
-    const response = await fetch(url, { headers });
+    const response = await fetch(url, { headers, signal: AbortSignal.timeout(5000) });
     if (!response.ok) return 0;
 
     const contentRange = response.headers.get('content-range');
@@ -1243,7 +1246,8 @@ async function recordNotificationLog(
                     'apikey': serviceRoleKey,
                     'Authorization': `Bearer ${serviceRoleKey}`
                 },
-                body: JSON.stringify(logData)
+                body: JSON.stringify(logData),
+                signal: AbortSignal.timeout(5000),
             });
         }
     } catch (error) {
@@ -1279,7 +1283,8 @@ async function triggerEscalation(
             'apikey': serviceRoleKey,
             'Authorization': `Bearer ${serviceRoleKey}`
         },
-        body: JSON.stringify(escalationData)
+        body: JSON.stringify(escalationData),
+        signal: AbortSignal.timeout(5000),
     });
 }
 
@@ -1420,7 +1425,8 @@ async function checkEscalationHandler(
             headers: {
                 'apikey': serviceRoleKey,
                 'Authorization': `Bearer ${serviceRoleKey}`
-            }
+            },
+            signal: AbortSignal.timeout(8000),
         }
     );
 

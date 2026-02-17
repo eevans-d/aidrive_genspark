@@ -129,6 +129,7 @@ export async function ejecutarScrapingCompleto(
   categorias_procesadas: number;
   errores: string[];
 }> {
+  const MAX_CATEGORIES_PER_RUN = 4;
   const requestId = structuredLog.requestId || crypto.randomUUID();
   logger.info('SCRAPING_START', { requestId });
 
@@ -142,7 +143,7 @@ export async function ejecutarScrapingCompleto(
 
   const sortedCats = Object.entries(categorias).sort(([, a], [, b]) => a.prioridad - b.prioridad);
 
-  for (const [nombre, config] of sortedCats) {
+  for (const [nombre, config] of sortedCats.slice(0, MAX_CATEGORIES_PER_RUN)) {
     try {
       const prods = await scrapeCategoriaOptimizado(nombre, config, { ...structuredLog, requestId });
       productos.push(...prods.slice(0, config.max_productos));
@@ -154,6 +155,6 @@ export async function ejecutarScrapingCompleto(
     }
   }
 
-  logger.info('SCRAPING_COMPLETE', { requestId, productos: productos.length, categorias: categoriasOk, errores: errores.length });
+  logger.info('SCRAPING_COMPLETE', { requestId, productos: productos.length, categorias: categoriasOk, errores: errores.length, categorias_limitadas: sortedCats.length > MAX_CATEGORIES_PER_RUN });
   return { productos, categorias_procesadas: categoriasOk, errores };
 }

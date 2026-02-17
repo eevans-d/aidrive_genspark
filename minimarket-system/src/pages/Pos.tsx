@@ -39,6 +39,7 @@ function buildWhatsAppUrl(e164: string): string {
 export default function Pos() {
   const navigate = useNavigate()
   const inputRef = useRef<HTMLInputElement>(null)
+  const isProcessingScan = useRef(false)
 
   const [scanValue, setScanValue] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
@@ -191,6 +192,14 @@ export default function Pos() {
 
   const ventaMutation = useMutation({
     mutationFn: (params: CreateVentaParams) => ventasApi.create(params, idempotencyKey),
+    retry: (failureCount, error) => {
+      if (failureCount >= 1) return false
+      // Only retry on network/server errors, not applicative 4xx
+      if (error instanceof ApiError) {
+        return error.status >= 500
+      }
+      return true // network error (no ApiError status) → retry
+    },
     onSuccess: (venta) => {
       toast.success(`Venta ${venta.status === 'existing' ? 'idempotente' : 'registrada'}: $${money(venta.monto_total)}`)
       resetVenta()
@@ -261,18 +270,27 @@ export default function Pos() {
           setClientePickerOpen(false)
           return
         }
+        if (cart.length > 0 && !window.confirm('¿Descartar el ticket actual?')) {
+          return
+        }
         resetVenta()
       }
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [clientePickerOpen, resetVenta, riskConfirmOpen])
+  }, [cart.length, clientePickerOpen, resetVenta, riskConfirmOpen])
 
   const onScanSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    if (isProcessingScan.current) return
+    isProcessingScan.current = true
     const value = scanValue
     setScanValue('')
-    await resolveAndAdd(value)
+    try {
+      await resolveAndAdd(value)
+    } finally {
+      isProcessingScan.current = false
+    }
     inputRef.current?.focus()
   }
 

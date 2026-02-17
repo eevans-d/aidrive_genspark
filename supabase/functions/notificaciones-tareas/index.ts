@@ -10,6 +10,9 @@ import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('notificaciones-tareas');
 
+/** Timeout for individual PostgREST fetches */
+const FETCH_TIMEOUT_MS = 8000;
+
 Deno.serve(async (req) => {
     const url = new URL(req.url);
     const requestId =
@@ -78,6 +81,7 @@ Deno.serve(async (req) => {
                 {
                     method: 'POST',
                     headers: commonHeaders,
+                    signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
                 },
             );
 
@@ -95,6 +99,7 @@ Deno.serve(async (req) => {
             `${supabaseUrl}/rest/v1/tareas_pendientes?estado=eq.pendiente&select=*`,
             {
                 headers: commonHeaders,
+                signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
             },
         );
 
@@ -107,54 +112,70 @@ Deno.serve(async (req) => {
         const notificacionesEnviadas: Array<{ tarea: string; asignado_a: string | null; prioridad: string }> = [];
         const errores: string[] = [];
 
-        for (const tarea of tareas) {
-            try {
-                const dosHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+        // FIX: Batch check recent notifications instead of N+1 individual queries
+        const dosHorasAtras = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
+        const recentNotifsResponse = await fetch(
+            `${supabaseUrl}/rest/v1/notificaciones_tareas?fecha_envio=gte.${dosHorasAtras}&select=tarea_id`,
+            {
+                headers: commonHeaders,
+                signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+            },
+        );
 
-                const ultimaNotifResponse = await fetch(
-                    `${supabaseUrl}/rest/v1/notificaciones_tareas?tarea_id=eq.${tarea.id}&fecha_envio=gte.${dosHorasAtras}&order=fecha_envio.desc&limit=1`,
+        const recentlyNotifiedIds = new Set<string>();
+        if (recentNotifsResponse.ok) {
+            const recentNotifs = await recentNotifsResponse.json();
+            for (const n of recentNotifs) {
+                recentlyNotifiedIds.add(n.tarea_id);
+            }
+        }
+
+        // Build batch of notifications to insert
+        const notifsToCreate: Record<string, unknown>[] = [];
+        const notifsMetadata: Array<{ tarea: string; asignado_a: string | null; prioridad: string }> = [];
+
+        for (const tarea of tareas) {
+            if (recentlyNotifiedIds.has(tarea.id)) continue;
+
+            const mensaje = `Recordatorio: Tarea "${tarea.titulo}" asignada a ${tarea.asignada_a_nombre || 'ti'}. Prioridad: ${tarea.prioridad}. Vence: ${tarea.fecha_vencimiento ? new Date(tarea.fecha_vencimiento).toLocaleString('es-AR') : 'Sin fecha'}`;
+
+            notifsToCreate.push({
+                tarea_id: tarea.id,
+                tipo: 'recordatorio_automatico',
+                mensaje,
+                usuario_destino_nombre: tarea.asignada_a_nombre,
+                usuario_destino_id: tarea.asignada_a_id,
+                leido: false,
+            });
+
+            notifsMetadata.push({
+                tarea: tarea.titulo,
+                asignado_a: tarea.asignada_a_nombre ?? null,
+                prioridad: tarea.prioridad,
+            });
+        }
+
+        // FIX: Single batch INSERT instead of N individual POSTs
+        if (notifsToCreate.length > 0) {
+            try {
+                const notifResponse = await fetch(
+                    `${supabaseUrl}/rest/v1/notificaciones_tareas`,
                     {
+                        method: 'POST',
                         headers: commonHeaders,
+                        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+                        body: JSON.stringify(notifsToCreate),
                     },
                 );
 
-                if (!ultimaNotifResponse.ok) {
-                    const errorBody = await ultimaNotifResponse.text();
-                    throw new Error(`Error al verificar notificaciones: ${errorBody}`);
-                }
-
-                const ultimasNotif = await ultimaNotifResponse.json();
-
-                if (ultimasNotif.length === 0) {
-                    const mensaje = `Recordatorio: Tarea "${tarea.titulo}" asignada a ${tarea.asignada_a_nombre || 'ti'}. Prioridad: ${tarea.prioridad}. Vence: ${tarea.fecha_vencimiento ? new Date(tarea.fecha_vencimiento).toLocaleString('es-AR') : 'Sin fecha'}`;
-
-                    const notifResponse = await fetch(
-                        `${supabaseUrl}/rest/v1/notificaciones_tareas`,
-                        {
-                            method: 'POST',
-                            headers: commonHeaders,
-                            body: JSON.stringify({
-                                tarea_id: tarea.id,
-                                tipo: 'recordatorio_automatico',
-                                mensaje,
-                                usuario_destino_nombre: tarea.asignada_a_nombre,
-                                usuario_destino_id: tarea.asignada_a_id,
-                                leido: false,
-                            }),
-                        },
-                    );
-
-                    if (notifResponse.ok) {
-                        notificacionesEnviadas.push({
-                            tarea: tarea.titulo,
-                            asignado_a: tarea.asignada_a_nombre ?? null,
-                            prioridad: tarea.prioridad,
-                        });
-                    }
+                if (notifResponse.ok) {
+                    notificacionesEnviadas.push(...notifsMetadata);
+                } else {
+                    errores.push(`Batch insert failed: ${notifResponse.status}`);
                 }
             } catch (error) {
                 const errorMessage = error instanceof Error ? error.message : String(error);
-                errores.push(`Error procesando tarea ${tarea.titulo}: ${errorMessage}`);
+                errores.push(`Batch insert error: ${errorMessage}`);
             }
         }
 

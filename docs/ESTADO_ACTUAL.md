@@ -17,6 +17,27 @@
 - Recheck `reportes-automaticos`: usa `fecha_movimiento` y `tipo_movimiento` en código actual.
 - Paquete canonico "obra objetivo final" creado para contraste futuro: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/`.
 
+## Addendum Pre-Mortem Hardening (2026-02-17)
+- **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
+- **Migración pendiente de aplicar:** `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
+  - CHECK constraint `stock_no_negativo` (`cantidad_actual >= 0`)
+  - `sp_procesar_venta_pos` hardened: FOR UPDATE idempotency, FOR SHARE precios, FOR UPDATE crédito, EXCEPTION WHEN unique_violation
+  - **PRE-REQUISITO:** verificar `SELECT * FROM stock_deposito WHERE cantidad_actual < 0` antes de `supabase db push`
+- **Edge functions modificadas (pendientes de deploy):**
+  - `alertas-stock` — N+1 eliminado (300 seq → 2 parallel + batch INSERT)
+  - `notificaciones-tareas` — N+1 eliminado (batch check + batch INSERT)
+  - `reportes-automaticos` — 5 seq → `Promise.allSettled()` parallel
+  - `cron-notifications` — AbortSignal.timeout en 7 fetch calls
+  - `scraper-maxiconsumo` — MAX_CATEGORIES_PER_RUN=4
+- **Shared infra:** `_shared/circuit-breaker.ts` y `_shared/rate-limit.ts` con AbortSignal.timeout(3s) + TTL re-check 5min
+- **Frontend:**
+  - `Pos.tsx` — ESC guard, scanner race lock (`isProcessingScan` ref), smart retry (solo 5xx vía `instanceof ApiError`)
+  - `AuthContext.tsx` — 401 intenta `refreshSession()` antes de signOut, con lock de promesa para deduplicar eventos concurrentes
+  - `errorMessageUtils.ts` — Propaga `ApiError.message` cuando `requestId` existe (errores tracked del backend)
+  - `usePedidos.ts` — Optimistic updates en `useUpdateItemPreparado` con rollback en `onError`
+- **Tests:** 1165/1165 PASS (58 archivos). Build: CLEAN.
+- **Plan detallado:** `.claude/plans/smooth-shimmying-canyon.md`
+
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
 - Cierre tecnico/documental: completado.

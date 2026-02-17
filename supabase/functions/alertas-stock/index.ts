@@ -3,6 +3,9 @@ import { createLogger } from '../_shared/logger.ts';
 import { ok, fail } from '../_shared/response.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
+/** Timeout for individual PostgREST fetches */
+const FETCH_TIMEOUT_MS = 8000;
+
 Deno.serve(async (req) => {
     const corsHeaders = getCorsHeaders();
     const preflight = handleCors(req, corsHeaders);
@@ -31,121 +34,104 @@ Deno.serve(async (req) => {
             return authCheck.errorResponse as Response;
         }
 
-        // Obtener stock del depósito
-        const stockResponse = await fetch(
-            `${supabaseUrl}/rest/v1/stock_deposito?select=*`,
-            {
-                headers: {
-                    'apikey': serviceRoleKey,
-                    'Authorization': `Bearer ${serviceRoleKey}`,
-                }
-            }
-        );
+        const headers = {
+            'apikey': serviceRoleKey,
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'Content-Type': 'application/json',
+        };
+
+        // FIX: Batch fetch stock + productos + proveedores in 3 queries instead of N+1
+        // Join stock with producto info in a single query
+        const [stockResponse, proveedoresResponse] = await Promise.all([
+            fetch(
+                `${supabaseUrl}/rest/v1/stock_deposito?select=*,productos(id,nombre,sku,proveedor_principal_id,activo)`,
+                { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+            ),
+            fetch(
+                `${supabaseUrl}/rest/v1/proveedores?select=id,nombre`,
+                { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) }
+            ),
+        ]);
 
         if (!stockResponse.ok) {
-            throw new Error('Error al obtener stock');
+            throw new Error(`Error al obtener stock: ${stockResponse.status}`);
         }
 
         const stockItems = await stockResponse.json();
+
+        // Build proveedor lookup map
+        const proveedorMap = new Map<string, string>();
+        if (proveedoresResponse.ok) {
+            const proveedores = await proveedoresResponse.json();
+            for (const p of proveedores) {
+                proveedorMap.set(p.id, p.nombre);
+            }
+        }
+
         const alertas = [];
         const productosConAlerta = [];
+        const tareasToCreate: Record<string, unknown>[] = [];
 
         for (const item of stockItems) {
-            // Verificar si está por debajo del mínimo
             if (item.cantidad_actual <= item.stock_minimo) {
-                try {
-                    // Obtener información del producto
-                    const prodResponse = await fetch(
-                        `${supabaseUrl}/rest/v1/productos?id=eq.${item.producto_id}&select=*`,
-                        {
-                            headers: {
-                                'apikey': serviceRoleKey,
-                                'Authorization': `Bearer ${serviceRoleKey}`,
-                            }
-                        }
-                    );
+                const producto = item.productos;
+                if (!producto || !producto.activo) continue;
 
-                    if (!prodResponse.ok) {
-                        continue;
-                    }
+                const proveedorNombre = producto.proveedor_principal_id
+                    ? (proveedorMap.get(producto.proveedor_principal_id) ?? 'Sin asignar')
+                    : 'Sin asignar';
 
-                    const productos = await prodResponse.json();
-                    
-                    if (productos.length > 0) {
-                        const producto = productos[0];
-                        
-                        // Obtener proveedor
-                        let proveedorNombre = 'Sin asignar';
-                        if (producto.proveedor_principal_id) {
-                            const provResponse = await fetch(
-                                `${supabaseUrl}/rest/v1/proveedores?id=eq.${producto.proveedor_principal_id}&select=nombre`,
-                                {
-                                    headers: {
-                                        'apikey': serviceRoleKey,
-                                        'Authorization': `Bearer ${serviceRoleKey}`,
-                                    }
-                                }
-                            );
+                const nivel = item.cantidad_actual === 0 ? 'crítico' :
+                    item.cantidad_actual < item.stock_minimo / 2 ? 'urgente' : 'bajo';
 
-                            if (provResponse.ok) {
-                                const proveedores = await provResponse.json();
-                                if (proveedores.length > 0) {
-                                    proveedorNombre = proveedores[0].nombre;
-                                }
-                            }
-                        }
+                alertas.push({
+                    producto: producto.nombre,
+                    cantidad_actual: item.cantidad_actual,
+                    stock_minimo: item.stock_minimo,
+                    ubicacion: item.ubicacion,
+                    proveedor: proveedorNombre,
+                    nivel: nivel
+                });
 
-                        const nivel = item.cantidad_actual === 0 ? 'crítico' : 
-                                     item.cantidad_actual < item.stock_minimo / 2 ? 'urgente' : 'bajo';
+                productosConAlerta.push(producto.nombre);
 
-                        alertas.push({
-                            producto: producto.nombre,
-                            cantidad_actual: item.cantidad_actual,
-                            stock_minimo: item.stock_minimo,
-                            ubicacion: item.ubicacion,
-                            proveedor: proveedorNombre,
-                            nivel: nivel
-                        });
-
-                        productosConAlerta.push(producto.nombre);
-
-                        // Crear tarea automática si está en nivel crítico
-                        if (nivel === 'crítico') {
-                            const tareaResponse = await fetch(
-                                `${supabaseUrl}/rest/v1/tareas_pendientes`,
-                                {
-                                    method: 'POST',
-                                    headers: {
-                                        'apikey': serviceRoleKey,
-                                        'Authorization': `Bearer ${serviceRoleKey}`,
-                                        'Content-Type': 'application/json',
-                                    },
-                                    body: JSON.stringify({
-                                        titulo: `URGENTE: Stock agotado - ${producto.nombre}`,
-                                        descripcion: `El producto ${producto.nombre} está agotado en depósito. Ubicación: ${item.ubicacion}. Proveedor: ${proveedorNombre}`,
-                                        prioridad: 'urgente',
-                                        estado: 'pendiente',
-                                        asignada_a_nombre: 'Encargado Compras',
-                                        creada_por_nombre: 'Sistema Automatizado',
-                                        fecha_vencimiento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
-                                    })
-                                }
-                            );
-
-                            if (!tareaResponse.ok) {
-                                logger.warn('Error creando tarea automatica', {
-                                    producto: producto.nombre,
-                                    status: tareaResponse.status,
-                                });
-                            }
-                        }
-                    }
-
-                } catch (error) {
-                    logger.error('Error procesando item de stock', {
-                        error: error instanceof Error ? error.message : String(error),
+                if (nivel === 'crítico') {
+                    tareasToCreate.push({
+                        titulo: `URGENTE: Stock agotado - ${producto.nombre}`,
+                        descripcion: `El producto ${producto.nombre} está agotado en depósito. Ubicación: ${item.ubicacion}. Proveedor: ${proveedorNombre}`,
+                        prioridad: 'urgente',
+                        estado: 'pendiente',
+                        asignada_a_nombre: 'Encargado Compras',
+                        creada_por_nombre: 'Sistema Automatizado',
+                        fecha_vencimiento: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString()
                     });
                 }
+            }
+        }
+
+        // FIX: Batch insert all critical tasks in one request instead of N individual POSTs
+        if (tareasToCreate.length > 0) {
+            try {
+                const tareaResponse = await fetch(
+                    `${supabaseUrl}/rest/v1/tareas_pendientes`,
+                    {
+                        method: 'POST',
+                        headers,
+                        signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+                        body: JSON.stringify(tareasToCreate),
+                    }
+                );
+
+                if (!tareaResponse.ok) {
+                    logger.warn('Error creando tareas automaticas (batch)', {
+                        status: tareaResponse.status,
+                        count: tareasToCreate.length,
+                    });
+                }
+            } catch (error) {
+                logger.error('Error batch-creating tareas', {
+                    error: error instanceof Error ? error.message : String(error),
+                });
             }
         }
 

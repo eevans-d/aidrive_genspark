@@ -38,9 +38,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     )
 
-    // Global 401 interceptor: signOut on AUTH_REQUIRED from apiClient
+    // Global 401 interceptor: try refresh before forcing signOut
+    // Uses a lock to deduplicate concurrent 401 events
+    let refreshing: Promise<void> | null = null
     const unsubscribeAuth = authEvents.on(() => {
-      handleSignOut()
+      if (!refreshing) {
+        refreshing = supabase.auth.refreshSession()
+          .then(({ error }) => { if (error) handleSignOut() })
+          .catch(() => handleSignOut())
+          .finally(() => { refreshing = null })
+      }
     })
 
     return () => {

@@ -110,6 +110,28 @@ export function getCircuitBreakersSnapshot(): Array<[string, ReturnType<CircuitB
 
 /** RPC availability: undefined=unknown, true=available, false=missing */
 let cbRpcAvailable: boolean | undefined = undefined;
+/** Timestamp when cbRpcAvailable was last set to false (for re-check TTL) */
+let cbRpcDisabledAt = 0;
+/** Re-check RPC availability every 5 minutes instead of permanent disable */
+const CB_RPC_RECHECK_MS = 5 * 60 * 1000;
+/** Timeout for RPC calls to prevent death spiral */
+const CB_RPC_TIMEOUT_MS = 3000;
+
+function isCbRpcDisabled(): boolean {
+  if (cbRpcAvailable === false) {
+    if (Date.now() - cbRpcDisabledAt >= CB_RPC_RECHECK_MS) {
+      cbRpcAvailable = undefined; // allow re-check
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+function disableCbRpc(): void {
+  cbRpcAvailable = false;
+  cbRpcDisabledAt = Date.now();
+}
 
 /**
  * Record a circuit breaker event using shared RPC.
@@ -131,8 +153,8 @@ export async function recordCircuitBreakerEvent(
     fallbackBreaker.recordFailure();
   }
 
-  // If we know RPC is missing, skip
-  if (cbRpcAvailable === false) {
+  // If we know RPC is missing (with TTL re-check), skip
+  if (isCbRpcDisabled()) {
     return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
   }
 
@@ -145,6 +167,7 @@ export async function recordCircuitBreakerEvent(
         apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
       },
+      signal: AbortSignal.timeout(CB_RPC_TIMEOUT_MS),
       body: JSON.stringify({
         p_key: key,
         p_event: event,
@@ -155,7 +178,7 @@ export async function recordCircuitBreakerEvent(
     });
 
     if (response.status === 404) {
-      cbRpcAvailable = false;
+      disableCbRpc();
       return { state: fallbackBreaker.getState(), allows: fallbackBreaker.allowRequest() };
     }
 
@@ -191,7 +214,7 @@ export async function checkCircuitBreakerShared(
   fallbackBreaker: CircuitBreaker,
   options: Partial<CircuitBreakerOptions> = {},
 ): Promise<{ state: CircuitState; allows: boolean; failures: number }> {
-  if (cbRpcAvailable === false) {
+  if (isCbRpcDisabled()) {
     const stats = fallbackBreaker.getStats();
     return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
   }
@@ -205,6 +228,7 @@ export async function checkCircuitBreakerShared(
         apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
       },
+      signal: AbortSignal.timeout(CB_RPC_TIMEOUT_MS),
       body: JSON.stringify({
         p_key: key,
         p_open_timeout_seconds: Math.ceil(opts.openTimeoutMs / 1000),
@@ -212,7 +236,7 @@ export async function checkCircuitBreakerShared(
     });
 
     if (response.status === 404) {
-      cbRpcAvailable = false;
+      disableCbRpc();
       const stats = fallbackBreaker.getStats();
       return { state: stats.state, allows: stats.state !== 'open', failures: stats.failures };
     }
@@ -245,4 +269,5 @@ export async function checkCircuitBreakerShared(
 // Exported for testing
 export function _resetCbRpcAvailability(): void {
   cbRpcAvailable = undefined;
+  cbRpcDisabledAt = 0;
 }

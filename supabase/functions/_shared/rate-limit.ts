@@ -122,6 +122,28 @@ export class FixedWindowRateLimiter {
 
 /** RPC availability flag: undefined=unknown, true=available, false=missing */
 let rpcAvailable: boolean | undefined = undefined;
+/** Timestamp when rpcAvailable was last set to false (for re-check TTL) */
+let rlRpcDisabledAt = 0;
+/** Re-check RPC availability every 5 minutes instead of permanent disable */
+const RL_RPC_RECHECK_MS = 5 * 60 * 1000;
+/** Timeout for RPC calls to prevent death spiral */
+const RL_RPC_TIMEOUT_MS = 3000;
+
+function isRlRpcDisabled(): boolean {
+  if (rpcAvailable === false) {
+    if (Date.now() - rlRpcDisabledAt >= RL_RPC_RECHECK_MS) {
+      rpcAvailable = undefined; // allow re-check
+      return false;
+    }
+    return true;
+  }
+  return false;
+}
+
+function disableRlRpc(): void {
+  rpcAvailable = false;
+  rlRpcDisabledAt = Date.now();
+}
 
 /**
  * Check rate limit using shared RPC (cross-instance).
@@ -142,8 +164,8 @@ export async function checkRateLimitShared(
   supabaseUrl: string,
   fallbackLimiter: FixedWindowRateLimiter,
 ): Promise<RateLimitResult> {
-  // If we already know RPC is missing, use fallback directly
-  if (rpcAvailable === false) {
+  // If we already know RPC is missing (with TTL re-check), use fallback directly
+  if (isRlRpcDisabled()) {
     return fallbackLimiter.check(key);
   }
 
@@ -155,6 +177,7 @@ export async function checkRateLimitShared(
         apikey: serviceRoleKey,
         Authorization: `Bearer ${serviceRoleKey}`,
       },
+      signal: AbortSignal.timeout(RL_RPC_TIMEOUT_MS),
       body: JSON.stringify({
         p_key: key,
         p_limit: limit,
@@ -163,8 +186,8 @@ export async function checkRateLimitShared(
     });
 
     if (response.status === 404) {
-      // RPC does not exist yet → fallback
-      rpcAvailable = false;
+      // RPC does not exist yet → fallback (with re-check TTL)
+      disableRlRpc();
       return fallbackLimiter.check(key);
     }
 
@@ -195,6 +218,7 @@ export async function checkRateLimitShared(
 // Exported for testing
 export function _resetRpcAvailability(): void {
   rpcAvailable = undefined;
+  rlRpcDisabledAt = 0;
 }
 
 type AdaptiveRateLimiterOptions = {
