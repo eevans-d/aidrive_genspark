@@ -21,7 +21,7 @@ Sistema de gestion integral para mini markets que cubre:
 - **Tareas**: creacion, asignacion, completado, cancelacion, reportes de efectividad por usuario.
 - **Productos y categorias**: CRUD completo, precios con redondeo automatico, historial de precios, margen sugerido.
 - **Proveedores**: gestion de proveedores, scraping automatizado de catalogo (Maxiconsumo), comparacion de precios, alertas de cambio, insights de arbitraje y oportunidades de compra.
-- **Reportes y automatizaciones**: reportes diarios automaticos, alertas de stock bajo, alertas de vencimiento, notificaciones de tareas, health monitoring de cron jobs.
+- **Reportes y automatizaciones**: reportes diarios automaticos (generan datos pero no los persisten ni envian), alertas de stock bajo (crean tareas en DB, sin notificacion externa), notificaciones de tareas (registran en DB, sin envio externo por defecto), health monitoring de cron jobs.
 - **Ofertas**: sugerencia automatica de ofertas por proximidad a vencimiento, aplicacion y desactivacion.
 - **Busqueda global**: busqueda unificada across productos, proveedores, tareas, pedidos y clientes.
 - **Bitacora de turnos**: registro de notas operativas por turno.
@@ -33,10 +33,10 @@ Sistema de gestion integral para mini markets que cubre:
      |                       |
      |                [api-proveedor (Internal)]  --->  [scraper-maxiconsumo]
      |                       |
-     |                [cron-* (Automated)]  --->  [SendGrid/Slack/Twilio]
+     |                [cron-* (Automated)]  --->  [SendGrid/Slack] (requiere NOTIFICATIONS_MODE=real)
      |
      +--- [Supabase Auth]
-     +--- [Sentry (Observability)]
+     +--- [Sentry (Observability)] (requiere VITE_SENTRY_DSN)
 ```
 
 - **Frontend**: React 18 SPA con Vite, TanStack Query, Tailwind CSS, shadcn/ui, PWA
@@ -112,13 +112,15 @@ Sistema de gestion integral para mini markets que cubre:
 
 ### 2.4 Automatizaciones (cron jobs)
 
-| Job | Frecuencia | Funcion |
-|-----|-----------|---------|
-| `alertas-stock` | cada hora | Detecta productos bajo stock minimo y genera alertas |
-| `notificaciones-tareas` | cada 2 horas | Notifica tareas vencidas o proximas a vencer |
-| `reportes-automaticos` | diario 08:00 UTC | Genera reporte diario (stock, movimientos, tareas, precios, faltantes) |
-| `maintenance_cleanup` | domingos 04:00 UTC | Limpieza de datos obsoletos |
-| `refresh_stock_views` | cada hora (opcional) | Refresca vistas materializadas de stock |
+| Job | Frecuencia | Funcion | Estado real |
+|-----|-----------|---------|-------------|
+| `alertas-stock` | cada hora | Detecta productos bajo stock minimo | Crea tareas en DB. NO envia notificaciones externas |
+| `notificaciones-tareas` | cada 2 horas | Registra recordatorios de tareas vencidas | Crea registros en `notificaciones_tareas`. NO envia email/SMS |
+| `reportes-automaticos` | diario 08:00 UTC | Genera reporte diario (stock, movimientos, tareas, precios, faltantes) | Retorna JSON al caller. NO persiste ni envia el reporte |
+| `maintenance_cleanup` | domingos 04:00 UTC | Limpieza de datos obsoletos | Operativo |
+| `refresh_stock_views` | cada hora (opcional) | Refresca vistas materializadas de stock | Operativo |
+
+> **NOTA CRITICA:** `cron-notifications` tiene codigo real para SendGrid y Slack, pero esta bloqueado por `NOTIFICATIONS_MODE=simulation` (default). SMS/Twilio esta 100% simulado (fake). Para activar notificaciones reales, ver Seccion 13.
 
 ---
 
@@ -203,27 +205,28 @@ Sistema de gestion integral para mini markets que cubre:
 
 ## 6. OBSERVABILIDAD EN PRODUCCION
 
-| Componente | Herramienta | Configuracion |
-|------------|-------------|---------------|
-| Frontend errors | Sentry | `VITE_SENTRY_DSN` |
-| Backend logging | Logger estructurado | `_shared/logger.ts` con niveles configurables |
-| Frontend error reports | localStorage | `mm_error_reports_v1` |
-| Cron monitoring | cron-health-monitor | Edge Function dedicada |
-| Health checks | /health endpoints | api-minimarket + api-proveedor |
-| Auth events | authEvents | Pub/sub local para sesion |
+| Componente | Herramienta | Estado real |
+|------------|-------------|-------------|
+| Frontend errors | Sentry | **INACTIVO por defecto** - requiere `VITE_SENTRY_DSN` para activar |
+| Backend logging | Logger estructurado | **ACTIVO** - `_shared/logger.ts` con niveles configurables |
+| Frontend error reports | localStorage | **ACTIVO** - `mm_error_reports_v1` (solo local, sin envio externo) |
+| Cron monitoring | cron-health-monitor | **ACTIVO** - Edge Function dedicada |
+| Health checks | /health endpoints | **ACTIVO** - api-minimarket + api-proveedor |
+| Auth events | authEvents | **ACTIVO** - Pub/sub local para sesion |
+| SIEM/centralizacion | - | **NO IMPLEMENTADO** - no hay envio a sistema centralizado externo |
 
 ---
 
 ## 7. SERVICIOS EXTERNOS INTEGRADOS
 
-| Servicio | Proposito | Variables requeridas |
-|----------|-----------|---------------------|
-| Supabase | Auth, DB, Edge Functions, Storage | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` |
-| SendGrid/SMTP | Notificaciones por email | `SENDGRID_API_KEY` o `SMTP_*` |
-| Slack | Alertas operativas | `SLACK_WEBHOOK_URL` |
-| Twilio | Notificaciones SMS | `TWILIO_*` |
-| Sentry | Error tracking frontend | `VITE_SENTRY_DSN` |
-| Maxiconsumo | Proveedor (scraping) | URL publica |
+| Servicio | Proposito | Variables requeridas | Estado real |
+|----------|-----------|---------------------|-------------|
+| Supabase | Auth, DB, Edge Functions, Storage | `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` | **ACTIVO** - core del sistema |
+| SendGrid | Notificaciones por email | `SENDGRID_API_KEY` + `NOTIFICATIONS_MODE=real` | **BLOQUEADO** - codigo real existe, deshabilitado por feature flag |
+| Slack | Alertas operativas | `SLACK_WEBHOOK_URL` + `NOTIFICATIONS_MODE=real` | **BLOQUEADO** - codigo real existe, canal inactivo por defecto |
+| Twilio | Notificaciones SMS | `TWILIO_*` | **NO IMPLEMENTADO** - codigo 100% simulado (fake sleep + fake ID) |
+| Sentry | Error tracking frontend | `VITE_SENTRY_DSN` | **INACTIVO** - init() condicional, DSN vacio por defecto |
+| Maxiconsumo | Proveedor (scraping) | URL publica | **ACTIVO** - scraper real, fragil a cambios de HTML |
 
 ---
 
@@ -248,38 +251,54 @@ Sistema de gestion integral para mini markets que cubre:
 
 ## 9. ESTADO OBJETIVO vs ESTADO ACTUAL
 
-### 9.1 Funcionalidades 100% operativas (en produccion)
+### 9.1 Funcionalidades 100% operativas (codigo real, probado, sin dependencia de config externa)
 
-- Inventario y deposito (CRUD + movimientos + kardex)
-- Ventas POS con idempotencia
-- Gestion de clientes y cuenta corriente
-- Pedidos con preparacion de items
-- Tareas con asignacion y efectividad
-- Productos con precios y categorias
-- Proveedores con scraping y comparacion
-- Reportes automaticos diarios
-- Alertas de stock bajo
-- Ofertas por vencimiento
-- Busqueda global
+- Inventario y deposito (CRUD + movimientos + kardex + stored procedures)
+- Ventas POS con idempotencia (sp_procesar_venta_pos, stock locking, cuenta corriente)
+- Gestion de clientes y cuenta corriente (ledger contable real)
+- Pedidos con preparacion de items (workflow de estados, checklist)
+- Tareas con asignacion y efectividad (CRUD + reportes)
+- Productos con precios y categorias (sp_aplicar_precio, historial, margen)
+- Proveedores con scraping y comparacion (scraper real pero fragil a cambios HTML)
+- Ofertas por vencimiento (sugerencia + activacion/desactivacion)
+- Busqueda global (5 entidades en paralelo)
 - Bitacora de turnos
-- Reservas de stock idempotentes
-- Sistema de roles y permisos (frontend + backend + DB)
-- Circuit breaker y rate limiting
-- Auth JWT + shared secret
-- CI/CD con quality gates
+- Reservas de stock idempotentes (sp_reservar_stock, row locking)
+- Sistema de roles y permisos (frontend DENY-BY-DEFAULT + backend requireRole + DB RLS)
+- Circuit breaker y rate limiting (shared state en DB)
+- Auth JWT + shared secret (timing-safe)
+- CI/CD con quality gates (80% coverage)
+- 15 pantallas frontend completas con hooks reales
+
+### 9.1b Funcionalidades con implementacion parcial o deshabilitada
+
+| Funcionalidad | Estado | Detalle |
+|---------------|--------|---------|
+| Reportes automaticos diarios | PARCIAL | Genera datos pero NO los persiste ni envia. JSON se pierde si el caller no captura |
+| Alertas de stock bajo | PARCIAL | Detecta y crea tareas en DB. NO notifica al personal externamente |
+| Notificaciones de tareas | PARCIAL | Registra recordatorios en DB. NO envia email/SMS/Slack |
+| Email via SendGrid | BLOQUEADO | Codigo real existe pero `NOTIFICATIONS_MODE=simulation` (default) |
+| Alertas Slack | BLOQUEADO | Webhook real existe pero canal inactivo por defecto |
+| SMS via Twilio | NO IMPLEMENTADO | Codigo 100% fake (sleep 200ms + ID simulado) |
+| Sentry error tracking | INACTIVO | `Sentry.init()` condicional, DSN no configurado |
+| Alertas de vencimiento | OPERATIVO | Funciona como Edge Function, pero tiene misma limitacion de delivery |
 
 ### 9.2 Items pendientes para produccion completa
 
-| # | Item | Impacto | Seccion auditoria |
-|---|------|---------|-------------------|
-| 1 | Enforzar validacion de metodo HTTP en api-proveedor | CRITICO | 9 (CRITICOS) |
-| 2 | Alinear OpenAPI api-proveedor con runtime real | CRITICO | 9 (CRITICOS) |
-| 3 | Configurar `.env.test` para integration/e2e | IMPORTANTE | 9 (IMPORTANTES) |
-| 4 | Sincronizar OpenAPI api-minimarket (POST/PUT proveedores, /compras/recepcion) | IMPORTANTE | 9 (IMPORTANTES) |
-| 5 | Actualizar dependencias vulnerables (transitive HIGH/MODERATE) | IMPORTANTE | 9 (IMPORTANTES) |
-| 6 | Agregar security headers (CSP, HSTS) en servidor | MENOR | 9 (MENORES) |
-| 7 | Configurar formatter dedicado (Prettier) | MENOR | 9 (MENORES) |
-| 8 | Añadir eviccion automatica a rate limiter maps | MENOR | 9 (MENORES) |
+| # | Item | Impacto | Seccion |
+|---|------|---------|---------|
+| 1 | Enforzar validacion de metodo HTTP en api-proveedor | CRITICO | Auditoria 9 |
+| 2 | Alinear OpenAPI api-proveedor con runtime real | CRITICO | Auditoria 9 |
+| 3 | Activar `NOTIFICATIONS_MODE=real` + configurar `SENDGRID_API_KEY` | CRITICO | Seccion 13 |
+| 4 | Implementar Twilio SMS real o eliminar integracion fake | IMPORTANTE | Seccion 7 |
+| 5 | Hacer que `reportes-automaticos` persista/envie el reporte generado | IMPORTANTE | Seccion 2.4 |
+| 6 | Conectar `alertas-stock` y `notificaciones-tareas` con `cron-notifications` | IMPORTANTE | Seccion 2.4 |
+| 7 | Configurar `VITE_SENTRY_DSN` para error tracking real | IMPORTANTE | Seccion 6 |
+| 8 | Configurar `.env.test` para integration/e2e | IMPORTANTE | Auditoria 9 |
+| 9 | Sincronizar OpenAPI api-minimarket (POST/PUT proveedores, /compras/recepcion) | IMPORTANTE | Auditoria 9 |
+| 10 | Actualizar dependencias vulnerables (transitive HIGH/MODERATE) | IMPORTANTE | Auditoria 9 |
+| 11 | Agregar security headers (CSP, HSTS) | MENOR | Auditoria 9 |
+| 12 | Añadir eviccion automatica a rate limiter maps | MENOR | Auditoria 9 |
 
 ### 9.3 Condicion de salida para produccion
 
@@ -291,7 +310,9 @@ produccion_ready = (
     AND security_tests_pass
     AND build_exitoso
     AND env_secrets_configurados
-    AND cron_jobs_verificados
+    AND NOTIFICATIONS_MODE=real (con SendGrid key activa)
+    AND VITE_SENTRY_DSN configurado
+    AND cron_jobs_verificados_end_to_end
 )
 ```
 
@@ -328,6 +349,8 @@ produccion_ready = (
 | `LOG_LEVEL` | info | Nivel de logging |
 | `REQUIRE_ORIGIN` | true | Exigir header Origin en requests browser |
 | `NOTIFICATIONS_MODE` | - | Modo de notificaciones |
+
+> **ATENCION PRODUCCION:** `NOTIFICATIONS_MODE` NO tiene default explícito en `.env.example`. En runtime, `cron-notifications` lo lee y si NO es `real`, opera en modo simulacion (no envia emails ni Slack reales). Para produccion DEBE configurarse como `real` junto con las API keys correspondientes.
 
 ---
 
@@ -394,6 +417,77 @@ aidrive_genspark/
 | Error rate frontend | < 1% de sesiones |
 | Build time | < 2 minutos |
 | Deploy downtime | 0 (rolling deploys Supabase) |
+
+---
+
+## 13. PREREQUISITOS DE ACTIVACION PARA PRODUCCION
+
+> Esta seccion describe los pasos concretos para activar las funcionalidades que estan implementadas en codigo pero deshabilitadas por configuracion o incompletas.
+
+### 13.1 Activar notificaciones email (SendGrid)
+
+1. Obtener API key de SendGrid (cuenta verificada con sender authentication).
+2. Configurar secrets en Supabase:
+   ```bash
+   supabase secrets set SENDGRID_API_KEY=SG.xxxxx
+   supabase secrets set NOTIFICATIONS_MODE=real
+   supabase secrets set EMAIL_FROM=minimarket@tudominio.com
+   ```
+3. Verificar que `cron-notifications` retorna `200` en lugar de `503` al ser invocado.
+4. Monitorear logs de `cron-notifications` para confirmar envios reales.
+
+### 13.2 Activar alertas Slack
+
+1. Crear webhook entrante en workspace de Slack (canal `#alertas-minimarket` o equivalente).
+2. Configurar secret:
+   ```bash
+   supabase secrets set SLACK_WEBHOOK_URL=https://hooks.slack.com/services/xxx/yyy/zzz
+   ```
+3. `NOTIFICATIONS_MODE` ya debe ser `real` (paso 13.1).
+4. Las alertas criticas (stock bajo, tareas vencidas) se enviaran automaticamente.
+
+### 13.3 Activar Sentry error tracking
+
+1. Crear proyecto en Sentry (tipo React).
+2. Obtener DSN del proyecto.
+3. Configurar variable de entorno del frontend:
+   ```
+   VITE_SENTRY_DSN=https://xxxxx@o123456.ingest.sentry.io/789
+   ```
+4. Re-build del frontend (`pnpm build`).
+5. Verificar en Sentry dashboard que los eventos llegan.
+
+### 13.4 Implementar SMS real (Twilio) - REQUIERE DESARROLLO
+
+**Estado actual:** El codigo SMS en `cron-notifications/index.ts` es 100% simulado (`sleep(200ms)` + ID fake). Para SMS real:
+
+1. **Opcion A - Implementar Twilio real:**
+   - Reemplazar la funcion `sendSMS()` simulada con llamadas reales a Twilio REST API.
+   - Configurar secrets: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_FROM_NUMBER`.
+   - Agregar tests de integracion.
+
+2. **Opcion B - Eliminar integracion fake:**
+   - Remover el canal SMS del sistema de notificaciones.
+   - Actualizar la UI de preferencias de notificacion si aplica.
+   - Documentar que SMS no esta soportado.
+
+### 13.5 Conectar cron jobs con delivery externo
+
+**Problema actual:** `alertas-stock` y `notificaciones-tareas` crean registros en DB pero NO invocan a `cron-notifications` para enviar los mensajes externamente.
+
+**Solucion requerida:**
+1. Modificar `alertas-stock` para que despues de crear tareas, invoque `cron-notifications` con los destinatarios y datos relevantes.
+2. Modificar `notificaciones-tareas` para que despues de crear registros en `notificaciones_tareas`, invoque `cron-notifications`.
+3. Alternativa: crear un cron job adicional que periodicente lea `notificaciones_tareas` no enviadas y las despache via `cron-notifications`.
+
+### 13.6 Persistir reportes automaticos
+
+**Problema actual:** `reportes-automaticos` genera un JSON completo pero solo lo retorna como respuesta HTTP. Si el caller (pg_net) no captura el body, los datos se pierden.
+
+**Solucion requerida:**
+1. Crear tabla `reportes_diarios` (id, fecha, tipo, datos JSONB, created_at).
+2. Modificar `reportes-automaticos` para insertar el reporte en esta tabla antes de retornar.
+3. Opcionalmente enviar el reporte por email via `cron-notifications`.
 
 ---
 
