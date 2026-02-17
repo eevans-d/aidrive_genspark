@@ -33,8 +33,8 @@ info:
     - ROI de oportunidades identificadas
     
     ## Autenticación
-    - **Endpoints públicos**: Status, precios, productos, comparación
-    - **Endpoints protegidos**: Sincronización manual, configuración
+    - **Todos los endpoints requieren autenticación** via shared secret (`x-api-secret` header), excepto `/health`
+    - Autenticación verificada en runtime: `requiresAuth: true` para todos menos health
     
     ## Rate Limiting
     - 100 requests/minuto para endpoints públicos
@@ -304,6 +304,8 @@ paths:
         - Sistema
       summary: Estado del sistema de integración
       description: Obtiene el estado actual del sistema de integración con proveedores
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Estado del sistema
@@ -325,6 +327,8 @@ paths:
         - Precios
       summary: Listar precios actuales del proveedor
       description: Obtiene los precios actuales de productos del proveedor con opciones de filtrado
+      security:
+        - BearerAuth: []
       parameters:
         - name: categoria
           in: query
@@ -394,6 +398,8 @@ paths:
         - Productos
       summary: Buscar productos disponibles
       description: Busca productos disponibles en el proveedor con filtros avanzados
+      security:
+        - BearerAuth: []
       parameters:
         - name: busqueda
           in: query
@@ -425,6 +431,13 @@ paths:
             minimum: 1
             maximum: 1000
             default: 100
+        - name: ordenar_por
+          in: query
+          description: Criterio de ordenamiento
+          schema:
+            type: string
+            enum: [nombre_asc, precio_asc, precio_desc, stock_desc, categoria_asc]
+            default: nombre_asc
       responses:
         '200':
           description: Lista de productos encontrados
@@ -467,6 +480,8 @@ paths:
         - Comparación
       summary: Comparación de precios con sistema
       description: Obtiene oportunidades de ahorro comparando precios del proveedor con el sistema
+      security:
+        - BearerAuth: []
       parameters:
         - name: solo_oportunidades
           in: query
@@ -487,7 +502,7 @@ paths:
           description: Ordenamiento de resultados
           schema:
             type: string
-            enum: [diferencia_absoluta_desc, diferencia_absoluta_asc, diferencia_porcentual_desc, nombre_asc]
+            enum: [diferencia_absoluta_desc, diferencia_absoluta_asc, diferencia_relativa_desc, diferencia_relativa_asc, actualizado_desc]
             default: diferencia_absoluta_desc
         - name: limit
           in: query
@@ -495,8 +510,14 @@ paths:
           schema:
             type: integer
             minimum: 1
-            maximum: 200
+            maximum: 500
             default: 50
+        - name: incluir_analisis
+          in: query
+          description: Incluir análisis avanzado con scores y recomendaciones
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Oportunidades de ahorro identificadas
@@ -548,6 +569,13 @@ paths:
           schema:
             type: boolean
             default: false
+        - name: priority
+          in: query
+          description: Prioridad de la sincronización
+          schema:
+            type: string
+            enum: [normal, alta, baja]
+            default: normal
       responses:
         '200':
           description: Sincronización iniciada exitosamente
@@ -576,20 +604,22 @@ paths:
         - Alertas
       summary: Obtener alertas activas
       description: Lista alertas de cambios significativos en precios
+      security:
+        - BearerAuth: []
       parameters:
         - name: severidad
           in: query
           description: Filtrar por severidad de alerta
           schema:
             type: string
-            enum: [baja, media, alta, critica, todos]
+            enum: [todos, critica, alta, media, baja]
             default: todos
         - name: tipo
           in: query
-          description: Filtrar por tipo de cambio
+          description: Filtrar por tipo de alerta
           schema:
             type: string
-            enum: [aumento, disminucion, nuevo_producto, todos]
+            enum: [todos, precio, stock, sistema, otros]
             default: todos
         - name: limit
           in: query
@@ -599,6 +629,18 @@ paths:
             minimum: 1
             maximum: 100
             default: 20
+        - name: solo_no_procesadas
+          in: query
+          description: Solo mostrar alertas no procesadas
+          schema:
+            type: boolean
+            default: true
+        - name: incluir_analisis
+          in: query
+          description: Incluir análisis inteligente de alertas
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Lista de alertas activas
@@ -658,6 +700,19 @@ paths:
           description: Filtrar estadísticas por categoría
           schema:
             type: string
+        - name: granularidad
+          in: query
+          description: Granularidad temporal de las métricas
+          schema:
+            type: string
+            enum: [hora, dia, semana, mes]
+            default: dia
+        - name: incluir_predicciones
+          in: query
+          description: Incluir predicciones basadas en tendencias
+          schema:
+            type: boolean
+            default: false
       responses:
         '200':
           description: Estadísticas del periodo
@@ -730,42 +785,16 @@ paths:
         '401':
           description: No autorizado
 
-# === ENDPOINTS DEL SCRAPER ===
-
-  /scrape:
-    post:
+  /health:
+    get:
       tags:
-        - Scraping
-      summary: Ejecutar scraping completo
-      description: Inicia el proceso completo de scraping de productos y precios
-      security:
-        - BearerAuth: []
-      parameters:
-        - name: categoria
-          in: query
-          description: "Categoría específica a scrapear (default: todos)"
-          schema:
-            type: string
-            default: todos
-      requestBody:
-        required: false
-        content:
-          application/json:
-            schema:
-              type: object
-              properties:
-                trigger_type:
-                  type: string
-                  enum: [manual, automatico, programado]
-                  default: manual
-                force_full:
-                  type: boolean
-                  default: false
-                categoria:
-                  type: string
+        - Sistema
+      summary: Health check del sistema
+      description: Verifica el estado operativo del sistema y sus dependencias. No requiere autenticación.
+      security: []
       responses:
         '200':
-          description: Scraping completado
+          description: Sistema operativo
           content:
             application/json:
               schema:
@@ -776,65 +805,11 @@ paths:
                   data:
                     type: object
                     properties:
-                      scraping_completo:
-                        type: boolean
-                      categoria_solicitada:
+                      status:
                         type: string
-                      estadisticas:
+                        enum: [healthy, degraded, unhealthy]
+                      checks:
                         type: object
-                      productos_extraidos:
-                        type: integer
-                      productos_guardados:
-                        type: integer
-                      alertas_generadas:
-                        type: integer
-
-  /compare:
-    post:
-      tags:
-        - Scraping
-      summary: Comparar precios post-scraping
-      description: Genera comparaciones de precios después del scraping
-      responses:
-        '200':
-          description: Comparaciones generadas
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      comparaciones_realizadas:
-                        type: integer
-                      oportunidades_ahorro:
-                        type: integer
-
-  /alerts:
-    post:
-      tags:
-        - Scraping
-      summary: Generar alertas de cambios
-      description: Analiza precios históricos y genera alertas por cambios significativos
-      responses:
-        '200':
-          description: Alertas generadas
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  success:
-                    type: boolean
-                  data:
-                    type: object
-                    properties:
-                      alertas_generadas:
-                        type: integer
-                      alertas_criticas:
-                        type: integer
-                      alertas_altas:
-                        type: integer
+                      timestamp:
+                        type: string
+                        format: date-time

@@ -334,7 +334,7 @@ export async function handleMarcarItemPreparado(
 }
 
 // ============================================================================
-// ACTUALIZAR PAGO DEL PEDIDO
+// ACTUALIZAR PAGO DEL PEDIDO (via stored procedure — atomic, VULN-004 fix)
 // ============================================================================
 
 export async function handleActualizarPagoPedido(
@@ -346,37 +346,22 @@ export async function handleActualizarPagoPedido(
         monto_pagado: number
 ): Promise<Response> {
         try {
-                // Obtener pedido actual
-                const pedidos = await queryTable(supabaseUrl, 'pedidos', headers, { id: pedidoId }, 'id,monto_total');
-                if (pedidos.length === 0) {
-                        return fail('NOT_FOUND', 'Pedido no encontrado', 404, responseHeaders, { requestId });
-                }
-
-                const pedido = pedidos[0] as { monto_total: number };
-                const montoTotal = Number(pedido.monto_total) || 0;
-
-                let estado_pago: string;
-                if (monto_pagado >= montoTotal) {
-                        estado_pago = 'pagado';
-                } else if (monto_pagado > 0) {
-                        estado_pago = 'parcial';
-                } else {
-                        estado_pago = 'pendiente';
-                }
-
-                const result = await updateTable(supabaseUrl, 'pedidos', pedidoId, headers, {
-                        monto_pagado,
-                        estado_pago,
-                        updated_at: new Date().toISOString(),
+                const result = await callFunction(supabaseUrl, 'sp_actualizar_pago_pedido', headers, {
+                        p_pedido_id: pedidoId,
+                        p_monto_pagado: monto_pagado,
                 });
 
-                logger.info('PEDIDO_PAGO_ACTUALIZADO', { requestId, pedidoId, monto_pagado, estado_pago });
+                logger.info('PEDIDO_PAGO_ACTUALIZADO', { requestId, pedidoId, monto_pagado, resultado: result });
 
-                return ok((result as unknown[])[0], 200, responseHeaders, {
+                return ok(result, 200, responseHeaders, {
                         requestId,
-                        message: `Pago registrado. Estado: ${estado_pago}`,
+                        message: `Pago registrado. Estado: ${(result as Record<string, unknown>)?.estado_pago ?? 'actualizado'}`,
                 });
         } catch (error) {
+                const errMsg = error instanceof Error ? error.message : String(error);
+                if (errMsg.includes('PEDIDO_NO_ENCONTRADO')) {
+                        return fail('NOT_FOUND', 'Pedido no encontrado', 404, responseHeaders, { requestId });
+                }
                 logger.error('ACTUALIZAR_PAGO_ERROR', { requestId, pedidoId, monto_pagado, error });
                 throw error;
         }

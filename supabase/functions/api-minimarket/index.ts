@@ -1679,7 +1679,7 @@ Deno.serve(async (req) => {
       return respondOk((reserva as unknown[])[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
     }
 
-    // 23. POST /compras/recepcion - Registrar recepción de compra
+    // 23. POST /compras/recepcion - Registrar recepción de compra (VULN-003 fix: atomic via SP)
     if (path === '/compras/recepcion' && method === 'POST') {
       checkRole(['admin', 'deposito']);
 
@@ -1699,6 +1699,7 @@ Deno.serve(async (req) => {
 
       const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
 
+      // Validation of OC existence and pending quantity is now inside sp_movimiento_inventario (FOR UPDATE lock)
       const ordenes = await queryTable(supabaseUrl, 'ordenes_compra', requestHeaders(), { id: orden_compra_id });
       const orden = ordenes[0] as Record<string, unknown> | undefined;
 
@@ -1710,33 +1711,25 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'producto_id en orden invalido', 400);
       }
 
-      const total = Number(orden.cantidad ?? 0);
-      const recibida = Number(orden.cantidad_recibida ?? 0);
-      const pendiente = Math.max(
-        (Number.isFinite(total) ? total : 0) - (Number.isFinite(recibida) ? recibida : 0),
-        0,
-      );
+      try {
+        const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
+          p_producto_id: orden.producto_id,
+          p_tipo: 'entrada',
+          p_cantidad: cantidadNumero,
+          p_origen: `OC:${orden_compra_id}`,
+          p_destino: depositoValue,
+          p_usuario: user!.id,
+          p_orden_compra_id: orden_compra_id,
+        });
 
-      if (cantidadNumero > pendiente) {
-        return respondFail(
-          'CONFLICT',
-          'Cantidad supera lo pendiente de recepcion',
-          409,
-          { details: { pendiente } },
-        );
+        return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
+      } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        if (errMsg.includes('supera pendiente')) {
+          return respondFail('CONFLICT', 'Cantidad supera lo pendiente de recepcion', 409);
+        }
+        throw err;
       }
-
-      const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
-        p_producto_id: orden.producto_id,
-        p_tipo: 'entrada',
-        p_cantidad: cantidadNumero,
-        p_origen: `OC:${orden_compra_id}`,
-        p_destino: depositoValue,
-        p_usuario: user!.id,
-        p_orden_compra_id: orden_compra_id,
-      });
-
-      return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
     }
 
     // ====================================================================

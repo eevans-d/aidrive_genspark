@@ -1,4 +1,4 @@
-import { EndpointName } from './schemas.ts';
+import { EndpointName, endpointSchemas } from './schemas.ts';
 import { toAppError } from '../_shared/errors.ts';
 
 export type EndpointContext = {
@@ -26,6 +26,15 @@ export async function routeRequest(
     const handler = handlers[endpoint];
     if (!handler) {
         throw toAppError(new Error(`Endpoint no soportado: ${endpoint}`), 'ENDPOINT_NOT_SUPPORTED', 404);
+    }
+
+    const schema = endpointSchemas[endpoint];
+    if (schema && !schema.allowedMethods.includes(context.method)) {
+        throw toAppError(
+            new Error(`Método ${context.method} no permitido en /${endpoint}. Permitidos: ${schema.allowedMethods.join(', ')}`),
+            'METHOD_NOT_ALLOWED',
+            405
+        );
     }
 
     return handler(context);
