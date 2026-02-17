@@ -19,16 +19,16 @@
 
 ## Addendum Pre-Mortem Hardening (2026-02-17)
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
-- **Migración pendiente de aplicar:** `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
+- **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
   - CHECK constraint `stock_no_negativo` (`cantidad_actual >= 0`)
   - `sp_procesar_venta_pos` hardened: FOR UPDATE idempotency, FOR SHARE precios, FOR UPDATE crédito, EXCEPTION WHEN unique_violation
-  - **PRE-REQUISITO:** verificar `SELECT * FROM stock_deposito WHERE cantidad_actual < 0` antes de `supabase db push`
-- **Edge functions modificadas (pendientes de deploy):**
-  - `alertas-stock` — N+1 eliminado (300 seq → 2 parallel + batch INSERT)
-  - `notificaciones-tareas` — N+1 eliminado (batch check + batch INSERT)
-  - `reportes-automaticos` — 5 seq → `Promise.allSettled()` parallel
-  - `cron-notifications` — AbortSignal.timeout en 7 fetch calls
-  - `scraper-maxiconsumo` — MAX_CATEGORIES_PER_RUN=4
+  - Pre-requisito de stock negativo verificado: no habia filas con `cantidad_actual < 0`
+- **Edge functions desplegadas** el 2026-02-17:
+  - `alertas-stock` v17 — N+1 eliminado (300 seq → 2 parallel + batch INSERT)
+  - `notificaciones-tareas` v19 — N+1 eliminado (batch check + batch INSERT)
+  - `reportes-automaticos` v17 — 5 seq → `Promise.allSettled()` parallel
+  - `cron-notifications` v25 — AbortSignal.timeout en 7 fetch calls
+  - `scraper-maxiconsumo` v20 — MAX_CATEGORIES_PER_RUN=4
 - **Shared infra:** `_shared/circuit-breaker.ts` y `_shared/rate-limit.ts` con AbortSignal.timeout(3s) + TTL re-check 5min
 - **Frontend:**
   - `Pos.tsx` — ESC guard, scanner race lock (`isProcessingScan` ref), smart retry (solo 5xx vía `instanceof ApiError`)
@@ -37,6 +37,7 @@
   - `usePedidos.ts` — Optimistic updates en `useUpdateItemPreparado` con rollback en `onError`
 - **Tests:** 1165/1165 PASS (58 archivos). Build: CLEAN.
 - **Plan detallado:** `.claude/plans/smooth-shimmying-canyon.md`
+- **Deploy:** Migración + 5 edge functions desplegadas el 2026-02-17. Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`
 
 ## 1) Veredicto Consolidado
 - Mega Plan T01..T10: completado con 10 tareas PASS (incluye cierre de dependencias externas owner).
@@ -47,7 +48,7 @@
 ## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 41/41 local=remoto.
+- Migraciones: 42/42 local=remoto.
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
@@ -60,19 +61,19 @@
 ### Snapshot de Functions
 | Function | Version | Status |
 |---|---:|---|
-| alertas-stock | v16 | ACTIVE |
+| alertas-stock | v17 | ACTIVE |
 | alertas-vencimientos | v16 | ACTIVE |
 | api-minimarket | v26 | ACTIVE |
 | api-proveedor | v18 | ACTIVE |
 | cron-dashboard | v16 | ACTIVE |
 | cron-health-monitor | v16 | ACTIVE |
 | cron-jobs-maxiconsumo | v18 | ACTIVE |
-| cron-notifications | v24 | ACTIVE |
+| cron-notifications | v25 | ACTIVE |
 | cron-testing-suite | v17 | ACTIVE |
-| notificaciones-tareas | v18 | ACTIVE |
-| reportes-automaticos | v16 | ACTIVE |
+| notificaciones-tareas | v19 | ACTIVE |
+| reportes-automaticos | v17 | ACTIVE |
 | reposicion-sugerida | v16 | ACTIVE |
-| scraper-maxiconsumo | v19 | ACTIVE |
+| scraper-maxiconsumo | v20 | ACTIVE |
 
 ## 3) Resultado De Calidad (snapshot 2026-02-16)
 - Unit tests: 1165/1165 PASS (58 archivos).

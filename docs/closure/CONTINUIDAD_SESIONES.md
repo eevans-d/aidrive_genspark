@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-17T04:15:00Z
+**Ultima actualizacion:** 2026-02-17T06:05:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -33,8 +33,8 @@
 | Veredicto operativo | APROBADO (P0 cerrados/verificados) |
 | Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
 | Tests | 1165/1165 PASS (root), 45 auxiliary PASS + 4 skipped, frontend build PASS |
-| Edge Functions | 13 activas (`api-minimarket v26`, `scraper-maxiconsumo v19`) |
-| Migraciones | 41/41 local=remoto |
+| Edge Functions | 13 activas (`api-minimarket v26`, `scraper-maxiconsumo v20`) |
+| Migraciones | 42/42 local=remoto |
 
 ### Fuentes de verdad
 - `docs/ESTADO_ACTUAL.md`
@@ -61,6 +61,7 @@
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
+- Pre-Mortem Hardening D-126: 17 fixes criticos implementados, migración SQL + 5 edge functions desplegadas en remoto (2026-02-17). Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`.
 - P0 seguridad (RLS + `search_path`) cerrado y verificado en remoto (2026-02-15).
 - P2 `precios_proveedor` cerrado con migracion `20260216040000_rls_precios_proveedor.sql`.
 - P2 CORS cosmético en `scraper-maxiconsumo` cerrado; deploy remoto `v19`.
@@ -73,6 +74,8 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-17 | Deploy hardening D-126 (migración + 5 edge functions) | COMPLETADA | `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md` |
+| 2026-02-17 | Pre-Mortem Hardening D-126 (17 fixes criticos) | COMPLETADA | D-126, `.claude/plans/smooth-shimmying-canyon.md` |
 | 2026-02-16 | Matriz canales opcionales por entorno (D-121) | COMPLETADA | `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md` |
 | 2026-02-16 | Coverage global ≥80% (11 test files, 274 tests nuevos) | COMPLETADA | D-116, `test-reports/junit.xml` |
 | 2026-02-16 | Cierre P2 remoto + sync documental/env | COMPLETADA | `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`, `docs/closure/ENV_AUDIT_2026-02-16_045120.md` |
@@ -102,7 +105,8 @@
 
 ## 6. Inventario de context prompts
 
-- `docs/closure/CONTEXT_PROMPT_COVERAGE_AND_HARDENING_2026-02-16.md` — 25 tareas: coverage ≥80%, DX fixes, docs (ACTIVO)
+- `docs/closure/CONTEXT_PROMPT_DEPLOY_HARDENING_2026-02-17.md` — Deploy migracion + 5 edge functions + smoke tests + documentacion (COMPLETADO)
+- `docs/closure/CONTEXT_PROMPT_COVERAGE_AND_HARDENING_2026-02-16.md` — 25 tareas: coverage ≥80%, DX fixes, docs (COMPLETADO)
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico, referencia)
 - Prompts ad-hoc antiguos: removidos en D-109
 
