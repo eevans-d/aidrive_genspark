@@ -116,8 +116,8 @@
 - `docs/closure/CONTEXT_PROMPT_COVERAGE_AND_HARDENING_2026-02-16.md` — 25 tareas: coverage ≥80%, DX fixes, docs (COMPLETADO)
 - `docs/closure/CONTEXT_PROMPT_AUDITORIA_AVANZADA_PRODUCCION_2026-02-17_ULTRA_SHORT.md` — Auditoria avanzada read-only anti-drift (ACTIVO)
 - `docs/closure/CONTEXT_PROMPT_VALIDACION_POST_REMEDIACION_2026-02-17_ULTRA_SHORT.md` — Revalidacion post-remediacion + coherencia canonica (ACTIVO)
-- `docs/closure/CONTEXT_PROMPT_RECONCILIACION_CANONICA_D132_2026-02-17.md` — Reconciliacion documental final D-132 (NUEVO)
-- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (NUEVO)
+- `docs/closure/CONTEXT_PROMPT_RECONCILIACION_CANONICA_D132_2026-02-17.md` — Reconciliacion documental final D-132 (COMPLETADO)
+- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (ACTIVO)
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico, referencia)
 - Prompts ad-hoc antiguos: removidos en D-109
 
@@ -133,7 +133,7 @@ CONTEXTO
 - Repo: usar la ruta real del checkout activo (ejemplo actual: /home/eevan/ProyectosIA/aidrive_genspark)
 - Branch objetivo: main
 - Estado: APROBADO (P0 cerrados; ver OPEN_ISSUES)
-- Tests base: 1165/1165 PASS (root)
+- Tests base: 1225/1225 PASS (root, D-133)
 
 PRIMER PASO OBLIGATORIO
 Lee en este orden:

@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-17 (validacion post-remediacion D-130)
+**Última actualización:** 2026-02-17 (reconciliacion canonica D-132 + D-133)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
