@@ -56,8 +56,8 @@ Los payloads de ataque están definidos como constantes en el archivo de test:
 
 ## Última actualización
 
-- **Fecha:** 2026-01-23
-- **Tests:** 14 passing + 1 skipped
+- **Fecha:** 2026-02-18
+- **Tests:** 11 passing + 3 skipped (D-137)
 - **Runner:** Vitest 4.0.16
 
 ## Alternativas Recomendadas
@@ -69,4 +69,4 @@ Para auditorías de seguridad reales:
 
 ---
 
-*Última actualización: Enero 2026*
+*Última actualización: Febrero 2026*

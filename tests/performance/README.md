@@ -45,4 +45,4 @@ RUN_REAL_TESTS=true SUPABASE_URL=... SUPABASE_ANON_KEY=... npm run test:performa
 
 ---
 
-*Última actualización: Enero 2026*
+*Última actualización: Febrero 2026*

@@ -3,9 +3,9 @@
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
 ## Estado Actual
-- Fecha de referencia: 2026-02-16
-- Veredicto: APROBADO (P0 cerrados y verificados en remoto; ver `docs/closure/OPEN_ISSUES.md`)
-- Score operativo: 92/100
+- Fecha de referencia: 2026-02-18
+- Veredicto: **GO** (9/9 gates PASS D-137; 8/8 VULNs cerradas; ver `docs/closure/OPEN_ISSUES.md`)
+- Score operativo: 100% (GO D-137)
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 
 ## Inicio Rapido
@@ -34,20 +34,19 @@ pnpm -C minimarket-system build
 pnpm -C minimarket-system test:components
 ```
 
-## Arquitectura (snapshot 2026-02-16)
+## Arquitectura (snapshot 2026-02-18)
 - Edge Functions activas: 13
-- Migraciones SQL: 41 (local/remoto 41/41)
+- Migraciones SQL: 44 fisicas (43/43 synced remoto D-132 + 1 nueva local)
 - Skills locales en `.agent/skills`: 22
 - Workflows `.agent/workflows/*.md`: 12
 
-## Calidad Verificada (ultimo recheck 2026-02-16)
-- Unit: 1165/1165 PASS (58 archivos)
-- Auxiliary: 45/45 PASS + 4 skipped (3 archivos)
-- Coverage: 89.20% stmts / 80.91% branch / 93.29% funcs / 90.66% lines
-- Frontend: 171/171 PASS (30 archivos)
-- E2E smoke: 5/5 PASS
+## Calidad Verificada (ultimo recheck 2026-02-18 D-137)
+- Unit: 1248/1248 PASS (59 archivos)
+- E2E: 4/4 PASS
+- Coverage: 88.52% stmts / 80.00% branch / 92.32% funcs / 89.88% lines
+- Frontend: 175/175 PASS (30 archivos)
 - Build frontend: PASS
-- Gates: PASS
+- Gates: PASS (9/9 D-137)
 
 ## Documentacion Canonica
 - `docs/ESTADO_ACTUAL.md`

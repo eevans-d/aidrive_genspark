@@ -1,11 +1,11 @@
-> [ACTIVO_VERIFICADO: 2026-02-16] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+> [ACTIVO_VERIFICADO: 2026-02-18] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Esquema de Base de Datos - Sistema Mini Market
 **Actualizado:** 2026-02-17 (post-deploy D-132: migracion concurrency locks + edge functions)
 
 ## Addendum 2026-02-17 (estado canónico vigente)
 
-- Migraciones: **43/43** local=remoto (`supabase migration list --linked`).
+- Migraciones: **43/43** synced remoto (`supabase migration list --linked`) + 1 nueva local = 44 fisicas.
 - Migraciones recientes:
   - `20260216040000_rls_precios_proveedor.sql` — RLS habilitado en `precios_proveedor`.
   - `20260217100000_hardening_concurrency_fixes.sql` — CHECK `stock_no_negativo`, `sp_procesar_venta_pos` hardened con FOR UPDATE + unique_violation.
@@ -786,6 +786,6 @@ SELECT sp_crear_pedido(
 
 ---
 
-**Última actualización:** 2026-02-06  
-**Versión:** Post-Sistema Pedidos  
+**Última actualización:** 2026-02-18
+**Versión:** Post-D-137 (GO 100%, 44 migraciones fisicas)
 **Estado:** Producción estable
