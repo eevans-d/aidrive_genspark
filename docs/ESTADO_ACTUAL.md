@@ -1,9 +1,16 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 **Ultima actualizacion:** 2026-02-18  
-**Estado:** **GO** (Production Readiness Score 100%, D-137; ver `docs/closure/OPEN_ISSUES.md`)
-**Score:** 100% (9/9 gates aplicables)
+**Estado:** **GO_CONDICIONAL** (recheck D-138; ver `docs/closure/OPEN_ISSUES.md`)
+**Score:** 90.91% (10 PASS / 11 gates ejecutados en corrida D-138)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+
+## Addendum Recheck D-138 (2026-02-18T11:16:59Z)
+- Baseline: commit `7ffd652`, working tree limpio.
+- Gates: 10 PASS, 1 FAIL no crítico (`npm run test:integration` -> `No test files found`).
+- Cobertura: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines.
+- Drift DB detectado: `44` migraciones local vs `43` remoto (`20260218050000_add_sp_cancelar_reserva.sql` pendiente de aplicar).
+- Health endpoints productivos: `healthy` en ambos dominios Supabase.
 
 ## Addendum de Verificacion Cruzada (2026-02-17)
 - Reporte auditado/sincronizado: `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md` (fe de verificación agregada 2026-02-17).
@@ -27,7 +34,7 @@
   - **Eje 5 cerrado:** HTTP method enforcement en `api-proveedor` via `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos).
   - **Eje 4 cerrado:** OpenAPI `api-proveedor` sincronizado con runtime (14 mismatches corregidos, 3 endpoints fantasma eliminados).
   - ~~Migracion `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).~~ CERRADO en D-132 (43/43 synced).
-- **Validacion post-remediacion:** Veredicto ~~APROBADO~~ → **GO 100% (D-137)** (8/8 VULNs cerradas post-Fase C D-131; gates 9/9 PASS D-137). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
+- **Validacion post-remediacion:** Veredicto histórico D-137 = **GO 100%**; veredicto operativo vigente D-138 = **GO_CONDICIONAL** por gate de integración sin suite y drift DB. Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
 - **Tests post-validacion:** 1165/1165 PASS (root), 175/175 PASS (frontend), lint PASS, build PASS.
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
 - **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
@@ -85,34 +92,35 @@
 ### Snapshot de Functions
 | Function | Version | Status |
 |---|---:|---|
-| alertas-stock | v17 | ACTIVE |
-| alertas-vencimientos | v16 | ACTIVE |
-| api-minimarket | v27 | ACTIVE |
-| api-proveedor | v19 | ACTIVE |
-| cron-dashboard | v16 | ACTIVE |
-| cron-health-monitor | v16 | ACTIVE |
-| cron-jobs-maxiconsumo | v18 | ACTIVE |
-| cron-notifications | v25 | ACTIVE |
-| cron-testing-suite | v17 | ACTIVE |
-| notificaciones-tareas | v19 | ACTIVE |
-| reportes-automaticos | v17 | ACTIVE |
-| reposicion-sugerida | v16 | ACTIVE |
-| scraper-maxiconsumo | v20 | ACTIVE |
+| alertas-stock | v18 | ACTIVE |
+| alertas-vencimientos | v17 | ACTIVE |
+| api-minimarket | v28 | ACTIVE |
+| api-proveedor | v20 | ACTIVE |
+| cron-dashboard | v17 | ACTIVE |
+| cron-health-monitor | v17 | ACTIVE |
+| cron-jobs-maxiconsumo | v19 | ACTIVE |
+| cron-notifications | v26 | ACTIVE |
+| cron-testing-suite | v18 | ACTIVE |
+| notificaciones-tareas | v20 | ACTIVE |
+| reportes-automaticos | v18 | ACTIVE |
+| reposicion-sugerida | v17 | ACTIVE |
+| scraper-maxiconsumo | v21 | ACTIVE |
 
-## 3) Resultado De Calidad (snapshot 2026-02-18, D-137)
+## 3) Resultado De Calidad (snapshot 2026-02-18, D-138)
 - Unit tests: 1248/1248 PASS (59 archivos).
-- Coverage: 88.52% stmts / 80.00% branch / 92.32% funcs / 89.88% lines (threshold 80% global).
+- Coverage: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines (threshold 80% global).
 - Security tests: 11/11 PASS + 3 skipped (env-conditional).
 - Contract tests: 17/17 PASS + 1 skipped (env-conditional).
-- Integration tests: N/A (`tests/integration/` removido en D-109).
+- Integration tests: FAIL no crítico (`No test files found` en `tests/integration/**/*`).
 - E2E smoke: 4/4 PASS contra endpoints remotos reales (api-proveedor).
 - Frontend component tests: 175/175 PASS (30 archivos).
 - Lint frontend: 0 errors, 0 warnings.
-- Build frontend: PASS (5.46s, PWA v1.2.0).
+- Build frontend: PASS (PWA v1.2.0).
 - Doc links: PASS.
+- Metrics check: PASS.
 - Health endpoints: ambos healthy, circuitBreaker closed.
-- **Production Readiness Score: 100% (9/9 gates aplicables) — Veredicto: GO.**
-- Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-136 + D-137 upgrade).
+- **Production Readiness Score: 90.91% (10 PASS / 11 gates) — Veredicto: GO_CONDICIONAL.**
+- Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138).
 
 ## 4) Mega Plan (T01..T10)
 **Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).

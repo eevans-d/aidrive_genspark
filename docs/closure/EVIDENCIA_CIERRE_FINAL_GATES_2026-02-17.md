@@ -7,6 +7,44 @@
 
 ---
 
+## Addendum D-138 — Recheck Real (2026-02-18T11:16:59+00:00)
+
+### Baseline de recheck
+
+| Campo | Valor |
+|-------|-------|
+| Commit | `7ffd652` |
+| Timestamp | `2026-02-18T11:16:59+00:00` |
+| Git status | limpio (`git status --short` sin cambios) |
+| `.env.test` | PRESENTE |
+| Health (functions.supabase.co) | healthy (`circuitBreaker=closed`) |
+| Health (supabase.co/functions/v1) | healthy (`circuitBreaker=closed`) |
+| Supabase migrations | `44` local / `43` remoto (`20260218050000_add_sp_cancelar_reserva.sql` pendiente remoto) |
+| Supabase functions (snapshot) | `api-minimarket v28`, `api-proveedor v20`, 13 ACTIVE |
+
+### Matriz de gates (recheck D-138)
+
+| Gate | Resultado | Evidencia |
+|---|---|---|
+| `npm run test:unit` | PASS | 59 files, 1248/1248 |
+| `npm run test:coverage` | PASS | 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines |
+| `npm run test:security` | PASS | 11 passed, 3 skipped |
+| `npm run test:contracts` | PASS | 17 passed, 1 skipped |
+| `npm run test:integration` | FAIL (no crítico) | `No test files found` en `tests/integration/**/*` |
+| `npm run test:e2e` | PASS | 4/4 smoke remotos |
+| `pnpm -C minimarket-system lint` | PASS | 0 errors, 0 warnings |
+| `pnpm -C minimarket-system build` | PASS | build OK (PWA) |
+| `pnpm -C minimarket-system test:components` | PASS | 30 files, 175/175 |
+| `node scripts/validate-doc-links.mjs` | PASS | OK |
+| `node scripts/metrics.mjs --check` | PASS | OK |
+
+### Veredicto operativo vigente (D-138)
+
+- `GO_CONDICIONAL` (recheck actual): 1 gate en FAIL no-crítico (`test:integration` sin test files) + drift DB local/remoto `44/43`.
+- `GO` D-137 se mantiene como hito histórico documentado para la corrida previa.
+
+---
+
 ## 1. Baseline
 
 | Campo | Valor |

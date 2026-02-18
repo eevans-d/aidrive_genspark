@@ -961,6 +961,9 @@ testing_reporte_*.md
 # local secrets
 .env.local
 
+# Allow closure audit .ini tracking (override **/*.ini on line 657)
+!docs/closure/*.ini
+
 # Windows ADS artifacts copied from NTFS (noise files)
 **/*:Zone.Identifier
 **/*Zone.Identifier

@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-18 (D-137: upgrade GO_CONDICIONAL → **GO**, E2E 4/4 PASS, score 100%)
+**Última actualización:** 2026-02-18 (D-138: recheck integral, **GO_CONDICIONAL**, 10 PASS / 1 FAIL no crítico)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -42,6 +42,8 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 | ~~Backup automatizado + restore probado~~ | ✅ CERRADO (Gate 15) | `db-backup.sh` con gzip/retención + `db-restore-drill.sh` + `backup.yml` GitHub Actions cron diario. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md`. |
 | ~~Validación fina de RLS por reglas de negocio/rol~~ | ✅ CERRADO | Migración `20260212130000_rls_fine_validation_lockdown.sql` + batería reproducible `scripts/rls_fine_validation.sql` ejecutada con `write_tests=1` y **0 FAIL**. Revalidación 2026-02-13 completada en este host: smoke por rol + SQL remota (`60/60 PASS`). Evidencias: `docs/closure/EVIDENCIA_RLS_SMOKE_ROLES_2026-02-13.md`, `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_FINE_2026-02-13.log`, `docs/closure/EVIDENCIA_RLS_REVALIDACION_2026-02-13.md`. |
 | Rotación preventiva de secretos pre-producción | ✅ CERRADO | `API_PROVEEDOR_SECRET` rotado y validado (2026-02-13). SendGrid re-rotado + smoke real + Email Activity `delivered` (2026-02-15): `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`. Recomendado: revocar key anterior si aún está activa. |
+| Drift DB local/remoto (`44/43`) | ⚠️ PENDIENTE | Aplicar migración pendiente `20260218050000_add_sp_cancelar_reserva.sql` en remoto y revalidar `supabase migration list --linked`. |
+| Gate integración inestable (`No test files found`) | ⚠️ PENDIENTE | Definir política `N/A_TEST_SUITE` o crear suite mínima en `tests/integration/` para evitar FAIL operativo. |
 
 ---
 
@@ -97,8 +99,8 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 ## Notas operativas
 
-- Migraciones: `43` local, `43` remoto (sincronizado — deploy D-132).
-- Snapshot remoto actual 2026-02-17: 13 funciones activas; `api-minimarket v27`, `api-proveedor v19`, `cron-notifications v25`, `notificaciones-tareas v19`, `scraper-maxiconsumo v20`, `alertas-stock v17`, `reportes-automaticos v17`.
+- Migraciones: `44` local, `43` remoto (drift detectado en recheck D-138).
+- Snapshot remoto actual 2026-02-18: 13 funciones activas; `api-minimarket v28`, `api-proveedor v20`, `cron-notifications v26`, `notificaciones-tareas v20`, `scraper-maxiconsumo v21`, `alertas-stock v18`, `reportes-automaticos v18`.
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
@@ -110,7 +112,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - Gates sesión 2026-02-13 en PASS: `test-reports/quality-gates_20260213-061657.log`.
 - Gates frontend recheck 2026-02-14 en PASS: `test-reports/quality-gates_20260214-042354.log`.
 - Gate 16 Sentry cerrado con evidencia tecnica + visual externa (Comet): `docs/closure/EVIDENCIA_GATE16_2026-02-14.md`.
-- **Veredicto:** **GO** (Production Readiness Score 100%, D-137. 8/8 VULNs SRE cerradas. E2E 4/4 PASS. Todos los P0 cerrados y verificados en remoto). Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md`.
+- **Veredicto:** **GO_CONDICIONAL** (recheck D-138: 10 PASS / 1 FAIL no crítico + drift DB 44/43. 8/8 VULNs SRE se mantienen cerradas, E2E 4/4 PASS). Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138).
 
 ## Cerrados recientes (2026-02-12, sesión de ejecución)
 

@@ -1,15 +1,17 @@
 # VALIDACION POST-REMEDIACION
 
-**Fecha:** 2026-02-17T08:35:00Z (original D-130) / 2026-02-18T04:44:59Z (revalidacion consolidada D-136)
+**Fecha:** 2026-02-17T08:35:00Z (original D-130) / 2026-02-18T04:44:59Z (revalidacion D-136) / 2026-02-18T11:16:59Z (recheck D-138)
 **Auditor:** Claude Code
 **Baseline:** Commit `97af2aa` (post D-135)
 **Fuente SRE:** `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md`
 
 ---
 
-## 1. VEREDICTO GLOBAL: GO (Score 100%)
+## 1. VEREDICTO GLOBAL: GO_CONDICIONAL (Score 90.91%)
 
-**Justificacion:** 8/8 VULNs cerradas con evidencia de codigo verificada. 9 quality gates aplicables ejecutados: 9 PASS, 0 BLOCKED_ENV, 0 FAIL. Integration gate N/A (test dir removido D-109). E2E 4/4 PASS contra endpoints remotos reales. Coverage 80%+ en 4 metricas. Health endpoints OK en produccion. Build PWA exitoso. Score 100% (9/9). Sin FAIL criticos. Upgrade de GO_CONDICIONAL a GO completado en D-137.
+**Justificacion:** 8/8 VULNs se mantienen cerradas con evidencia de código. Recheck D-138: 11 gates ejecutados (10 PASS, 0 BLOCKED_ENV, 1 FAIL no crítico). El único FAIL fue `npm run test:integration` por ausencia de test files en `tests/integration/**/*`. E2E remoto 4/4 PASS, cobertura >=80% en 4 métricas, health endpoints OK y build/lint/components/doc-links/metrics en verde. Además persiste drift DB `44 local / 43 remoto`, por lo que el estado vigente baja de GO histórico (D-137) a **GO_CONDICIONAL** operativo.
+
+**Precedencia:** si hay conflicto entre secciones históricas D-130..D-137 y este recheck D-138, prevalece D-138.
 
 ---
 
@@ -18,17 +20,18 @@
 | Gate | Resultado | Evidencia |
 |------|-----------|-----------|
 | `npm run test:unit` | **1248/1248 PASS** (59 archivos) | Ejecutado 2026-02-18T04:52, 18.62s |
-| `npm run test:coverage` | **PASS** (88.52% stmts, 80.00% branch, 92.32% funcs, 89.88% lines) | Threshold 80% cumplido en las 4 metricas |
+| `npm run test:coverage` | **PASS** (88.52% stmts, 80.16% branch, 92.32% funcs, 89.88% lines) | Threshold 80% cumplido en las 4 metricas |
 | `npm run test:security` | **PASS** (11 passed, 3 skipped) | Skips condicionados por `RUN_REAL_TESTS` / `RUN_REAL_SENDGRID_SMOKE` |
 | `npm run test:contracts` | **PASS** (17 passed, 1 skipped) | Skip condicionado por `RUN_REAL_TESTS` |
 | `pnpm -C minimarket-system lint` | **PASS** (0 errors, 0 warnings) | Clean |
 | `pnpm -C minimarket-system build` | **PASS** | 5.46s, PWA v1.2.0, 26 precached entries |
 | `pnpm -C minimarket-system test:components` | **175/175 PASS** (30 archivos) | 14.35s |
 | `node scripts/validate-doc-links.mjs` | **PASS** | Doc link check OK |
-| `npm run test:integration` | **N/A** | `tests/integration/` removido en D-109 (commit fc34cf7). |
-| `npm run test:e2e` | **4/4 PASS** | `.env.test` provisioned. GET /status, /precios, /alertas, /health — all success (5.56s). |
+| `node scripts/metrics.mjs --check` | **PASS** | `docs/METRICS.md OK` |
+| `npm run test:integration` | **FAIL** (no crítico) | `No test files found` en `tests/integration/**/*.{test,spec}.{js,ts}` |
+| `npm run test:e2e` | **4/4 PASS** | `.env.test` presente. GET /status, /precios, /alertas, /health — all success |
 
-**Production Readiness Score:** 100% (9 PASS x 1.0 / 9 gates aplicables = 9.0/9.0). Integration excluido (N/A).
+**Production Readiness Score:** 90.91% (10 PASS / 11 gates ejecutados). Sin FAIL crítico.
 
 ---
 
@@ -120,7 +123,9 @@
 9. ~~**Corrida final gates:**~~ **CERRADO (D-136):** 10 gates ejecutados, score 90%, veredicto GO_CONDICIONAL.
 10. ~~**Upgrade a GO:**~~ **CERRADO (D-137):** `.env.test` provisionado, E2E 4/4 PASS, score 100%, veredicto GO.
 
-**No hay pendientes bloqueantes.** Recomendaciones operativas de bajo riesgo: smoke real periodico (`RUN_REAL_TESTS=true`).
+**Pendientes vigentes (D-138):**
+1. Definir política de gate de integración: `N/A_TEST_SUITE` explícito o crear suite mínima para evitar FAIL por "No test files found".
+2. Cerrar drift DB: aplicar en remoto `20260218050000_add_sp_cancelar_reserva.sql`.
 
 ---
 
@@ -131,24 +136,25 @@ GO = (
     todos_VULN == CERRADO                    # 8/8 CERRADOS
     AND drift_documental == 0                # 0 items
     AND unit_tests_PASS                      # OK (1248/1248)
-    AND coverage_branch >= 80%               # OK (80.00%)
+    AND coverage_branch >= 80%               # OK (80.16%)
     AND security_tests_PASS                  # OK (11/11 + 3 skipped env)
     AND contract_tests_PASS                  # OK (17/17 + 1 skipped env)
-    AND integration_tests_NA                 # N/A (test dir removido D-109)
+    AND integration_gate_policy_defined      # FAIL actual: No test files found
     AND e2e_tests_PASS                       # OK (4/4 PASS)
     AND build_PASS                           # OK
     AND lint_PASS                            # OK (0 errors, 0 warnings)
     AND component_tests_PASS                 # OK (175/175)
     AND doc_links_PASS                       # OK
+    AND metrics_check_PASS                   # OK
     AND migration_deployed                   # OK (43/43 synced, D-132)
     AND health_endpoints_OK                  # OK (both healthy, circuitBreaker closed)
     AND coherencia_canonica_OK               # OK (7 pares verificados)
-    AND score >= 85%                         # OK (100%)
+    AND score >= 85%                         # OK (90.91%)
     AND zero_FAIL_criticos                   # OK (0)
 )
 ```
 
-**Resultado:** GO con score 100% (9/9 gates aplicables). 0 BLOCKED_ENV. 0 FAIL. Upgrade completado en D-137.
+**Resultado vigente:** GO_CONDICIONAL con score 90.91% (10/11 PASS). 0 BLOCKED_ENV. 1 FAIL no crítico (`test:integration` sin suite).
 
 ---
 

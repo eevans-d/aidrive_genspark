@@ -41,6 +41,8 @@ Ejecutar cierre final tecnico-operativo para salida a produccion: **verificar, r
 4. Health checks:
    - `curl -sS https://dqaygmjpzoqjjrywdsxi.functions.supabase.co/api-minimarket/health`
    - `curl -sS https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health`
+5. Detectar drift DB local/remoto:
+   - Si `Local != Remote` en `supabase migration list --linked`, marcar `DRIFT_DB` y listar IDs pendientes.
 
 ### FASE 2 — QUALITY GATES (EJECUCION REAL)
 Ejecutar y registrar resultado de cada gate:
@@ -48,12 +50,15 @@ Ejecutar y registrar resultado de cada gate:
 2. `npm run test:coverage`
 3. `npm run test:security`
 4. `npm run test:contracts`
-5. `npm run test:integration` (si no hay `.env.test` -> `npm run test:integration -- --dry-run` + `BLOCKED_ENV`)
+5. `npm run test:integration`
+   - Si no hay `.env.test` -> `npm run test:integration -- --dry-run` + `BLOCKED_ENV`.
+   - Si el resultado es `No test files found`, clasificar `N/A_TEST_SUITE` (no sumar como FAIL crítico).
 6. `npm run test:e2e` (si no hay `.env.test` -> `npm run test:e2e -- --dry-run` + `BLOCKED_ENV`)
 7. `pnpm -C minimarket-system lint`
 8. `pnpm -C minimarket-system build`
 9. `pnpm -C minimarket-system test:components`
 10. `node scripts/validate-doc-links.mjs`
+11. `node scripts/metrics.mjs --check`
 
 ### FASE 3 — REMEDIACION MINIMA (SI HAY FAIL)
 - Implementar solo cambios puntuales para corregir FAIL reales.
@@ -71,11 +76,12 @@ Detectar y reportar cualquier gap nuevo que impacte produccion real:
 ## CRITERIO DE VEREDICTO (DURO)
 Calcular `Production Readiness Score`:
 - `PASS = 1.0`, `BLOCKED = 0.5`, `FAIL = 0.0`
+- `N/A_TEST_SUITE = excluido del denominador`
 - Score = promedio ponderado de gates (puedes usar ponderacion uniforme si no hay pesos definidos en repo).
 
 Veredicto:
 - `GO`: score >= 85 y sin FAIL criticos.
-- `GO_CONDICIONAL`: score 70-84 o hay `BLOCKED_ENV` sin FAIL criticos.
+- `GO_CONDICIONAL`: score 70-84, o hay `BLOCKED_ENV`, o hay `FAIL` no-critico pendiente, o existe `DRIFT_DB` sin resolver.
 - `NO_GO`: score < 70 o existe FAIL critico.
 
 ## ENTREGABLES OBLIGATORIOS

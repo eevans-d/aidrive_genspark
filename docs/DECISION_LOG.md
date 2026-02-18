@@ -151,6 +151,8 @@
 
 | D-137 | **Upgrade GO_CONDICIONAL → GO** — `.env.test` provisionado via `supabase projects api-keys` + `supabase secrets list`. `API_PROVEEDOR_SECRET` re-sincronizado con `supabase secrets set` (secret mismatch entre `secrets list` y runtime resuelto). Integration gate: **N/A** (`tests/integration/` removido intencionalmente en D-109, commit fc34cf7). E2E gate: **4/4 PASS** contra endpoints remotos reales (api-proveedor GET /status, /precios, /alertas, /health — all success, 5.56s). Production Readiness Score: 100% (9/9 gates aplicables). Veredicto final: **GO**. | Completada | 2026-02-18 | Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md`, `test-reports/junit.e2e.xml`. |
 
+| D-138 | **Recheck de cierre integral post-tareas** — Corrida completa con `.env.test` presente y prechecks remotos: health endpoints OK, functions list OK, pero se detecta **drift DB** (`44` local / `43` remoto, pendiente `20260218050000_add_sp_cancelar_reserva.sql`). Gates ejecutados: unit PASS (1248), coverage PASS (88.52/80.16/92.32/89.88), security PASS, contracts PASS, e2e PASS (4/4), lint PASS, build PASS, components PASS (175), doc-links PASS, metrics PASS; `test:integration` retorna FAIL por `No test files found` (suite ausente). Decisión operativa: mantener **GO_CONDICIONAL** hasta resolver política de gate integración (N/A explícito o suite mínima) y cerrar drift de migración remota. | Completada | 2026-02-18 | Evidencia: `/tmp/gates_report_20260218.txt`, `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138), `supabase migration list --linked`. |
+
 ---
 
 ### Acciones owner requeridas
