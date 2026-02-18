@@ -141,12 +141,12 @@ jobs:
         run: npm ci
         working-directory: .
 
-      - name: Run unit tests
-        run: npx vitest run tests/unit/ --reporter=verbose
+      - name: Run unit tests with coverage
+        run: npx vitest run tests/unit/ --coverage --reporter=verbose --reporter=json --outputFile=test-results.json
         working-directory: .
 
-      - name: Run tests with coverage
-        run: npx vitest run tests/unit/ --coverage --reporter=json --outputFile=test-results.json
+      - name: Run component tests
+        run: npx vitest run --config minimarket-system/vitest.config.ts --reporter=verbose
         working-directory: .
 
       - name: Upload coverage report

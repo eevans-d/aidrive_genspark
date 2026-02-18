@@ -1,4 +1,18 @@
-cd minimarket-system && npx tsc --noEmit --pretty 2>&1 | head -30
-cd ..
+# TypeScript check (blocking — capture exit code before piping)
+tsc_output=$(cd minimarket-system && npx tsc --noEmit --pretty 2>&1) || tsc_exit=$?
+echo "$tsc_output" | head -30
+if [ "${tsc_exit:-0}" -ne 0 ]; then
+  exit 1
+fi
+
+# Lint staged files (blocking)
 npx lint-staged
-deno check --no-lock supabase/functions/*/index.ts 2>&1 | head -30
+
+# Deno check (blocking only if deno is available)
+if command -v deno >/dev/null 2>&1; then
+  deno_output=$(deno check --no-lock supabase/functions/*/index.ts 2>&1) || deno_exit=$?
+  echo "$deno_output" | head -30
+  if [ "${deno_exit:-0}" -ne 0 ]; then
+    exit 1
+  fi
+fi

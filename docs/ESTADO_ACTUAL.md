@@ -72,7 +72,7 @@
 ## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 43 local / 43 remoto (sincronizado).
+- Migraciones: 44 local / 43 remoto (43/43 synced D-132 + 1 nueva local pendiente push).
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.

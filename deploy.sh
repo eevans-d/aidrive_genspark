@@ -400,31 +400,7 @@ deploy_to_supabase() {
         done
     fi
     
-    # Ejecutar migraciones
-    log_info "Aplicando migraciones..."
-    
-    if [ "$DRY_RUN" != "true" ]; then
-        # Solo aplicar migraciones en producción/staging con cuidado
-        if [ "$DEPLOY_ENV" = "production" ]; then
-            log_warning "Aplicando migraciones en PRODUCCIÓN"
-            read -p "¿Continuar? (y/N): " -n 1 -r
-            echo
-            if [[ ! $REPLY =~ ^[Yy]$ ]]; then
-                log "Migraciones canceladas"
-                exit 1
-            fi
-        fi
-        
-        # Aplicar migraciones
-        supabase db push || {
-            log_error "Error aplicando migraciones"
-            exit 1
-        }
-    else
-        log_info "[DRY-RUN] Would apply migrations"
-    fi
-    
-    log_success "Deploy a Supabase completado"
+    log_success "Deploy a Supabase completado (edge functions)"
 }
 
 # Deploy de migraciones
