@@ -54,11 +54,34 @@ export function parseNonNegativeInt(value: unknown): number | null {
 }
 
 /**
- * Sanitize text parameter - removes special characters.
+ * Sanitize text parameter - removes special/injection characters while preserving Unicode letters.
  */
 export function sanitizeTextParam(value: string): string {
-  return value.trim().replace(/[^a-zA-Z0-9 _.-]/g, '');
+  return value.trim().replace(/[^\p{L}\p{N} _.-]/gu, '');
 }
+
+/**
+ * Validate ISO date string (YYYY-MM-DD or full ISO datetime).
+ */
+export function isValidISODateString(value: string): boolean {
+  return /^\d{4}-\d{2}-\d{2}(T\d{2}:\d{2}(:\d{2})?(\.\d+)?(Z|[+-]\d{2}:?\d{2})?)?$/.test(value)
+    && !Number.isNaN(Date.parse(value));
+}
+
+/**
+ * Valid pedido estados.
+ */
+export const VALID_PEDIDO_ESTADOS = new Set(['pendiente', 'preparando', 'listo', 'entregado', 'cancelado']);
+
+/**
+ * Valid pedido payment estados.
+ */
+export const VALID_PEDIDO_ESTADOS_PAGO = new Set(['pendiente', 'parcial', 'pagado']);
+
+/**
+ * Valid tarea prioridades (unified superset).
+ */
+export const VALID_TAREA_PRIORIDADES = new Set(['baja', 'normal', 'media', 'alta', 'urgente']);
 
 /**
  * Validate boolean query param.

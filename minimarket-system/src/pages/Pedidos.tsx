@@ -307,7 +307,10 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
                                 )}
                                 {pedido.estado === 'preparando' && itemsPreparados === totalItems && (
                                         <button
-                                                onClick={() => onUpdateEstado(pedido.id, 'listo')}
+                                                onClick={() => {
+                                                        if (!window.confirm('¿Marcar pedido como listo? Esta acción no se puede deshacer.')) return;
+                                                        onUpdateEstado(pedido.id, 'listo');
+                                                }}
                                                 className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-colors"
                                         >
                                                 Marcar como Listo
@@ -315,7 +318,10 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
                                 )}
                                 {pedido.estado === 'listo' && (
                                         <button
-                                                onClick={() => onUpdateEstado(pedido.id, 'entregado')}
+                                                onClick={() => {
+                                                        if (!window.confirm('¿Marcar pedido como entregado? Esta acción no se puede deshacer.')) return;
+                                                        onUpdateEstado(pedido.id, 'entregado');
+                                                }}
                                                 className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-medium transition-colors"
                                         >
                                                 Marcar Entregado
@@ -377,6 +383,10 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
 
         const handleAddItem = () => {
                 if (!newItem.producto_nombre || newItem.cantidad <= 0) return;
+                if (newItem.precio_unitario <= 0) {
+                        toast.error('El precio unitario debe ser mayor a 0');
+                        return;
+                }
 
                 setItems([...items, { ...newItem }]);
                 setNewItem({ producto_id: '', producto_nombre: '', cantidad: 1, precio_unitario: 0, observaciones: '' });
@@ -393,6 +403,7 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                                 ...newItem,
                                 producto_id: producto.id,
                                 producto_nombre: producto.nombre,
+                                precio_unitario: typeof producto.precio_actual === 'number' ? producto.precio_actual : 0,
                         });
                 }
         };

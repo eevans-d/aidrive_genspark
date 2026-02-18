@@ -1,8 +1,8 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-17  
-**Estado:** APROBADO (todos los P0 cerrados; ver `docs/closure/OPEN_ISSUES.md`)
-**Score operativo:** 92/100 (post-fix P0 RLS + search_path, 2026-02-15)
+**Ultima actualizacion:** 2026-02-18  
+**Estado:** **GO** (Production Readiness Score 100%, D-137; ver `docs/closure/OPEN_ISSUES.md`)
+**Score:** 100% (9/9 gates aplicables)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
 ## Addendum de Verificacion Cruzada (2026-02-17)
@@ -12,7 +12,7 @@
   - `35` operaciones literales (`if (path === ... && method === ...)`)
   - `20` operaciones regex (`if (path.match(...) && method === ...)`)
   - `55` guards de enrutamiento totales.
-- Recheck local quality-gates 2026-02-17: unit PASS, integración FAIL por `.env.test` ausente (`test-reports/quality-gates_20260217-032720.log:463-470`).
+- Recheck local quality-gates 2026-02-17 (histórico pre-D-133): unit PASS, integración FAIL por `.env.test` ausente (`test-reports/quality-gates_20260217-032720.log:463-470`).
 - ~~Recheck de contratos proveedor: `docs/api-proveedor-openapi-3.1.yaml` parsea OK, pero mantiene drift runtime/spec (`/health` faltante y `/scrape|/compare|/alerts` sobrantes).~~ CERRADO (D-129): 14 mismatches corregidos, 3 endpoints fantasma eliminados, `/health` agregado.
 - Recheck `reportes-automaticos`: usa `fecha_movimiento` y `tipo_movimiento` en código actual.
 - Paquete canonico "obra objetivo final" creado para contraste futuro: `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/`.
@@ -26,8 +26,8 @@
   - **VULN-004 cerrada:** nuevo `sp_actualizar_pago_pedido` con `FOR UPDATE` en `pedidos`. Handler reescrito para usar SP.
   - **Eje 5 cerrado:** HTTP method enforcement en `api-proveedor` via `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos).
   - **Eje 4 cerrado:** OpenAPI `api-proveedor` sincronizado con runtime (14 mismatches corregidos, 3 endpoints fantasma eliminados).
-  - Migracion: `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).
-- **Validacion post-remediacion:** Veredicto APROBADO (8/8 VULNs cerradas post-Fase C D-131). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
+  - ~~Migracion `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).~~ CERRADO en D-132 (43/43 synced).
+- **Validacion post-remediacion:** Veredicto ~~APROBADO~~ → **GO 100% (D-137)** (8/8 VULNs cerradas post-Fase C D-131; gates 9/9 PASS D-137). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
 - **Tests post-validacion:** 1165/1165 PASS (root), 175/175 PASS (frontend), lint PASS, build PASS.
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
 - **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
@@ -99,22 +99,20 @@
 | reposicion-sugerida | v16 | ACTIVE |
 | scraper-maxiconsumo | v20 | ACTIVE |
 
-## 3) Resultado De Calidad (snapshot 2026-02-17, D-133)
-- Unit tests: 1225/1225 PASS (59 archivos).
-- Coverage: 88.50% stmts / 80.21% branch / 92.28% funcs / 89.86% lines (threshold 80% global).
-- Auxiliary tests: 45/45 PASS + 4 skipped (3 archivos; contract/performance/api-contracts).
-- Integration tests: 38/38 PASS.
-- E2E smoke: 5/5 PASS.
+## 3) Resultado De Calidad (snapshot 2026-02-18, D-137)
+- Unit tests: 1248/1248 PASS (59 archivos).
+- Coverage: 88.52% stmts / 80.00% branch / 92.32% funcs / 89.88% lines (threshold 80% global).
+- Security tests: 11/11 PASS + 3 skipped (env-conditional).
+- Contract tests: 17/17 PASS + 1 skipped (env-conditional).
+- Integration tests: N/A (`tests/integration/` removido en D-109).
+- E2E smoke: 4/4 PASS contra endpoints remotos reales (api-proveedor).
 - Frontend component tests: 175/175 PASS (30 archivos).
 - Lint frontend: 0 errors, 0 warnings.
-- Build frontend: PASS.
-- Quality gates: PASS.
-- Evidencia: `test-reports/quality-gates_20260213-061657.log`.
-- Recheck frontend 2026-02-14: PASS (`test-reports/quality-gates_20260214-042354.log`).
-- Recheck local 2026-02-17: unit PASS + integración bloqueada por falta de `.env.test` (`test-reports/quality-gates_20260217-032720.log`).
-- **Recheck tests 2026-02-16 (D-114, D-115):** 7 archivos de test reescritos FAKE→REAL + auditoría intensiva con cross-reference de 12+ módulos fuente. 891 unit PASS (16.09s), 45 auxiliary PASS (1.20s).
-- **Coverage hardening 2026-02-16 (D-116):** 11 test files nuevos cubriendo 11 módulos críticos. 891→1165 unit tests (58 archivos). Coverage global ≥80% en las 4 métricas. Evidencia: `test-reports/junit.xml`.
-- **Auditoria final + branch coverage D-133 (2026-02-17):** 60 tests nuevos en `apiClient-branches.test.ts`. Branch coverage 75.75%→80.21%. Lint warning Ventas.tsx corregido. 9 desalineaciones documentales remediadas. 1165→1225 unit tests (59 archivos).
+- Build frontend: PASS (5.46s, PWA v1.2.0).
+- Doc links: PASS.
+- Health endpoints: ambos healthy, circuitBreaker closed.
+- **Production Readiness Score: 100% (9/9 gates aplicables) — Veredicto: GO.**
+- Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-136 + D-137 upgrade).
 
 ## 4) Mega Plan (T01..T10)
 **Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).

@@ -174,10 +174,12 @@ async function handleAlertas(
   // Lecturas con readKey
   const [comparacionesRes, existentesRes] = await Promise.all([
     fetch(`${url}/rest/v1/comparacion_precios?select=*&fecha_comparacion=gte.${since}`, {
-      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` }
+      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` },
+      signal: AbortSignal.timeout(10_000)
     }),
     fetch(`${url}/rest/v1/alertas_cambios_precios?select=producto_id&fecha_alerta=gte.${since}`, {
-      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` }
+      headers: { 'apikey': keys.readKey, 'Authorization': `Bearer ${keys.readKey}` },
+      signal: AbortSignal.timeout(10_000)
     })
   ]);
 
@@ -236,7 +238,8 @@ async function handleHealth(
 ): Promise<Response> {
   try {
     const res = await fetch(`${url}/rest/v1/precios_proveedor?select=count&limit=1`, {
-      headers: { 'apikey': readKey, 'Authorization': `Bearer ${readKey}` }
+      headers: { 'apikey': readKey, 'Authorization': `Bearer ${readKey}` },
+      signal: AbortSignal.timeout(10_000)
     });
     return jsonResponse(
       { status: res.ok ? 'healthy' : 'degraded', db: res.ok, timestamp: new Date().toISOString() },

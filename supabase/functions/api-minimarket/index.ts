@@ -43,6 +43,8 @@ import {
   isValidMovimientoTipo,
   VALID_MOVIMIENTO_TIPOS,
   isValidCodigo,
+  isValidISODateString,
+  VALID_TAREA_PRIORIDADES,
 } from './helpers/validation.ts';
 import { parsePagination } from './helpers/pagination.ts';
 import {
@@ -1077,31 +1079,37 @@ Deno.serve(async (req) => {
     // ENDPOINTS: STOCK E INVENTARIO (6 endpoints)
     // ====================================================================
 
-    // 14. GET /stock - Consultar stock general de todos los productos
+    // 14. GET /stock - Consultar stock general con paginación (CRIT-02: PostgREST embedding)
     if (path === '/stock' && method === 'GET') {
       checkRole(BASE_ROLES);
 
-      const stock = await queryTable(
+      const pagination = getPaginationOrFail(100, 500);
+      if (pagination instanceof Response) return pagination;
+      const { limit, offset } = pagination;
+
+      const params = new URLSearchParams();
+      params.set(
+        'select',
+        'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento,productos(id,sku,nombre,marca)',
+      );
+      params.set('order', 'producto_id');
+      params.set('limit', String(limit));
+      params.set('offset', String(offset));
+
+      const { data: stock, count } = await fetchWithParams(
         supabaseUrl,
         'stock_deposito',
+        params,
         requestHeaders(),
-        {},
-        'id,producto_id,cantidad_actual,stock_minimo,stock_maximo,ubicacion,lote,fecha_vencimiento',
-        { order: 'producto_id' },
       );
 
-      // Obtener nombres de productos
-      const productos = await queryTable(supabaseUrl, 'productos', requestHeaders(), {}, 'id,sku,nombre,marca');
-      const productosMap = Object.fromEntries(
-        (productos as Array<{ id: string }>).map((p) => [p.id, p]),
-      );
+      // Rename 'productos' key to 'producto' for backward compatibility
+      const stockFormatted = (stock as Array<Record<string, unknown>>).map((s) => {
+        const { productos, ...rest } = s;
+        return { ...rest, producto: productos };
+      });
 
-      const stockConNombres = (stock as Array<{ producto_id: string }>).map((s) => ({
-        ...s,
-        producto: productosMap[s.producto_id],
-      }));
-
-      return respondOk(stockConNombres, 200, { extra: { count: stockConNombres.length } });
+      return respondOk(stockFormatted, 200, { extra: { count: count ?? stockFormatted.length } });
     }
 
     // 15. GET /stock/minimo - Productos con stock bajo mínimo
@@ -1311,8 +1319,16 @@ Deno.serve(async (req) => {
       }
 
       const prioridad = body.prioridad || 'normal';
-      if (!['baja', 'normal', 'urgente'].includes(prioridad)) {
+      if (!VALID_TAREA_PRIORIDADES.has(prioridad)) {
         return respondFail('VALIDATION_ERROR', 'Prioridad inválida', 400);
+      }
+
+      let fechaVencimiento: string | null = null;
+      if (body.fecha_vencimiento) {
+        if (!isValidISODateString(String(body.fecha_vencimiento))) {
+          return respondFail('VALIDATION_ERROR', 'fecha_vencimiento invalida (formato ISO requerido)', 400);
+        }
+        fechaVencimiento = String(body.fecha_vencimiento);
       }
 
       const tareaData = {
@@ -1320,7 +1336,7 @@ Deno.serve(async (req) => {
         descripcion: body.descripcion?.trim() || null,
         asignada_a_nombre: body.asignada_a_nombre?.trim() || null,
         prioridad,
-        fecha_vencimiento: body.fecha_vencimiento || null,
+        fecha_vencimiento: fechaVencimiento,
         estado: 'pendiente',
         creada_por_nombre: user?.email || 'Sistema',
       };
@@ -1658,7 +1674,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    // 22. POST /reservas/:id/cancelar - Cancelar reserva
+    // 22. POST /reservas/:id/cancelar - Cancelar reserva (CRIT-03: atomic via SP)
     if (path.match(/^\/reservas\/[a-f0-9-]+\/cancelar$/) && method === 'POST') {
       checkRole(['admin', 'ventas', 'deposito']);
 
@@ -1667,16 +1683,22 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'id de reserva invalido', 400);
       }
 
-      const reserva = await updateTable(supabaseUrl, 'stock_reservado', reservaId, requestHeaders(), {
-        estado: 'cancelada',
-        fecha_cancelacion: new Date().toISOString(),
-      });
-
-      if ((reserva as unknown[]).length === 0) {
-        return respondFail('NOT_FOUND', 'Reserva no encontrada', 404);
+      try {
+        const result = await callFunction(supabaseUrl, 'sp_cancelar_reserva', requestHeaders(), {
+          p_reserva_id: reservaId,
+          p_usuario: user!.id,
+        });
+        return respondOk(result, 200, { message: 'Reserva cancelada exitosamente' });
+      } catch (e) {
+        const errMsg = e instanceof Error ? e.message : String(e);
+        if (errMsg.includes('RESERVA_NOT_FOUND')) {
+          return respondFail('NOT_FOUND', 'Reserva no encontrada', 404);
+        }
+        if (errMsg.includes('RESERVA_NOT_ACTIVE')) {
+          return respondFail('CONFLICT', 'Solo se pueden cancelar reservas activas', 409);
+        }
+        throw e;
       }
-
-      return respondOk((reserva as unknown[])[0] || reserva, 200, { message: 'Reserva cancelada exitosamente' });
     }
 
     // 23. POST /compras/recepcion - Registrar recepción de compra (VULN-003 fix: atomic via SP)
@@ -1828,8 +1850,8 @@ Deno.serve(async (req) => {
       if (bodyResult instanceof Response) return bodyResult;
       const { monto_pagado } = bodyResult as { monto_pagado: number };
 
-      if (typeof monto_pagado !== 'number' || monto_pagado < 0) {
-        return respondFail('VALIDATION_ERROR', 'monto_pagado debe ser >= 0', 400);
+      if (typeof monto_pagado !== 'number' || monto_pagado <= 0) {
+        return respondFail('VALIDATION_ERROR', 'monto_pagado debe ser > 0', 400);
       }
 
 	      const res = await handleActualizarPagoPedido(
@@ -2170,7 +2192,6 @@ Deno.serve(async (req) => {
       return respondOk({
         status: 'healthy',
         timestamp: new Date().toISOString(),
-        circuitBreaker: circuitBreaker.getState(),
       });
     }
 

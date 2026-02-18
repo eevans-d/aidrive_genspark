@@ -1,14 +1,14 @@
 # Guia Para Agentes IA (Canonica)
 
 **Proyecto:** Mini Market System  
-**Ultima actualizacion:** 2026-02-16
+**Ultima actualizacion:** 2026-02-18
 
 ## Estado Rapido
 | Metrica | Valor |
 |---|---|
-| Estado global | APROBADO (P0 cerrados y verificados en remoto; ver OPEN_ISSUES) |
-| Score operativo | 92/100 |
-| Migraciones | 41/41 (local=remoto) |
+| Estado global | **GO** (9/9 gates PASS D-137; 8/8 VULNs cerradas; ver OPEN_ISSUES) |
+| Score operativo | 100% (GO D-137) |
+| Migraciones | 43/43 synced remoto (D-132) + 1 nueva local = 44 fisicas |
 | Edge Functions activas | 13 |
 | Skills locales | 22 |
 | Workflows documentados | 12 |

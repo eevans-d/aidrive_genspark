@@ -716,38 +716,40 @@ async function sendNotificationHandler(
         rateLimited: 0
     };
 
-    // Enviar por cada canal especificado
-    for (const channelId of notificationRequest.channels) {
+    // Enviar por cada canal en paralelo (MED-10: fan-out paralelo)
+    const channelPromises = notificationRequest.channels.map(async (channelId) => {
         const channel = NOTIFICATION_CHANNELS[channelId];
         if (!channel || !channel.isActive) {
-            results.channels.push({
+            return {
                 channelId,
-                status: 'failed',
+                status: 'failed' as const,
                 error: 'Canal inactivo o no encontrado',
                 timestamp: new Date().toISOString()
-            });
-            results.totalFailed++;
-            continue;
+            };
         }
 
         try {
-            const result = await sendToChannel(channel, template, notificationRequest, supabaseUrl, serviceRoleKey);
-            results.channels.push(result);
-            
-            if (result.status === 'sent') results.totalSent++;
-            else if (result.status === 'rate_limited') results.rateLimited++;
-            else results.totalFailed++;
-
+            return await sendToChannel(channel, template, notificationRequest, supabaseUrl, serviceRoleKey);
         } catch (error) {
             const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-            results.channels.push({
+            return {
                 channelId,
-                status: 'failed',
+                status: 'failed' as const,
                 error: errorMessage,
                 timestamp: new Date().toISOString()
-            });
-            results.totalFailed++;
+            };
         }
+    });
+
+    const channelResults = await Promise.allSettled(channelPromises);
+    for (const settled of channelResults) {
+        const result = settled.status === 'fulfilled'
+            ? settled.value
+            : { channelId: 'unknown', status: 'failed' as const, error: String(settled.reason), timestamp: new Date().toISOString() };
+        results.channels.push(result);
+        if (result.status === 'sent') results.totalSent++;
+        else if (result.status === 'rate_limited') results.rateLimited++;
+        else results.totalFailed++;
     }
 
     // Registrar notificación en base de datos

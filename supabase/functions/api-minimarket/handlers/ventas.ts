@@ -10,7 +10,7 @@ import { isAppError } from '../../_shared/errors.ts';
 import { ok, fail } from '../../_shared/response.ts';
 import { createLogger } from '../../_shared/logger.ts';
 import { callFunction, queryTable, queryTableWithCount } from '../helpers/supabase.ts';
-import { isUuid, parsePositiveInt } from '../helpers/validation.ts';
+import { isUuid, parsePositiveInt, isValidISODateString } from '../helpers/validation.ts';
 
 const logger = createLogger('api-ventas');
 
@@ -226,8 +226,18 @@ export async function handleListarVentas(
     sp.set('order', 'created_at.desc');
     sp.set('limit', String(params.limit));
     sp.set('offset', String(params.offset));
-    if (params.fecha_desde) sp.append('created_at', `gte.${params.fecha_desde}`);
-    if (params.fecha_hasta) sp.append('created_at', `lte.${params.fecha_hasta}`);
+    if (params.fecha_desde) {
+      if (!isValidISODateString(params.fecha_desde)) {
+        return fail('VALIDATION_ERROR', 'fecha_desde invalida (formato ISO requerido)', 400, responseHeaders, { requestId });
+      }
+      sp.append('created_at', `gte.${params.fecha_desde}`);
+    }
+    if (params.fecha_hasta) {
+      if (!isValidISODateString(params.fecha_hasta)) {
+        return fail('VALIDATION_ERROR', 'fecha_hasta invalida (formato ISO requerido)', 400, responseHeaders, { requestId });
+      }
+      sp.append('created_at', `lte.${params.fecha_hasta}`);
+    }
 
     const res = await fetch(`${supabaseUrl}/rest/v1/ventas?${sp.toString()}`, {
       headers: { ...headers, 'Prefer': 'count=exact' },

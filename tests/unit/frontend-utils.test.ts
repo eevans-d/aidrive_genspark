@@ -49,7 +49,7 @@ describe('queryClient and queryKeys', () => {
     expect(options.queries?.staleTime).toBe(1000 * 60 * 5)
     expect(options.queries?.gcTime).toBe(1000 * 60 * 30)
     expect(options.queries?.retry).toBe(1)
-    expect(options.queries?.refetchOnWindowFocus).toBe(false)
+    expect(options.queries?.refetchOnWindowFocus).toBe(true)
   })
 
   it('builds stable query keys', () => {

@@ -1,4 +1,4 @@
-# Closure Canónico (Actualizado 2026-02-17)
+# Closure Canónico (Actualizado 2026-02-18)
 
 Este directorio contiene muchos artefactos históricos. Para iniciar una sesión nueva sin ruido, usar este orden:
 
@@ -9,7 +9,7 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 5. `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` (obra objetivo canonico para contraste)
 6. `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md` (auditoria SRE con hallazgos VULN-001..008)
 7. `docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md` (roadmap unico de produccion)
-8. `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (validacion post-remediacion D-130)
+8. `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (validacion post-remediacion D-130..D-137, veredicto GO)
 9. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
 10. `docs/closure/CONTINUIDAD_SESIONES.md`
 11. `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico útil, modo RECHECK)
@@ -34,9 +34,9 @@ Este directorio contiene muchos artefactos históricos. Para iniciar una sesión
 
 ## Estado operativo
 
-- Veredicto consolidado: `APROBADO` (P0 cerrados y verificados en remoto; ver `docs/closure/OPEN_ISSUES.md`).
-- Score operativo: `92/100`.
-- Snapshot vigente de gates: `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`.
+- Veredicto consolidado: **`GO`** (Production Readiness Score 100%, D-137. 8/8 VULNs SRE cerradas. E2E 4/4 PASS. Ver `docs/closure/OPEN_ISSUES.md`).
+- Score: `100%` (9/9 gates aplicables).
+- Snapshot vigente de gates: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md`.
 - Pendientes P0/P1 vigentes: `docs/closure/OPEN_ISSUES.md`.
 
 Notas:

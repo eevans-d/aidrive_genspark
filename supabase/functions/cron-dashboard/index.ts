@@ -21,6 +21,13 @@ import { getCorsHeaders } from '../_shared/cors.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
 
 const logger = createLogger('cron-dashboard');
+
+const FETCH_TIMEOUT_MS = 8_000;
+
+async function fetchWithTimeout(url: string, init?: RequestInit): Promise<Response> {
+    return fetch(url, { ...init, signal: init?.signal ?? AbortSignal.timeout(FETCH_TIMEOUT_MS) });
+}
+
 // =====================================================
 // INTERFACES Y TIPOS
 // =====================================================
@@ -206,14 +213,20 @@ async function getDashboardHandler(
     logger.info('GET_DASHBOARD_DATA', { action });
 
     try {
-        // Obtener datos del sistema
-        const systemData = await getSystemData(supabaseUrl, serviceRoleKey);
-        const jobsData = await getJobsData(supabaseUrl, serviceRoleKey);
-        const alertsData = await getAlertsData(supabaseUrl, serviceRoleKey);
-        const healthData = await getHealthData(supabaseUrl, serviceRoleKey);
+        // Obtener datos del sistema en paralelo
+        const [systemResult, jobsResult, alertsResult, healthResult, uptimeResult] = await Promise.allSettled([
+            getSystemData(supabaseUrl, serviceRoleKey),
+            getJobsData(supabaseUrl, serviceRoleKey),
+            getAlertsData(supabaseUrl, serviceRoleKey),
+            getHealthData(supabaseUrl, serviceRoleKey),
+            calculateSystemUptime(supabaseUrl, serviceRoleKey),
+        ]);
 
-        // Calcular uptime real del sistema
-        const systemUptime = await calculateSystemUptime(supabaseUrl, serviceRoleKey);
+        const systemData = systemResult.status === 'fulfilled' ? systemResult.value : { today: { executions: 0, successRate: 0, avgTime: 0, alerts: 0 }, weekly: { trend: 'stable' as const, change: 0, topJobs: [] } };
+        const jobsData = jobsResult.status === 'fulfilled' ? jobsResult.value : [];
+        const alertsData = alertsResult.status === 'fulfilled' ? alertsResult.value : [];
+        const healthData = healthResult.status === 'fulfilled' ? healthResult.value : { overall: 'critical', score: 0, components: {}, recommendations: ['Data fetch failed'] };
+        const systemUptime = uptimeResult.status === 'fulfilled' ? uptimeResult.value : '0%';
 
         const dashboardData: DashboardData = {
             overview: {
@@ -440,7 +453,7 @@ async function calculateSystemUptime(supabaseUrl: string, serviceRoleKey: string
     try {
         const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString();
         
-        const response = await fetch(
+        const response = await fetchWithTimeout(
             `${supabaseUrl}/rest/v1/cron_jobs_monitoring_history?select=uptime_percentage&timestamp=gte.${thirtyDaysAgo}&order=timestamp.desc&limit=500`,
             {
                 headers: {
@@ -555,7 +568,7 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
     // Obtener métricas del día
-    const metricsResponse = await fetch(
+    const metricsResponse = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_metrics?select=*&fecha_metricas=eq.${today}`,
         {
             headers: {
@@ -568,7 +581,7 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
     const metrics = metricsResponse.ok ? await metricsResponse.json() : [];
 
     // Obtener métricas semanales
-    const weeklyResponse = await fetch(
+    const weeklyResponse = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_metrics?select=*&fecha_metricas=gte.${weekAgo}&order=fecha_metricas.desc`,
         {
             headers: {
@@ -582,7 +595,7 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
 
     // Obtener métricas de la semana pasada para comparación
     const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
-    const lastWeekResponse = await fetch(
+    const lastWeekResponse = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_metrics?select=*&fecha_metricas=gte.${twoWeeksAgo}&fecha_metricas=lt.${weekAgo}&order=fecha_metricas.desc`,
         {
             headers: {
@@ -634,7 +647,7 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
 }
 
 async function getJobsData(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_tracking?select=*&order=ultima_ejecucion.desc.nullsfirst`,
         {
             headers: {
@@ -664,7 +677,7 @@ async function getJobsData(supabaseUrl: string, serviceRoleKey: string): Promise
 }
 
 async function getAlertsData(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_alerts?select=*&order=created_at.desc&limit=50`,
         {
             headers: {
@@ -693,7 +706,7 @@ async function getAlertsData(supabaseUrl: string, serviceRoleKey: string): Promi
 
 async function getHealthData(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
     try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
             method: 'GET',
             headers: {
                 'apikey': serviceRoleKey
@@ -737,7 +750,7 @@ async function getChartData(supabaseUrl: string, serviceRoleKey: string): Promis
 async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_execution_log?select=start_time,estado,duracion_ms&start_time=gte.${sevenDaysAgo}&order=start_time.asc`,
         {
             headers: {
@@ -776,7 +789,7 @@ async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string):
 async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_alerts?select=created_at,severidad&created_at=gte.${sevenDaysAgo}&order=created_at.asc`,
         {
             headers: {
@@ -811,7 +824,7 @@ async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string): Prom
 async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_execution_log?select=start_time,duracion_ms&start_time=gte.${oneDayAgo}&order=start_time.asc&limit=100`,
         {
             headers: {
@@ -1010,7 +1023,7 @@ async function getJobsCharts(supabaseUrl: string, serviceRoleKey: string): Promi
 // =====================================================
 
 async function pauseJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
-    const response = await fetch(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
+    const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -1031,7 +1044,7 @@ async function pauseJob(jobId: string, supabaseUrl: string, serviceRoleKey: stri
 }
 
 async function resumeJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
-    const response = await fetch(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
+    const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -1052,7 +1065,7 @@ async function resumeJob(jobId: string, supabaseUrl: string, serviceRoleKey: str
 }
 
 async function triggerJob(jobId: string, parameters: any, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
-    const response = await fetch(`${supabaseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
+    const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
@@ -1082,7 +1095,7 @@ async function restartJob(jobId: string, supabaseUrl: string, serviceRoleKey: st
 }
 
 async function updateJobConfig(jobId: string, config: any, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
-    const response = await fetch(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
+    const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
             'Content-Type': 'application/json',
@@ -1108,7 +1121,7 @@ async function updateJobConfig(jobId: string, config: any, supabaseUrl: string, 
 
 async function getCurrentSystemStatus(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
     try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/cron-health-monitor/status`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/status`, {
             method: 'GET',
             headers: {
                 'apikey': serviceRoleKey
@@ -1127,7 +1140,7 @@ async function getCurrentSystemStatus(supabaseUrl: string, serviceRoleKey: strin
 }
 
 async function getActiveJobs(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_tracking?select=*&estado_job=eq.ejecutando&order=ultima_ejecucion.desc`,
         {
             headers: {
@@ -1145,7 +1158,7 @@ async function getActiveJobs(supabaseUrl: string, serviceRoleKey: string): Promi
 }
 
 async function getRecentAlerts(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_alerts?select=*&estado_alerta=eq.activas&order=created_at.desc&limit=10`,
         {
             headers: {
@@ -1165,7 +1178,7 @@ async function getRecentAlerts(supabaseUrl: string, serviceRoleKey: string): Pro
 async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     
-    const response = await fetch(
+    const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_execution_log?select=*&start_time=gte.${oneHourAgo}&order=start_time.desc&limit=20`,
         {
             headers: {
@@ -1194,7 +1207,7 @@ async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string
 
 async function getHealthIndicators(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
     try {
-        const response = await fetch(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
+        const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
             method: 'GET',
             headers: {
                 'apikey': serviceRoleKey
@@ -1243,7 +1256,7 @@ async function getHistoricalData(period: string, jobId: string | null, supabaseU
         query += `&job_id=eq.${jobId}`;
     }
 
-    const response = await fetch(query, {
+    const response = await fetchWithTimeout(query, {
         headers: {
             'apikey': serviceRoleKey,
             'Authorization': `Bearer ${serviceRoleKey}`

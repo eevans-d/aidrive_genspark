@@ -23,6 +23,7 @@ function splitIntoBatches<T>(arr: T[], size: number): T[][] {
 async function supabaseFetch(url: string, key: string, options: RequestInit = {}): Promise<Response> {
   return fetch(url, {
     ...options,
+    signal: options.signal ?? AbortSignal.timeout(10_000),
     headers: { 'apikey': key, 'Authorization': `Bearer ${key}`, 'Content-Type': 'application/json', ...options.headers }
   });
 }
@@ -34,7 +35,7 @@ export async function bulkCheckExistingProducts(skus: string[], supabaseUrl: str
       const q = `${supabaseUrl}/rest/v1/precios_proveedor?select=sku,id&sku=in.(${chunk.map(s => `"${s}"`).join(',')})`;
       const res = await supabaseFetch(q, key);
       if (res.ok) results.push(...await res.json());
-    } catch { /* continue */ }
+    } catch (err) { logger.warn('BULK_CHECK_CHUNK_FAILED', { error: err instanceof Error ? err.message : String(err) }); }
   }
   return results;
 }
@@ -75,7 +76,7 @@ export async function batchUpdateProducts(productos: ProductoMaxiconsumo[], supa
           }), headers: { 'Prefer': 'return=representation' }
         });
         if (res.ok) updated++;
-      } catch { /* continue */ }
+      } catch (err) { logger.warn('BATCH_UPDATE_ITEM_FAILED', { sku: p.sku, error: err instanceof Error ? err.message : String(err) }); }
     }
     await delay(100);
   }

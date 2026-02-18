@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
+import { Toaster, toast } from 'sonner'
 import { useTareas, TareaPendiente, type TareasResult } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tareasApi, ApiError } from '../lib/apiClient'
@@ -19,6 +20,8 @@ function computeTareasMetrics(tareas: TareaPendiente[]) {
 export default function Tareas() {
   const queryClient = useQueryClient()
   const [showForm, setShowForm] = useState(false)
+  const [cancelDialogId, setCancelDialogId] = useState<string | null>(null)
+  const [cancelRazon, setCancelRazon] = useState('')
   const [formData, setFormData] = useState({
     titulo: '',
     descripcion: '',
@@ -149,8 +152,10 @@ export default function Tareas() {
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
+      toast.error('Error al completar tarea')
     },
     onSuccess: (server, id) => {
+      toast.success('Tarea completada')
       queryClient.setQueryData<TareasResult>(['tareas'], (curr) => {
         const base = curr?.tareas ?? []
         const next = base.map((t) =>
@@ -195,6 +200,12 @@ export default function Tareas() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
+      toast.error('Error al cancelar tarea')
+    },
+    onSuccess: () => {
+      toast.success('Tarea cancelada')
+      setCancelDialogId(null)
+      setCancelRazon('')
     },
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: ['tareas'] })
@@ -211,9 +222,13 @@ export default function Tareas() {
   }
 
   const handleCancelarTarea = (id: string) => {
-    const razon = prompt('Ingrese la razón de cancelación:')
-    if (!razon) return
-    cancelMutation.mutate({ id, razon })
+    setCancelDialogId(id)
+    setCancelRazon('')
+  }
+
+  const handleConfirmCancel = () => {
+    if (!cancelDialogId || !cancelRazon.trim()) return
+    cancelMutation.mutate({ id: cancelDialogId, razon: cancelRazon.trim() })
   }
 
   if (isLoading) {
@@ -247,6 +262,7 @@ export default function Tareas() {
 
   return (
     <div className="space-y-6">
+      <Toaster position="top-right" richColors />
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Tareas</h1>
         <button
@@ -453,6 +469,55 @@ export default function Tareas() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Cancel reason dialog (MED-13) */}
+      {cancelDialogId && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
+            <div className="px-6 py-4 border-b flex justify-between items-center">
+              <h3 className="text-lg font-bold">Cancelar Tarea</h3>
+              <button
+                onClick={() => { setCancelDialogId(null); setCancelRazon('') }}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                &times;
+              </button>
+            </div>
+            <div className="p-6 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Razón de cancelación *
+                </label>
+                <textarea
+                  value={cancelRazon}
+                  onChange={(e) => setCancelRazon(e.target.value)}
+                  rows={3}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  placeholder="Ingrese la razón de cancelación..."
+                  autoFocus
+                />
+              </div>
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={() => { setCancelDialogId(null); setCancelRazon('') }}
+                  className="flex-1 py-2 border border-gray-300 rounded-lg font-medium hover:bg-gray-50"
+                >
+                  Volver
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancel}
+                  disabled={!cancelRazon.trim() || cancelMutation.isPending}
+                  className="flex-1 py-2 bg-red-600 hover:bg-red-700 disabled:bg-gray-300 text-white rounded-lg font-medium"
+                >
+                  {cancelMutation.isPending ? 'Cancelando...' : 'Confirmar Cancelación'}
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

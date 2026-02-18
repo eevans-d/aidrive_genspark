@@ -278,6 +278,7 @@ create_pre_deploy_backup() {
     local backup_path="$BACKUP_DIR/$backup_name"
     
     mkdir -p "$BACKUP_DIR"
+    chmod 700 "$BACKUP_DIR"
     
     # Backup de base de datos (solo en producción)
     if [ "$DEPLOY_ENV" = "production" ]; then
@@ -290,7 +291,7 @@ create_pre_deploy_backup() {
     fi
     
     # Backup de archivos de configuración
-    cp .env "$backup_path/.env.backup" 2>/dev/null || true
+    cp .env "$backup_path/.env.backup" 2>/dev/null && chmod 600 "$backup_path/.env.backup" || true
     cp package.json "$backup_path/package.json.backup" 2>/dev/null || true
     
     log_success "Backup creado: $backup_path"
@@ -532,12 +533,11 @@ EOF
 
 # Rollback en caso de error
 rollback_deployment() {
-    log_error "¡Error en deployment! Iniciando rollback..."
-    
-    # Aquí se implementaría la lógica de rollback
-    # Por ejemplo, restaurar backup anterior
-    
-    log_warning "Rollback completado (simulado)"
+    log_error "¡Error en deployment! Se requiere rollback manual."
+    log_warning "Pasos de rollback manual:"
+    log_warning "  1. Verificar estado de funciones: supabase functions list"
+    log_warning "  2. Revertir migraciones si es necesario: supabase db reset"
+    log_warning "  3. Redesplegar versión anterior: git checkout <commit> && ./deploy.sh"
     exit 1
 }
 
@@ -623,26 +623,21 @@ main() {
                     exit 1
                 fi
             fi
-            
-            # Capturar errores para rollback
-            set +e
-            
+
             check_prerequisites
             run_pre_deploy_checks
             create_pre_deploy_backup
             build_application
-            
+
             if [ "$DEPLOY_ENV" != "dev" ]; then
                 deploy_to_supabase
                 deploy_migrations
             fi
-            
+
             setup_post_deployment
             run_post_deployment_tests
             notify_deployment
-            
-            set -e
-            
+
             show_deployment_summary
             ;;
         "help"|"-h"|"--help")

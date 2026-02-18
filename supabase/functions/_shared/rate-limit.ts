@@ -71,14 +71,39 @@ export class FixedWindowRateLimiter {
   private readonly max: number;
   private readonly windowMs: number;
   private readonly buckets = new Map<string, RateLimitState>();
+  private lastSweep = Date.now();
+  private static readonly SWEEP_INTERVAL_MS = 60_000;
 
   constructor(max: number, windowMs: number) {
     this.max = max;
     this.windowMs = windowMs;
   }
 
+  /**
+   * Remove expired entries from the buckets map to prevent unbounded memory growth.
+   * Called periodically (every 60s) from check().
+   */
+  sweepStale(): number {
+    const now = Date.now();
+    let removed = 0;
+    for (const [key, state] of this.buckets) {
+      if (now >= state.resetAt) {
+        this.buckets.delete(key);
+        removed++;
+      }
+    }
+    this.lastSweep = now;
+    return removed;
+  }
+
   check(key: string): RateLimitResult {
     const now = Date.now();
+
+    // Periodic sweep to prevent unbounded Map growth (MED-04)
+    if (now - this.lastSweep >= FixedWindowRateLimiter.SWEEP_INTERVAL_MS) {
+      this.sweepStale();
+    }
+
     const current = this.buckets.get(key);
 
     if (!current || now >= current.resetAt) {

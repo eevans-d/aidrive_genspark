@@ -192,6 +192,50 @@ describe('FixedWindowRateLimiter', () => {
                         expect(headers['RateLimit-Remaining']).toBe('4');
                 });
         });
+
+        describe('sweepStale (MED-04)', () => {
+                it('should remove expired entries', () => {
+                        // Create entries for multiple keys
+                        limiter.check('user1');
+                        limiter.check('user2');
+                        limiter.check('user3');
+
+                        // Advance past the window so all entries expire
+                        vi.advanceTimersByTime(60001);
+
+                        const removed = limiter.sweepStale();
+                        expect(removed).toBe(3);
+
+                        // After sweep, new check should start fresh
+                        const result = limiter.check('user1');
+                        expect(result.remaining).toBe(4);
+                });
+
+                it('should not remove active entries', () => {
+                        limiter.check('user1');
+                        limiter.check('user2');
+
+                        // Only advance 30s (window is 60s)
+                        vi.advanceTimersByTime(30000);
+
+                        const removed = limiter.sweepStale();
+                        expect(removed).toBe(0);
+                });
+
+                it('should auto-sweep during check after 60s interval', () => {
+                        // Create stale entries
+                        limiter.check('user-old-1');
+                        limiter.check('user-old-2');
+
+                        // Advance past both the window (60s) and sweep interval (60s)
+                        vi.advanceTimersByTime(61000);
+
+                        // This check should trigger auto-sweep internally
+                        const result = limiter.check('user-new');
+                        expect(result.allowed).toBe(true);
+                        expect(result.remaining).toBe(4);
+                });
+        });
 });
 
 describe('AdaptiveRateLimiter', () => {

@@ -11,20 +11,24 @@
 
 import { describe, it, expect } from 'vitest';
 import {
-        isUuid,
-        UUID_REGEX,
-        parsePositiveNumber,
-        parseNonNegativeNumber,
-        parsePositiveInt,
-        parseNonNegativeInt,
-        sanitizeTextParam,
-        parseBooleanParam,
-        parseISODate,
-        isValidMovimientoTipo,
-        VALID_MOVIMIENTO_TIPOS,
-        validateAllowedFields,
-        PRODUCTO_UPDATE_FIELDS,
-        isValidCodigo
+	isUuid,
+	UUID_REGEX,
+	parsePositiveNumber,
+	parseNonNegativeNumber,
+	parsePositiveInt,
+	parseNonNegativeInt,
+	sanitizeTextParam,
+	isValidISODateString,
+	parseBooleanParam,
+	parseISODate,
+	isValidMovimientoTipo,
+	VALID_MOVIMIENTO_TIPOS,
+	VALID_PEDIDO_ESTADOS,
+	VALID_PEDIDO_ESTADOS_PAGO,
+	VALID_TAREA_PRIORIDADES,
+	validateAllowedFields,
+	PRODUCTO_UPDATE_FIELDS,
+	isValidCodigo
 } from '../../supabase/functions/api-minimarket/helpers/validation';
 
 describe('UUID_REGEX and isUuid', () => {
@@ -283,5 +287,128 @@ describe('isValidCodigo', () => {
 
         it('should reject empty string', () => {
                 expect(isValidCodigo('')).toBe(false);
+        });
+});
+
+describe('sanitizeTextParam - Unicode support (CRIT-01)', () => {
+        it('should preserve Spanish accented characters', () => {
+                expect(sanitizeTextParam('Café')).toBe('Café');
+                expect(sanitizeTextParam('Jamón')).toBe('Jamón');
+                expect(sanitizeTextParam('Año Nuevo')).toBe('Año Nuevo');
+                expect(sanitizeTextParam('Piñata')).toBe('Piñata');
+        });
+
+        it('should preserve ñ and Ñ', () => {
+                expect(sanitizeTextParam('niño')).toBe('niño');
+                expect(sanitizeTextParam('SEÑOR')).toBe('SEÑOR');
+        });
+
+        it('should preserve other Latin accented characters', () => {
+                expect(sanitizeTextParam('crème brûlée')).toBe('crème brûlée');
+                expect(sanitizeTextParam('über')).toBe('über');
+        });
+
+        it('should preserve Portuguese characters', () => {
+                expect(sanitizeTextParam('São Paulo')).toBe('São Paulo');
+                expect(sanitizeTextParam('coração')).toBe('coração');
+        });
+
+        it('should still remove injection characters', () => {
+                expect(sanitizeTextParam('café<script>')).toBe('caféscript');
+                expect(sanitizeTextParam("test'; DROP TABLE--")).toBe('test DROP TABLE--');
+                expect(sanitizeTextParam('hola@mundo!')).toBe('holamundo');
+        });
+
+        it('should preserve numbers and allowed punctuation with Unicode', () => {
+                expect(sanitizeTextParam('Café 123 lote_A')).toBe('Café 123 lote_A');
+                expect(sanitizeTextParam('producto-ñ.v2')).toBe('producto-ñ.v2');
+        });
+});
+
+describe('isValidISODateString (ALTO-A02)', () => {
+        it('should accept valid ISO date strings', () => {
+                expect(isValidISODateString('2024-01-15')).toBe(true);
+                expect(isValidISODateString('2024-01-15T10:30:00Z')).toBe(true);
+                expect(isValidISODateString('2024-01-15T10:30:00.000Z')).toBe(true);
+                expect(isValidISODateString('2024-01-15T10:30Z')).toBe(true);
+        });
+
+        it('should accept dates with timezone offset', () => {
+                expect(isValidISODateString('2024-01-15T10:30:00+03:00')).toBe(true);
+                expect(isValidISODateString('2024-01-15T10:30:00-05:00')).toBe(true);
+        });
+
+        it('should reject non-date strings', () => {
+                expect(isValidISODateString('not-a-date')).toBe(false);
+                expect(isValidISODateString('abc123')).toBe(false);
+                expect(isValidISODateString('')).toBe(false);
+        });
+
+        it('should reject malformed dates', () => {
+                expect(isValidISODateString('2024-13-45')).toBe(false);
+                expect(isValidISODateString('15-01-2024')).toBe(false);
+                expect(isValidISODateString('2024/01/15')).toBe(false);
+        });
+
+        it('should reject SQL injection in date param', () => {
+                expect(isValidISODateString("2024-01-01'; DROP TABLE--")).toBe(false);
+                expect(isValidISODateString('1 OR 1=1')).toBe(false);
+        });
+});
+
+describe('VALID_PEDIDO_ESTADOS (MED-01)', () => {
+        it('should have exactly 5 valid estados', () => {
+                expect(VALID_PEDIDO_ESTADOS.size).toBe(5);
+        });
+
+        it('should contain all valid estados', () => {
+                expect(VALID_PEDIDO_ESTADOS.has('pendiente')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS.has('preparando')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS.has('listo')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS.has('entregado')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS.has('cancelado')).toBe(true);
+        });
+
+        it('should reject invalid estados', () => {
+                expect(VALID_PEDIDO_ESTADOS.has('borrado')).toBe(false);
+                expect(VALID_PEDIDO_ESTADOS.has('PENDIENTE')).toBe(false);
+                expect(VALID_PEDIDO_ESTADOS.has('')).toBe(false);
+        });
+});
+
+describe('VALID_PEDIDO_ESTADOS_PAGO (MED-01)', () => {
+        it('should have exactly 3 valid estados_pago', () => {
+                expect(VALID_PEDIDO_ESTADOS_PAGO.size).toBe(3);
+        });
+
+        it('should contain all valid estados_pago', () => {
+                expect(VALID_PEDIDO_ESTADOS_PAGO.has('pendiente')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS_PAGO.has('parcial')).toBe(true);
+                expect(VALID_PEDIDO_ESTADOS_PAGO.has('pagado')).toBe(true);
+        });
+
+        it('should reject invalid estados_pago', () => {
+                expect(VALID_PEDIDO_ESTADOS_PAGO.has('completo')).toBe(false);
+                expect(VALID_PEDIDO_ESTADOS_PAGO.has('refunded')).toBe(false);
+        });
+});
+
+describe('VALID_TAREA_PRIORIDADES (MED-07)', () => {
+        it('should have exactly 5 values (unified superset)', () => {
+                expect(VALID_TAREA_PRIORIDADES.size).toBe(5);
+        });
+
+        it('should contain all valid prioridades from both code paths', () => {
+                expect(VALID_TAREA_PRIORIDADES.has('baja')).toBe(true);
+                expect(VALID_TAREA_PRIORIDADES.has('normal')).toBe(true);
+                expect(VALID_TAREA_PRIORIDADES.has('urgente')).toBe(true);
+                expect(VALID_TAREA_PRIORIDADES.has('media')).toBe(true);
+                expect(VALID_TAREA_PRIORIDADES.has('alta')).toBe(true);
+        });
+
+        it('should reject invalid prioridades', () => {
+                expect(VALID_TAREA_PRIORIDADES.has('critica')).toBe(false);
+                expect(VALID_TAREA_PRIORIDADES.has('ALTA')).toBe(false);
+                expect(VALID_TAREA_PRIORIDADES.has('')).toBe(false);
         });
 });

@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
 import { ArrowLeft, Banknote, CreditCard, Loader2, Search, Trash2, User, AlertTriangle } from 'lucide-react'
 
@@ -38,6 +38,7 @@ function buildWhatsAppUrl(e164: string): string {
 
 export default function Pos() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const inputRef = useRef<HTMLInputElement>(null)
   const isProcessingScan = useRef(false)
 
@@ -202,6 +203,9 @@ export default function Pos() {
     },
     onSuccess: (venta) => {
       toast.success(`Venta ${venta.status === 'existing' ? 'idempotente' : 'registrada'}: $${money(venta.monto_total)}`)
+      queryClient.invalidateQueries({ queryKey: ['ventas'] })
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['dashboard'] })
       resetVenta()
     },
     onError: (err) => {
@@ -354,7 +358,10 @@ export default function Pos() {
             <div className="text-xs text-gray-500">Idempotency-Key: <span className="font-mono">{idempotencyKey.slice(0, 8)}</span></div>
           </div>
           <button
-            onClick={resetVenta}
+            onClick={() => {
+              if (cart.length > 0 && !window.confirm('¿Descartar el ticket actual?')) return
+              resetVenta()
+            }}
             className="flex items-center gap-2 px-3 py-2 rounded-lg bg-gray-100 hover:bg-gray-200 text-gray-700"
             title="Limpiar (ESC)"
           >
@@ -372,7 +379,11 @@ export default function Pos() {
               ref={inputRef}
               value={scanValue}
               onChange={(e) => setScanValue(e.target.value)}
-              onBlur={() => queueMicrotask(() => inputRef.current?.focus())}
+              onBlur={(e) => {
+                if (!e.relatedTarget || e.relatedTarget === document.body) {
+                  queueMicrotask(() => inputRef.current?.focus())
+                }
+              }}
               placeholder={productosLoading ? 'Cargando productos…' : 'Escanear o escribir código y Enter'}
               className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               autoCapitalize="off"

@@ -13,15 +13,15 @@
 |---|---|---|
 | Archivos versionados | `606` | `git ls-files \| wc -l` |
 | Edge Functions en repo (sin `_shared`) | `13` | `find supabase/functions ... ! -name '_shared'` |
-| Migraciones SQL | `41` | `find supabase/migrations -name '*.sql'` |
+| Migraciones SQL | `44` | `find supabase/migrations -name '*.sql'` (43 synced remoto D-132 + 1 nueva local) |
 | Rutas frontend en SPA principal | `15` rutas (`14` explicitas + `*`) | `minimarket-system/src/App.tsx` |
 | Gateway `api-minimarket` | `55` guards de enrutamiento (`35` literales + `20` regex) | `supabase/functions/api-minimarket/index.ts` |
 | Runtime `api-proveedor` | `9` endpoints en `schemas.ts` | `supabase/functions/api-proveedor/schemas.ts` |
-| OpenAPI `api-proveedor` | YAML parsea OK, pero con drift vs runtime | `docs/api-proveedor-openapi-3.1.yaml`, `supabase/functions/api-proveedor/schemas.ts` |
-| Drift proveedor confirmado | spec incluye `/scrape`,`/compare`,`/alerts`; runtime no. runtime incluye `/health`; spec no | mismos archivos |
-| Metodo HTTP por endpoint en proveedor | NO implementado (router por ultimo segmento) | `supabase/functions/api-proveedor/index.ts`, `supabase/functions/api-proveedor/router.ts` |
+| OpenAPI `api-proveedor` | ~~YAML parsea OK, pero con drift vs runtime~~ | ~~`docs/api-proveedor-openapi-3.1.yaml`, `supabase/functions/api-proveedor/schemas.ts`~~ |
+| ~~Drift proveedor confirmado~~ | ~~spec incluye `/scrape`,`/compare`,`/alerts`; runtime no. runtime incluye `/health`; spec no~~ | **CERRADO D-129**: 14 mismatches corregidos, 3 endpoints fantasma eliminados, `/health` agregado |
+| ~~Metodo HTTP por endpoint en proveedor~~ | ~~NO implementado (router por ultimo segmento)~~ | **CERRADO D-129**: `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos) |
 | `reportes-automaticos` y esquema | usa `fecha_movimiento` y `tipo_movimiento` (sin mismatch detectado en codigo) | `supabase/functions/reportes-automaticos/index.ts` |
-| Quality gates mas reciente | unit PASS; integration FAIL por `.env.test` faltante | `test-reports/quality-gates_20260217-032720.log` |
+| Quality gates mas reciente | **GO**: unit 1248/1248 PASS, E2E 4/4 PASS, coverage 80%+, integration N/A (D-137) | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` |
 | Integridad de links docs | OK en `80` archivos | `node scripts/validate-doc-links.mjs` |
 
 ---
@@ -64,11 +64,11 @@ El sistema final en produccion debe garantizar:
 | Ofertas y merma | sugerir/aplicar/desactivar con trazabilidad | PARCIAL AVANZADO | `supabase/functions/api-minimarket/handlers/ofertas.ts` |
 | Tareas/bitacora/notificaciones | gestion operativa multi-canal con SLA | PARCIAL AVANZADO | `supabase/functions/api-minimarket/handlers/bitacora.ts`, `supabase/functions/cron-notifications/index.ts` |
 | Insights negocio | insights con accion directa desde UI | PARCIAL | `supabase/functions/api-minimarket/handlers/insights.ts`, `minimarket-system/src/components/AlertsDrawer.tsx` |
-| Integracion proveedor | contrato estable y endurecido (metodo+auth+spec sincronizada) | PARCIAL | `supabase/functions/api-proveedor/*`, `docs/api-proveedor-openapi-3.1.yaml` |
+| Integracion proveedor | contrato estable y endurecido (metodo+auth+spec sincronizada) | PARCIAL AVANZADO | `supabase/functions/api-proveedor/*`, `docs/api-proveedor-openapi-3.1.yaml` |
 | Automatizacion cron | jobs autenticados + lock + health monitor | PARCIAL AVANZADO | `supabase/functions/cron-*`, `supabase/migrations/20260211055140_fix_cron_jobs_auth_and_maintenance.sql` |
 | Observabilidad | Sentry + logs + salud cron + runbooks | PARCIAL AVANZADO | `minimarket-system/src/main.tsx`, `supabase/functions/_shared/logger.ts` |
 | Seguridad/compliance | RLS y search_path hardening sin gaps P0/P1 | PARCIAL AVANZADO | `supabase/migrations/20260212130000_fix_rls_auth_users_final.sql`, `supabase/migrations/20260215100000_fix_search_path_all_functions.sql` |
-| Calidad/testing | gates reproducibles en cualquier sesion | PARCIAL | `test-reports/quality-gates_20260217-032720.log` |
+| Calidad/testing | gates reproducibles en cualquier sesion | PARCIAL AVANZADO | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-137: E2E 4/4 PASS, unit 1248/1248) |
 | Operacion/continuidad | backup + restore drill + continuidad IA verificable | PARCIAL AVANZADO | `.github/workflows/backup.yml`, `scripts/db-restore-drill.sh`, `docs/closure/CONTINUIDAD_SESIONES.md` |
 
 ---
@@ -115,11 +115,11 @@ El sistema final en produccion debe garantizar:
 
 ## 6) Brechas priorizadas para pasar de preprod a obra final
 
-### Criticas (bloquean alineacion)
+### Criticas (~~bloquean alineacion~~ — todas CERRADAS)
 
-1. `api-proveedor` sin enforcement de metodo HTTP por endpoint.
-2. Drift OpenAPI/runtime en proveedor (`/health` faltante en spec y `/scrape|/compare|/alerts` sobrantes en spec).
-3. Quality gates de integracion no reproducibles universalmente sin `.env.test`.
+1. ~~`api-proveedor` sin enforcement de metodo HTTP por endpoint.~~ **CERRADO D-129**: `allowedMethods` en `schemas.ts` + 405 en `router.ts`.
+2. ~~Drift OpenAPI/runtime en proveedor (`/health` faltante en spec y `/scrape|/compare|/alerts` sobrantes en spec).~~ **CERRADO D-129**: 14 mismatches corregidos.
+3. ~~Quality gates de integracion no reproducibles universalmente sin `.env.test`.~~ **CERRADO D-137**: `.env.test` provisionado, E2E 4/4 PASS, integration N/A.
 
 ### Importantes (deuda operativa)
 

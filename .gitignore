@@ -928,6 +928,9 @@ memory/
 shell_output_save/
 user_input_files/
 
+# Deploy backups (may contain secrets)
+backups/
+
 # Temporary reports and test artifacts
 test_report_*.json
 report_record.txt

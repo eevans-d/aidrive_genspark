@@ -14,7 +14,7 @@ export const getProductosDropdown = async (
                 requestHeaders,
                 { activo: true },
                 'id,nombre,sku,codigo_barras,precio_actual',
-                { order: 'nombre' }
+                { order: 'nombre', limit: 1000 }
         );
 
         return ok(productos, 200, originHeaders, { requestId });
@@ -32,7 +32,7 @@ export const getProveedoresDropdown = async (
                 requestHeaders,
                 { activo: true },
                 'id,nombre',
-                { order: 'nombre' }
+                { order: 'nombre', limit: 1000 }
         );
 
         return ok(proveedores, 200, originHeaders, { requestId });

@@ -15,7 +15,7 @@ import {
         updateTable,
         callFunction,
 } from '../helpers/supabase.ts';
-import { isUuid, sanitizeTextParam } from '../helpers/validation.ts';
+import { isUuid, sanitizeTextParam, isValidISODateString, VALID_PEDIDO_ESTADOS, VALID_PEDIDO_ESTADOS_PAGO } from '../helpers/validation.ts';
 
 const logger = createLogger('api-pedidos');
 
@@ -76,15 +76,27 @@ export async function handleListarPedidos(
                 queryParams.set('offset', String(params.offset));
 
                 if (params.estado) {
+                        if (!VALID_PEDIDO_ESTADOS.has(params.estado)) {
+                                return fail('VALIDATION_ERROR', 'estado invalido', 400, responseHeaders, { requestId });
+                        }
                         queryParams.append('estado', `eq.${params.estado}`);
                 }
                 if (params.estado_pago) {
+                        if (!VALID_PEDIDO_ESTADOS_PAGO.has(params.estado_pago)) {
+                                return fail('VALIDATION_ERROR', 'estado_pago invalido', 400, responseHeaders, { requestId });
+                        }
                         queryParams.append('estado_pago', `eq.${params.estado_pago}`);
                 }
                 if (params.fecha_desde) {
+                        if (!isValidISODateString(params.fecha_desde)) {
+                                return fail('VALIDATION_ERROR', 'fecha_desde invalida (formato ISO requerido)', 400, responseHeaders, { requestId });
+                        }
                         queryParams.append('fecha_pedido', `gte.${params.fecha_desde}`);
                 }
                 if (params.fecha_hasta) {
+                        if (!isValidISODateString(params.fecha_hasta)) {
+                                return fail('VALIDATION_ERROR', 'fecha_hasta invalida (formato ISO requerido)', 400, responseHeaders, { requestId });
+                        }
                         queryParams.append('fecha_pedido', `lte.${params.fecha_hasta}`);
                 }
 
@@ -236,6 +248,15 @@ export async function handleCrearPedido(
 // ACTUALIZAR ESTADO DEL PEDIDO
 // ============================================================================
 
+/** ALTO-A01: Valid state transitions map */
+const VALID_TRANSITIONS: Record<string, string[]> = {
+        pendiente: ['preparando', 'cancelado'],
+        preparando: ['listo', 'cancelado'],
+        listo: ['entregado', 'cancelado'],
+        entregado: [],   // Terminal state
+        cancelado: [],   // Terminal state
+};
+
 export async function handleActualizarEstadoPedido(
         supabaseUrl: string,
         headers: Record<string, string>,
@@ -258,6 +279,25 @@ export async function handleActualizarEstadoPedido(
         }
 
         try {
+                // Fetch current state to validate transition
+                const current = await queryTable(supabaseUrl, 'pedidos', headers, { id: pedidoId }, 'id,estado');
+                if ((current as unknown[]).length === 0) {
+                        return fail('NOT_FOUND', 'Pedido no encontrado', 404, responseHeaders, { requestId });
+                }
+
+                const currentEstado = (current[0] as Record<string, unknown>).estado as string;
+                const allowedNext = VALID_TRANSITIONS[currentEstado] || [];
+
+                if (!allowedNext.includes(estado)) {
+                        return fail(
+                                'INVALID_STATE_TRANSITION',
+                                `Transición inválida: ${currentEstado} → ${estado}. Transiciones permitidas: ${allowedNext.join(', ') || 'ninguna (estado terminal)'}`,
+                                409,
+                                responseHeaders,
+                                { requestId }
+                        );
+                }
+
                 const updates: Record<string, unknown> = {
                         estado,
                         updated_at: new Date().toISOString(),
@@ -279,7 +319,7 @@ export async function handleActualizarEstadoPedido(
                         return fail('NOT_FOUND', 'Pedido no encontrado', 404, responseHeaders, { requestId });
                 }
 
-                logger.info('PEDIDO_ESTADO_ACTUALIZADO', { requestId, pedidoId, estado });
+                logger.info('PEDIDO_ESTADO_ACTUALIZADO', { requestId, pedidoId, from: currentEstado, to: estado });
 
                 return ok((result as unknown[])[0], 200, responseHeaders, {
                         requestId,

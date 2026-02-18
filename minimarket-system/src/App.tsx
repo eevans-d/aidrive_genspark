@@ -7,6 +7,7 @@ import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
 import { useUserRole } from './hooks/useUserRole'
 import Layout from './components/Layout'
+import { ErrorBoundary } from './components/ErrorBoundary'
 
 const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -53,14 +54,15 @@ export function AppRoutes() {
   const { user } = useAuth()
 
   return (
-    <Suspense
-      fallback={
-        <div className="min-h-screen flex items-center justify-center">
-          <div className="text-gray-500">Cargando...</div>
-        </div>
-      }
-    >
-      <Routes>
+    <ErrorBoundary>
+      <Suspense
+        fallback={
+          <div className="min-h-screen flex items-center justify-center">
+            <div className="text-gray-500">Cargando...</div>
+          </div>
+        }
+      >
+        <Routes>
         <Route
           path="/login"
           element={user ? <Navigate to="/" replace /> : <Login />}
@@ -202,7 +204,8 @@ export function AppRoutes() {
           }
         />
       </Routes>
-    </Suspense>
+      </Suspense>
+    </ErrorBoundary>
   )
 }
 

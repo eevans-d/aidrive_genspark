@@ -5,7 +5,7 @@
  */
 
 import { queryTable, insertTable, updateTable, fetchWithParams } from '../helpers/supabase.ts';
-import { isUuid, sanitizeTextParam } from '../helpers/validation.ts';
+import { isUuid, sanitizeTextParam, VALID_TAREA_PRIORIDADES } from '../helpers/validation.ts';
 import { parsePagination } from '../helpers/pagination.ts';
 import { BASE_ROLES } from '../helpers/auth.ts';
 import type { RouteHandler } from './types.ts';
@@ -25,9 +25,8 @@ export const createTareaHandler: RouteHandler = async (ctx) => {
                 return respondFail('VALIDATION_ERROR', 'titulo es requerido', 400);
         }
 
-        const prioridadValida = ['baja', 'media', 'alta', 'urgente'];
-        if (prioridad && !prioridadValida.includes(String(prioridad))) {
-                return respondFail('VALIDATION_ERROR', `prioridad debe ser: ${prioridadValida.join(', ')}`, 400);
+        if (prioridad && !VALID_TAREA_PRIORIDADES.has(String(prioridad))) {
+                return respondFail('VALIDATION_ERROR', `prioridad debe ser: ${[...VALID_TAREA_PRIORIDADES].join(', ')}`, 400);
         }
 
         const tarea: Record<string, unknown> = {

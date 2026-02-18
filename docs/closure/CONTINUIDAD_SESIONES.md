@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-17T08:40:00Z
+**Ultima actualizacion:** 2026-02-18T05:00:00Z
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -30,9 +30,9 @@
 | Proyecto | Mini Market System |
 | Stack | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | Ref Supabase | dqaygmjpzoqjjrywdsxi |
-| Veredicto operativo | APROBADO (P0 cerrados/verificados) |
-| Score | 92/100 operativo, 78/100 forense snapshot (pre-remediación P0; ver `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`) |
-| Tests | 1225/1225 PASS (root), 45 auxiliary PASS + 4 skipped, 175/175 frontend PASS, build PASS |
+| Veredicto operativo | **GO** (Production Readiness Score 100%, D-137) |
+| Score | 100% (9/9 gates aplicables) |
+| Tests | 1248/1248 PASS (root), 28 auxiliary PASS + 4 skipped, 175/175 frontend PASS, 4/4 E2E PASS, build PASS |
 | Edge Functions | 13 activas (`api-minimarket v27`, `api-proveedor v19`, `scraper-maxiconsumo v20`) |
 | Migraciones | 43 local / 43 remoto (sincronizado) |
 
@@ -61,7 +61,8 @@
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
-- Revalidacion post-remediacion D-134: 8/8 VULNs revalidadas file:line, 7 quality gates PASS, coherencia canonica 7/7 OK. Veredicto: APROBADO (2026-02-17).
+- **Upgrade GO D-137**: `.env.test` provisionado, E2E 4/4 PASS, Integration N/A. Score 100% (9/9). Veredicto: **GO**. (2026-02-18).
+- Cierre final consolidado D-136: 10 gates ejecutados (8 PASS, 2 BLOCKED_ENV). Unit 1248/1248. Coverage 88.52%/80.00%/92.32%/89.88%. Score 90%. Veredicto: GO_CONDICIONAL. Hallazgo: deploy.sh backup permissions (MODERADO, CERRADO). (2026-02-18).
 - Auditoria final D-133: 9 desalineaciones documentales corregidas, branch coverage 75.75%→80.21% (60 tests nuevos), lint warning Ventas.tsx corregido (2026-02-17).
 - Pre-Mortem Hardening D-126: 17 fixes criticos implementados, migración SQL + 5 edge functions desplegadas en remoto (2026-02-17). Evidencia: `docs/closure/EVIDENCIA_DEPLOY_HARDENING_2026-02-17.md`.
 - P0 seguridad (RLS + `search_path`) cerrado y verificado en remoto (2026-02-15).
@@ -76,6 +77,9 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-18 | Upgrade GO_CONDICIONAL → GO (D-137): `.env.test` provisionado, E2E 4/4 PASS | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-137), `test-reports/junit.e2e.xml` |
+| 2026-02-18 | Cierre final consolidado D-136 — corrida produccion con veredicto formal (10 gates, score 90%) | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-136), `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (D-136) |
+| 2026-02-18 | Ajuste de consistencia post-ejecución de 3 prompts (D-135) | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md`, `docs/closure/DIAGNOSTICO_AVANZADO_PRODUCCION_USUARIO_REAL_2026-02-17.md` |
 | 2026-02-17 | Revalidacion post-remediacion D-134 (cierre tecnico-documental) | COMPLETADA | D-134 en `docs/DECISION_LOG.md`, `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
 | 2026-02-17 | Auditoria final D-133: doc drift + branch coverage + lint fix | COMPLETADA | D-133 en `docs/DECISION_LOG.md` |
 | 2026-02-17 | Deploy D-132 + drift documental + matriz contraste actualizada | COMPLETADA | D-132 en `docs/DECISION_LOG.md` |
@@ -119,7 +123,7 @@
 - `docs/closure/CONTEXT_PROMPT_AUDITORIA_AVANZADA_PRODUCCION_2026-02-17_ULTRA_SHORT.md` — Auditoria avanzada read-only anti-drift (ACTIVO)
 - `docs/closure/CONTEXT_PROMPT_VALIDACION_POST_REMEDIACION_2026-02-17_ULTRA_SHORT.md` — Revalidacion post-remediacion + coherencia canonica (COMPLETADO, D-134)
 - `docs/closure/CONTEXT_PROMPT_RECONCILIACION_CANONICA_D132_2026-02-17.md` — Reconciliacion documental final D-132 (COMPLETADO)
-- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (ACTIVO)
+- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (COMPLETADO PARCIAL; requiere `.env.test` para cierre total)
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico, referencia)
 - Prompts ad-hoc antiguos: removidos en D-109
 
@@ -134,8 +138,8 @@ Eres un agente tecnico ejecutor del proyecto Mini Market System.
 CONTEXTO
 - Repo: usar la ruta real del checkout activo (ejemplo actual: /home/eevan/ProyectosIA/aidrive_genspark)
 - Branch objetivo: main
-- Estado: APROBADO (P0 cerrados; ver OPEN_ISSUES)
-- Tests base: 1225/1225 PASS (root, D-133)
+- Estado: **GO** (veredicto final D-137; ver OPEN_ISSUES para pendientes operativos)
+- Tests base: 1248/1248 PASS (root, D-136) + 4/4 E2E PASS (D-137)
 
 PRIMER PASO OBLIGATORIO
 Lee en este orden:
