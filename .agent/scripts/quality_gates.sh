@@ -24,10 +24,23 @@ run() {
   "$@"
 }
 
+# Integration tests require .env.test + Supabase; skip gracefully when unavailable
+run_integration_or_skip() {
+  echo
+  echo "==> integration"
+  if [ ! -f "$ROOT_DIR/.env.test" ]; then
+    echo "SKIP: .env.test not found — integration tests require Supabase credentials"
+    echo "      Run 'npm run test:integration' manually with .env.test configured"
+    return 0
+  fi
+  echo "+ npm run test:integration"
+  npm run test:integration
+}
+
 case "$SCOPE" in
   all)
     run "unit" npm run test:unit
-    run "integration" npm run test:integration
+    run_integration_or_skip
     run "e2e" npm run test:e2e
     run "frontend:lint" pnpm -C minimarket-system lint
     run "frontend:build" pnpm -C minimarket-system build
@@ -35,7 +48,7 @@ case "$SCOPE" in
     ;;
   backend)
     run "unit" npm run test:unit
-    run "integration" npm run test:integration
+    run_integration_or_skip
     run "e2e" npm run test:e2e
     ;;
   frontend)
