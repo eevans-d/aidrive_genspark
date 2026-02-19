@@ -1,791 +1,1033 @@
-> [ACTIVO_VERIFICADO: 2026-02-18] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
-
 # Esquema de Base de Datos - Sistema Mini Market
-**Actualizado:** 2026-02-17 (post-deploy D-132: migracion concurrency locks + edge functions)
 
-## Addendum 2026-02-17 (estado canónico vigente)
+**Actualizado:** 2026-02-19 (D-142: reescritura completa contra 44 migraciones SQL)
+**Migraciones:** 44/44 sincronizadas (local = remoto)
+**Fuente de verdad:** `supabase/migrations/*.sql` (este documento es derivado)
 
-- Migraciones: **43/43** synced remoto (`supabase migration list --linked`) + 1 nueva local = 44 fisicas.
-- Migraciones recientes:
-  - `20260216040000_rls_precios_proveedor.sql` — RLS habilitado en `precios_proveedor`.
-  - `20260217100000_hardening_concurrency_fixes.sql` — CHECK `stock_no_negativo`, `sp_procesar_venta_pos` hardened con FOR UPDATE + unique_violation.
-  - `20260217200000_vuln003_004_concurrency_locks.sql` — `sp_movimiento_inventario` con FOR UPDATE en `stock_deposito`/`ordenes_compra`, `sp_actualizar_pago_pedido` con FOR UPDATE en `pedidos`.
-- Hardening aplicado:
-  - `public.rate_limit_state`, `public.circuit_breaker_state`, `public.cron_jobs_locks` con RLS habilitado.
-  - grants a `anon`/`authenticated` revocados en tablas internas.
-  - `public.sp_aplicar_precio(uuid, numeric, numeric)` con `search_path = public`.
-- Evidencia canónica:
-  - `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_POST_FIX.md`
-  - `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-15_REMOTE_POST_FIX.md`
+---
 
-> Nota: las secciones detalladas de este documento preservan contexto histórico de modelado. Para estado operativo inmediato, priorizar `docs/ESTADO_ACTUAL.md` + evidencias de `docs/closure/`.
+## Resumen Ejecutivo
 
-## 📊 Resumen Ejecutivo
-
-| Métrica | Valor |
+| Metrica | Valor |
 |---------|-------|
-| **Tablas principales** | 14 |
-| **Total campos** | 180+ |
-| **Índices custom** | 16 |
-| **Constraints CHECK** | 50+ |
-| **Foreign Keys** | 8 |
-| **Stored Procedures** | 5 |
-| **Tamaño total** | ~850 KB |
+| Tablas | 38 |
+| Vistas no materializadas | 11 |
+| Vistas materializadas | 3 |
+| Funciones/Stored Procedures | 30+ |
+| Triggers | 3 |
+| Migraciones | 44 |
 
 ---
 
-## 🗂️ Tablas del Sistema Mini Market
+## Indice de Tablas por Grupo Funcional
 
-### 1️⃣ **categorias** (NUEVO - FASE 1) ✨
-**Propósito:** Clasificación jerárquica de productos con márgenes sugeridos
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| codigo | VARCHAR(20) | Código único (ej: ALI, BEB) |
-| nombre | VARCHAR(100) | Nombre de la categoría |
-| descripcion | TEXT | Descripción detallada |
-| parent_id | UUID | FK auto-referencial para jerarquía |
-| nivel | INTEGER | Nivel en la jerarquía (1, 2, 3...) |
-| margen_minimo | DECIMAL(5,2) | Margen mínimo sugerido (%) |
-| margen_maximo | DECIMAL(5,2) | Margen máximo sugerido (%) |
-| activo | BOOLEAN | Estado de la categoría |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Última modificación |
-
-**Índices:**
-- `idx_categorias_parent_id` (parcial: WHERE parent_id IS NOT NULL)
-- `idx_categorias_activo` (parcial: WHERE activo = TRUE)
-- `idx_categorias_codigo`
-
-**Datos:** 6 categorías predeterminadas (ALI, BEB, LIM, HIG, BAZ, GEN)
+| Grupo | Tablas |
+|-------|--------|
+| Core: Catalogo | categorias, productos, proveedores |
+| Core: Inventario | stock_deposito, movimientos_deposito, stock_reservado, ordenes_compra |
+| Core: Precios | precios_historicos, precios_proveedor |
+| Operaciones: Clientes/Pedidos | clientes, pedidos, detalle_pedidos |
+| Operaciones: POS/Ventas | ventas, venta_items, cuentas_corrientes_movimientos |
+| Operaciones: Varios | productos_faltantes, ofertas_stock, bitacora_turnos |
+| Gestion: Tareas | tareas_pendientes, notificaciones_tareas |
+| Gestion: Personal | personal |
+| Proveedor/Scraper | cache_proveedor, configuracion_proveedor, estadisticas_scraping, comparacion_precios, alertas_cambios_precios |
+| Cron Jobs | cron_jobs_tracking, cron_jobs_execution_log, cron_jobs_alerts, cron_jobs_notifications, cron_jobs_metrics, cron_jobs_monitoring_history, cron_jobs_health_checks, cron_jobs_config, cron_jobs_notification_preferences, cron_jobs_locks |
+| Infraestructura | rate_limit_state, circuit_breaker_state |
 
 ---
 
-### 2️⃣ **productos** (MEJORADO - FASE 1) ✨
-**Propósito:** Catálogo de productos con información completa
+## 1. Core: Catalogo
 
-| Campo | Tipo | Descripción | Estado |
-|-------|------|-------------|--------|
-| id | UUID | PK | Original |
-| nombre | VARCHAR(255) | Nombre del producto | Original |
-| descripcion | TEXT | Descripción | Original |
-| codigo_barras | VARCHAR(100) | UNIQUE - EAN/UPC | **MEJORADO** |
-| **sku** | VARCHAR(50) | Stock Keeping Unit único | **NUEVO** |
-| **categoria_id** | UUID | FK → categorias(id) | **NUEVO** |
-| **marca** | VARCHAR(100) | Marca comercial | **NUEVO** |
-| **contenido_neto** | VARCHAR(50) | Contenido (ej: 500ml) | **NUEVO** |
-| **dimensiones** | JSONB | {largo, ancho, alto, peso} | **NUEVO** |
-| **activo** | BOOLEAN | Estado del producto | **NUEVO** |
-| precio_sugerido | DECIMAL(12,2) | Precio sugerido de venta | Original |
-| observaciones | TEXT | Observaciones generales | Original |
-| created_at | TIMESTAMPTZ | Fecha de creación | Original |
-| updated_at | TIMESTAMPTZ | Última modificación | Original |
+### categorias
 
-**Índices nuevos:**
-- `idx_productos_sku_unique` (UNIQUE parcial: WHERE sku IS NOT NULL)
-- `idx_productos_categoria_id` (parcial: WHERE categoria_id IS NOT NULL)
-- `idx_productos_dimensiones_gin` (GIN para búsqueda en JSONB)
-- `idx_productos_activo` (parcial: WHERE activo = TRUE)
+Clasificacion jerarquica de productos con margenes sugeridos.
 
-**Datos:** 8 productos migrados con categoria_id
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| codigo | text | NULL | | |
+| nombre | text | NOT NULL | | |
+| descripcion | text | NULL | | |
+| parent_id | uuid | NULL | | FK -> categorias(id) ON DELETE SET NULL |
+| nivel | integer | NULL | 1 | |
+| margen_minimo | numeric(5,2) | NULL | 0 | |
+| margen_maximo | numeric(5,2) | NULL | 100 | |
+| activo | boolean | NULL | true | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_categorias_parent_id(parent_id)`, `idx_categorias_codigo(codigo)`, `idx_categorias_activo(activo)`
+**RLS:** ENABLED. Policies: SELECT (todos los roles), INSERT/UPDATE/DELETE (admin, deposito).
 
 ---
 
-### 3️⃣ **precios_proveedor** (scraping - vigente)
-**Propósito:** Precios scrapeados de proveedores externos (Maxiconsumo Necochea y otros locales de la zona)
+### productos
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| sku | TEXT | SKU del proveedor |
-| nombre | TEXT | Nombre del producto |
-| marca | TEXT | Marca |
-| categoria | TEXT | Categoría |
-| precio_unitario | DECIMAL(12,2) | Precio unitario |
-| precio_promocional | DECIMAL(12,2) | Precio promocional |
-| precio_actual | DECIMAL(12,2) | Precio actual |
-| precio_anterior | DECIMAL(12,2) | Precio anterior |
-| stock_disponible | INTEGER | Stock informado |
-| stock_nivel_minimo | INTEGER | Umbral de stock |
-| codigo_barras | TEXT | Código de barras |
-| url_producto | TEXT | URL del producto |
-| imagen_url | TEXT | URL de imagen |
-| descripcion | TEXT | Descripción |
-| hash_contenido | TEXT | Hash para detectar cambios |
-| score_confiabilidad | NUMERIC(5,2) | Score de confiabilidad |
-| ultima_actualizacion | TIMESTAMPTZ | Última actualización |
-| fuente | TEXT | Origen del scraping |
-| activo | BOOLEAN | Estado |
-| metadata | JSONB | Datos extra |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Última modificación |
+Catalogo de productos con pricing integrado.
 
-**Índices actuales:**
-- `idx_precios_proveedor_sku` (UNIQUE)
-- `idx_precios_proveedor_fuente`
-- `idx_precios_proveedor_categoria`
-- `idx_precios_proveedor_activo`
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| nombre | text | NOT NULL | | |
+| descripcion | text | NULL | | |
+| categoria | text | NULL | | Legacy (texto libre) |
+| categoria_id | uuid | NULL | | FK -> categorias(id) ON DELETE SET NULL |
+| marca | text | NULL | | |
+| contenido_neto | text | NULL | | |
+| dimensiones | jsonb | NULL | | |
+| codigo_barras | text | NULL | | |
+| sku | text | NULL | | |
+| precio_actual | numeric(12,2) | NOT NULL | 0 | Constraint NOT NULL (mig 20260212) |
+| precio_costo | numeric(12,2) | NULL | | |
+| precio_sugerido | numeric(12,2) | NULL | | |
+| margen_ganancia | numeric(5,2) | NULL | | |
+| proveedor_principal_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| observaciones | text | NULL | | |
+| activo | boolean | NULL | true | |
+| created_by | uuid | NULL | | |
+| updated_by | uuid | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
 
-**Nota:** Esta tabla NO representa precios de compra internos.
-
-#### **precios_compra_proveedor** (pendiente)
-**Propósito:** Gestión de precios de compra vigentes e históricos por proveedor (cuando se habilite la carga interna)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| producto_id | UUID | FK → productos(id) ON DELETE CASCADE |
-| proveedor_id | UUID | FK → proveedores(id) ON DELETE CASCADE |
-| precio_compra | DECIMAL(12,2) | Precio de compra actual |
-| precio_anterior | DECIMAL(12,2) | Precio anterior (para comparación) |
-| fecha_vigencia_desde | TIMESTAMPTZ | Inicio de vigencia |
-| fecha_vigencia_hasta | TIMESTAMPTZ | Fin de vigencia (NULL si vigente) |
-| moneda | VARCHAR(3) | Moneda (ARS, USD, etc.) |
-| es_precio_vigente | BOOLEAN | TRUE solo para precio actual |
-| descuento_volumen | JSONB | [{cantidad_min, descuento_%}] |
-| condiciones_pago | VARCHAR(100) | Términos de pago |
-| tiempo_entrega_dias | INTEGER | SLA de entrega |
-| cantidad_minima_pedido | INTEGER | MOQ |
-| notas | TEXT | Observaciones |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Última modificación |
-
-**Índices sugeridos:**
-- `idx_precios_compra_proveedor_vigente_unico` (UNIQUE parcial: solo 1 precio vigente por producto-proveedor)
-- `idx_precios_compra_proveedor_producto`
-- `idx_precios_compra_proveedor_proveedor`
-- `idx_precios_compra_proveedor_fecha_vigencia`
-- `idx_precios_compra_proveedor_descuento_gin` (GIN)
-
-**Constraint destacado:** Solo puede haber 1 precio vigente por combinación producto-proveedor
+**Indices:** `idx_productos_categoria_id`, `idx_productos_proveedor_principal_id`, `idx_productos_activo`, `idx_productos_nombre`
+**RLS:** ENABLED. Policies: SELECT (todos los roles), INSERT/UPDATE/DELETE (staff).
 
 ---
 
-### 4️⃣ **proveedores**
-**Propósito:** Información de proveedores
+### proveedores
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| nombre | VARCHAR(255) | Razón social |
-| cuit | VARCHAR(11) | CUIT/CUIL |
-| telefono | VARCHAR(50) | Teléfono de contacto |
-| email | VARCHAR(255) | Email |
-| direccion | TEXT | Dirección física |
-| activo | BOOLEAN | Estado del proveedor |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Última modificación |
+Informacion de proveedores.
 
----
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| nombre | text | NOT NULL | | |
+| contacto | text | NULL | | |
+| email | text | NULL | | |
+| telefono | text | NULL | | |
+| productos_ofrecidos | text[] | NULL | | Array de nombres |
+| direccion | text | NULL | | |
+| cuit | text | NULL | | |
+| sitio_web | text | NULL | | |
+| activo | boolean | NULL | true | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
 
-### 5️⃣ **stock_deposito**
-**Propósito:** Inventario actual por producto
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| producto_id | UUID | FK → productos(id) |
-| cantidad_actual | INTEGER | Stock actual |
-| stock_minimo | INTEGER | Punto de reorden |
-| stock_maximo | INTEGER | Stock máximo sugerido |
-| ubicacion | VARCHAR(50) | Ubicación física |
-| lote | VARCHAR(50) | Número de lote |
-| fecha_vencimiento | DATE | Fecha de vencimiento |
-| created_at | TIMESTAMPTZ | Fecha de creación |
+**Indices:** `idx_proveedores_nombre`, `idx_proveedores_activo`
+**RLS:** ENABLED. Policies: SELECT (todos), INSERT/UPDATE/DELETE (admin, deposito).
 
 ---
 
-### 6️⃣ **movimientos_deposito**
-**Propósito:** Historial de movimientos de inventario
+## 2. Core: Inventario
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| producto_id | UUID | FK → productos(id) |
-| tipo_movimiento | VARCHAR(20) | ENTRADA, SALIDA, AJUSTE |
-| cantidad | INTEGER | Cantidad movida |
-| cantidad_anterior | INTEGER | Stock antes del movimiento |
-| cantidad_nueva | INTEGER | Stock después del movimiento |
-| motivo | TEXT | Razón del movimiento |
-| usuario_id | UUID | Usuario responsable |
-| proveedor_id | UUID | Proveedor (si aplica) |
-| fecha | TIMESTAMPTZ | Fecha del movimiento |
-| observaciones | TEXT | Notas adicionales |
-| created_at | TIMESTAMPTZ | Fecha de registro |
+### stock_deposito
 
----
+Inventario actual por producto y ubicacion.
 
-### 7️⃣ **precios_historicos**
-**Propósito:** Historial de precios de venta
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE CASCADE |
+| cantidad_actual | integer | NULL | 0 | CHECK >= 0 (`stock_no_negativo`) |
+| stock_minimo | integer | NULL | 0 | |
+| stock_maximo | integer | NULL | 0 | |
+| ubicacion | text | NULL | 'Principal' | |
+| lote | text | NULL | | |
+| fecha_vencimiento | date | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| producto_id | UUID | FK → productos(id) |
-| precio_anterior | DECIMAL(12,2) | Precio viejo |
-| precio_nuevo | DECIMAL(12,2) | Precio nuevo |
-| fecha_cambio | TIMESTAMPTZ | Fecha del cambio |
-| usuario_id | UUID | Usuario que modificó |
-| created_at | TIMESTAMPTZ | Fecha de registro |
+**Indices:** `idx_stock_deposito_producto_id`, `idx_stock_deposito_ubicacion`, `idx_stock_deposito_producto_ubicacion(producto_id, ubicacion) UNIQUE`
+**RLS:** ENABLED. Policies: SELECT (todos).
 
 ---
 
-### 8️⃣ **productos_faltantes**
-**Propósito:** Lista de productos a reponer
+### movimientos_deposito
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| producto_id | UUID | FK → productos(id) |
-| cantidad_faltante | INTEGER | Cantidad a reponer |
-| prioridad | VARCHAR(20) | ALTA, MEDIA, BAJA |
-| estado | VARCHAR(20) | PENDIENTE, EN_PROCESO, RESUELTO |
-| fecha_deteccion | TIMESTAMPTZ | Cuándo se detectó |
-| fecha_resolucion | TIMESTAMPTZ | Cuándo se resolvió |
-| notas | TEXT | Observaciones |
-| proveedor_sugerido_id | UUID | Proveedor sugerido |
-| precio_estimado | DECIMAL(12,2) | Precio estimado |
-| cantidad_pedida | INTEGER | Cantidad solicitada |
-| created_at | TIMESTAMPTZ | Fecha de creación |
+Historial de movimientos de inventario (kardex).
 
----
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE SET NULL |
+| tipo_movimiento | text | NOT NULL | | ENTRADA, SALIDA, AJUSTE, venta |
+| cantidad | integer | NOT NULL | | |
+| cantidad_anterior | integer | NULL | | |
+| cantidad_nueva | integer | NULL | | |
+| motivo | text | NULL | | |
+| usuario_id | uuid | NULL | | |
+| proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| observaciones | text | NULL | | |
+| fecha_movimiento | timestamptz | NULL | now() | |
+| created_at | timestamptz | NULL | now() | |
 
-### 9️⃣ **tareas_pendientes**
-**Propósito:** Sistema de tareas y seguimiento
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| tipo | VARCHAR(50) | Tipo de tarea |
-| prioridad | VARCHAR(20) | ALTA, MEDIA, BAJA |
-| estado | VARCHAR(20) | PENDIENTE, EN_PROCESO, COMPLETADA |
-| titulo | VARCHAR(255) | Título de la tarea |
-| descripcion | TEXT | Descripción detallada |
-| datos | JSONB | Datos adicionales |
-| asignado_a_id | UUID | Usuario asignado |
-| completado_por_id | UUID | Usuario que completó |
-| fecha_creacion | TIMESTAMPTZ | Fecha de creación |
-| fecha_vencimiento | TIMESTAMPTZ | Fecha límite |
-| fecha_completado | TIMESTAMPTZ | Fecha de completitud |
-| (+ más campos) |  | Total 20 campos |
-
-**Nota:** En el repo aparecen variantes `asignada_a_*` y `fecha_completada` (frontend/funciones). La migracion agrega ambas variantes y la vista `tareas_metricas` expone `asignado_a_id`/`fecha_completado` para compatibilidad.
+**Indices:** `idx_movimientos_deposito_producto_id`, `idx_movimientos_deposito_fecha_movimiento(fecha_movimiento DESC)`, `idx_movimientos_deposito_tipo`
+**RLS:** ENABLED. Policies: SELECT (todos), INSERT (admin, deposito).
 
 ---
 
-### 🔟 **notificaciones_tareas**
-**Propósito:** Notificaciones del sistema
+### stock_reservado
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| tarea_id | UUID | FK → tareas_pendientes(id) |
-| usuario_id | UUID | Destinatario |
-| tipo | VARCHAR(50) | Tipo de notificación |
-| mensaje | TEXT | Mensaje |
-| leida | BOOLEAN | Estado de lectura |
-| fecha_envio | TIMESTAMPTZ | Cuándo se envió |
-| fecha_lectura | TIMESTAMPTZ | Cuándo se leyó |
-| canal | VARCHAR(20) | EMAIL, SMS, PUSH, SISTEMA |
-| created_at | TIMESTAMPTZ | Fecha de creación |
+Reservas de stock para pedidos en curso.
 
----
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NOT NULL | | FK -> productos(id) ON DELETE RESTRICT |
+| cantidad | integer | NOT NULL | | |
+| estado | text | NULL | 'activa' | |
+| referencia | text | NULL | | |
+| usuario | uuid | NULL | | |
+| fecha_reserva | timestamptz | NULL | | |
+| fecha_cancelacion | timestamptz | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| idempotency_key | text | NULL | | Agregado en mig 20260204 |
 
-### 1️⃣1️⃣ **personal**
-**Propósito:** Gestión de personal del mini market
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| user_auth_id | UUID | FK → auth.users(id) UNIQUE |
-| nombre | TEXT | Nombre completo |
-| email | TEXT | Email |
-| telefono | TEXT | Teléfono |
-| rol | TEXT | Rol/Puesto |
-| departamento | TEXT | Área/Departamento |
-| activo | BOOLEAN | Estado laboral |
-| fecha_ingreso | DATE | Fecha de ingreso |
-| direccion | TEXT | Dirección |
-| created_at | TIMESTAMPTZ | Fecha de creación |
-| updated_at | TIMESTAMPTZ | Fecha de actualización |
+**Indices:** `idx_stock_reservado_producto_estado(producto_id, estado)`, `idx_stock_reservado_idempotency_key(idempotency_key) UNIQUE PARTIAL WHERE NOT NULL`
+**RLS:** ENABLED. Policies: SELECT (authenticated, permiso abierto).
 
 ---
 
-## 🔗 Diagrama de Relaciones
+### ordenes_compra
 
-```
-┌────────────────┐
-│  categorias    │
-│  (parent_id)   │──┐
-└────────┬───────┘  │ (auto-referencial)
-         │          │
-         │          └──────────────┐
-         │                         │
-         ▼                         ▼
-┌─────────────────┐         ┌────────────────┐
-│   productos     │         │  subcategorías │
-│                 │         └────────────────┘
-│ - categoria_id  │
-│ - sku (UNIQUE)  │
-│ - codigo_barras │
-└────────┬────────┘
-         │
-         ├─────────────────────────┐
-         │                         │
-         ▼                         ▼
-┌──────────────────┐      ┌────────────────────┐
-│ stock_deposito   │      │ precios_proveedor  │
-│                  │      │                    │
-│ - cantidad_actual│      │ - precio_compra    │
-│ - stock_minimo   │      │ - es_precio_vigente│◄────┐
-└─────────┬────────┘      └──────────┬─────────┘     │
-          │                          │               │
-          │                          │               │
-          ▼                          ▼               │
-┌──────────────────┐      ┌────────────────────┐    │
-│ movimientos_     │      │   proveedores      │────┘
-│ deposito         │      │                    │
-│                  │      │ - nombre           │
-│ - tipo_movimiento│      │ - cuit             │
-│ - cantidad       │      │ - activo           │
-└──────────────────┘      └────────────────────┘
-          │
-          │
-          ▼
-┌──────────────────┐
-│ productos_       │
-│ faltantes        │
-│                  │
-│ - prioridad      │
-│ - estado         │
-└──────────────────┘
-          │
-          ▼
-┌──────────────────┐
-│ tareas_          │
-│ pendientes       │
-│                  │
-│ - tipo           │
-│ - prioridad      │
-└─────────┬────────┘
-          │
-          ▼
-┌──────────────────┐
-│ notificaciones_  │
-│ tareas           │
-│                  │
-│ - leida          │
-└──────────────────┘
-```
+Ordenes de compra a proveedores.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NOT NULL | | FK -> productos(id) ON DELETE RESTRICT |
+| proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| cantidad | integer | NOT NULL | | |
+| cantidad_recibida | integer | NULL | 0 | |
+| estado | text | NULL | 'pendiente' | |
+| fecha_creacion | timestamptz | NULL | now() | |
+| fecha_estimada | timestamptz | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_ordenes_compra_producto_estado(producto_id, estado)`, `idx_ordenes_compra_proveedor_id`
+**RLS:** ENABLED. Policies: SELECT (todos), INSERT/UPDATE/DELETE (admin, ventas).
 
 ---
 
-## 📈 Mejoras FASE 1
+## 3. Core: Precios
 
-### Nuevas Capacidades
+### precios_historicos
 
-✅ **Categorización jerárquica**
-- Márgenes sugeridos por categoría
-- Organización multi-nivel
-- 6 categorías predeterminadas
+Historial de cambios de precios de venta.
 
-✅ **Productos enriquecidos**
-- SKU único por producto
-- Código de barras UNIQUE
-- Marca y contenido neto
-- Dimensiones en JSONB
-- Relación con categorías
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE CASCADE |
+| precio_anterior | numeric(12,2) | NULL | | |
+| precio_nuevo | numeric(12,2) | NULL | | |
+| fecha_cambio | timestamptz | NULL | now() | |
+| motivo_cambio | text | NULL | | |
+| usuario_id | uuid | NULL | | |
+| fecha | timestamptz | NULL | | Legacy (no usado, drift residual) |
+| cambio_porcentaje | numeric(7,2) | NULL | | |
+| created_at | timestamptz | NULL | now() | |
 
-✅ **Gestión avanzada de precios**
-- Separación precio vigente vs. histórico
-- Solo 1 precio vigente por producto-proveedor (constraint)
-- Descuentos por volumen (JSONB)
-- Condiciones de pago y SLA
-- Historial completo de precios
-
----
-
-## 🎯 Índices Estratégicos
-
-### Índices Únicos
-- `productos.codigo_barras` (UNIQUE)
-- `productos.sku` (UNIQUE parcial)
-- `categorias.codigo` (UNIQUE)
-- `precios_proveedor.(producto_id, proveedor_id)` (UNIQUE parcial WHERE vigente)
-
-### Índices Parciales (Optimizados)
-- Solo registros activos
-- Solo valores no NULL
-- Solo precios vigentes
-
-### Índices GIN (JSONB)
-- `productos.dimensiones`
-- `precios_proveedor.descuento_volumen`
-
-**Total:** 12 índices custom + PKs/FKs automáticos
+**Nota:** Columnas `precio` y `fuente` eliminadas en mig 20260213. Columna `fecha` es residual (legacy, no usada por codigo activo).
+**Indices:** `idx_precios_historicos_producto_id`, `idx_precios_historicos_fecha_cambio(fecha_cambio DESC)`
+**RLS:** ENABLED. Policies: SELECT (todos).
 
 ---
 
-## 🔒 Constraints de Integridad
+### precios_proveedor
 
-### CHECK Constraints
-- Precios >= 0
-- Cantidades >= 0
-- Márgenes 0-100%
-- Vigencia coherente (hasta > desde)
-- Estados válidos (ENUM-like)
+Precios scrapeados de proveedores externos (Maxiconsumo, otros).
 
-### Foreign Keys
-- `productos.categoria_id` → `categorias.id`
-- `precios_proveedor.producto_id` → `productos.id`
-- `precios_proveedor.proveedor_id` → `proveedores.id`
-- `categorias.parent_id` → `categorias.id`
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| sku | text | NOT NULL | | UNIQUE |
+| nombre | text | NULL | | |
+| marca | text | NULL | | |
+| categoria | text | NULL | | |
+| precio_unitario | numeric(12,2) | NULL | | |
+| precio_promocional | numeric(12,2) | NULL | | |
+| precio_actual | numeric(12,2) | NULL | | |
+| precio_anterior | numeric(12,2) | NULL | | |
+| stock_disponible | integer | NULL | | |
+| stock_nivel_minimo | integer | NULL | | |
+| codigo_barras | text | NULL | | |
+| url_producto | text | NULL | | |
+| imagen_url | text | NULL | | |
+| descripcion | text | NULL | | |
+| hash_contenido | text | NULL | | Hash para detectar cambios |
+| score_confiabilidad | numeric(5,2) | NULL | | |
+| ultima_actualizacion | timestamptz | NULL | | |
+| fuente | text | NULL | | Origen del scraping |
+| activo | boolean | NULL | true | |
+| metadata | jsonb | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
 
-**Total:** 40+ CHECK constraints, 4 FKs
-
----
-
-## 📊 Tamaños de Tablas
-
-| Tabla | Tamaño | Campos | Registros |
-|-------|--------|--------|-----------|
-| categorias | 88 KB | 11 | 6 |
-| productos | 104 KB | 16 | 8 |
-| precios_proveedor | 112 KB | 16 | 2 |
-| proveedores | 32 KB | 9 | ~3 |
-| stock_deposito | 24 KB | 9 | ~8 |
-| movimientos_deposito | 32 KB | 11 | Variable |
-| precios_historicos | 24 KB | 7 | Variable |
-| productos_faltantes | 16 KB | 11 | Variable |
-| tareas_pendientes | 32 KB | 20 | Variable |
-| notificaciones_tareas | 32 KB | 9 | Variable |
-| personal | 48 KB | 11 | ~3 |
-
-**Total aproximado:** ~700 KB
+**Indices:** `idx_precios_proveedor_sku UNIQUE`, `idx_precios_proveedor_fuente`, `idx_precios_proveedor_categoria`, `idx_precios_proveedor_activo`, `idx_proveedor_cb(codigo_barras)`
+**RLS:** ENABLED (mig 20260216040000). Sin policies (acceso solo via service_role).
 
 ---
 
-## 🚀 Próximas Fases
-
-### FASE 2: Tablas Transaccionales
-- [x] clientes ✅ (2026-02-06)
-- [x] pedidos ✅ (2026-02-06)
-- [x] detalle_pedidos ✅ (2026-02-06)
-- [ ] proveedor_performance
-
-### FASE 3: Auditoría Particionada
-- [ ] price_history (particionada por mes)
-- [ ] stock_auditoria (particionada por mes)
-- [ ] movimientos_auditoria (particionada por mes)
-
-### FASE 4: Índices Avanzados
-- [ ] Índices compuestos adicionales
-- [ ] Índices de texto completo (FTS)
-- [ ] Índices estadísticos
-
-### FASE 5: Funciones y Triggers
-- [x] sp_aplicar_precio() ✅ (Implementado)
-- [x] sp_movimiento_inventario() ✅ (Implementado)
-- [x] fn_dashboard_metrics() ✅ (2026-01-16 - Agregaciones optimizadas)
-- [x] fn_rotacion_productos() ✅ (2026-01-16 - Análisis de rotación)
-- [x] fn_refresh_stock_views() ✅ (2026-01-16 - Refresh de vistas materializadas)
-- [ ] fnc_precio_vigente()
-- [ ] fnc_stock_disponible()
-- [ ] Triggers de auditoría automática
-- [ ] Triggers de updated_at
-
-### FASE 6: Vistas
-- [x] mv_stock_bajo ✅ (2026-01-16 - Vista materializada con refresh cada hora)
-- [x] mv_productos_proximos_vencer ✅ (2026-01-16 - Vista materializada para alertas)
-- [x] vista_stock_por_categoria ✅ (2026-01-16 - Vista agregada en tiempo real)
-- [x] vista_cron_jobs_dashboard ✅ (Existente - Monitoreo de cron jobs)
-- [x] vista_cron_jobs_metricas_semanales ✅ (Existente)
-- [x] vista_cron_jobs_alertas_activas ✅ (Existente)
-- [ ] v_inventario_actual
-- [ ] v_kpis_operativos
-
----
-
-## 🔄 Vistas Materializadas (Nuevas - 2026-01-16)
-
-### mv_stock_bajo
-**Propósito:** Optimiza consultas de productos con stock por debajo del mínimo  
-**Refresh:** Cada 1 hora vía `fn_refresh_stock_views()`
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| stock_id | UUID | ID del registro en stock_deposito |
-| producto_id | UUID | FK a productos |
-| producto_nombre | TEXT | Nombre del producto |
-| sku | TEXT | SKU del producto |
-| codigo_barras | TEXT | Código de barras |
-| categoria_id | UUID | FK a categorias |
-| categoria_nombre | TEXT | Nombre de la categoría |
-| cantidad_actual | INTEGER | Stock actual |
-| stock_minimo | INTEGER | Stock mínimo configurado |
-| stock_maximo | INTEGER | Stock máximo configurado |
-| nivel_stock | TEXT | 'sin_stock' \| 'critico' \| 'bajo' \| 'normal' |
-| porcentaje_stock_minimo | NUMERIC | % de stock respecto al mínimo |
-| deposito_id | UUID | FK a depositos |
-| ultima_actualizacion | TIMESTAMPTZ | Última modificación del stock |
-
-**Índices:**
-- `idx_mv_stock_bajo_stock_id` (UNIQUE)
-- `idx_mv_stock_bajo_producto_id`
-- `idx_mv_stock_bajo_nivel`
-- `idx_mv_stock_bajo_categoria`
-
-### mv_productos_proximos_vencer
-**Propósito:** Alertas de vencimiento (productos con vencimiento en próximos 60 días)  
-**Refresh:** Cada 6 horas vía `fn_refresh_stock_views()`
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| stock_id | UUID | ID del registro en stock_deposito |
-| producto_id | UUID | FK a productos |
-| producto_nombre | TEXT | Nombre del producto |
-| sku | TEXT | SKU del producto |
-| codigo_barras | TEXT | Código de barras |
-| lote | TEXT | Lote del producto |
-| fecha_vencimiento | DATE | Fecha de vencimiento |
-| cantidad_actual | INTEGER | Stock actual del lote |
-| dias_hasta_vencimiento | INTEGER | Días restantes hasta vencimiento |
-| nivel_alerta | TEXT | 'vencido' \| 'urgente' \| 'proximo' \| 'normal' |
-| deposito_id | UUID | FK a depositos |
-| ultima_actualizacion | TIMESTAMPTZ | Última modificación del stock |
-
-**Índices:**
-- `idx_mv_vencimiento_stock_id` (UNIQUE)
-- `idx_mv_vencimiento_producto_id`
-- `idx_mv_vencimiento_nivel`
-- `idx_mv_vencimiento_fecha`
-
-### vista_stock_por_categoria
-**Propósito:** Resumen agregado de stock por categoría (vista normal, siempre actualizada)  
-**Tipo:** Vista estándar (no materializada)
-
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| categoria_id | UUID | ID de la categoría |
-| categoria_nombre | TEXT | Nombre de la categoría |
-| total_productos | BIGINT | Total de productos en la categoría |
-| productos_con_stock | BIGINT | Productos con stock > 0 |
-| productos_stock_bajo | BIGINT | Productos con stock < mínimo |
-| cantidad_total_stock | BIGINT | Suma de todas las cantidades |
-| cantidad_stock_bajo | BIGINT | Suma de cantidades en stock bajo |
-| valor_inventario_total | NUMERIC | Valor total del inventario (precio_compra * cantidad) |
-
----
-
-## 📊 Funciones RPC (Nuevas - 2026-01-16)
-
-### fn_dashboard_metrics(p_deposito_id uuid)
-**Propósito:** Métricas agregadas para el dashboard en una sola llamada  
-**Tipo:** STABLE, SECURITY DEFINER  
-**Rendimiento:** Reemplaza 7 queries individuales
-
-**Retorna:**
-```sql
-TABLE (
-  metric_name text,      -- 'total_productos', 'stock_bajo', etc.
-  metric_value bigint,   -- Valor numérico
-  metric_label text      -- Descripción legible
-)
-```
-
-**Métricas incluidas:**
-- `total_productos` - Productos activos
-- `stock_bajo` - Productos con stock < mínimo
-- `sin_stock` - Productos con cantidad = 0
-- `proximos_vencer` - Productos que vencen en 30 días
-- `vencidos` - Productos ya vencidos
-- `total_categorias` - Categorías activas
-- `total_proveedores` - Proveedores activos
-
-### fn_rotacion_productos(p_dias integer, p_limite integer)
-**Propósito:** Análisis de rotación de productos para reposición inteligente  
-**Tipo:** STABLE, SECURITY DEFINER  
-**Parámetros:**
-- `p_dias` (default: 30) - Período de análisis
-- `p_limite` (default: 100) - Máximo de resultados
-
-**Retorna:**
-```sql
-TABLE (
-  producto_id uuid,
-  producto_nombre text,
-  sku text,
-  total_salidas bigint,
-  total_ventas bigint,
-  promedio_diario numeric,
-  dias_analisis integer,
-  stock_actual bigint,
-  dias_cobertura numeric,     -- Días hasta stockout
-  nivel_rotacion text         -- 'alta'|'media'|'baja'|'sin_movimiento'
-)
-```
-
-### fn_refresh_stock_views()
-**Propósito:** Actualiza vistas materializadas (para cron)  
-**Tipo:** SECURITY DEFINER  
-**Uso:** `SELECT fn_refresh_stock_views();`
-
----
-
-## 🛒 Sistema de Pedidos (NUEVO - 2026-02-06)
+## 4. Operaciones: Clientes/Pedidos
 
 ### clientes
-**Propósito:** Datos de clientes recurrentes (opcional) para asociar pedidos.
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| nombre | TEXT | Nombre completo del cliente |
-| telefono | TEXT | Teléfono de contacto (opcional) |
-| email | TEXT | Email (opcional) |
-| direccion_default | TEXT | Dirección predeterminada (opcional) |
-| edificio | TEXT | Edificio/torre (opcional) |
-| piso | TEXT | Piso (opcional) |
-| departamento | TEXT | Depto (opcional) |
-| observaciones | TEXT | Notas internas (opcional) |
-| activo | BOOLEAN | Estado (default true) |
-| created_at | TIMESTAMPTZ | Fecha de creación (default now()) |
-| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
+Clientes recurrentes del mini market.
 
-**Índices:**
-- `idx_clientes_nombre`
-- `idx_clientes_telefono` (búsqueda rápida por teléfono)
-- `idx_clientes_activo` (parcial: WHERE activo = TRUE)
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| nombre | text | NOT NULL | | |
+| telefono | text | NULL | | |
+| email | text | NULL | | |
+| direccion_default | text | NULL | | |
+| edificio | text | NULL | | |
+| piso | text | NULL | | |
+| departamento | text | NULL | | |
+| observaciones | text | NULL | | |
+| activo | boolean | NULL | true | |
+| limite_credito | numeric(12,2) | NULL | | Agregado en mig 20260207010000 |
+| whatsapp_e164 | text | NULL | | Agregado en mig 20260207010000 |
+| link_pago | text | NULL | | Agregado en mig 20260207010000 |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | Trigger `set_clientes_updated_at` |
 
-**RLS:** ENABLED (role-based vía `public.personal`).
-- SELECT: roles `admin|ventas`
-- INSERT/UPDATE: roles `admin|ventas`
-- DELETE: solo `admin`
+**Indices:** `idx_clientes_nombre`, `idx_clientes_telefono PARTIAL WHERE NOT NULL`, `idx_clientes_activo PARTIAL WHERE activo = TRUE`
+**Trigger:** `clientes_limite_credito_only_admin` (solo admin puede modificar `limite_credito`)
+**RLS:** ENABLED. Policies finales (mig 20260212130000): SELECT/INSERT/UPDATE (admin, ventas), DELETE (admin).
 
 ---
 
 ### pedidos
-**Propósito:** Registro de pedidos con estados y pagos
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| numero_pedido | SERIAL | Número secuencial legible |
-| cliente_id | UUID | FK → clientes(id) (opcional) |
-| cliente_nombre | TEXT | Nombre del cliente (NOT NULL) |
-| cliente_telefono | TEXT | Teléfono (opcional) |
-| tipo_entrega | TEXT | retiro\|domicilio |
-| direccion_entrega | TEXT | Dirección para domicilio (opcional) |
-| edificio | TEXT | Edificio/torre (opcional) |
-| piso | TEXT | Piso (opcional) |
-| departamento | TEXT | Depto (opcional) |
-| horario_entrega_preferido | TEXT | Horario preferido (opcional) |
-| estado | TEXT | pendiente\|preparando\|listo\|entregado\|cancelado |
-| estado_pago | TEXT | pendiente\|parcial\|pagado |
-| monto_total | DECIMAL(12,2) | Total del pedido (default 0) |
-| monto_pagado | DECIMAL(12,2) | Monto abonado (default 0) |
-| observaciones | TEXT | Observaciones visibles para el cliente (opcional) |
-| observaciones_internas | TEXT | Notas solo para personal (opcional) |
-| audio_url | TEXT | URL de audio (opcional) |
-| transcripcion_texto | TEXT | Texto transcripto del audio original (opcional) |
-| creado_por_id | UUID | FK → auth.users(id) (opcional) |
-| preparado_por_id | UUID | FK → auth.users(id) (opcional) |
-| entregado_por_id | UUID | FK → auth.users(id) (opcional) |
-| fecha_pedido | TIMESTAMPTZ | Fecha/hora del pedido (default now()) |
-| fecha_entrega_estimada | TIMESTAMPTZ | Fecha estimada (opcional) |
-| fecha_preparado | TIMESTAMPTZ | Fecha de preparado (opcional) |
-| fecha_entregado | TIMESTAMPTZ | Fecha de entrega (opcional) |
-| created_at | TIMESTAMPTZ | Creación en sistema (default now()) |
-| updated_at | TIMESTAMPTZ | Última modificación (default now()) |
+Registro de pedidos con estados y pagos.
 
-**Índices:**
-- `idx_pedidos_numero`
-- `idx_pedidos_estado` (filtrado por estado)
-- `idx_pedidos_estado_pago`
-- `idx_pedidos_fecha` (ordenamiento temporal)
-- `idx_pedidos_cliente_id` (parcial: WHERE cliente_id IS NOT NULL)
-- `idx_pedidos_creado_por`
-- `idx_pedidos_estado_fecha` (estado + fecha_pedido)
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| numero_pedido | SERIAL | | | Secuencial legible |
+| cliente_id | uuid | NULL | | FK -> clientes(id) |
+| cliente_nombre | text | NOT NULL | | |
+| cliente_telefono | text | NULL | | |
+| tipo_entrega | text | NULL | | retiro, domicilio |
+| direccion_entrega | text | NULL | | |
+| edificio | text | NULL | | |
+| piso | text | NULL | | |
+| departamento | text | NULL | | |
+| horario_entrega_preferido | text | NULL | | |
+| estado | text | NULL | | pendiente, preparando, listo, entregado, cancelado |
+| estado_pago | text | NULL | | pendiente, parcial, pagado |
+| monto_total | numeric(12,2) | NULL | 0 | |
+| monto_pagado | numeric(12,2) | NULL | 0 | |
+| observaciones | text | NULL | | Visibles para el cliente |
+| observaciones_internas | text | NULL | | Solo personal |
+| audio_url | text | NULL | | |
+| transcripcion_texto | text | NULL | | |
+| creado_por_id | uuid | NULL | | FK -> auth.users(id) |
+| preparado_por_id | uuid | NULL | | FK -> auth.users(id) |
+| entregado_por_id | uuid | NULL | | FK -> auth.users(id) |
+| fecha_pedido | timestamptz | NULL | now() | |
+| fecha_entrega_estimada | timestamptz | NULL | | |
+| fecha_preparado | timestamptz | NULL | | |
+| fecha_entregado | timestamptz | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
 
-**RLS:** ENABLED (role-based vía `public.personal`).
-- SELECT: roles `admin|deposito|ventas`
-- INSERT/UPDATE: roles `admin|deposito|ventas`
-- DELETE: solo `admin`
+**Indices:** `idx_pedidos_numero(numero_pedido DESC)`, `idx_pedidos_estado`, `idx_pedidos_estado_pago`, `idx_pedidos_fecha(fecha_pedido DESC)`, `idx_pedidos_cliente_id PARTIAL WHERE NOT NULL`, `idx_pedidos_creado_por`, `idx_pedidos_estado_fecha(estado, fecha_pedido DESC) COMPOSITE`
+**RLS:** ENABLED. Policies (mig 20260212130000): SELECT/INSERT/UPDATE (admin, deposito, ventas), DELETE (admin).
 
 ---
 
 ### detalle_pedidos
-**Propósito:** Items individuales de cada pedido
 
-| Campo | Tipo | Descripción |
-|-------|------|-------------|
-| id | UUID | PK |
-| pedido_id | UUID | FK → pedidos(id) ON DELETE CASCADE |
-| producto_id | UUID | FK → productos(id) (opcional) |
-| producto_nombre | TEXT | Nombre del producto (snapshot al momento del pedido) |
-| producto_sku | TEXT | SKU del producto (opcional) |
-| cantidad | INTEGER | Cantidad (CHECK > 0) |
-| precio_unitario | DECIMAL(12,2) | Precio por unidad |
-| subtotal | DECIMAL(12,2) | Generated: cantidad * precio_unitario (STORED) |
-| observaciones | TEXT | Notas del ítem (opcional) |
-| preparado | BOOLEAN | Item preparado (default false) |
-| preparado_por_id | UUID | Usuario que preparó |
-| fecha_preparado | TIMESTAMPTZ | Cuándo se preparó |
-| created_at | TIMESTAMPTZ | Fecha de creación |
+Items individuales de cada pedido.
 
-**Índices:**
-- `idx_detalle_pedidos_pedido`
-- `idx_detalle_pedidos_producto` (parcial: WHERE producto_id IS NOT NULL)
-- `idx_detalle_pedidos_preparado`
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| pedido_id | uuid | NOT NULL | | FK -> pedidos(id) ON DELETE CASCADE |
+| producto_id | uuid | NULL | | FK -> productos(id) |
+| producto_nombre | text | NULL | | Snapshot al momento del pedido |
+| producto_sku | text | NULL | | |
+| cantidad | integer | NOT NULL | | CHECK > 0 |
+| precio_unitario | numeric(12,2) | NULL | | |
+| subtotal | numeric(12,2) | NULL | | GENERATED: cantidad * precio_unitario (STORED) |
+| observaciones | text | NULL | | |
+| preparado | boolean | NULL | false | |
+| preparado_por_id | uuid | NULL | | |
+| fecha_preparado | timestamptz | NULL | | |
+| created_at | timestamptz | NULL | now() | |
 
-**RLS:** ENABLED (role-based vía `public.personal`, mismo patrón que `pedidos`).
+**Indices:** `idx_detalle_pedidos_pedido`, `idx_detalle_pedidos_producto PARTIAL WHERE NOT NULL`, `idx_detalle_pedidos_preparado`
+**RLS:** ENABLED. Policies (mig 20260212130000): SELECT/INSERT/UPDATE (admin, deposito, ventas), DELETE (admin).
 
 ---
 
-### Stored Procedures de Pedidos
+## 5. Operaciones: POS/Ventas
 
-#### sp_crear_pedido
-**Propósito:** Creación atómica de pedido con detalles  
-**Tipo:** SECURITY DEFINER  
-**Uso:**
-```sql
-SELECT sp_crear_pedido(
-  p_cliente_nombre := 'Juan Pérez',
-  p_tipo_entrega := 'domicilio',
-  p_direccion_entrega := 'Calle 123',
-  p_edificio := NULL,
-  p_piso := '2',
-  p_departamento := 'A',
-  p_horario_preferido := '18:00-20:00',
-  p_observaciones := 'Llamar antes',
-  p_cliente_telefono := '11-5555-5555',
-  p_items := '[{"producto_nombre":"Salchichas","cantidad":2,"precio_unitario":1500}]'::jsonb
-);
-```
-**Retorna (JSONB):** `{success, pedido_id, numero_pedido, monto_total, items_count}` (o `{success:false,error}`).
+### ventas
+
+Ventas realizadas por POS.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| idempotency_key | text | NOT NULL | | UNIQUE |
+| usuario_id | uuid | NOT NULL | | |
+| cliente_id | uuid | NULL | | FK -> clientes(id) ON DELETE SET NULL |
+| metodo_pago | text | NOT NULL | | efectivo, tarjeta, cuenta_corriente |
+| monto_total | numeric(12,2) | NOT NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_ventas_idempotency_key UNIQUE`, `idx_ventas_created_at(created_at DESC)`, `idx_ventas_cliente_id`
+**RLS:** ENABLED. Policies: SELECT (admin, ventas).
 
 ---
 
-## 📝 Notas Técnicas
+### venta_items
 
-### Performance
-- Índices parciales reducen tamaño en ~40%
-- GIN permite búsquedas O(log n) en JSONB
-- Constraints a nivel DB (no en aplicación)
+Items individuales de cada venta POS.
 
-### Escalabilidad
-- Particionamiento preparado para FASE 3
-- JSONB para datos semi-estructurados
-- UUIDs para IDs distribuidos
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| venta_id | uuid | NOT NULL | | FK -> ventas(id) ON DELETE CASCADE |
+| producto_id | uuid | NOT NULL | | FK -> productos(id) ON DELETE RESTRICT |
+| producto_nombre_snapshot | text | NOT NULL | | Snapshot al momento |
+| producto_sku_snapshot | text | NULL | | |
+| cantidad | integer | NOT NULL | | CHECK > 0 |
+| precio_unitario | numeric(12,2) | NOT NULL | | CHECK >= 0 |
+| subtotal | numeric(12,2) | NOT NULL | | CHECK >= 0 |
+| created_at | timestamptz | NULL | now() | |
 
-### Mantenibilidad
-- Comentarios en todas las tablas
-- Nombres descriptivos
-- Estructura normalizada (3FN)
+**Indices:** `idx_venta_items_venta_id`, `idx_venta_items_producto_id`
+**RLS:** ENABLED. Policies: SELECT (admin, ventas).
 
 ---
 
-**Última actualización:** 2026-02-18
-**Versión:** Post-D-137 (GO 100%, 44 migraciones fisicas)
-**Estado:** Producción estable
+### cuentas_corrientes_movimientos
+
+Ledger de cuenta corriente (cargos y pagos por cliente).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| cliente_id | uuid | NOT NULL | | FK -> clientes(id) ON DELETE CASCADE |
+| venta_id | uuid | NULL | | FK -> ventas(id) ON DELETE SET NULL |
+| usuario_id | uuid | NOT NULL | | |
+| tipo | text | NOT NULL | | CHECK IN ('cargo','pago','ajuste') |
+| monto | numeric(12,2) | NOT NULL | | |
+| descripcion | text | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_cc_mov_cliente_id`, `idx_cc_mov_created_at(created_at DESC)`, `idx_cc_mov_venta_id`
+**RLS:** ENABLED. Policies: SELECT (admin, ventas).
+
+---
+
+## 6. Operaciones: Varios
+
+### productos_faltantes
+
+Lista de productos a reponer.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE SET NULL |
+| producto_nombre | text | NULL | | |
+| fecha_reporte | timestamptz | NULL | now() | |
+| reportado_por_id | uuid | NULL | | |
+| reportado_por_nombre | text | NULL | | |
+| proveedor_asignado_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| resuelto | boolean | NULL | false | |
+| fecha_resolucion | timestamptz | NULL | | |
+| observaciones | text | NULL | | |
+| cantidad_faltante | integer | NULL | | |
+| prioridad | text | NULL | | |
+| estado | text | NULL | | |
+| fecha_deteccion | timestamptz | NULL | | |
+| cantidad_pedida | integer | NULL | | |
+| precio_estimado | numeric(12,2) | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_productos_faltantes_producto_id`, `idx_productos_faltantes_resuelto`
+**RLS:** ENABLED. Policies: SELECT/INSERT (todos), UPDATE/DELETE (staff).
+
+---
+
+### ofertas_stock
+
+Ofertas sobre items de stock (descuento por vencimiento proximo, etc.).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| stock_id | uuid | NOT NULL | | FK -> stock_deposito(id) ON DELETE CASCADE |
+| descuento_pct | numeric(5,2) | NOT NULL | | CHECK > 0 AND < 100 |
+| precio_oferta | numeric(12,2) | NOT NULL | | CHECK >= 0 |
+| activa | boolean | NOT NULL | true | |
+| created_by | uuid | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+| deactivated_by | uuid | NULL | | |
+| deactivated_at | timestamptz | NULL | | |
+
+**Indices:** `idx_ofertas_stock_stock_id`, `idx_ofertas_stock_created_at(created_at DESC)`, `idx_ofertas_stock_unique_active(stock_id) UNIQUE PARTIAL WHERE activa`
+**RLS:** ENABLED. Policies: SELECT (admin, ventas, deposito).
+
+---
+
+### bitacora_turnos
+
+Notas de turno (bitacora operativa).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| usuario_id | uuid | NOT NULL | auth.uid() | |
+| usuario_nombre | text | NULL | | |
+| usuario_email | text | NULL | | |
+| usuario_rol | text | NULL | | |
+| nota | text | NOT NULL | | |
+| created_at | timestamptz | NOT NULL | now() | |
+
+**Indices:** `idx_bitacora_turnos_created_at(created_at DESC)`
+**RLS:** ENABLED. Policies: INSERT (staff, solo propio usuario_id), SELECT (admin).
+
+---
+
+## 7. Gestion: Tareas y Notificaciones
+
+### tareas_pendientes
+
+Sistema de tareas y seguimiento operativo.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| titulo | text | NOT NULL | | |
+| descripcion | text | NULL | | |
+| tipo | text | NULL | | |
+| prioridad | text | NULL | | |
+| estado | text | NULL | 'pendiente' | |
+| datos | jsonb | NULL | | |
+| asignado_a_id | uuid | NULL | | Variante canonica |
+| asignada_a_id | uuid | NULL | | Variante femenina (compat) |
+| asignada_a_nombre | text | NULL | | |
+| creada_por_id | uuid | NULL | | |
+| creada_por_nombre | text | NULL | | |
+| fecha_creacion | timestamptz | NULL | now() | |
+| fecha_vencimiento | timestamptz | NULL | | |
+| fecha_completado | timestamptz | NULL | | Variante canonica |
+| fecha_completada | timestamptz | NULL | | Variante femenina (compat) |
+| completado_por_id | uuid | NULL | | Variante canonica |
+| completada_por_id | uuid | NULL | | Variante femenina (compat) |
+| completada_por_nombre | text | NULL | | |
+| fecha_cancelada | timestamptz | NULL | | |
+| cancelada_por_id | uuid | NULL | | |
+| cancelada_por_nombre | text | NULL | | |
+| razon_cancelacion | text | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Nota:** Las columnas duplicadas (asignado_a_id/asignada_a_id, etc.) existen por compatibilidad entre frontend y edge functions.
+**RLS:** ENABLED. Policies: SELECT (todos), INSERT/UPDATE/DELETE (staff).
+
+---
+
+### notificaciones_tareas
+
+Notificaciones del sistema por tarea.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| tarea_id | uuid | NULL | | FK -> tareas_pendientes(id) ON DELETE CASCADE |
+| tipo | text | NULL | | |
+| mensaje | text | NULL | | |
+| usuario_destino_id | uuid | NULL | | |
+| usuario_destino_nombre | text | NULL | | |
+| fecha_envio | timestamptz | NULL | now() | |
+| leido | boolean | NULL | false | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_notificaciones_tareas_tarea_id`, `idx_notificaciones_tareas_fecha_envio(fecha_envio DESC)`
+**RLS:** ENABLED. Policies: SELECT/UPDATE (solo registros propios via `usuario_destino_id = auth.uid()`).
+
+---
+
+## 8. Gestion: Personal
+
+### personal
+
+Gestion de personal del mini market (vinculado a auth.users).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| user_auth_id | uuid | NULL | | UNIQUE constraint |
+| nombre | text | NOT NULL | | |
+| email | text | NULL | | |
+| telefono | text | NULL | | |
+| rol | text | NULL | | admin, deposito, ventas, usuario |
+| departamento | text | NULL | | |
+| activo | boolean | NULL | true | |
+| fecha_ingreso | date | NULL | CURRENT_DATE | |
+| direccion | text | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_personal_user_auth_id`, `idx_personal_activo`, `personal_user_auth_id_unique UNIQUE`
+**RLS:** ENABLED. Policies: SELECT (solo propio registro via `user_auth_id = auth.uid()`).
+
+---
+
+## 9. Proveedor/Scraper
+
+### cache_proveedor
+
+Cache en base de datos para respuestas de api-proveedor.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| endpoint | text | NOT NULL | | PK |
+| payload | jsonb | NOT NULL | | |
+| updated_at | timestamptz | NOT NULL | now() | |
+| ttl_seconds | integer | NOT NULL | | |
+
+**Indices:** `cache_proveedor_updated_at_idx(updated_at DESC)`
+**RLS:** No habilitado explicitamente. Grants revocados a anon.
+
+---
+
+### configuracion_proveedor
+
+Configuracion de scraping por proveedor.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| nombre | text | NOT NULL | | UNIQUE |
+| frecuencia_scraping | text | NULL | | |
+| umbral_cambio_precio | numeric | NULL | | |
+| proxima_sincronizacion | timestamptz | NULL | | |
+| ultima_sincronizacion | timestamptz | NULL | | |
+| configuraciones | jsonb | NULL | '{}' | |
+| activo | boolean | NULL | true | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_configuracion_proveedor_nombre UNIQUE`
+**RLS:** ENABLED. Sin policies (acceso solo via service_role).
+
+---
+
+### estadisticas_scraping
+
+Estadisticas de ejecuciones del scraper.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| fuente | text | NULL | | |
+| categoria | text | NULL | | |
+| granularidad | text | NULL | | |
+| productos_totales | integer | NULL | | |
+| productos_actualizados | integer | NULL | | |
+| productos_nuevos | integer | NULL | | |
+| productos_fallidos | integer | NULL | | |
+| comparaciones_realizadas | integer | NULL | | |
+| duracion_ms | integer | NULL | | |
+| errores | integer | NULL | | |
+| detalle | jsonb | NULL | '{}' | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_estadisticas_scraping_created_at(created_at DESC)`
+**RLS:** ENABLED. Sin policies (service_role only).
+
+---
+
+### comparacion_precios
+
+Comparaciones de precios (nuestro vs proveedor).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE SET NULL |
+| nombre_producto | text | NULL | | |
+| precio_actual | numeric | NULL | | Nuestro precio |
+| precio_proveedor | numeric | NULL | | Precio del proveedor |
+| diferencia_absoluta | numeric | NULL | | |
+| diferencia_porcentual | numeric | NULL | | |
+| fuente | text | NULL | | |
+| fecha_comparacion | timestamptz | NOT NULL | | |
+| es_oportunidad_ahorro | boolean | NULL | false | |
+| recomendacion | text | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_comparacion_precios_fecha(fecha_comparacion DESC)`, `idx_comparacion_precios_producto`, `idx_comparacion_precios_oportunidad`
+**RLS:** ENABLED. Sin policies (service_role only).
+
+---
+
+### alertas_cambios_precios
+
+Alertas generadas por cambios significativos de precios en proveedores.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NULL | | |
+| nombre_producto | text | NULL | | |
+| tipo_cambio | text | NULL | | |
+| valor_anterior | numeric | NULL | | |
+| valor_nuevo | numeric | NULL | | |
+| porcentaje_cambio | numeric | NULL | | |
+| severidad | text | NULL | | |
+| mensaje | text | NULL | | |
+| accion_recomendada | text | NULL | | |
+| fecha_alerta | timestamptz | NULL | | |
+| procesada | boolean | NULL | false | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_alertas_cambios_precios_fecha(fecha_alerta DESC)`, `idx_alertas_cambios_precios_procesada`, `idx_alertas_cambios_precios_severidad`
+**RLS:** ENABLED. Sin policies (service_role only).
+
+---
+
+## 10. Cron Jobs (10 tablas)
+
+### cron_jobs_tracking
+
+Estado y tracking principal de cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| job_id | text | NOT NULL | | UNIQUE |
+| nombre_job | text | NULL | |
+| descripcion | text | NULL | |
+| activo | boolean | NULL | true |
+| estado_job | text | NULL | 'inactivo' |
+| ultima_ejecucion | timestamptz | NULL | |
+| proxima_ejecucion | timestamptz | NULL | |
+| duracion_ejecucion_ms | integer | NULL | |
+| intentos_ejecucion | integer | NULL | 0 |
+| resultado_ultima_ejecucion | jsonb | NULL | |
+| error_ultima_ejecucion | text | NULL | |
+| circuit_breaker_state | text | NULL | 'closed' |
+| created_at | timestamptz | NULL | now() |
+| updated_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_tracking_job_id UNIQUE`, `idx_cron_jobs_tracking_estado`
+**RLS:** ENABLED. Sin policies (service_role only).
+
+### cron_jobs_execution_log
+
+Log detallado de ejecuciones.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| job_id | text | NOT NULL | |
+| execution_id | text | NULL | |
+| start_time | timestamptz | NULL | |
+| end_time | timestamptz | NULL | |
+| duracion_ms | integer | NULL | |
+| estado | text | NULL | |
+| request_id | text | NULL | |
+| parametros_ejecucion | jsonb | NULL | |
+| resultado | jsonb | NULL | |
+| error_message | text | NULL | |
+| memory_usage_start | bigint | NULL | |
+| productos_procesados | integer | NULL | |
+| productos_exitosos | integer | NULL | |
+| productos_fallidos | integer | NULL | |
+| alertas_generadas | integer | NULL | |
+| emails_enviados | integer | NULL | |
+| sms_enviados | integer | NULL | |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_execution_log_job(job_id, start_time DESC)`, `idx_cron_jobs_execution_log_estado`
+
+### cron_jobs_alerts
+
+Alertas de cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| job_id | text | NOT NULL | |
+| execution_id | text | NULL | |
+| tipo_alerta | text | NULL | |
+| severidad | text | NULL | |
+| titulo | text | NULL | |
+| descripcion | text | NULL | |
+| accion_recomendada | text | NULL | |
+| canales_notificacion | jsonb | NULL | |
+| fecha_envio | timestamptz | NULL | |
+| estado_alerta | text | NULL | 'activas' |
+| fecha_resolucion | timestamptz | NULL | |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_alerts_job(job_id, created_at DESC)`, `idx_cron_jobs_alerts_estado`, `idx_cron_jobs_alerts_severidad`
+
+### cron_jobs_notifications
+
+Notificaciones enviadas por cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| template_id | text | NULL | |
+| channel_id | text | NULL | |
+| priority | text | NULL | |
+| source | text | NULL | |
+| recipients | jsonb | NULL | |
+| data | jsonb | NULL | |
+| status | text | NULL | |
+| message_id | text | NULL | |
+| error_message | text | NULL | |
+| sent_at | timestamptz | NULL | now() |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_notifications_channel(channel_id, sent_at DESC)`
+
+### cron_jobs_metrics
+
+Metricas agregadas de cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| job_id | text | NULL | |
+| fecha_metricas | date | NOT NULL | |
+| ejecuciones_totales | integer | NULL | 0 |
+| disponibilidad_porcentual | numeric | NULL | 100 |
+| tiempo_promedio_ms | integer | NULL | 0 |
+| alertas_generadas_total | integer | NULL | 0 |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_metrics_fecha(fecha_metricas DESC)`, `idx_cron_jobs_metrics_job`
+
+### cron_jobs_monitoring_history
+
+Historial de monitoreo de salud.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| timestamp | timestamptz | NOT NULL | |
+| uptime_percentage | numeric | NULL | |
+| response_time_ms | integer | NULL | |
+| memory_usage_percent | numeric | NULL | |
+| active_jobs_count | integer | NULL | |
+| success_rate | numeric | NULL | |
+| alerts_generated | integer | NULL | |
+| health_score | numeric | NULL | |
+| details | jsonb | NULL | |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_monitoring_history_ts(timestamp DESC)`
+
+### cron_jobs_health_checks
+
+Health checks individuales por job.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| job_id | text | NOT NULL | |
+| check_type | text | NULL | |
+| status | text | NULL | |
+| response_time_ms | integer | NULL | |
+| check_details | jsonb | NULL | |
+| last_success | timestamptz | NULL | |
+| created_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_health_checks_job(job_id, created_at DESC)`
+
+### cron_jobs_config
+
+Configuracion de cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| job_id | text | NOT NULL | UNIQUE |
+| cron_expression | text | NULL | |
+| edge_function_name | text | NULL | |
+| cron_job_name | text | NULL | |
+| descripcion | text | NULL | |
+| parametros | jsonb | NULL | |
+| is_active | boolean | NULL | true |
+| created_at | timestamptz | NULL | now() |
+| updated_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_config_job_id UNIQUE`
+
+### cron_jobs_notification_preferences
+
+Preferencias de notificacion por usuario.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| id | uuid | NOT NULL | gen_random_uuid() |
+| user_id | uuid | NULL | |
+| channel_id | text | NULL | |
+| enabled | boolean | NULL | true |
+| preferences | jsonb | NULL | |
+| created_at | timestamptz | NULL | now() |
+
+### cron_jobs_locks
+
+Locks distribuidos para cron jobs.
+
+| Campo | Tipo | Nullable | Default |
+|-------|------|----------|---------|
+| job_id | text | NOT NULL | PK |
+| locked_until | timestamptz | NOT NULL | |
+| locked_by | text | NULL | |
+| updated_at | timestamptz | NULL | now() |
+
+**Indices:** `idx_cron_jobs_locks_until`
+**RLS:** ENABLED (mig 20260215). Sin policies (service_role only).
+
+**Nota:** Todas las tablas cron_jobs_* tienen RLS ENABLED sin policies (acceso exclusivo via service_role).
+
+---
+
+## 11. Infraestructura
+
+### rate_limit_state
+
+Estado de rate limiting (atomico via SP).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| key | text | NOT NULL | | PK |
+| count | integer | NOT NULL | 0 | |
+| window_start | timestamptz | NOT NULL | NOW() | |
+| updated_at | timestamptz | NOT NULL | NOW() | |
+
+**Indices:** `idx_rate_limit_state_updated`
+**Acceso:** service_role only (REVOKE ALL FROM PUBLIC).
+**RLS:** ENABLED (mig 20260215). Sin policies.
+
+---
+
+### circuit_breaker_state
+
+Estado de circuit breakers.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| breaker_key | text | NOT NULL | | PK |
+| state | text | NOT NULL | 'closed' | CHECK IN ('closed','open','half_open') |
+| failure_count | integer | NOT NULL | 0 | |
+| success_count | integer | NOT NULL | 0 | |
+| opened_at | timestamptz | NULL | | |
+| last_failure_at | timestamptz | NULL | | |
+| updated_at | timestamptz | NOT NULL | NOW() | |
+
+**Acceso:** service_role only (REVOKE ALL FROM PUBLIC).
+**RLS:** ENABLED (mig 20260215). Sin policies.
+
+---
+
+## 12. Vistas
+
+### Vistas materializadas
+
+| Vista | Refresh | Proposito |
+|-------|---------|-----------|
+| `mv_stock_bajo` | Cada 1h via `fn_refresh_stock_views()` | Productos con stock por debajo del minimo |
+| `mv_productos_proximos_vencer` | Cada 6h via `fn_refresh_stock_views()` | Productos con vencimiento en proximos 60 dias |
+| `tareas_metricas` | Vista materializada de metricas de tareas | Metricas de tareas con campos normalizados |
+
+### Vistas no materializadas
+
+| Vista | Proposito |
+|-------|-----------|
+| `vista_stock_por_categoria` | Resumen agregado de stock por categoria |
+| `vista_oportunidades_ahorro` | Comparaciones con oportunidad de ahorro |
+| `vista_alertas_activas` | Alertas de precios no procesadas |
+| `vista_cron_jobs_dashboard` | Dashboard de cron jobs |
+| `vista_cron_jobs_alertas_activas` | Alertas activas de cron jobs |
+| `vista_cron_jobs_metricas_semanales` | Metricas semanales agregadas |
+| `vista_arbitraje_producto` | Analisis de arbitraje (costo proveedor vs venta) |
+| `vista_oportunidades_compra` | Oportunidades de compra (stock bajo + precio proveedor bajo) |
+| `vista_cc_saldos_por_cliente` | Saldos de cuenta corriente por cliente |
+| `vista_cc_resumen` | Resumen global de cuentas corrientes |
+| `vista_ofertas_sugeridas` | Ofertas sugeridas para productos proximos a vencer |
+
+---
+
+## 13. Funciones y Stored Procedures (principales)
+
+### Funciones de negocio
+
+| Funcion | Tipo | Proposito |
+|---------|------|-----------|
+| `sp_aplicar_precio(uuid, numeric, numeric)` | SECURITY DEFINER | Aplica precio de compra y calcula venta con margen. FOR UPDATE en productos. |
+| `sp_movimiento_inventario(uuid, text, integer, text, uuid, uuid)` | SECURITY DEFINER | Registra movimiento de inventario. FOR UPDATE en stock_deposito/ordenes_compra. |
+| `sp_crear_pedido(...)` | SECURITY DEFINER | Creacion atomica de pedido con items. |
+| `sp_procesar_venta_pos(jsonb)` | SECURITY DEFINER | Venta POS atomica con idempotency, FOR UPDATE/SHARE, ledger CC. Hardened. |
+| `sp_registrar_pago_cc(jsonb)` | SECURITY DEFINER | Registra pago a cuenta corriente. |
+| `sp_aplicar_oferta_stock(uuid, numeric)` | SECURITY DEFINER | Aplica oferta sobre stock (idempotente). |
+| `sp_desactivar_oferta_stock(uuid)` | SECURITY DEFINER | Desactiva una oferta. |
+| `sp_actualizar_pago_pedido(uuid, numeric)` | SECURITY DEFINER | Actualiza pago de pedido con FOR UPDATE lock. |
+| `sp_reservar_stock(uuid, integer, text, uuid)` | SECURITY DEFINER | Reserva stock con idempotency key. |
+| `sp_cancelar_reserva(uuid, uuid)` | SECURITY DEFINER | Cancela reserva con FOR UPDATE lock. |
+
+### Funciones de infraestructura
+
+| Funcion | Tipo | Proposito |
+|---------|------|-----------|
+| `sp_acquire_job_lock(text, integer, text)` | SECURITY DEFINER | Lock distribuido para cron jobs. |
+| `sp_release_job_lock(text, text)` | SECURITY DEFINER | Libera lock de cron job. |
+| `sp_check_rate_limit(text, integer, integer)` | SECURITY DEFINER | Check + increment atomico de rate limit. service_role only. |
+| `sp_cleanup_rate_limit_state()` | SECURITY DEFINER | Limpia entries stale de rate limit. service_role only. |
+| `sp_circuit_breaker_record(text, text, integer, integer, integer)` | SECURITY DEFINER | Registra evento en circuit breaker. service_role only. |
+| `sp_circuit_breaker_check(text, integer)` | SECURITY DEFINER | Read-only check de circuit breaker. service_role only. |
+| `has_personal_role(text[])` | SECURITY DEFINER | Verifica rol del usuario autenticado via tabla personal. |
+| `trigger_set_updated_at()` | TRIGGER | Auto-update de `updated_at` en UPDATE. |
+
+### Funciones de agregacion
+
+| Funcion | Tipo | Proposito |
+|---------|------|-----------|
+| `fn_dashboard_metrics(uuid)` | STABLE, SECURITY DEFINER | Metricas agregadas para dashboard (reemplaza 7 queries). |
+| `fn_rotacion_productos(integer, integer)` | STABLE, SECURITY DEFINER | Analisis de rotacion de productos. |
+| `fn_refresh_stock_views()` | SECURITY DEFINER | Refresh de vistas materializadas (para cron). |
+| `fnc_redondear_precio(numeric)` | IMMUTABLE | Redondea precio a 2 decimales. |
+| `fnc_margen_sugerido(uuid)` | - | Calcula margen sugerido para un producto. |
+
+### Triggers
+
+| Trigger | Tabla | Proposito |
+|---------|-------|-----------|
+| `set_clientes_updated_at` | clientes | Auto-update `updated_at` |
+| `clientes_limite_credito_only_admin` | clientes | Solo admin puede modificar `limite_credito` |
+| `set_pedidos_updated_at` | pedidos | Auto-update `updated_at` |
+
+---
+
+## 14. Notas de Drift Detectado
+
+1. **`precios_historicos.fecha`**: Columna legacy residual. No fue eliminada en la migracion de cleanup (20260213). No es usada por codigo activo.
+2. **`cache_proveedor` RLS**: No tiene `ENABLE ROW LEVEL SECURITY` explicito en migraciones. Solo tiene REVOKE de anon.
+3. **Roles legacy en RLS**: Tablas creadas en mig 20260131000000 usan arrays de roles legacy (`['admin','administrador','deposito','deposito','ventas','vendedor','usuario']`). Tablas creadas/overridden en mig 20260212130000 usan roles canonicos (`['admin','deposito','ventas']`). Funcional pero inconsistente.
+
+---
+
+**Version:** Post-D-142 (GO, 44 migraciones, 38 tablas, 11 vistas, 3 MV)
+**Estado:** Produccion estable

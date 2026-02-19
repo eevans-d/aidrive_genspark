@@ -5,6 +5,21 @@
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
+## Addendum Sesion 2026-02-19 — Schema Doc + Dead Code Cleanup (D-142)
+- Baseline: commit `e125577`, branch `main`.
+- **`docs/ESQUEMA_BASE_DATOS_ACTUAL.md` reescrito** contra 44 migraciones SQL.
+  - Antes: 14 tablas documentadas, ~180 campos, sin tablas POS/ventas/CC/cron/infra.
+  - Ahora: 38 tablas con columnas exactas, tipos, constraints, FKs, indices, RLS policies.
+  - Se documentaron: 11 vistas, 3 vistas materializadas, 30+ funciones/SPs, 3 triggers.
+  - 3 defectos de drift identificados y documentados (no bloqueantes):
+    1. `precios_historicos.fecha` columna legacy residual
+    2. `cache_proveedor` sin `ENABLE ROW LEVEL SECURITY` explicito
+    3. Roles legacy inconsistentes en policies RLS (funcional pero no canonico)
+- **Dead code eliminado:** `supabase/functions/api-minimarket/routers/` (6 archivos).
+  - Investigacion: zero imports, logica duplicada con `index.ts`, nunca referenciados.
+  - Verificacion: Deno check 13/13 PASS, 1561/1561 tests PASS post-eliminacion.
+- Referencia: D-142 en `docs/DECISION_LOG.md`.
+
 ## Addendum Sesion 2026-02-19 — Deploy Cloudflare Pages (D-141)
 - Baseline: commit `1e89967`, branch `main`.
 - **Hosting frontend desplegado en Cloudflare Pages** — proyecto `aidrive-genspark`.
@@ -51,9 +66,9 @@
 - **Documentación corregida:**
   - `API_README.md`: tabla de roles corregida (productos/stock NO eran públicos), `PUT /proveedores/:id` agregado, rate limit api-minimarket documentado, campos dropdown corregidos.
   - `ESTADO_ACTUAL.md`: conteos de archivos de test corregidos (59 unit, 1 e2e-smoke).
-- **Discrepancias detectadas pendientes:**
-  - `ESQUEMA_BASE_DATOS_ACTUAL.md` tiene 24 tablas no documentadas y drift severo en columnas/tipos.
-  - 5 router modules en api-minimarket (`routers/*.ts`) están stale vs `index.ts` activo.
+- **Discrepancias detectadas y cerradas (D-142):**
+  - ~~`ESQUEMA_BASE_DATOS_ACTUAL.md` tiene 24 tablas no documentadas y drift severo en columnas/tipos.~~ CERRADO: doc reescrito completo.
+  - ~~5 router modules en api-minimarket (`routers/*.ts`) están stale vs `index.ts` activo.~~ CERRADO: directorio eliminado.
 
 ## Addendum Recheck D-140 (2026-02-18T11:44:00Z)
 - Baseline: commit `7ffd652`.

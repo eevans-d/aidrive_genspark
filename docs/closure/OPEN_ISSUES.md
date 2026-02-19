@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-19 (D-141: deploy Cloudflare Pages completado, **GO**, 11 PASS / 0 FAIL)
+**Última actualización:** 2026-02-19 (D-142: schema doc reescrito + dead code routers eliminados)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -105,6 +105,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.
 - **CORS:** `ALLOWED_ORIGINS` en Supabase incluye dominios Cloudflare Pages + localhost. Tras cambios, redeploy `api-minimarket` con `--no-verify-jwt`.
+- **D-142 (2026-02-19):** `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` reescrito contra 44 migraciones (38 tablas, 11 vistas, 3 MV, 30+ funciones, 3 triggers). `supabase/functions/api-minimarket/routers/` eliminado (6 archivos dead code). 3 defectos de drift documentados. Tests 1561/1561 PASS post-cambios.
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.

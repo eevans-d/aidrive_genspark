@@ -30,7 +30,7 @@
 | Proyecto | Mini Market System |
 | Stack | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | Ref Supabase | dqaygmjpzoqjjrywdsxi |
-| Veredicto operativo | **GO** (recheck D-140) |
+| Veredicto operativo | **GO** (recheck D-140; D-142 schema + dead code cleanup) |
 | Score | 100.00% (11 PASS / 11 gates) |
 | Tests | 1561/1561 PASS (root, 76 archivos), 45 auxiliary PASS + 4 skipped, 175/175 frontend PASS, 4/4 E2E PASS, 68/68 integración PASS, build PASS |
 | Deno gate | 13/13 PASS (usando `/home/eevan/.deno/bin/deno`) |
@@ -64,6 +64,8 @@
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
+- **D-142 (2026-02-19)**: `ESQUEMA_BASE_DATOS_ACTUAL.md` reescrito completo contra 44 migraciones (38 tablas, 11 vistas, 3 MV, 30+ funciones, 3 triggers). 6 archivos dead code eliminados (`routers/`). 3 defectos de drift documentados (no bloqueantes). Tests 1561/1561 PASS post-cambios.
+- **D-141 (2026-02-19)**: Deploy frontend Cloudflare Pages end-to-end + 313 tests nuevos + CORS fix. Producción operativa.
 - **Recheck D-140**: integración activa `68/68 PASS`, unit PASS, auxiliary PASS, validate-paths/doc-links/metrics PASS, migraciones `44/44`. Veredicto operativo: **GO**. (2026-02-18).
 - Recheck D-138 (histórico): 10 PASS / 1 FAIL no crítico (`test:integration` sin suite), drift DB 44/43. (2026-02-18).
 - **Evidencia Deno D-138**: 13/13 PASS con binario absoluto (`~/.deno/bin/deno`); ajustar PATH recomendado para evitar falsos bloqueos. (2026-02-18).
@@ -83,6 +85,7 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-19 | Schema doc rewrite + dead code cleanup (D-142) — reescritura ESQUEMA contra 44 migraciones + eliminacion routers/ dead code | COMPLETADA | D-142 en `docs/DECISION_LOG.md`, `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 | 2026-02-19 | Deploy frontend Cloudflare Pages end-to-end (D-141) — workflow + secrets + CORS fix + smoke tests + 313 tests nuevos | COMPLETADA | `docs/closure/INFORME_INFRAESTRUCTURA_HOST_DEPLOY.md` (sección 9), D-141 en `docs/DECISION_LOG.md` |
 | 2026-02-18 | Recheck integral D-138: gates + precheck remoto + sync documental | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138), `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-18.md` |
 | 2026-02-18 | Recheck D-140: integración 68/68 PASS + migraciones 44/44 + veredicto GO operativo | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-140), `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
@@ -149,11 +152,11 @@ Eres un agente tecnico ejecutor del proyecto Mini Market System.
 CONTEXTO
 - Repo: /home/eevan/ProyectosIA/aidrive_genspark
 - Branch objetivo: main
-- Estado: **GO** (D-140 + D-141; ver OPEN_ISSUES para pendientes operativos)
+- Estado: **GO** (D-140 + D-141 + D-142; ver OPEN_ISSUES para pendientes operativos)
 - Tests base: 1561/1561 PASS (root, 76 archivos) + 175/175 frontend + 4/4 E2E + 68/68 integración
 - Frontend: desplegado en Cloudflare Pages (https://aidrive-genspark.pages.dev)
 - Backend: 13 Edge Functions activas en Supabase (ref dqaygmjpzoqjjrywdsxi)
-- Último commit: 1e89967 (Cloudflare Pages deploy, 2026-02-19)
+- Último commit: e125577 (D-141 deploy + 313 tests + context prompt, 2026-02-19)
 
 PRIMER PASO OBLIGATORIO
 Lee en este orden:
