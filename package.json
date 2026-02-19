@@ -17,6 +17,7 @@
     "test:security": "vitest run --config vitest.auxiliary.config.ts tests/security",
     "test:contracts": "vitest run --config vitest.auxiliary.config.ts tests/api-contracts",
     "test:all": "npm run test && npm run test:auxiliary",
+    "deploy:cloudflare:pages": "bash scripts/deploy-cloudflare-pages.sh",
     "prepare": "husky"
   },
   "keywords": [],
@@ -41,7 +42,8 @@
   },
   "dependencies": {
     "react": "^18.3.1",
-    "react-dom": "^18.3.1"
+    "react-dom": "^18.3.1",
+    "wrangler": "^4.66.0"
   },
   "lint-staged": {
     "minimarket-system/src/**/*.{ts,tsx}": [
