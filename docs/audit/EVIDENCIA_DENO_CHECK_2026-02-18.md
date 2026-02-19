@@ -5,6 +5,8 @@
 - **Deno:** 2.6.10 (stable, release, x86_64-unknown-linux-gnu)
 - **V8:** 14.5.201.2-rusty
 - **TypeScript:** 5.9.2
+- **Binario usado:** `/home/eevan/.deno/bin/deno`
+- **Nota PATH:** `deno` no está exportado globalmente en este host; usar ruta absoluta o exportar `~/.deno/bin`.
 - **Fecha ejecucion:** 2026-02-18 11:20 UTC
 - **Comando:** `deno check --no-lock <function>/index.ts`
 
@@ -31,3 +33,14 @@
 **13/13 PASS** - Todas las Edge Functions pasan type-check sin errores.
 
 Gate Deno: **CERRADO (PASS)**
+
+## Comando reproducible (host actual)
+
+```bash
+DENO_BIN="$HOME/.deno/bin/deno"
+for d in supabase/functions/*/; do
+  n=$(basename "$d")
+  [ "$n" = "_shared" ] && continue
+  "$DENO_BIN" check --no-lock "$d/index.ts"
+done
+```

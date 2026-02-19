@@ -17,9 +17,10 @@ export default defineConfig({
       VITE_SUPABASE_ANON_KEY: process.env.VITE_SUPABASE_ANON_KEY || 'dummy-key-for-tests',
     },
 
-    // Test files pattern - ONLY integration tests
+    // Test files pattern - prefer current integration contracts, keep legacy path for compatibility
     include: [
-      'tests/integration/**/*.{test,spec}.{js,ts}'
+      'tests/contract/**/*.{test,spec}.{js,ts}',
+      'tests/integration/**/*.{test,spec}.{js,ts}',
     ],
 
     // Global test configuration

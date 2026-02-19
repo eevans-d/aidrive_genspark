@@ -334,7 +334,7 @@ GET /alertas-vencimientos          # Edge Function: alertas-vencimientos
 
 ### Dropdowns (Gateway)
 ```bash
-GET /productos/dropdown            # Lista mínima para select (id, nombre, codigo_barras)
+GET /productos/dropdown            # Lista mínima para select (id, nombre, sku, codigo_barras, precio_actual)
 GET /proveedores/dropdown          # Lista mínima para select (id, nombre)
 ```
 
@@ -355,8 +355,10 @@ DELETE /productos/{id}             # Soft delete (requiere admin)
 
 ### Proveedores
 ```bash
-GET /proveedores                   # Listar activos
+GET /proveedores                   # Listar activos (requiere rol admin/deposito)
 GET /proveedores/{id}              # Detalle
+POST /proveedores                  # Crear proveedor (requiere admin)
+PUT /proveedores/{id}              # Actualizar proveedor (requiere admin)
 ```
 
 ### Precios
@@ -499,16 +501,20 @@ GET /health                        # Healthcheck del gateway
 
 | Operación | Público | Ventas | Deposito | Admin |
 |-----------|---------|--------|----------|-------|
-| Ver productos/stock | ✅ | ✅ | ✅ | ✅ |
+| Ver productos/stock | ❌ | ✅ | ✅ | ✅ |
+| Ver stock bajo mínimo | ❌ | ❌ | ✅ | ✅ |
 | Crear productos | ❌ | ❌ | ✅ | ✅ |
 | Aplicar precios | ❌ | ❌ | ❌ | ✅ |
 | Movimientos depósito | ❌ | ❌ | ✅ | ✅ |
 | Eliminar productos | ❌ | ❌ | ❌ | ✅ |
 | POS / Ventas | ❌ | ✅ | ❌ | ✅ |
 | Clientes / Cuenta Corriente | ❌ | ✅ | ❌ | ✅ |
+| Proveedores (listar/detalle) | ❌ | ❌ | ✅ | ✅ |
+| Proveedores (crear/editar) | ❌ | ❌ | ❌ | ✅ |
 | Ofertas anti-mermas | ❌ | ✅ | ✅ | ✅ |
 | Bitácora (crear) | ❌ | ✅ | ✅ | ✅ |
 | Bitácora (listar) | ❌ | ❌ | ❌ | ✅ |
+| Health check | ✅ | ✅ | ✅ | ✅ |
 
 ---
 
@@ -532,6 +538,11 @@ Cada request genera un `x-request-id` único (UUID) que aparece en:
 - Body JSON: `requestId`
 
 Usar este ID para debugging y correlación de logs.
+
+### Rate Limiting (api-minimarket)
+- 60 requests por minuto por IP/usuario
+- Headers `RateLimit-*` indican estado del límite
+- Error 429 cuando se excede el límite
 
 ---
 
@@ -639,4 +650,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-02-06*
+*Última actualización: 2026-02-19*

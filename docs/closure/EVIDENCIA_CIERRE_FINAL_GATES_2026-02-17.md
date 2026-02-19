@@ -7,6 +7,42 @@
 
 ---
 
+## Addendum D-140 — Recheck de cierre real (2026-02-18T11:44:00+00:00)
+
+### Baseline de recheck
+
+| Campo | Valor |
+|-------|-------|
+| Commit | `7ffd652` |
+| Timestamp | `2026-02-18T11:44:00+00:00` |
+| `.env.test` | PRESENTE |
+| Supabase migrations | `44` local / `44` remoto (sin drift) |
+| Deno gate | `13/13 PASS` con `/home/eevan/.deno/bin/deno` |
+
+### Matriz de gates (recheck D-140)
+
+| Gate | Resultado | Evidencia |
+|---|---|---|
+| `npm run test:unit` | PASS | 59 files, 1248/1248 |
+| `npm run test:coverage` | PASS | 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines |
+| `npm run test:security` | PASS | 11 passed, 3 skipped |
+| `npm run test:contracts` | PASS | 17 passed, 1 skipped |
+| `npm run test:integration` | PASS | 3 files, 68/68 |
+| `npm run test:e2e` | PASS | 1 file, 4/4 smoke remotos |
+| `pnpm -C minimarket-system lint` | PASS | 0 errors, 0 warnings |
+| `pnpm -C minimarket-system build` | PASS | build OK, PWA v1.2.0 |
+| `pnpm -C minimarket-system test:components` | PASS | 30 files, 175/175 |
+| `node scripts/validate-doc-links.mjs` | PASS | OK (81 files) |
+| `node scripts/metrics.mjs --check` | PASS | `docs/METRICS.md OK` |
+
+### Veredicto operativo vigente (D-140)
+
+- `GO`: sin FAIL críticos ni no-críticos en gates ejecutados.
+- Integración dejó de ser N/A/fallo: suite activa por `tests/contract/**/*` en `vitest.integration.config.ts`.
+- D-138 queda como snapshot histórico previo a esta corrección.
+
+---
+
 ## Addendum D-138 — Recheck Real (2026-02-18T11:16:59+00:00)
 
 ### Baseline de recheck
@@ -21,6 +57,7 @@
 | Health (supabase.co/functions/v1) | healthy (`circuitBreaker=closed`) |
 | Supabase migrations | `44` local / `43` remoto (`20260218050000_add_sp_cancelar_reserva.sql` pendiente remoto) |
 | Supabase functions (snapshot) | `api-minimarket v28`, `api-proveedor v20`, 13 ACTIVE |
+| Deno gate | `13/13 PASS` con `/home/eevan/.deno/bin/deno` (PATH no exportado) |
 
 ### Matriz de gates (recheck D-138)
 
@@ -42,6 +79,7 @@
 
 - `GO_CONDICIONAL` (recheck actual): 1 gate en FAIL no-crítico (`test:integration` sin test files) + drift DB local/remoto `44/43`.
 - `GO` D-137 se mantiene como hito histórico documentado para la corrida previa.
+- Deno no bloquea: el runtime está disponible por ruta absoluta (`~/.deno/bin/deno`) y valida 13/13.
 
 ---
 

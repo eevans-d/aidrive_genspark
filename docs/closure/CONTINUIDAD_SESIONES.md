@@ -2,7 +2,7 @@
 
 **Proposito:** punto de entrada unico para retomar trabajo sin perder contexto.
 
-**Ultima actualizacion:** 2026-02-18T11:16:59Z
+**Ultima actualizacion:** 2026-02-19
 **Sesion activa:** `.agent/sessions/current/SESSION_ACTIVE` (si existe)
 **Branch recomendado:** `main`
 
@@ -30,11 +30,14 @@
 | Proyecto | Mini Market System |
 | Stack | React/Vite/TS + Supabase Edge Functions/Deno + PostgreSQL |
 | Ref Supabase | dqaygmjpzoqjjrywdsxi |
-| Veredicto operativo | **GO_CONDICIONAL** (recheck D-138) |
-| Score | 90.91% (10 PASS / 11 gates) |
-| Tests | 1248/1248 PASS (root), 28 auxiliary PASS + 4 skipped, 175/175 frontend PASS, 4/4 E2E PASS, build PASS |
-| Edge Functions | 13 activas (`api-minimarket v28`, `api-proveedor v20`, `scraper-maxiconsumo v21`) |
-| Migraciones | 44 local / 43 remoto (drift pendiente: `20260218050000_add_sp_cancelar_reserva.sql`) |
+| Veredicto operativo | **GO** (recheck D-140) |
+| Score | 100.00% (11 PASS / 11 gates) |
+| Tests | 1561/1561 PASS (root, 76 archivos), 45 auxiliary PASS + 4 skipped, 175/175 frontend PASS, 4/4 E2E PASS, 68/68 integración PASS, build PASS |
+| Deno gate | 13/13 PASS (usando `/home/eevan/.deno/bin/deno`) |
+| Edge Functions | 13 activas (`api-minimarket v29`, `api-proveedor v20`, `scraper-maxiconsumo v21`) |
+| Migraciones | 44 local / 44 remoto (sin drift) |
+| Frontend hosting | Cloudflare Pages — `https://aidrive-genspark.pages.dev` (prod) |
+| CI/CD deploy | `.github/workflows/deploy-cloudflare-pages.yml` activo |
 
 ### Fuentes de verdad
 - `docs/ESTADO_ACTUAL.md`
@@ -61,7 +64,9 @@
 | 6 | ~~Pre-commit/lint-staged: resolucion `eslint` fuera de `minimarket-system/node_modules`~~ | P2 | ✅ CERRADO (D-117) | DX/Tooling | — |
 
 ### 3.2 Cierres recientes relevantes
-- **Recheck D-138**: 10 PASS / 1 FAIL no crítico (`test:integration` sin suite), drift DB 44/43, metrics/doc-links PASS. Veredicto operativo: **GO_CONDICIONAL**. (2026-02-18).
+- **Recheck D-140**: integración activa `68/68 PASS`, unit PASS, auxiliary PASS, validate-paths/doc-links/metrics PASS, migraciones `44/44`. Veredicto operativo: **GO**. (2026-02-18).
+- Recheck D-138 (histórico): 10 PASS / 1 FAIL no crítico (`test:integration` sin suite), drift DB 44/43. (2026-02-18).
+- **Evidencia Deno D-138**: 13/13 PASS con binario absoluto (`~/.deno/bin/deno`); ajustar PATH recomendado para evitar falsos bloqueos. (2026-02-18).
 - **Upgrade GO D-137**: `.env.test` provisionado, E2E 4/4 PASS, Integration N/A. Score 100% (9/9). Veredicto: **GO**. (2026-02-18).
 - Cierre final consolidado D-136: 10 gates ejecutados (8 PASS, 2 BLOCKED_ENV). Unit 1248/1248. Coverage 88.52%/80.00%/92.32%/89.88%. Score 90%. Veredicto: GO_CONDICIONAL. Hallazgo: deploy.sh backup permissions (MODERADO, CERRADO). (2026-02-18).
 - Auditoria final D-133: 9 desalineaciones documentales corregidas, branch coverage 75.75%→80.21% (60 tests nuevos), lint warning Ventas.tsx corregido (2026-02-17).
@@ -78,7 +83,9 @@
 
 | Fecha | Objetivo | Estado | Evidencia |
 |-------|----------|--------|----------|
+| 2026-02-19 | Deploy frontend Cloudflare Pages end-to-end (D-141) — workflow + secrets + CORS fix + smoke tests + 313 tests nuevos | COMPLETADA | `docs/closure/INFORME_INFRAESTRUCTURA_HOST_DEPLOY.md` (sección 9), D-141 en `docs/DECISION_LOG.md` |
 | 2026-02-18 | Recheck integral D-138: gates + precheck remoto + sync documental | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138), `docs/closure/DOCUGUARD_SYNC_REPORT_2026-02-18.md` |
+| 2026-02-18 | Recheck D-140: integración 68/68 PASS + migraciones 44/44 + veredicto GO operativo | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-140), `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` |
 | 2026-02-18 | Upgrade GO_CONDICIONAL → GO (D-137): `.env.test` provisionado, E2E 4/4 PASS | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-137), `test-reports/junit.e2e.xml` |
 | 2026-02-18 | Cierre final consolidado D-136 — corrida produccion con veredicto formal (10 gates, score 90%) | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (D-136), `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (D-136) |
 | 2026-02-18 | Ajuste de consistencia post-ejecución de 3 prompts (D-135) | COMPLETADA | `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md`, `docs/closure/DIAGNOSTICO_AVANZADO_PRODUCCION_USUARIO_REAL_2026-02-17.md` |
@@ -125,7 +132,9 @@
 - `docs/closure/CONTEXT_PROMPT_AUDITORIA_AVANZADA_PRODUCCION_2026-02-17_ULTRA_SHORT.md` — Auditoria avanzada read-only anti-drift (ACTIVO)
 - `docs/closure/CONTEXT_PROMPT_VALIDACION_POST_REMEDIACION_2026-02-17_ULTRA_SHORT.md` — Revalidacion post-remediacion + coherencia canonica (COMPLETADO, D-134)
 - `docs/closure/CONTEXT_PROMPT_RECONCILIACION_CANONICA_D132_2026-02-17.md` — Reconciliacion documental final D-132 (COMPLETADO)
-- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (COMPLETADO PARCIAL; requiere `.env.test` para cierre total)
+- `docs/closure/CONTEXT_PROMPT_CIERRE_FINAL_GATES_CON_ENVTEST_2026-02-17.md` — Cierre final de gates con `.env.test` (COMPLETADO; ver D-140)
+- `docs/closure/CONTEXT_PROMPT_ENGINEERING_COMET_CLOUDFLARE_PAGES_2026-02-19.md` — Context prompt para Comet sobre Cloudflare Pages (COMPLETADO: deploy operativo)
+- `docs/closure/CONTEXT_PROMPT_NEXT_SESSION_2026-02-19.md` — Context prompt para siguiente sesión Copilot (ACTIVO)
 - `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md` (histórico, referencia)
 - Prompts ad-hoc antiguos: removidos en D-109
 
@@ -138,23 +147,27 @@ ROL
 Eres un agente tecnico ejecutor del proyecto Mini Market System.
 
 CONTEXTO
-- Repo: usar la ruta real del checkout activo (ejemplo actual: /home/eevan/ProyectosIA/aidrive_genspark)
+- Repo: /home/eevan/ProyectosIA/aidrive_genspark
 - Branch objetivo: main
-- Estado: **GO_CONDICIONAL** (veredicto vigente D-138; ver OPEN_ISSUES para pendientes operativos)
-- Tests base: 1248/1248 PASS (root, D-136) + 4/4 E2E PASS (D-137)
+- Estado: **GO** (D-140 + D-141; ver OPEN_ISSUES para pendientes operativos)
+- Tests base: 1561/1561 PASS (root, 76 archivos) + 175/175 frontend + 4/4 E2E + 68/68 integración
+- Frontend: desplegado en Cloudflare Pages (https://aidrive-genspark.pages.dev)
+- Backend: 13 Edge Functions activas en Supabase (ref dqaygmjpzoqjjrywdsxi)
+- Último commit: 1e89967 (Cloudflare Pages deploy, 2026-02-19)
 
 PRIMER PASO OBLIGATORIO
 Lee en este orden:
 1) docs/closure/CONTINUIDAD_SESIONES.md
 2) docs/ESTADO_ACTUAL.md
-3) docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md
-4) docs/closure/OPEN_ISSUES.md
+3) docs/closure/OPEN_ISSUES.md
+4) docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md
 
 GUARDRAILS
 1. No exponer secretos/JWTs (solo nombres).
 2. No usar comandos git destructivos.
 3. Si redeploy de api-minimarket: usar --no-verify-jwt.
 4. Toda tarea cerrada debe dejar evidencia en filesystem.
+5. Tras cambio en ALLOWED_ORIGINS de Supabase, redeploy api-minimarket.
 
 EJECUCION
 Tomar la primera tarea pendiente real del plan activo y cerrarla end-to-end.

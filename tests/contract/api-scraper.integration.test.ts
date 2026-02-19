@@ -219,7 +219,7 @@ describe('CONTRACT: api-proveedor router', () => {
   });
 
   it('dispatches to correct handler', async () => {
-    const mockContext = {} as any;
+    const mockContext = { method: 'GET' } as any;
     const handlerResult = new Response('ok', { status: 200 });
     const handlers: any = {
       health: async () => handlerResult,

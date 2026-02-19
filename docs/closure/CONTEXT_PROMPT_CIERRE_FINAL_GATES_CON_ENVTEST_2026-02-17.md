@@ -43,6 +43,8 @@ Ejecutar cierre final tecnico-operativo para salida a produccion: **verificar, r
    - `curl -sS https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health`
 5. Detectar drift DB local/remoto:
    - Si `Local != Remote` en `supabase migration list --linked`, marcar `DRIFT_DB` y listar IDs pendientes.
+6. Precheck Deno:
+   - Si `command -v deno` falla pero existe `~/.deno/bin/deno`, usar ese binario como fallback.
 
 ### FASE 2 — QUALITY GATES (EJECUCION REAL)
 Ejecutar y registrar resultado de cada gate:

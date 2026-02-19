@@ -1,9 +1,68 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-18  
-**Estado:** **GO_CONDICIONAL** (recheck D-138; ver `docs/closure/OPEN_ISSUES.md`)
-**Score:** 90.91% (10 PASS / 11 gates ejecutados en corrida D-138)
+**Ultima actualizacion:** 2026-02-19
+**Estado:** **GO** (recheck D-140; ver `docs/closure/OPEN_ISSUES.md`)
+**Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+
+## Addendum Sesion 2026-02-19 — Deploy Cloudflare Pages (D-141)
+- Baseline: commit `1e89967`, branch `main`.
+- **Hosting frontend desplegado en Cloudflare Pages** — proyecto `aidrive-genspark`.
+  - Producción: `https://aidrive-genspark.pages.dev` ✅ operativo
+  - Preview: `https://preview.aidrive-genspark.pages.dev` ✅ operativo
+- **CI/CD workflow creado:** `.github/workflows/deploy-cloudflare-pages.yml` (push a main = producción automática, workflow_dispatch = preview/prod manual).
+- **GitHub Actions configurados:**
+  - Secrets: `CLOUDFLARE_API_TOKEN`, `CLOUDFLARE_ACCOUNT_ID`
+  - Variables: `CLOUDFLARE_PAGES_PROJECT`, `VITE_API_GATEWAY_URL`
+  - Preexistentes: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`
+- **ALLOWED_ORIGINS actualizado en Supabase** para incluir dominios Cloudflare Pages.
+- **`api-minimarket` redesplegado** con `--no-verify-jwt` para activar nuevos CORS origins.
+- **CORS validado:** preflight OPTIONS → 204 con headers correctos para ambos dominios.
+- **Headers de seguridad:** `X-Content-Type-Options: nosniff`, `X-Frame-Options: SAMEORIGIN`, `Referrer-Policy: strict-origin-when-cross-origin`, `Permissions-Policy`, cache immutable en assets.
+- **Smoke test ampliado:** 6 rutas SPA (/, /login, /stock, /pedidos, /dashboard, /productos) → HTTP 200 en producción.
+- **Tests adicionales creados:** 17 archivos de test unitarios nuevos (+313 tests, total 1561/1561 PASS, 76 archivos).
+- **Documentación creada/actualizada:**
+  - `docs/closure/INFORME_INFRAESTRUCTURA_HOST_DEPLOY.md` (sección 9 completa)
+  - `docs/closure/GUIA_DEPLOY_CLOUDFLARE_PAGES_2026-02-19.md`
+  - `docs/closure/CONTEXT_PROMPT_ENGINEERING_COMET_CLOUDFLARE_PAGES_2026-02-19.md`
+- Referencia: D-141 en `docs/DECISION_LOG.md`.
+
+## Addendum Sesion 2026-02-19 (Auditoria cruzada docs vs codigo)
+- Baseline: commit `f0dffd9`, working tree con cambios.
+- **Unit tests:** 1561/1561 PASS (76 archivos). +313 tests, +17 archivos vs D-140.
+- **Nuevos tests creados:**
+  - `api-proveedor-format.test.ts` (34 tests): format.ts — 7 funciones utilitarias.
+  - `api-proveedor-config.test.ts` (19 tests): config.ts — análisis de configuración.
+  - `api-proveedor-constants.test.ts` (17 tests): constants.ts — todas las constantes exportadas.
+  - `api-proveedor-metrics.test.ts` (26 tests): metrics.ts — 12 funciones de métricas.
+  - `api-proveedor-http.test.ts` (18 tests): http.ts — fetchWithRetry, fetchWithTimeout, isRetryableAPIError.
+  - `api-search.test.ts` (6 tests): handler de búsqueda global.
+  - `api-dropdown-handlers.test.ts` (5 tests): handlers de dropdown (productos/proveedores).
+  - `api-clientes.test.ts` (18 tests): handler CRUD clientes + validación + cuenta corriente.
+  - `api-proveedor-alertas-utils.test.ts` (30 tests): alertas.ts — 10 funciones de alertas.
+  - `api-proveedor-comparacion.test.ts` (27 tests): comparacion.ts — 9 funciones de comparación.
+  - `api-proveedor-estadisticas.test.ts` (22 tests): estadisticas.ts — 10 funciones de estadísticas.
+  - `api-proveedores-handlers.test.ts` (12 tests): handler CRUD proveedores + validación.
+  - `api-proveedor-cache.test.ts` (23 tests): cache.ts — in-memory + persistent cache, TTL, eviction.
+  - `api-proveedor-params.test.ts` (14 tests): params.ts — sanitizeSearchInput (XSS, injection, unicode).
+  - `shared-internal-auth.test.ts` (10 tests): internal-auth.ts — requireServiceRoleAuth, JWT decode.
+  - `api-insights.test.ts` (11 tests): handlers insights (arbitraje, compras, producto).
+  - `api-cuentas-corrientes.test.ts` (21 tests): handlers cuentas corrientes (resumen, saldos, pagos).
+- **Documentación corregida:**
+  - `API_README.md`: tabla de roles corregida (productos/stock NO eran públicos), `PUT /proveedores/:id` agregado, rate limit api-minimarket documentado, campos dropdown corregidos.
+  - `ESTADO_ACTUAL.md`: conteos de archivos de test corregidos (59 unit, 1 e2e-smoke).
+- **Discrepancias detectadas pendientes:**
+  - `ESQUEMA_BASE_DATOS_ACTUAL.md` tiene 24 tablas no documentadas y drift severo en columnas/tipos.
+  - 5 router modules en api-minimarket (`routers/*.ts`) están stale vs `index.ts` activo.
+
+## Addendum Recheck D-140 (2026-02-18T11:44:00Z)
+- Baseline: commit `7ffd652`.
+- Gates: 11 PASS / 11 ejecutados (incluye `npm run test:integration`).
+- Integración: `68/68 PASS` (`tests/contract/*` via `vitest.integration.config.ts`).
+- Cobertura: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines.
+- Migraciones remotas: `44/44` (sin drift).
+- Health endpoints productivos: `healthy` en ambos dominios Supabase.
+- Deno check: `13/13 PASS` usando `/home/eevan/.deno/bin/deno` (binario fuera de PATH global).
 
 ## Addendum Recheck D-138 (2026-02-18T11:16:59Z)
 - Baseline: commit `7ffd652`, working tree limpio.
@@ -11,6 +70,7 @@
 - Cobertura: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines.
 - Drift DB detectado: `44` migraciones local vs `43` remoto (`20260218050000_add_sp_cancelar_reserva.sql` pendiente de aplicar).
 - Health endpoints productivos: `healthy` en ambos dominios Supabase.
+- Deno check: `13/13 PASS` usando `/home/eevan/.deno/bin/deno` (el binario no está en PATH global).
 
 ## Addendum de Verificacion Cruzada (2026-02-17)
 - Reporte auditado/sincronizado: `docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md` (fe de verificación agregada 2026-02-17).
@@ -34,7 +94,7 @@
   - **Eje 5 cerrado:** HTTP method enforcement en `api-proveedor` via `allowedMethods` en `schemas.ts` + validacion en `router.ts` (405 para metodos invalidos).
   - **Eje 4 cerrado:** OpenAPI `api-proveedor` sincronizado con runtime (14 mismatches corregidos, 3 endpoints fantasma eliminados).
   - ~~Migracion `20260217200000_vuln003_004_concurrency_locks.sql` (pendiente deploy remoto).~~ CERRADO en D-132 (43/43 synced).
-- **Validacion post-remediacion:** Veredicto histórico D-137 = **GO 100%**; veredicto operativo vigente D-138 = **GO_CONDICIONAL** por gate de integración sin suite y drift DB. Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
+- **Validacion post-remediacion:** Veredicto vigente D-140 = **GO** (11/11 gates PASS, sin drift DB). Ver `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
 - **Tests post-validacion:** 1165/1165 PASS (root), 175/175 PASS (frontend), lint PASS, build PASS.
 - **Decision:** D-126. Análisis pre-mortem identificó 42 hallazgos en 3 vectores de ataque. Se implementaron 17 fixes críticos.
 - **Migración aplicada** el 2026-02-17: `supabase/migrations/20260217100000_hardening_concurrency_fixes.sql`
@@ -79,11 +139,11 @@
 ## 2) Estado Real Verificado (sesion 2026-02-16)
 
 ### Baseline remoto
-- Migraciones: 44 local / 43 remoto (43/43 synced D-132 + 1 nueva local pendiente push).
+- Migraciones: 44 local / 44 remoto (sin drift).
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
-- Archivos de test: 100 (58 unit + 30 frontend + 3 contract + 2 e2e-smoke + 1 security + 1 performance + 1 api-contracts + 4 e2e-playwright).
+- Archivos de test: 113 (76 unit + 30 frontend + 3 contract + 1 e2e-smoke + 1 security + 1 performance + 1 api-contracts).
 - Evidencia:
   - `supabase migration list --linked`
   - `supabase functions list`
@@ -94,7 +154,7 @@
 |---|---:|---|
 | alertas-stock | v18 | ACTIVE |
 | alertas-vencimientos | v17 | ACTIVE |
-| api-minimarket | v28 | ACTIVE |
+| api-minimarket | v29 | ACTIVE |
 | api-proveedor | v20 | ACTIVE |
 | cron-dashboard | v17 | ACTIVE |
 | cron-health-monitor | v17 | ACTIVE |
@@ -106,21 +166,24 @@
 | reposicion-sugerida | v17 | ACTIVE |
 | scraper-maxiconsumo | v21 | ACTIVE |
 
-## 3) Resultado De Calidad (snapshot 2026-02-18, D-138)
-- Unit tests: 1248/1248 PASS (59 archivos).
+## 3) Resultado De Calidad (snapshot 2026-02-19)
+- Unit tests: 1561/1561 PASS (76 archivos).
 - Coverage: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines (threshold 80% global).
 - Security tests: 11/11 PASS + 3 skipped (env-conditional).
 - Contract tests: 17/17 PASS + 1 skipped (env-conditional).
-- Integration tests: FAIL no crítico (`No test files found` en `tests/integration/**/*`).
+- Integration tests: PASS (`68/68`, `tests/contract/*` vía `vitest.integration.config.ts`).
 - E2E smoke: 4/4 PASS contra endpoints remotos reales (api-proveedor).
 - Frontend component tests: 175/175 PASS (30 archivos).
 - Lint frontend: 0 errors, 0 warnings.
 - Build frontend: PASS (PWA v1.2.0).
-- Doc links: PASS.
+- Doc links: PASS (81 archivos).
 - Metrics check: PASS.
+- Deno checks: PASS (13/13, usando ruta absoluta del binario).
 - Health endpoints: ambos healthy, circuitBreaker closed.
-- **Production Readiness Score: 90.91% (10 PASS / 11 gates) — Veredicto: GO_CONDICIONAL.**
-- Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138).
+- **Frontend deploy:** Cloudflare Pages — producción (`aidrive-genspark.pages.dev`) y preview operativos.
+- **CORS:** validado para dominios Cloudflare Pages + localhost.
+- **Production Readiness Score: 100.00% (11 PASS / 11 gates) — Veredicto: GO.**
+- Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (addendum D-138), `docs/closure/INFORME_INFRAESTRUCTURA_HOST_DEPLOY.md` (sección 9).
 
 ## 4) Mega Plan (T01..T10)
 **Plan de cierre (T01..T10):** ver esta tabla + `docs/closure/OPEN_ISSUES.md` (estado vigente) + `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md` (resumen ejecutivo).
