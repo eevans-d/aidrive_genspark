@@ -156,7 +156,7 @@ CONTEXTO
 - Tests base: 1561/1561 PASS (root, 76 archivos) + 175/175 frontend + 4/4 E2E + 68/68 integración
 - Frontend: desplegado en Cloudflare Pages (https://aidrive-genspark.pages.dev)
 - Backend: 13 Edge Functions activas en Supabase (ref dqaygmjpzoqjjrywdsxi)
-- Último commit: e125577 (D-141 deploy + 313 tests + context prompt, 2026-02-19)
+- Último commit: d673aae (D-142 schema doc rewrite + dead code cleanup, 2026-02-19)
 
 PRIMER PASO OBLIGATORIO
 Lee en este orden:

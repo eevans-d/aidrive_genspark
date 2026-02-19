@@ -368,14 +368,14 @@ aidrive_genspark/
 │   │   ├── contexts/           # React Contexts (Auth)
 │   │   ├── hooks/              # Custom hooks (queries, auth, roles)
 │   │   ├── lib/                # Utilidades (apiClient, roles, observability)
-│   │   ├── pages/              # 14 paginas del sistema
+│   │   ├── pages/              # 15 paginas del sistema
 │   │   └── mocks/              # Mocks para testing
 │   ├── e2e/                    # Tests Playwright
 │   └── [configs]               # vite, vitest, tailwind, eslint, typescript
 ├── supabase/
 │   ├── functions/
 │   │   ├── _shared/            # Utilidades compartidas (cors, auth, errors, logger, rate-limit, circuit-breaker, response)
-│   │   ├── api-minimarket/     # Gateway principal (index.ts + handlers/ + helpers/ + routers/)
+│   │   ├── api-minimarket/     # Gateway principal (index.ts + handlers/ + helpers/)
 │   │   ├── api-proveedor/      # API interna proveedor (index.ts + handlers/ + utils/ + router.ts)
 │   │   ├── scraper-maxiconsumo/# Scraper del proveedor
 │   │   ├── alertas-stock/      # Alerta cron de stock bajo
@@ -388,9 +388,9 @@ aidrive_genspark/
 │   │   ├── cron-jobs-maxiconsumo/# Orquestador de jobs proveedor
 │   │   ├── cron-notifications/  # Envio de notificaciones (email/SMS/Slack)
 │   │   └── cron-testing-suite/  # Suite de testing de crons
-│   └── migrations/             # 41 migraciones SQL
+│   └── migrations/             # 44 migraciones SQL
 ├── tests/
-│   ├── unit/                   # 58 tests unitarios
+│   ├── unit/                   # 76 tests unitarios
 │   ├── api-contracts/          # Tests de contratos OpenAPI
 │   ├── security/               # Tests de seguridad
 │   ├── performance/            # Tests de rendimiento

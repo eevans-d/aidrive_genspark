@@ -5,6 +5,39 @@ Todos los cambios notables de este proyecto se documentan aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.1.0] - 2026-02-19
+
+### Changed
+- **`docs/ESQUEMA_BASE_DATOS_ACTUAL.md` reescrito completo** (D-142): documentadas 38 tablas con columnas exactas, tipos, constraints, FKs, índices, RLS policies, 11 vistas, 3 vistas materializadas, 30+ funciones/SPs, 3 triggers.
+- Versiones corregidas en ARCHITECTURE_DOCUMENTATION.md: Vite 4.x→6.x, Cypress→Playwright, Deno 1.x→2.x, PostgreSQL 15+→17.
+- `.github/copilot-instructions.md` reescrito para alinear con estado actual (13 Edge Functions, 44 migraciones, 1561 tests, 38 tablas, Cloudflare Pages).
+- `README.md` actualizado con métricas D-142 (1561 tests, 76 archivos, 11/11 gates, Cloudflare Pages).
+
+### Removed
+- **Dead code eliminado** (D-142): directorio `supabase/functions/api-minimarket/routers/` (6 archivos: deposito.ts, index.ts, productos.ts, stock.ts, tareas.ts, types.ts). Zero imports, lógica duplicada con gateway principal.
+
+### Fixed
+- 3 drift defects documentados en schema: `precios_historicos.fecha` residual, `cache_proveedor` sin RLS explícito, roles legacy inconsistentes en policies.
+- Conteo de archivos de test corregido en ESTADO_ACTUAL (113→117, sumando 4 Playwright e2e).
+- Referencias a `routers/` eliminadas de CHECKLIST_CIERRE, OBJETIVO_FINAL_PRODUCCION.
+
+## [2.0.0] - 2026-02-19
+
+### Added
+- **Deploy frontend a Cloudflare Pages** (D-141): workflow `.github/workflows/deploy-cloudflare-pages.yml` creado.
+- 313 tests unitarios nuevos (17 archivos), total 1561/1561 PASS (76 archivos).
+- Documentación de deploy: `docs/closure/GUIA_DEPLOY_CLOUDFLARE_PAGES_2026-02-19.md`.
+
+### Changed
+- Frontend en producción en Cloudflare Pages: https://aidrive-genspark.pages.dev
+- CORS fix: `ALLOWED_ORIGINS` actualizado en Supabase + `api-minimarket` redesplegado (v29).
+- Context prompt next session actualizado para Cloudflare Pages.
+
+### Fixed
+- `api-proveedor/utils/params.ts`: fix de sanitización de parámetros.
+- `vitest.integration.config.ts`: fix de include pattern.
+- `tests/contract/api-scraper.integration.test.ts`: fix de método GET.
+
 ## [1.9.0] - 2026-02-16
 
 ### Added

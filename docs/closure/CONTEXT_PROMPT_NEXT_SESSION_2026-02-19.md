@@ -1,6 +1,6 @@
 # CONTEXT PROMPT — Siguiente Sesión GitHub Copilot
 
-**Generado:** 2026-02-19 (post-deploy Cloudflare Pages, D-141)
+**Generado:** 2026-02-19 (post D-142: schema doc rewrite + dead code cleanup + doc alignment)
 **Para:** Nueva ventana de GitHub Copilot que continuará el trabajo
 
 ---
@@ -17,7 +17,7 @@ ESTADO DEL PROYECTO (2026-02-19)
 ═══════════════════════════════════════════
 
 - Ruta local: /home/eevan/ProyectosIA/aidrive_genspark
-- Branch: main (último commit: 1e89967)
+- Branch: main (último commit: d673aae)
 - Stack: React 18 + Vite 6 + TS 5.9 (frontend) | Supabase Edge Functions/Deno v2 (backend) | PostgreSQL 17 (Supabase managed)
 - Supabase ref: dqaygmjpzoqjjrywdsxi
 - Cloudflare account: 21d266fc34ec2ea51261b31a421b5133
@@ -84,7 +84,7 @@ GUARDRAILS (NO NEGOCIABLES)
 4. Tras cualquier cambio en ALLOWED_ORIGINS de Supabase → redeploy api-minimarket con --no-verify-jwt
 5. Coverage mínimo: 80%
 6. Toda tarea cerrada debe dejar evidencia en filesystem (docs/closure/)
-7. Registrar decisiones en docs/DECISION_LOG.md (siguiente: D-142)
+7. Registrar decisiones en docs/DECISION_LOG.md (siguiente: D-143)
 
 ═══════════════════════════════════════════
 ESTRUCTURA CLAVE DEL PROYECTO
@@ -164,29 +164,26 @@ AL CERRAR:
 4. Commit y push a main
 
 ═══════════════════════════════════════════
-SESIÓN ANTERIOR (resumen D-141, 2026-02-19)
+SESIONES RECIENTES (D-141 + D-142, 2026-02-19)
 ═══════════════════════════════════════════
 
-Se completó el deploy end-to-end del frontend a Cloudflare Pages:
-- Workflow creado (.github/workflows/deploy-cloudflare-pages.yml)
-- Secrets/variables configurados en GitHub Actions (CLOUDFLARE_API_TOKEN, CLOUDFLARE_ACCOUNT_ID, CLOUDFLARE_PAGES_PROJECT, VITE_API_GATEWAY_URL)
-- Proyecto Cloudflare Pages creado (aidrive-genspark)
-- 4 runs desplegados con éxito (preview + producción)
-- CORS fix: ALLOWED_ORIGINS actualizado en Supabase + api-minimarket redesplegado (v29)
-- 6 rutas SPA verificadas con HTTP 200
-- 313 tests unitarios nuevos (17 archivos), total 1561
-- Documentación completa actualizada (INFORME, ESTADO_ACTUAL, DECISION_LOG, CONTINUIDAD, OPEN_ISSUES)
-- Login page cargando correctamente en producción (verificado visualmente)
+D-142 (schema doc + dead code + doc alignment):
+- ESQUEMA_BASE_DATOS_ACTUAL.md reescrito contra 44 migraciones: 38 tablas, 11 vistas, 3 MV, 30+ funciones, 3 triggers
+- Dead code eliminado: supabase/functions/api-minimarket/routers/ (6 archivos, zero imports)
+- Barrido documental completo: copilot-instructions.md reescrito, README.md actualizado, CHANGELOG.md con D-141+D-142, ARCHITECTURE_DOCUMENTATION versiones corregidas
+- 3 drift defects documentados (no bloqueantes)
+- Tests: 1561/1561 PASS post-cambios
 
-ARCHIVOS NO COMMITEADOS (pendientes de commit):
-- 17 archivos de test nuevos (tests/unit/api-*.test.ts, tests/unit/shared-*.test.ts)
-- docs/ actualizados (ESTADO_ACTUAL, DECISION_LOG, CONTINUIDAD, OPEN_ISSUES, API_README)
-- docs/closure/CONTEXT_PROMPT_NEXT_SESSION_2026-02-19.md (este archivo)
-- supabase/functions/api-proveedor/utils/params.ts (fix sanitización)
-- vitest.integration.config.ts (fix include pattern)
-- tests/contract/api-scraper.integration.test.ts (fix método GET)
+D-141 (deploy Cloudflare Pages):
+- Workflow .github/workflows/deploy-cloudflare-pages.yml creado
+- Frontend en producción: https://aidrive-genspark.pages.dev
+- CORS fix: ALLOWED_ORIGINS + api-minimarket v29
+- 313 tests unitarios nuevos, total 1561
+- Login verificado visualmente en producción
 
-ACCIÓN SUGERIDA: hacer commit de todos los cambios pendientes antes de comenzar nuevas tareas.
+ESTADO DEL WORKING TREE: limpio (todo commiteado)
+
+ACCIÓN SUGERIDA: tomar la primera tarea pendiente real de docs/closure/OPEN_ISSUES.md
 ```
 
 ## FIN DEL CONTEXT PROMPT ↑

@@ -1,47 +1,99 @@
 # RealityCheck Report
-> [DEPRECADO: 2026-02-14] Reporte historico (2026-02-12). Estado canonico: `docs/ESTADO_ACTUAL.md` + `docs/closure/OPEN_ISSUES.md`.
 
-**Fecha:** 2026-02-12 (post-ejecución gates) | **Scope:** full (frontend + backend + docs + linked Supabase) | **Score UX:** 8/10
+- Fecha: `2026-02-19`
+- Scope: `full` (frontend UX operativo + navegación + interacción IA asistida)
+- Depth: `deep`
+- Focus: `ux`
+- Método: análisis estático del código actual (sin sesión de navegador en vivo en esta pasada).
 
-**Addendum 2026-02-15:** Gate 16 (Sentry) y Gate 4 (SendGrid/SMTP) quedaron cerrados con evidencia externa. Ver `docs/ESTADO_ACTUAL.md`.
-**Addendum 2026-02-15 (full-audit complementario):** P0 seguridad detectado en RLS (tablas internas sin RLS + grants). Ver `docs/SECURITY_AUDIT_REPORT.md` y `docs/closure/OPEN_ISSUES.md`.
+## Clasificación REAL / A CREAR / PROPUESTA
 
-## Clasificacion de Estado
 | Elemento | Estado | Evidencia |
-|----------|--------|-----------|
-| Frontend principal (13 páginas operativas) | REAL | `minimarket-system/src/pages/` |
-| Estados de carga/error/vacío en páginas críticas | REAL (parcial UX) | `minimarket-system/src/pages/Productos.tsx`, `minimarket-system/src/pages/Dashboard.tsx`, `minimarket-system/src/pages/Tareas.tsx` |
-| Feedback de mutaciones en `Pedidos` (HC-3) | REAL | `minimarket-system/src/pages/Pedidos.tsx` |
-| Endpoints consumidos por `apiClient` existen en gateway | REAL | `minimarket-system/src/lib/apiClient.ts`, `supabase/functions/api-minimarket/index.ts` |
-| Cron jobs con `Authorization` (HC-1) | REAL | `supabase/migrations/20260211062617_cron_jobs_use_vault_secret.sql`, `supabase/migrations/20260211055140_fix_cron_jobs_auth_and_maintenance.sql` |
-| `deploy.sh` seguro para `_shared` + `--no-verify-jwt` en `api-minimarket` (HC-2) | REAL | `deploy.sh` |
-| `api-minimarket` en remoto con `verify_jwt=false` | REAL | Ver `docs/ESTADO_ACTUAL.md` (nota: `BASELINE_LOG_*.md` fue removido en D-109; usar historial git para trazabilidad) |
-| Quality gates + componentes UI | REAL | `test-reports/quality-gates_20260212-032946.log` |
-| E2E POS flujo completo (Gate 3) | REAL | `minimarket-system/e2e/pos.e2e.spec.ts` (8/8 PASS). Evidencia: `docs/closure/EVIDENCIA_GATE3_2026-02-12.md` |
-| Canal real alertas operador (Gate 4) | REAL | `cron-notifications` con SendGrid real. MessageIds confirmados. Evidencia: `docs/closure/EVIDENCIA_GATE4_2026-02-12.md` |
-| Monitoreo real Sentry (Gate 16) | REAL (código) / A_CREAR (DSN) | `@sentry/react` integrado, `Sentry.init()` + `captureException()` funcional. DSN pendiente del owner. Evidencia: `docs/closure/EVIDENCIA_GATE16_2026-02-12.md` |
-| CI hardening security gate (Gate 18) | REAL | Job `security-tests` obligatorio/bloqueante. 14/14 PASS. Evidencia: `docs/closure/EVIDENCIA_GATE18_2026-02-12.md` |
-| Backup automatizado + restore drill (Gate 15) | REAL | `db-backup.sh` + `db-restore-drill.sh` + `backup.yml` GitHub Actions. Evidencia: `docs/closure/EVIDENCIA_GATE15_2026-02-12.md` |
-| Fallback URL hardcodeada en testing suite cron | REAL (corregido) | `supabase/functions/cron-testing-suite/index.ts` |
-| Enlaces internos rotos en documentación | REAL (corregido) | `docs/AUDITORIA_RLS_CHECKLIST.md`, `docs/mpc/MEGA_PLAN_CONSOLIDADO.md` |
+|---|---|---|
+| Dashboard base con métricas y estados de error | REAL | `minimarket-system/src/pages/Dashboard.tsx` |
+| ErrorMessage estandarizado en páginas funcionales | REAL | `minimarket-system/src/pages/*.tsx` |
+| Quick actions en búsqueda global | REAL | `minimarket-system/src/components/GlobalSearch.tsx` |
+| Alertas proactivas con CTA accionables | REAL | `minimarket-system/src/components/AlertsDrawer.tsx` |
+| Flujo IA guiado para usuario no técnico (sin prompt libre) | A CREAR | no existe ruta dedicada en `minimarket-system/src/App.tsx` |
+| Onboarding silencioso primer uso | A CREAR | no hay implementación en `minimarket-system/src` |
+| Navegación simplificada para móvil bajo presión | A CREAR | `minimarket-system/src/components/Layout.tsx` |
+| Modo simple operativo (1 toque por tarea crítica) | A CREAR | dashboard actual sin hub de acciones |
+| Medición de adopción UX por flujo | PROPUESTA FUTURA | no hay telemetría UX específica |
 
-## Blockers (P0)
-- [ ] P0 seguridad: tablas internas sin RLS (`rate_limit_state`, `circuit_breaker_state`, `cron_jobs_locks`) con grants a `anon`/`authenticated` (evidencia: `docs/closure/EVIDENCIA_RLS_AUDIT_2026-02-13.log`).
-- [x] Gates ejecutables (3/4/15/16/18) cerrados con evidencia.
+## Hallazgos (ordenados por severidad)
 
-## Fricciones (P1)
-- [ ] Sentry DSN pendiente del owner (Gate 16 parcial — código listo, necesita configuración).
-- [ ] Backup workflow requiere `SUPABASE_DB_URL` en GitHub Secrets para funcionar.
+### P0
 
-## Ready
-- [x] Tests críticos de UI ejecutados: `Dashboard`, `Login`, `Tareas.optimistic` (9/9 PASS).
-- [x] E2E POS completo: 8/8 tests PASS (Playwright).
-- [x] Quality gates ejecutados y en PASS.
-- [x] Migraciones local/remoto alineadas (38/38) según baseline 2026-02-12.
-- [x] Guardrails críticos HC-1, HC-2 y HC-3 verificados en código actual.
-- [x] Canal real de alertas confirmado con SendGrid messageIds.
-- [x] CI security tests como gate bloqueante (14/14 PASS).
-- [x] Backup automatizado con retención + restore drill documentado.
-- [x] Reportes de extracción generados: `docs/closure/TECHNICAL_ANALYSIS_2026-02-12_160211.md` y `docs/closure/INVENTORY_REPORT_2026-02-12_160305.md`.
-- [x] 5/5 pasos del mini-plan ejecutados y verificados.
-- [x] **Veredicto: CON RESERVAS** — defendible para producción piloto.
+1. Métricas del dashboard potencialmente inexactas para operación real.
+   - Evidencia:
+     - `minimarket-system/src/hooks/queries/useDashboardStats.ts:24` (`limit(5)` en tareas).
+     - `minimarket-system/src/hooks/queries/useDashboardStats.ts:36` (`limit(100)` en stock).
+     - `minimarket-system/src/pages/Dashboard.tsx:113` (`tareasPendientes.length` mostrado como total).
+   - Impacto: erosiona confianza del jefe en el sistema.
+
+2. Acceso a POS/Pocket no visible en navegación principal pese a rutas existentes.
+   - Evidencia:
+     - rutas presentes: `minimarket-system/src/App.tsx:170`, `minimarket-system/src/App.tsx:179`.
+     - menú principal sin `/pos` ni `/pocket`: `minimarket-system/src/components/Layout.tsx:25`.
+   - Impacto: aumenta fricción en la tarea más frecuente (vender).
+
+3. Navegación móvil saturada para usuario no técnico.
+   - Evidencia:
+     - 11 ítems de navegación: `minimarket-system/src/components/Layout.tsx:25`.
+     - barra móvil `grid-cols-8`: `minimarket-system/src/components/Layout.tsx:268`.
+   - Impacto: decisiones lentas, taps erróneos, abandono.
+
+### P1
+
+1. Skeleton loading incompleto (6/15 páginas).
+   - Evidencia: faltan en `Clientes.tsx`, `Deposito.tsx`, `Kardex.tsx`, `Login.tsx`, `Pocket.tsx`, `Proveedores.tsx`, `Rentabilidad.tsx`, `Ventas.tsx`.
+   - Impacto: percepción de lentitud/inestabilidad.
+
+2. Interacción IA parcial para no técnicos.
+   - Evidencia:
+     - existe `insightsApi` y `searchApi`: `minimarket-system/src/lib/apiClient.ts:739`, `minimarket-system/src/lib/apiClient.ts:907`.
+     - no existe pantalla de asistente ni flujo guiado por “preguntas típicas”.
+   - Impacto: usuario no sabe qué preguntar ni qué acción tomar.
+
+3. Error copy mejorable para soporte operativo.
+   - Evidencia:
+     - parser depende de `includes(...)` por texto: `minimarket-system/src/components/errorMessageUtils.ts:32`.
+     - en producción puede devolver mensajes backend sin normalizar por `code/status`: `minimarket-system/src/components/errorMessageUtils.ts:27`.
+   - Impacto: mensajes inconsistentes bajo estrés.
+
+4. Formato monetario inconsistente en pedidos.
+   - Evidencia:
+     - `minimarket-system/src/pages/Pedidos.tsx:222` usa `toLocaleString()` sin locale explícito.
+   - Impacto: lectura ambigua según navegador/dispositivo.
+
+### P2
+
+1. Flujo de búsqueda depende de modal + query >= 2 caracteres.
+   - Evidencia:
+     - search habilita con `query.length >= 2`: `minimarket-system/src/hooks/useGlobalSearch.ts:8`.
+   - Impacto: operador no técnico puede no descubrir funcionalidades clave si no usa búsqueda.
+
+2. Logout y errores de auth con feedback mejorable.
+   - Evidencia:
+     - `console.error` en signOut: `minimarket-system/src/components/Layout.tsx:88`.
+   - Impacto: menor claridad en fallos de cierre de sesión.
+
+## Validación HC-1 / HC-2 / HC-3
+
+- HC-1 cron auth: PASS.
+  - Evidencia: `supabase/migrations/20260211055140_fix_cron_jobs_auth_and_maintenance.sql`.
+- HC-2 deploy safety: PASS.
+  - Evidencia: `deploy.sh` filtra `_shared` y usa `--no-verify-jwt` para `api-minimarket`.
+- HC-3 mutaciones silenciosas: PASS.
+  - Evidencia: no hay `console.error` sin feedback visual en páginas productivas.
+
+## Score UX Actual
+
+- Score UX operativo estimado: `72/100`.
+- Lectura: técnicamente estable, pero con fricciones de adopción para usuario no técnico en navegación y acceso a tareas críticas.
+
+## Recomendación Ejecutiva
+
+1. Priorizar primero exactitud de métricas + navegación operativa (P0).
+2. Segundo, completar Skeleton y estandarización de mensajes (P1).
+3. Tercero, implementar asistente IA guiado por chips y CTA (P1 estratégico).

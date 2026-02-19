@@ -158,7 +158,7 @@
 - Edge Functions activas: 13.
 - Páginas frontend: 15 (React.lazy en App.tsx).
 - Componentes compartidos: 7 .tsx + 1 .ts.
-- Archivos de test: 113 (76 unit + 30 frontend + 3 contract + 1 e2e-smoke + 1 security + 1 performance + 1 api-contracts).
+- Archivos de test: 117 (76 unit + 30 frontend + 4 e2e-playwright + 3 contract + 1 e2e-smoke + 1 security + 1 performance + 1 api-contracts).
 - Evidencia:
   - `supabase migration list --linked`
   - `supabase functions list`

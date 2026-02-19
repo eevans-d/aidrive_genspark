@@ -236,9 +236,9 @@ class ScrapingEventSystem {
 │  React 18.x                             │
 │  ├── State Management: Context API      │
 │  ├── Styling: TailwindCSS 3.x          │
-│  ├── Build Tool: Vite 4.x              │
-│  ├── TypeScript: 5.x                   │
-│  └── Testing: Vitest + Cypress         │
+│  ├── Build Tool: Vite 6.x              │
+│  ├── TypeScript: 5.9                   │
+│  └── Testing: Vitest + Playwright      │
 ├─────────────────────────────────────────┤
 │  Architecture:                          │
 │  ├── Component-based design             │
@@ -254,14 +254,14 @@ class ScrapingEventSystem {
 │              BACKEND                     │
 ├─────────────────────────────────────────┤
 │  Supabase Edge Functions                │
-│  ├── Runtime: Deno 1.x                 │
+│  ├── Runtime: Deno 2.x                 │
 │  ├── Language: TypeScript              │
 │  ├── Framework: Custom (Serverless)     │
 │  └── Storage: Supabase Storage         │
 ├─────────────────────────────────────────┤
-│  Database: PostgreSQL 15+              │
+│  Database: PostgreSQL 17               │
 │  ├── ORM: Supabase Client              │
-│  ├── Migrations: Alembic equivalent    │
+│  ├── Migrations: Supabase CLI          │
 │  └── Real-time: Supabase Realtime      │
 └─────────────────────────────────────────┘
 ```
