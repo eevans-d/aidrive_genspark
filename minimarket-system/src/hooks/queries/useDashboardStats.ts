@@ -10,6 +10,7 @@ import { TareaPendiente, StockDeposito } from '../../types/database';
 
 export interface DashboardStats {
   tareasPendientes: TareaPendiente[];
+  totalTareasPendientes: number;
   tareasUrgentes: number;
   stockBajo: number;
   totalProductos: number;
@@ -20,8 +21,8 @@ export interface DashboardStats {
  */
 export async function fetchDashboardStats(): Promise<DashboardStats> {
   // Ejecutar consultas en paralelo para mejor performance
-  const [tareasResult, stockResult, productosResult] = await Promise.all([
-    // 1. Tareas pendientes (top 5 por prioridad)
+  const [tareasResult, tareasCountResult, tareasUrgentesResult, stockResult, productosResult] = await Promise.all([
+    // 1. Tareas pendientes (top 5 por prioridad, para display)
     supabase
       .from('tareas_pendientes')
       .select('*')
@@ -29,13 +30,25 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
       .order('prioridad', { ascending: false })
       .limit(5),
 
-    // 2. Stock bajo (items con cantidad <= mínimo)
+    // 2. Total tareas pendientes (count real, no truncado)
+    supabase
+      .from('tareas_pendientes')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente'),
+
+    // 3. Tareas urgentes (count real sobre todos los datos)
+    supabase
+      .from('tareas_pendientes')
+      .select('id', { count: 'exact', head: true })
+      .eq('estado', 'pendiente')
+      .eq('prioridad', 'urgente'),
+
+    // 4. Stock bajo (sin limit para conteo preciso)
     supabase
       .from('stock_deposito')
-      .select('cantidad_actual, stock_minimo')
-      .limit(100), // Suficiente para contar
+      .select('cantidad_actual, stock_minimo'),
 
-    // 3. Total productos (count only)
+    // 5. Total productos (count only)
     supabase
       .from('productos')
       .select('id', { count: 'exact', head: true }),
@@ -43,24 +56,23 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
 
   // Manejar errores de cualquier consulta
   if (tareasResult.error) throw tareasResult.error;
+  if (tareasCountResult.error) throw tareasCountResult.error;
+  if (tareasUrgentesResult.error) throw tareasUrgentesResult.error;
   if (stockResult.error) throw stockResult.error;
   if (productosResult.error) throw productosResult.error;
 
   const tareas = tareasResult.data ?? [];
   const stock = stockResult.data ?? [];
 
-  // Calcular métricas derivadas
+  // Calcular stock bajo sobre datos completos
   const stockBajoCount = stock.filter(
     (s: { cantidad_actual: number; stock_minimo: number }) => s.cantidad_actual <= s.stock_minimo
   ).length;
 
-  const tareasUrgentesCount = tareas.filter(
-    (t: TareaPendiente) => t.prioridad === 'urgente'
-  ).length;
-
   return {
     tareasPendientes: tareas,
-    tareasUrgentes: tareasUrgentesCount,
+    totalTareasPendientes: tareasCountResult.count ?? 0,
+    tareasUrgentes: tareasUrgentesResult.count ?? 0,
     stockBajo: stockBajoCount,
     totalProductos: productosResult.count ?? 0,
   };

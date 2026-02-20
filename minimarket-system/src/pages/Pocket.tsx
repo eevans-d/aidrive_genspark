@@ -9,8 +9,9 @@ import { supabase } from '../lib/supabase'
 import BarcodeScanner from '../components/BarcodeScanner'
 import JsBarcode from 'jsbarcode'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { money } from '../utils/currency'
+import { SkeletonCard, SkeletonText } from '../components/Skeleton'
 
 // ============================================================================
 // Types
@@ -140,8 +141,9 @@ function PriceCheck({ product }: { product: ResolvedProduct }) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-8">
-        <Loader2 className="w-8 h-8 animate-spin text-blue-500" />
+      <div className="space-y-3">
+        <SkeletonText width="w-32" className="h-6" />
+        <SkeletonCard />
       </div>
     )
   }
@@ -151,6 +153,7 @@ function PriceCheck({ product }: { product: ResolvedProduct }) {
       <ErrorMessage
         message={parseErrorMessage(error)}
         type={detectErrorType(error)}
+        requestId={extractRequestId(error)}
         onRetry={() => refetch()}
         isRetrying={isFetching}
         size="sm"
@@ -453,14 +456,14 @@ export default function Pocket() {
 
       {/* Header */}
       <header className="bg-blue-600 text-white px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate('/')} className="p-1 -ml-1">
+        <button onClick={() => navigate('/')} className="p-2 -ml-1">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-lg font-bold flex-1">Pocket Manager</h1>
         {resolvedProduct && (
           <button
             onClick={handleReset}
-            className="text-sm bg-white/20 px-3 py-1 rounded-lg font-medium"
+            className="text-sm bg-white/20 px-3 py-2 min-h-[44px] rounded-lg font-medium"
           >
             Nuevo scan
           </button>
@@ -476,6 +479,7 @@ export default function Pocket() {
               <ErrorMessage
                 message={parseErrorMessage(productosError, import.meta.env.PROD)}
                 type={detectErrorType(productosError)}
+                requestId={extractRequestId(productosError)}
                 onRetry={() => refetchProductos()}
                 isRetrying={isFetchingProductos}
                 size="sm"

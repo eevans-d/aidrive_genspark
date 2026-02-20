@@ -20,6 +20,7 @@ vi.mock('../components/ErrorMessage', () => ({
 vi.mock('../components/errorMessageUtils', () => ({
   parseErrorMessage: (err: Error) => err?.message || 'Error desconocido',
   detectErrorType: () => 'generic',
+  extractRequestId: () => undefined,
 }))
 
 vi.mock('../utils/currency', () => ({
@@ -90,9 +91,9 @@ describe('Ventas', () => {
 
     const { container } = renderWithQueryClient(<Ventas />)
 
-    // Loading uses Loader2 with animate-spin
-    const spinner = container.querySelector('.animate-spin')
-    expect(spinner).toBeTruthy()
+    // Loading uses Skeleton with animate-pulse
+    const skeletons = container.querySelectorAll('.animate-pulse')
+    expect(skeletons.length).toBeGreaterThan(0)
   })
 
   it('renders error state correctly', () => {

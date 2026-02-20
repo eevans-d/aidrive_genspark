@@ -4,8 +4,9 @@ import { useRentabilidad } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { money } from '../utils/currency'
+import { SkeletonCard, SkeletonText, SkeletonTable } from '../components/Skeleton'
 
 type SortKey = 'margen' | 'utilidad' | 'nombre'
 
@@ -99,7 +100,18 @@ export default function Rentabilidad() {
   }, [productos, minMargen])
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-64" className="h-8" />
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonTable />
+      </div>
+    )
   }
 
   if (isError) {
@@ -109,6 +121,7 @@ export default function Rentabilidad() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />

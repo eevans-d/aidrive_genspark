@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, useLocation } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, Monitor, Smartphone, MoreHorizontal, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
@@ -23,18 +23,22 @@ interface LayoutProps {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] }, // Todos
+  { path: '/', icon: Home, label: 'Dashboard', allowedRoles: [] },
+  { path: '/pos', icon: Monitor, label: 'POS', allowedRoles: ['admin', 'ventas'] },
   { path: '/pedidos', icon: ClipboardList, label: 'Pedidos', allowedRoles: ['admin', 'deposito', 'ventas'] },
+  { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] },
   { path: '/clientes', icon: UserIcon, label: 'Clientes', allowedRoles: ['admin', 'ventas'] },
   { path: '/deposito', icon: Warehouse, label: 'Depósito', allowedRoles: ['admin', 'deposito'] },
   { path: '/kardex', icon: ClipboardList, label: 'Kardex', allowedRoles: ['admin', 'deposito'] },
   { path: '/rentabilidad', icon: BarChart3, label: 'Rentabilidad', allowedRoles: ['admin', 'deposito'] },
-  { path: '/stock', icon: Package, label: 'Stock', allowedRoles: [] }, // Todos
-  { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] }, // Todos
+  { path: '/tareas', icon: CheckSquare, label: 'Tareas', allowedRoles: [] },
   { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
   { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
   { path: '/ventas', icon: DollarSign, label: 'Ventas', allowedRoles: ['admin', 'ventas'] },
+  { path: '/pocket', icon: Smartphone, label: 'Pocket', allowedRoles: ['admin', 'deposito'] },
 ]
+
+const MOBILE_NAV_LIMIT = 4
 
 export default function Layout({ children }: LayoutProps) {
   const location = useLocation()
@@ -48,6 +52,7 @@ export default function Layout({ children }: LayoutProps) {
   const [logoutNota, setLogoutNota] = useState('')
   const [logoutError, setLogoutError] = useState<string | null>(null)
   const [logoutSaving, setLogoutSaving] = useState(false)
+  const [moreOpen, setMoreOpen] = useState(false)
 
   // Barcode scanner detection: opens search with scanned barcode
   useScanListener({
@@ -74,18 +79,27 @@ export default function Layout({ children }: LayoutProps) {
   // Filtrar items según el rol del usuario
   const navItems = useMemo(() => {
     return NAV_ITEMS.filter(item => {
-      // Si no hay roles especificados, todos pueden ver
       if (item.allowedRoles.length === 0) return true
-      // Verificar si el usuario tiene acceso
       return canAccess(item.path)
     })
   }, [canAccess])
+
+  // Mobile: first 4 visible + overflow behind "Más" button
+  const mobileVisibleItems = useMemo(() => navItems.slice(0, MOBILE_NAV_LIMIT), [navItems])
+  const mobileOverflowItems = useMemo(() => navItems.slice(MOBILE_NAV_LIMIT), [navItems])
+  const isOverflowActive = mobileOverflowItems.some(item => item.path === location.pathname)
+
+  // Close mobile overflow menu on route change
+  useEffect(() => {
+    setMoreOpen(false)
+  }, [location.pathname])
 
   async function performSignOut() {
     try {
       await signOut()
     } catch (error) {
-      console.error('Error al cerrar sesión:', error)
+      const msg = error instanceof Error ? error.message : 'Error al cerrar sesión'
+      setLogoutError(msg)
     }
   }
 
@@ -125,7 +139,7 @@ export default function Layout({ children }: LayoutProps) {
               {/* Search Button */}
               <button
                 onClick={() => setSearchOpen(true)}
-                className="flex items-center gap-2 px-3 py-1.5 text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
+                className="flex items-center gap-2 px-3 py-2.5 min-h-[48px] text-gray-500 hover:text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
                 title="Buscar (Ctrl+K)"
               >
                 <Search className="w-4 h-4" />
@@ -182,13 +196,13 @@ export default function Layout({ children }: LayoutProps) {
       {logoutOpen && (
         <div className="fixed inset-0 z-[70] flex items-center justify-center p-4">
           <div className="fixed inset-0 bg-black/40" onClick={() => !logoutSaving && setLogoutOpen(false)} />
-          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden">
+          <div className="relative w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true">
             <div className="p-4 border-b flex items-center justify-between">
               <div className="font-bold text-gray-900">¿Algo que reportar?</div>
               <button
                 onClick={() => setLogoutOpen(false)}
                 disabled={logoutSaving}
-                className="p-2 rounded-lg hover:bg-gray-100 disabled:opacity-50"
+                className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100 disabled:opacity-50"
                 title="Cerrar"
               >
                 ✕
@@ -214,21 +228,21 @@ export default function Layout({ children }: LayoutProps) {
                 <button
                   onClick={() => setLogoutOpen(false)}
                   disabled={logoutSaving}
-                  className="px-4 py-2 rounded-lg border bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
+                  className="px-4 py-2 min-h-[48px] rounded-lg border bg-white text-gray-700 font-semibold hover:bg-gray-50 disabled:opacity-50"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={handleSalirSinNota}
                   disabled={logoutSaving}
-                  className="px-4 py-2 rounded-lg bg-gray-100 text-gray-900 font-semibold hover:bg-gray-200 disabled:opacity-50"
+                  className="px-4 py-2 min-h-[48px] rounded-lg bg-gray-100 text-gray-900 font-semibold hover:bg-gray-200 disabled:opacity-50"
                 >
                   Salir sin nota
                 </button>
                 <button
                   onClick={handleGuardarYSalir}
                   disabled={logoutSaving}
-                  className="px-4 py-2 rounded-lg bg-blue-600 text-white font-black hover:bg-blue-700 disabled:opacity-50"
+                  className="px-4 py-2 min-h-[48px] rounded-lg bg-blue-600 text-white font-black hover:bg-blue-700 disabled:opacity-50"
                 >
                   {logoutSaving ? 'Guardando…' : 'Guardar y salir'}
                 </button>
@@ -250,7 +264,7 @@ export default function Layout({ children }: LayoutProps) {
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex items-center space-x-3 px-4 py-3 rounded-lg transition-colors ${isActive
+                  className={`flex items-center space-x-3 px-4 py-3 min-h-[48px] rounded-lg transition-colors ${isActive
                     ? 'bg-blue-50 text-blue-700 font-medium'
                     : 'text-gray-700 hover:bg-gray-100'
                     }`}
@@ -263,27 +277,65 @@ export default function Layout({ children }: LayoutProps) {
           </nav>
         </aside>
 
-        {/* Bottom Navigation - Solo en móvil */}
+        {/* Bottom Navigation - Solo en móvil (max 4 + Más) */}
         <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white border-t shadow-lg z-50">
-          <div className="grid grid-cols-8 gap-1 p-2">
-            {navItems.map((item) => {
+          {/* Overflow menu */}
+          {moreOpen && mobileOverflowItems.length > 0 && (
+            <>
+              <div className="fixed inset-0 z-[-1]" onClick={() => setMoreOpen(false)} />
+              <div className="absolute bottom-full left-0 right-0 bg-white border-t shadow-lg p-3">
+                <div className="grid grid-cols-4 gap-2">
+                  {mobileOverflowItems.map((item) => {
+                    const Icon = item.icon
+                    const isActive = location.pathname === item.path
+                    return (
+                      <Link
+                        key={item.path}
+                        to={item.path}
+                        className={`flex flex-col items-center justify-center min-h-[48px] py-2 px-1 rounded-lg transition-colors ${isActive
+                          ? 'bg-blue-50 text-blue-700'
+                          : 'text-gray-600 hover:bg-gray-100'
+                        }`}
+                      >
+                        <Icon className="w-5 h-5 mb-1" />
+                        <span className="text-sm">{item.label}</span>
+                      </Link>
+                    )
+                  })}
+                </div>
+              </div>
+            </>
+          )}
+          <div className="grid grid-cols-5 gap-1 p-2">
+            {mobileVisibleItems.map((item) => {
               const Icon = item.icon
               const isActive = location.pathname === item.path
-
               return (
                 <Link
                   key={item.path}
                   to={item.path}
-                  className={`flex flex-col items-center justify-center py-2 px-1 rounded-lg transition-colors ${isActive
+                  className={`flex flex-col items-center justify-center min-h-[48px] py-2 px-1 rounded-lg transition-colors ${isActive
                     ? 'bg-blue-50 text-blue-700'
                     : 'text-gray-600 hover:bg-gray-100'
-                    }`}
+                  }`}
                 >
                   <Icon className="w-5 h-5 mb-1" />
-                  <span className="text-xs">{item.label}</span>
+                  <span className="text-sm">{item.label}</span>
                 </Link>
               )
             })}
+            {mobileOverflowItems.length > 0 && (
+              <button
+                onClick={() => setMoreOpen(prev => !prev)}
+                className={`flex flex-col items-center justify-center min-h-[48px] py-2 px-1 rounded-lg transition-colors ${moreOpen || isOverflowActive
+                  ? 'bg-blue-50 text-blue-700'
+                  : 'text-gray-600 hover:bg-gray-100'
+                }`}
+              >
+                <MoreHorizontal className="w-5 h-5 mb-1" />
+                <span className="text-sm">Más</span>
+              </button>
+            )}
           </div>
         </nav>
 

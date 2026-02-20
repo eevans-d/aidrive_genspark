@@ -294,7 +294,7 @@ function ConfirmApplyModal({
   return (
     <div className="fixed inset-0 z-[60] flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={onClose} />
-      <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-4">
+      <div className="relative bg-white rounded-lg shadow-xl max-w-sm w-full mx-4 p-4" role="dialog" aria-modal="true" aria-label="Confirmar aplicar precio">
         <h3 className="text-base font-semibold text-gray-800 mb-2">
           {item.riesgo_perdida ? 'Riesgo de Perdida' : 'Margen Bajo'}
         </h3>
@@ -447,7 +447,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
       />
 
       {/* Drawer panel */}
-      <div className="fixed inset-y-0 right-0 w-full max-w-[400px] bg-white shadow-xl flex flex-col">
+      <div className="fixed inset-y-0 right-0 w-full max-w-[400px] bg-white shadow-xl flex flex-col" role="dialog" aria-modal="true" aria-label="Panel de alertas">
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b bg-white">
           <div className="flex items-center gap-2">
@@ -461,7 +461,8 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
           </div>
           <button
             onClick={onClose}
-            className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            aria-label="Cerrar alertas"
           >
             <X className="w-5 h-5" />
           </button>

@@ -12,6 +12,9 @@ vi.mock('../hooks/queries/usePedidos', () => ({
 
 vi.mock('../lib/apiClient', () => ({
   productosApi: { dropdown: vi.fn().mockResolvedValue([]) },
+  ApiError: class ApiError extends Error {
+    constructor(m: string) { super(m) }
+  },
   PedidoResponse: {},
   CreatePedidoParams: {},
   DropdownItem: {},

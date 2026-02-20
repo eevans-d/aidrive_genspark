@@ -442,7 +442,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
               </div>
               <button
                 onClick={() => { setProductoAccion(null); setProductoView('menu') }}
-                className="p-2 rounded-lg hover:bg-gray-100"
+                className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100"
                 title="Cerrar"
               >
                 ✕

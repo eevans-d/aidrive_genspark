@@ -9,6 +9,7 @@ vi.mock('../lib/apiClient', () => ({
     resumen: vi.fn().mockResolvedValue({ dinero_en_la_calle: 50000, clientes_con_deuda: 3, as_of: '2026-02-12' }),
     registrarPago: vi.fn(),
   },
+  ApiError: class ApiError extends Error { requestId?: string },
 }))
 
 vi.mock('../hooks/useUserRole', () => ({
@@ -29,19 +30,20 @@ describe('Clientes', () => {
     vi.clearAllMocks()
   })
 
-  it('renders page title', () => {
+  it('renders page title', async () => {
     renderWithQC(<Clientes />)
-    expect(screen.getByText('Clientes')).toBeInTheDocument()
+    expect(await screen.findByText('Clientes')).toBeInTheDocument()
   })
 
-  it('renders search input with placeholder', () => {
+  it('renders search input with placeholder', async () => {
     renderWithQC(<Clientes />)
-    expect(screen.getByPlaceholderText(/buscar por nombre/i)).toBeInTheDocument()
+    expect(await screen.findByPlaceholderText(/buscar por nombre/i)).toBeInTheDocument()
   })
 
-  it('renders Nuevo cliente button', () => {
+  it('renders Nuevo cliente button', async () => {
     renderWithQC(<Clientes />)
-    expect(screen.getByText(/nuevo cliente/i)).toBeInTheDocument()
+    const buttons = await screen.findAllByText(/nuevo cliente/i)
+    expect(buttons.length).toBeGreaterThanOrEqual(1)
   })
 
   it('renders Dinero en la calle card', async () => {

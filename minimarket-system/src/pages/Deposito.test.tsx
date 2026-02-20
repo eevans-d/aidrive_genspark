@@ -40,39 +40,39 @@ describe('Deposito', () => {
     vi.clearAllMocks()
   })
 
-  it('renders page title', () => {
+  it('renders page title', async () => {
     renderWithQC(<Deposito />)
-    expect(screen.getByText(/gesti[oó]n de dep[oó]sito/i)).toBeInTheDocument()
+    expect(await screen.findByText(/gesti[oó]n de dep[oó]sito/i)).toBeInTheDocument()
   })
 
-  it('renders tab toggle buttons', () => {
+  it('renders tab toggle buttons', async () => {
     renderWithQC(<Deposito />)
-    expect(screen.getAllByText(/ingreso r[aá]pido/i).length).toBeGreaterThanOrEqual(1)
+    const tabs = await screen.findAllByText(/ingreso r[aá]pido/i)
+    expect(tabs.length).toBeGreaterThanOrEqual(1)
     expect(screen.getByText(/movimiento normal/i)).toBeInTheDocument()
   })
 
-  it('starts in quick entry mode', () => {
+  it('starts in quick entry mode', async () => {
     renderWithQC(<Deposito />)
-    // Quick entry mode shows REGISTRAR ENTRADA button
-    expect(screen.getByText(/registrar entrada/i)).toBeInTheDocument()
+    expect(await screen.findByText(/registrar entrada/i)).toBeInTheDocument()
   })
 
-  it('shows product search input in quick mode', () => {
+  it('shows product search input in quick mode', async () => {
     renderWithQC(<Deposito />)
-    expect(screen.getByPlaceholderText(/nombre|codigo/i)).toBeInTheDocument()
+    expect(await screen.findByPlaceholderText(/nombre|codigo/i)).toBeInTheDocument()
   })
 
-  it('switches to normal mode and shows movement type buttons', () => {
+  it('switches to normal mode and shows movement type buttons', async () => {
     renderWithQC(<Deposito />)
-    const normalTab = screen.getByText(/movimiento normal/i)
+    const normalTab = await screen.findByText(/movimiento normal/i)
     fireEvent.click(normalTab)
     expect(screen.getByText('ENTRADA')).toBeInTheDocument()
     expect(screen.getByText('SALIDA')).toBeInTheDocument()
   })
 
-  it('REGISTRAR ENTRADA button is disabled when no product selected', () => {
+  it('REGISTRAR ENTRADA button is disabled when no product selected', async () => {
     renderWithQC(<Deposito />)
-    const submitBtn = screen.getByText(/registrar entrada/i).closest('button')
+    const submitBtn = (await screen.findByText(/registrar entrada/i)).closest('button')
     expect(submitBtn).toBeDisabled()
   })
 })

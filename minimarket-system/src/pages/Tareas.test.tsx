@@ -23,6 +23,7 @@ vi.mock('../components/ErrorMessage', () => ({
 vi.mock('../components/errorMessageUtils', () => ({
   parseErrorMessage: (err: Error) => err?.message || 'Error desconocido',
   detectErrorType: () => 'generic',
+  extractRequestId: () => undefined,
 }))
 
 // Mock Skeleton components

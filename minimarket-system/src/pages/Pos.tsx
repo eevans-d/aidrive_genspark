@@ -16,7 +16,7 @@ import {
 } from '../lib/apiClient'
 import { supabase } from '../lib/supabase'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonTable } from '../components/Skeleton'
 import { money, calcTotal } from '../utils/currency'
 
@@ -333,6 +333,7 @@ export default function Pos() {
             type={detectErrorType(productosError)}
             onRetry={() => refetchProductos()}
             isRetrying={productosIsFetching}
+            requestId={extractRequestId(productosError)}
           />
         </div>
       </div>
@@ -348,7 +349,7 @@ export default function Pos() {
         <div className="max-w-7xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate('/')}
-            className="p-2 rounded-lg hover:bg-gray-100 text-gray-700"
+            className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-700"
             title="Volver"
           >
             <ArrowLeft className="w-5 h-5" />
@@ -425,7 +426,7 @@ export default function Pos() {
                   <div className="flex items-center gap-1">
                     <button
                       onClick={() => adjustQty(it.producto_id, -1)}
-                      className="px-2 py-1 rounded bg-white border hover:bg-gray-100"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded bg-white border hover:bg-gray-100 text-lg font-bold"
                       title="-1"
                       aria-label={`Reducir cantidad de ${it.nombre}`}
                     >
@@ -434,7 +435,7 @@ export default function Pos() {
                     <div className="w-10 text-center font-semibold">{it.cantidad}</div>
                     <button
                       onClick={() => adjustQty(it.producto_id, +1)}
-                      className="px-2 py-1 rounded bg-white border hover:bg-gray-100"
+                      className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded bg-white border hover:bg-gray-100 text-lg font-bold"
                       title="+1"
                       aria-label={`Aumentar cantidad de ${it.nombre}`}
                     >
@@ -443,7 +444,7 @@ export default function Pos() {
                   </div>
                   <button
                     onClick={() => removeItem(it.producto_id)}
-                    className="p-2 rounded-lg hover:bg-gray-100 text-gray-600"
+                    className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100 text-gray-600"
                     title="Quitar"
                     aria-label={`Quitar ${it.nombre} del carrito`}
                   >
@@ -564,7 +565,7 @@ export default function Pos() {
           <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-label="Seleccionar cliente">
             <div className="p-4 border-b flex items-center justify-between gap-3">
               <div className="font-bold text-gray-900">Seleccionar Cliente</div>
-              <button onClick={() => setClientePickerOpen(false)} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">
+              <button onClick={() => setClientePickerOpen(false)} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">
                 ✕
               </button>
             </div>
@@ -621,7 +622,7 @@ export default function Pos() {
                 <AlertTriangle className="w-5 h-5" />
                 Riesgo de pérdida
               </div>
-              <button onClick={() => setRiskConfirmOpen(false)} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
+              <button onClick={() => setRiskConfirmOpen(false)} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
             </div>
             <div className="p-4 space-y-3">
               <div className="text-sm text-gray-700">

@@ -4,7 +4,8 @@ import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient
 import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
 import { toast, Toaster } from 'sonner'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
+import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
 
 type TabMode = 'rapido' | 'normal'
 
@@ -34,6 +35,7 @@ export default function Deposito() {
   // Query para productos
   const {
     data: productos = [],
+    isLoading: isProductosLoading,
     isError: isProductosError,
     error: productosError,
     refetch: refetchProductos,
@@ -49,6 +51,7 @@ export default function Deposito() {
   // Query para proveedores
   const {
     data: proveedores = [],
+    isLoading: isProveedoresLoading,
     isError: isProveedoresError,
     error: proveedoresError,
     refetch: refetchProveedores,
@@ -233,6 +236,16 @@ export default function Deposito() {
   }
   const isRetryingCatalog = isFetchingProductos || isFetchingProveedores
 
+  if (isProductosLoading && isProveedoresLoading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-64" className="h-8" />
+        <SkeletonCard />
+        <SkeletonList />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <Toaster position="top-right" richColors />
@@ -243,6 +256,7 @@ export default function Deposito() {
         <ErrorMessage
           message={parseErrorMessage(catalogError, import.meta.env.PROD)}
           type={detectErrorType(catalogError)}
+          requestId={extractRequestId(catalogError)}
           onRetry={retryCatalogQueries}
           isRetrying={isRetryingCatalog}
         />

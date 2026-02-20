@@ -125,6 +125,10 @@ describe('Frontend Business Logic (Hooks Fetchers)', () => {
                 it('should aggregate data from multiple queries', async () => {
                         // Restore spy to implement custom logic per table
                         fromSpy.mockRestore();
+
+                        // Track call order per table to handle multiple queries to same table
+                        let tareaCallIndex = 0;
+
                         fromSpy = vi.spyOn(supabase, 'from').mockImplementation((table: string) => {
                                 const builder: any = { ...mockBuilder };
                                 builder.then = vi.fn();
@@ -135,10 +139,20 @@ describe('Frontend Business Logic (Hooks Fetchers)', () => {
                                 builder.limit = vi.fn().mockReturnValue(builder);
 
                                 if (table === 'tareas_pendientes') {
-                                        builder.then.mockImplementation((resolve) => resolve({
-                                                data: [{ id: 1, estado: 'pendiente', prioridad: 'urgente' }],
-                                                error: null
-                                        }));
+                                        tareaCallIndex++;
+                                        if (tareaCallIndex === 1) {
+                                                // Query 1: display tareas (top 5)
+                                                builder.then.mockImplementation((resolve) => resolve({
+                                                        data: [{ id: 1, estado: 'pendiente', prioridad: 'urgente' }],
+                                                        error: null
+                                                }));
+                                        } else if (tareaCallIndex === 2) {
+                                                // Query 2: total pendientes count
+                                                builder.then.mockImplementation((resolve) => resolve({ count: 1, error: null }));
+                                        } else {
+                                                // Query 3: urgentes count
+                                                builder.then.mockImplementation((resolve) => resolve({ count: 1, error: null }));
+                                        }
                                 } else if (table === 'stock_deposito') {
                                         builder.then.mockImplementation((resolve) => resolve({
                                                 data: [{ cantidad_actual: 5, stock_minimo: 10 }],
@@ -154,6 +168,7 @@ describe('Frontend Business Logic (Hooks Fetchers)', () => {
                         const stats = await fetchDashboardStats();
 
                         expect(stats.tareasUrgentes).toBe(1);
+                        expect(stats.totalTareasPendientes).toBe(1);
                         expect(stats.stockBajo).toBe(1);
                         expect(stats.totalProductos).toBe(50);
                 });

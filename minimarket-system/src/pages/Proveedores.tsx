@@ -5,7 +5,8 @@ import { toast, Toaster } from 'sonner'
 import { useProveedores, ProveedorConProductos } from '../hooks/queries'
 import { proveedoresApi, CreateProveedorParams } from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
+import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
 import { money } from '../utils/currency'
 
 type ModalMode = 'create' | 'edit' | null
@@ -107,7 +108,22 @@ export default function Proveedores() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-64" className="h-8" />
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <div className="bg-white rounded-lg shadow p-6 space-y-4">
+            <SkeletonText width="w-32" className="h-6" />
+            <SkeletonList />
+          </div>
+          <div className="bg-white rounded-lg shadow p-6 space-y-4">
+            <SkeletonText width="w-40" className="h-6" />
+            <SkeletonCard />
+            <SkeletonCard />
+          </div>
+        </div>
+      </div>
+    )
   }
 
   if (isError) {
@@ -117,6 +133,7 @@ export default function Proveedores() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />
@@ -150,7 +167,7 @@ export default function Proveedores() {
           <button
             onClick={() => setPage((prev) => Math.max(1, prev - 1))}
             disabled={page === 1 || isFetching}
-            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+            className="px-3 py-2 min-h-[48px] rounded border border-gray-300 text-gray-700 disabled:opacity-50"
           >
             Anterior
           </button>
@@ -160,7 +177,7 @@ export default function Proveedores() {
           <button
             onClick={() => setPage((prev) => Math.min(totalPages, prev + 1))}
             disabled={page === totalPages || isFetching}
-            className="px-3 py-1.5 rounded border border-gray-300 text-gray-700 disabled:opacity-50"
+            className="px-3 py-2 min-h-[48px] rounded border border-gray-300 text-gray-700 disabled:opacity-50"
           >
             Siguiente
           </button>
@@ -175,6 +192,13 @@ export default function Proveedores() {
           </div>
           <div className="p-6">
             <div className="space-y-3 max-h-[600px] overflow-y-auto">
+              {proveedores.length === 0 && (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <div className="text-gray-400 mb-2"><Package className="w-12 h-12 mx-auto" /></div>
+                  <p className="text-gray-500 text-base font-medium">No hay proveedores para mostrar</p>
+                  <p className="text-gray-400 text-sm mt-1">Agrega un nuevo proveedor para comenzar</p>
+                </div>
+              )}
               {proveedores.map((proveedor) => (
                 <div
                   key={proveedor.id}
@@ -223,7 +247,7 @@ export default function Proveedores() {
             {selectedProveedor && (
               <button
                 onClick={() => openEdit(selectedProveedor)}
-                className="flex items-center gap-1 px-3 py-1.5 text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
+                className="flex items-center gap-1 px-3 py-2 min-h-[48px] text-sm bg-gray-100 hover:bg-gray-200 rounded-lg"
               >
                 <Edit3 className="w-4 h-4" />
                 Editar
@@ -333,12 +357,12 @@ export default function Proveedores() {
       {/* Modal crear/editar */}
       {modalMode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto" role="dialog" aria-modal="true" aria-label={modalMode === 'create' ? 'Nuevo proveedor' : 'Editar proveedor'}>
             <div className="flex items-center justify-between p-5 border-b">
               <h3 className="text-lg font-semibold">
                 {modalMode === 'create' ? 'Nuevo Proveedor' : 'Editar Proveedor'}
               </h3>
-              <button onClick={closeModal} className="p-1 hover:bg-gray-100 rounded">
+              <button onClick={closeModal} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center hover:bg-gray-100 rounded-lg" aria-label="Cerrar">
                 <X className="w-5 h-5" />
               </button>
             </div>

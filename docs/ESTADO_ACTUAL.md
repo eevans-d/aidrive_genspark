@@ -1,9 +1,23 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-19
-**Estado:** **GO** (recheck D-140; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-20
+**Estado:** **GO** (D-144: cierre definitivo UX/Frontend V2; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
+
+## Addendum Sesion 2026-02-20 — Cierre definitivo UX/Frontend V2 (D-144)
+- Baseline: commit `9f314a7`, branch `main`.
+- **13 tareas ejecutadas** (3 obligatorias P1/P2 + 10 complementarias):
+  - V2-04 cerrado: skeleton en `Clientes.tsx` (la ultima pagina faltante).
+  - V2-10 formalizado: touch targets >=48px en todos los modales/controles (7 archivos actualizados).
+  - Suspense fallback global en `App.tsx` y Dashboard loading reemplazados con skeleton.
+  - `extractRequestId` propagado a las 11 paginas con ErrorMessage (7 nuevas).
+  - Empty states con icono+texto en Kardex, Ventas, Clientes, Proveedores.
+  - Test a11y con vitest-axe: 2 tests (Dashboard, Clientes).
+  - Documentacion consolidada: V2-06 unificada, plan canon confirmado, OPEN_ISSUES actualizado.
+- **Verificacion final:** lint PASS, build PASS, 184/184 component tests PASS, 1561/1561 unit tests PASS, doc links 81 OK.
+- **Veredicto UX V2:** **GO** — sin desvios P1 pendientes.
+- Referencia: D-144 en `docs/DECISION_LOG.md`.
 
 ## Addendum Sesion 2026-02-19 — Schema Doc + Dead Code Cleanup (D-142)
 - Baseline: commit `e125577`, branch `main`.

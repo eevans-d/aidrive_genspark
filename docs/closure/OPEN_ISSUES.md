@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-19 (D-142: schema doc reescrito + dead code routers eliminados)
+**Última actualización:** 2026-02-20 (validación independiente post-ejecución UX V2)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -45,6 +45,18 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 | ~~Drift DB local/remoto (`44/43`)~~ | ✅ CERRADO | Migración `20260218050000_add_sp_cancelar_reserva.sql` aplicada en remoto via `supabase db push` (D-139). 44/44 sincronizado. |
 | ~~Gate integración inestable (`No test files found`)~~ | ✅ CERRADO | `vitest.integration.config.ts` ahora incluye `tests/contract/**/*` y la corrida real `npm run test:integration` pasa `68/68` (D-140). |
 | Deno no disponible por PATH (solo por ruta absoluta) | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de `command -v deno`. |
+
+---
+
+## Auditoría UX Plan (2026-02-20) — Estado post-cierre V2
+
+| Pendiente | Estado | Evidencia | Siguiente acción |
+|-----------|--------|-----------|------------------|
+| ~~`requestId` no visible en errores UI pese a existir en `ApiError`/`ErrorMessage`~~ | ✅ CERRADO (2026-02-20) | `requestId={extractRequestId(...)}` propagado a 11 paginas: Dashboard, Pos, Pedidos, Clientes, Deposito, Kardex, Rentabilidad, Ventas, Proveedores, Pocket (x2). Evidencia: `docs/closure/EVIDENCIA_V2_06_ERROR_HANDLING_2026-02-20.md` (Bloque C). | — |
+| ~~V2-04 incompleto: `Clientes.tsx` sin skeleton~~ | ✅ CERRADO (2026-02-20) | Skeleton implementado en `Clientes.tsx:85-97`. Test actualizado a async en `Clientes.test.tsx`. | — |
+| ~~V2-10 desviación criterio aceptación~~ | ✅ CERRADO (2026-02-20) | DoD formalizado en `PLAN_FRONTEND_UX_V2_2026-02-19.md:248-257`: touch targets >=48px (todas las acciones primarias/modales actualizadas), tipografía >=16px en acciones primarias, >=14px permitido en nav compacto/table headers con justificación. Test a11y con vitest-axe: `a11y.test.tsx`. | — |
+| ~~Inconsistencias documentales en evidencia/reporte V2~~ | ✅ CERRADO (2026-02-20) | V2-06 consolidado en archivo canónico único. Planes duplicados marcados. Reporte cierre final con trazabilidad archivo:línea. | — |
+| Inline "Cargando..." residual en refetch (Pos:584, Clientes:127, AlertsDrawer:73) | ℹ️ COSMÉTICO (P3) | Son indicadores inline de refetch/actualización (post-carga inicial). No afectan UX de primera carga (skeleton aplicado). | Considerar reemplazar en futura sesión si hay feedback del usuario. |
 
 ---
 

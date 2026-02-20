@@ -3,7 +3,8 @@ import { useQuery } from '@tanstack/react-query'
 import { DollarSign, Calendar, CreditCard, Banknote, Loader2 } from 'lucide-react'
 import { ventasApi } from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
+import { SkeletonCard, SkeletonText, SkeletonTable } from '../components/Skeleton'
 import { money } from '../utils/currency'
 
 type RangoPreset = 'hoy' | 'semana' | 'mes' | 'custom'
@@ -108,8 +109,15 @@ export default function Ventas() {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <Loader2 className="w-6 h-6 animate-spin text-gray-400" />
+      <div className="space-y-6">
+        <SkeletonText width="w-48" className="h-8" />
+        <SkeletonCard />
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonTable />
       </div>
     )
   }
@@ -121,6 +129,7 @@ export default function Ventas() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />
@@ -260,8 +269,12 @@ export default function Ventas() {
               ))}
               {ventas.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-4 py-8 text-center text-gray-500">
-                    No hay ventas en el periodo seleccionado
+                  <td colSpan={4} className="px-4 py-8 text-center">
+                    <div className="flex flex-col items-center justify-center py-4">
+                      <div className="text-gray-400 mb-2"><DollarSign className="w-12 h-12 mx-auto" /></div>
+                      <p className="text-gray-500 text-base font-medium">No hay ventas en el periodo seleccionado</p>
+                      <p className="text-gray-400 text-sm mt-1">Prueba con otro rango de fechas o registra una venta</p>
+                    </div>
                   </td>
                 </tr>
               )}

@@ -8,6 +8,7 @@ import { useAuth } from './hooks/useAuth'
 import { useUserRole } from './hooks/useUserRole'
 import Layout from './components/Layout'
 import { ErrorBoundary } from './components/ErrorBoundary'
+import { SkeletonCard, SkeletonText } from './components/Skeleton'
 
 const Login = lazy(() => import('./pages/Login'))
 const Dashboard = lazy(() => import('./pages/Dashboard'))
@@ -32,8 +33,12 @@ function ProtectedRoute({ children }: { children: React.ReactNode }) {
 
   if (loading || roleLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-gray-500">Cargando...</div>
+      <div className="min-h-screen flex items-center justify-center p-8">
+        <div className="w-full max-w-md space-y-4">
+          <SkeletonCard />
+          <SkeletonText width="w-3/4" />
+          <SkeletonText width="w-1/2" />
+        </div>
       </div>
     )
   }
@@ -57,8 +62,12 @@ export function AppRoutes() {
     <ErrorBoundary>
       <Suspense
         fallback={
-          <div className="min-h-screen flex items-center justify-center">
-            <div className="text-gray-500">Cargando...</div>
+          <div className="min-h-screen flex items-center justify-center p-8">
+            <div className="w-full max-w-md space-y-4">
+              <SkeletonCard />
+              <SkeletonText width="w-3/4" />
+              <SkeletonText width="w-1/2" />
+            </div>
           </div>
         }
       >

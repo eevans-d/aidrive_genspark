@@ -1,9 +1,10 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
-import { AlertTriangle, DollarSign, Edit3, Loader2, MessageCircle, Plus, Search } from 'lucide-react'
+import { AlertTriangle, DollarSign, Edit3, Loader2, MessageCircle, Plus, Search, Users } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
+import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
 import {
   clientesApi,
   cuentasCorrientesApi,
@@ -80,6 +81,21 @@ export default function Clientes() {
   const resumen = resumenQuery.data
 
   const clientesConDeuda = useMemo(() => clientes.filter((c) => (c.saldo ?? 0) > 0), [clientes])
+
+  if (clientesQuery.isLoading && resumenQuery.isLoading) {
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-48" className="h-8" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <SkeletonCard />
+          <SkeletonCard />
+          <SkeletonCard />
+        </div>
+        <SkeletonCard className="h-12" />
+        <SkeletonList />
+      </div>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -161,12 +177,17 @@ export default function Clientes() {
                 type={detectErrorType(clientesQuery.error)}
                 onRetry={() => clientesQuery.refetch()}
                 isRetrying={clientesQuery.isFetching}
+                requestId={extractRequestId(clientesQuery.error)}
                 size="sm"
               />
             </div>
           )}
           {!clientesQuery.isLoading && clientes.length === 0 && (
-            <div className="p-10 text-center text-gray-500">Sin resultados</div>
+            <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="text-gray-400 mb-2"><Users className="w-12 h-12 mx-auto" /></div>
+              <p className="text-gray-500 text-base font-medium">No hay clientes para mostrar</p>
+              <p className="text-gray-400 text-sm mt-1">Agrega un nuevo cliente o ajusta la busqueda</p>
+            </div>
           )}
           {clientes.map((c) => {
             const saldo = c.saldo ?? 0
@@ -312,7 +333,7 @@ function ClienteModal({
       <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title-client">
         <div className="p-4 border-b flex items-center justify-between">
           <div id="modal-title-client" className="font-bold text-gray-900">{mode === 'create' ? 'Nuevo Cliente' : 'Editar Cliente'}</div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
+          <button onClick={onClose} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
@@ -444,7 +465,7 @@ function PagoModal({
       <div className="w-full max-w-lg bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-labelledby="modal-title-payment">
         <div className="p-4 border-b flex items-center justify-between">
           <div id="modal-title-payment" className="font-bold text-gray-900">Registrar Pago</div>
-          <button onClick={onClose} className="p-2 rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
+          <button onClick={onClose} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">✕</button>
         </div>
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
           <div className="rounded-xl border p-3 bg-gray-50">

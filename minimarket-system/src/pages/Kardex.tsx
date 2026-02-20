@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react'
-import { Download, Filter } from 'lucide-react'
+import { Download, Filter, Package } from 'lucide-react'
 import { useKardex, KardexMovimiento } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
+import { SkeletonCard, SkeletonText, SkeletonTable } from '../components/Skeleton'
 
 export default function Kardex() {
   const [productoFiltro, setProductoFiltro] = useState('')
@@ -84,7 +85,13 @@ export default function Kardex() {
   }
 
   if (isLoading) {
-    return <div className="text-center py-8">Cargando...</div>
+    return (
+      <div className="space-y-6">
+        <SkeletonText width="w-56" className="h-8" />
+        <SkeletonCard />
+        <SkeletonTable />
+      </div>
+    )
   }
 
   if (isError) {
@@ -94,6 +101,7 @@ export default function Kardex() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />
@@ -194,7 +202,11 @@ export default function Kardex() {
         </table>
 
         {movimientosFiltrados.length === 0 && (
-          <div className="p-6 text-center text-gray-500">No hay movimientos para mostrar.</div>
+          <div className="flex flex-col items-center justify-center py-12 text-center">
+            <div className="text-gray-400 mb-2"><Package className="w-12 h-12 mx-auto" /></div>
+            <p className="text-gray-500 text-base font-medium">No hay movimientos para mostrar</p>
+            <p className="text-gray-400 text-sm mt-1">Ajusta los filtros o registra un nuevo movimiento</p>
+          </div>
         )}
       </div>
     </div>
