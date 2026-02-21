@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-21 (Verificación independiente post-Claude del Cuaderno, D-147)
+**Última actualización:** 2026-02-21 (Pulido documental final + gobernanza cerrada, D-150)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -85,6 +85,7 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 | Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
 | ~~Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`)~~ | ✅ CERRADO (D-121) | Matriz documentada: 4 canales analizados (email, webhook, slack, sms) con auto-disable, rate limits, recomendaciones por entorno. Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md`. |
 | Consolidación de artefactos históricos | ✅ CERRADO | Limpieza D-109 (2026-02-15): 79 archivos obsoletos eliminados. `docs/` reducido de ~2.5MB a ~1.3MB. |
+| ~~Documentación de comunidad (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`)~~ | ✅ CERRADO | `CONTRIBUTING.md` y `CODE_OF_CONDUCT.md` creados para cerrar gobernanza de colaboración y conducta base del repo. |
 
 ---
 

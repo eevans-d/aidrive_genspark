@@ -1,4 +1,4 @@
-> [ACTIVO_VERIFICADO: 2026-02-18] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+> [ACTIVO_VERIFICADO: 2026-02-21] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Mini Market API - Guía Rápida de Uso
 
@@ -291,19 +291,20 @@ Rutas **exactas** en `supabase/functions/api-minimarket/index.ts` (bloques `if (
 - **Inventario regex (20)**: incluye bloques `if (path.match(...) && method === ...)`.
 - **Inventario tecnico base (55)**: suma literal + regex.
 - **Consolidación de alias**: `/pedidos/items/{id}` y `/pedidos/items/{id}/preparado` se cuentan como una misma operación funcional.
-- **Excluye** Edge Functions independientes (`reposicion-sugerida`, `alertas-vencimientos`, cron/scraper) y endpoints PostgREST directos a tablas.
+- **Excluye** Edge Functions independientes (`reposicion-sugerida`, `alertas-vencimientos`, `backfill-faltantes-recordatorios`, cron/scraper) y endpoints PostgREST directos a tablas.
 - `api-proveedor` tiene **9 endpoints** definidos en `schemas.ts` (ver sección al final).  
 Si aparece la cifra historica de “52 endpoints”, tratarla como criterio normalizado antiguo. Para auditoria tecnica actual usar `55` guards (`35` literales + `20` regex).
 
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
 
-Inventario verificado (13 activas en remoto; 11 independientes a este gateway):
+Inventario verificado en repo (14 funciones excluyendo `_shared`; 12 independientes a este gateway):
 
 | Function | Auth de entrada | Uso principal |
 |---|---|---|
 | `alertas-stock` | `requireServiceRoleAuth` | Alertas de stock bajo |
 | `alertas-vencimientos` | `requireServiceRoleAuth` | Alertas de vencimientos |
+| `backfill-faltantes-recordatorios` | `requireServiceRoleAuth` | Backfill diario idempotente de recordatorios para faltantes críticos |
 | `cron-dashboard` | `requireServiceRoleAuth` | Métricas/estado de cron jobs |
 | `cron-health-monitor` | `requireServiceRoleAuth` | Health checks de cron |
 | `cron-jobs-maxiconsumo` | `requireServiceRoleAuth` | Orquestación scraping/alertas/trends |

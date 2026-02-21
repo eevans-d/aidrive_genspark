@@ -1,50 +1,123 @@
-# React + TypeScript + Vite
+# Mini Market - Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+Estado: Activo
+Audiencia: Desarrollo + soporte interno
+Ultima actualizacion: 2026-02-21
+Fuente de verdad: ../docs/ESTADO_ACTUAL.md
+Owner documental: Frontend
 
-Currently, two official plugins are available:
+> Snapshot de referencia: segun FactPack 2026-02-21.
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react/README.md) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+## Objetivo
+Documentar el frontend real del sistema (SPA) y reemplazar el template base de Vite.
 
-## Expanding the ESLint configuration
+## Contexto Operativo Integrado
+Este frontend incorpora los flujos implementados y verificados en D-146/D-147/D-148 (Cuaderno Inteligente + ajustes post-Claude + backfill de recordatorios). Para manuales de operacion usar:
+- `../docs/MANUAL_USUARIO_FINAL.md`
+- `../docs/GUIA_RAPIDA_OPERACION_DIARIA.md`
+- `../docs/TROUBLESHOOTING.md`
 
-If you are developing a production application, we recommend updating the configuration to enable type aware lint rules:
+## Stack
+- React 18
+- Vite 6
+- TypeScript 5.9
+- React Router 6
+- TanStack Query 5
+- Tailwind CSS 3.4
+- Radix UI
+- Playwright + Vitest
 
-- Configure the top-level `parserOptions` property like this:
+## Rutas Principales
+Definidas en `src/App.tsx`:
+- `/` Dashboard
+- `/pos` POS
+- `/cuaderno` Cuaderno de faltantes
+- `/stock`, `/productos`, `/proveedores`, `/pedidos`, `/clientes`, `/ventas`, `/tareas`, `/deposito`, `/kardex`, `/rentabilidad`, `/pocket`
 
-```js
-export default tseslint.config({
-  languageOptions: {
-    // other options...
-    parserOptions: {
-      project: ['./tsconfig.node.json', './tsconfig.app.json'],
-      tsconfigRootDir: import.meta.dirname,
-    },
-  },
-})
+## Estructura
+```text
+minimarket-system/
+  src/
+    components/
+    contexts/
+    hooks/
+    lib/
+    pages/
+    types/
+    utils/
+  deploy/cloudflare/
+  public/
 ```
 
-- Replace `tseslint.configs.recommended` to `tseslint.configs.recommendedTypeChecked` or `tseslint.configs.strictTypeChecked`
-- Optionally add `...tseslint.configs.stylisticTypeChecked`
-- Install [eslint-plugin-react](https://github.com/jsx-eslint/eslint-plugin-react) and update the config:
-
-```js
-// eslint.config.js
-import react from 'eslint-plugin-react'
-
-export default tseslint.config({
-  // Set the react version
-  settings: { react: { version: '18.3' } },
-  plugins: {
-    // Add the react plugin
-    react,
-  },
-  rules: {
-    // other rules...
-    // Enable its recommended rules
-    ...react.configs.recommended.rules,
-    ...react.configs['jsx-runtime'].rules,
-  },
-})
+## Procedimiento Paso A Paso
+### 1) Instalar dependencias
+```bash
+pnpm install --prefer-offline
 ```
+
+### 2) Configurar entorno
+```bash
+cp .env.example .env
+```
+
+Variables minimas:
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_ANON_KEY`
+- `VITE_API_GATEWAY_URL`
+
+### 3) Desarrollo
+```bash
+pnpm dev
+```
+
+### 4) Build
+```bash
+pnpm build
+```
+
+### 5) Tests frontend
+```bash
+pnpm test:components
+pnpm test:e2e:frontend
+```
+
+### 6) Lint
+```bash
+pnpm lint
+```
+
+## Scripts Disponibles
+| Script | Uso |
+|---|---|
+| `pnpm dev` | Desarrollo con HMR |
+| `pnpm build` | Build de produccion |
+| `pnpm build:prod` | Build modo prod |
+| `pnpm build:pages` | Build para Cloudflare Pages |
+| `pnpm test:components` | Tests de componentes |
+| `pnpm test:e2e:frontend` | E2E de frontend con Playwright |
+| `pnpm lint` | Lint del frontend |
+
+## Integraciones Relevantes
+- Supabase Auth + DB (lecturas RLS)
+- API Gateway `api-minimarket` para escrituras/control de negocio
+- Edge Functions auxiliares para alertas/reportes
+
+## Errores Comunes
+| Error | Causa probable | Solucion |
+|---|---|---|
+| `VITE_*` no definido | `.env` faltante | copiar `.env.example` |
+| Pantalla vacia en ruta protegida | sesion/rol invalido | re-login y validar permisos |
+| Build falla por tipado | drift de tipos/imports | ejecutar lint y corregir errores |
+| E2E inestable | entorno incompleto | usar config y prechecks correctos |
+
+## Verificacion
+```bash
+pnpm lint
+pnpm build
+pnpm test:components
+```
+
+## Escalacion
+1. Registrar ruta + error exacto.
+2. Revisar `../docs/TROUBLESHOOTING.md`.
+3. Escalar a soporte tecnico con evidencia (requestId/captura/comandos).

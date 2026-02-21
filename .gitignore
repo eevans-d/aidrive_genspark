@@ -950,6 +950,7 @@ REPORTE_*.md
 !docs/closure/REPORTE_AUDITORIA_PREPRODUCCION_DEFINITIVO_2026-02-16.md
 !docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md
 !docs/closure/REPORTE_AUDITORIA_PLAN_FRONTEND_UX_2026-02-19.md
+!docs/closure/REPORTE_EJECUCION_DOCUMENTAL_PRODUCCION_*.md
 SINCRONIZACION_*.md
 GIT_SYNC_STATUS.md
 test-progress*.md
@@ -968,3 +969,6 @@ testing_reporte_*.md
 # Windows ADS artifacts copied from NTFS (noise files)
 **/*:Zone.Identifier
 **/*Zone.Identifier
+
+# Local ad-hoc artifact (not part of repo deliverables)
+product_catalog_final_updated (1).pdf
