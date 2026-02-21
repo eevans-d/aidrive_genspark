@@ -3,6 +3,8 @@
 - Fecha: 2026-02-20
 - Alcance: verificación técnica y documental del estado post-ejecución reportado en `docs/closure/REPORTE_EJECUCION_COMPLETA_FRONTEND_UX_V2_2026-02-20.md`.
 - Método: contraste plan canónico vs código real + gates reproducibles + coherencia de evidencias.
+- Estado documental: **histórico (pre-cierre final)**.
+- Documento que lo supersede para estado actual: `docs/closure/REPORTE_CIERRE_FINAL_FRONTEND_UX_V2_2026-02-20.md` (veredicto `GO`).
 
 ## 1) Gates ejecutados (reproducibles)
 

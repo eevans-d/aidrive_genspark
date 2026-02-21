@@ -1,10 +1,11 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, TrendingUp, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X } from 'lucide-react'
+import { AlertTriangle, TrendingUp, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X, BookOpen } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { useDashboardStats } from '../hooks/queries'
-import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
+import { SkeletonCard, SkeletonText, SkeletonList, SkeletonChart } from '../components/Skeleton'
+import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useQuery } from '@tanstack/react-query'
 import { bitacoraApi, cuentasCorrientesApi } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
@@ -77,6 +78,42 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000,
   })
 
+  // Cuaderno Inteligente: faltantes count for dashboard KPI
+  const faltantesCountQuery = useQuery({
+    queryKey: ['faltantes', 'dashboard-count'],
+    queryFn: async () => {
+      const { count, error: qErr } = await supabase
+        .from('productos_faltantes')
+        .select('*', { count: 'exact', head: true })
+        .eq('resuelto', false)
+      if (qErr) throw qErr
+      return count ?? 0
+    },
+    staleTime: 1000 * 60 * 2,
+  })
+
+  // Destructure con defaults seguros
+  const {
+    tareasPendientes = [],
+    totalTareasPendientes = 0,
+    tareasUrgentes = 0,
+    stockBajo = 0,
+    totalProductos = 0,
+  } = data ?? {};
+
+  const STOCK_COLORS = ['#3b82f6', '#f97316']
+  const TASK_COLORS = ['#ef4444', '#22c55e']
+
+  const stockChartData = useMemo(() => [
+    { name: 'Normal', value: totalProductos - stockBajo },
+    { name: 'Bajo', value: stockBajo },
+  ], [totalProductos, stockBajo])
+
+  const taskChartData = useMemo(() => [
+    { name: 'Urgentes', value: tareasUrgentes },
+    { name: 'Otras', value: Math.max(0, totalTareasPendientes - tareasUrgentes) },
+  ], [tareasUrgentes, totalTareasPendientes])
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -87,9 +124,13 @@ export default function Dashboard() {
           <SkeletonCard />
           <SkeletonCard />
         </div>
-        <div className="bg-white rounded-lg shadow p-6 space-y-4">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6 space-y-4">
           <SkeletonText width="w-64" className="h-6" />
           <SkeletonList />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <SkeletonChart />
+          <SkeletonChart />
         </div>
       </div>
     )
@@ -98,7 +139,7 @@ export default function Dashboard() {
   if (isError) {
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
@@ -110,60 +151,51 @@ export default function Dashboard() {
     )
   }
 
-  // Destructure con defaults seguros
-  const {
-    tareasPendientes = [],
-    totalTareasPendientes = 0,
-    tareasUrgentes = 0,
-    stockBajo = 0,
-    totalProductos = 0,
-  } = data ?? {};
-
   return (
     <div className="space-y-6">
-      <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+      <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h1>
 
       {/* V2-09: Onboarding silencioso — guía de primer uso */}
       {showOnboarding && (
-        <div className="bg-indigo-50 border border-indigo-200 rounded-lg p-5 relative">
+        <div className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 rounded-lg p-5 relative">
           <button
             onClick={dismissOnboarding}
-            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600"
+            className="absolute top-3 right-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
             aria-label="Cerrar guía"
           >
             <X className="w-5 h-5" />
           </button>
-          <h2 className="text-lg font-semibold text-indigo-900 mb-3">Empezá por acá:</h2>
+          <h2 className="text-lg font-semibold text-indigo-900 dark:text-indigo-200 mb-3">Empezá por acá:</h2>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <Link
               to="/pos"
               onClick={dismissOnboarding}
-              className="flex flex-col items-center p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-400 hover:shadow transition-all"
+              className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 hover:shadow transition-all"
             >
-              <span className="text-2xl font-bold text-indigo-600 mb-1">1</span>
-              <Monitor className="w-8 h-8 text-indigo-600 mb-2" />
-              <span className="font-medium text-gray-800">Vender</span>
-              <span className="text-xs text-gray-500 mt-1">Punto de venta</span>
+              <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">1</span>
+              <Monitor className="w-8 h-8 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <span className="font-medium text-gray-800 dark:text-gray-200">Vender</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Punto de venta</span>
             </Link>
             <Link
               to="/stock"
               onClick={dismissOnboarding}
-              className="flex flex-col items-center p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-400 hover:shadow transition-all"
+              className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 hover:shadow transition-all"
             >
-              <span className="text-2xl font-bold text-indigo-600 mb-1">2</span>
-              <Package className="w-8 h-8 text-indigo-600 mb-2" />
-              <span className="font-medium text-gray-800">Ver stock</span>
-              <span className="text-xs text-gray-500 mt-1">Control de inventario</span>
+              <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">2</span>
+              <Package className="w-8 h-8 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <span className="font-medium text-gray-800 dark:text-gray-200">Ver stock</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Control de inventario</span>
             </Link>
             <Link
               to="/pedidos"
               onClick={dismissOnboarding}
-              className="flex flex-col items-center p-4 bg-white rounded-lg border border-indigo-200 hover:border-indigo-400 hover:shadow transition-all"
+              className="flex flex-col items-center p-4 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-700 hover:border-indigo-400 hover:shadow transition-all"
             >
-              <span className="text-2xl font-bold text-indigo-600 mb-1">3</span>
-              <ClipboardList className="w-8 h-8 text-indigo-600 mb-2" />
-              <span className="font-medium text-gray-800">Ver pedidos</span>
-              <span className="text-xs text-gray-500 mt-1">Órdenes de compra</span>
+              <span className="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mb-1">3</span>
+              <ClipboardList className="w-8 h-8 text-indigo-600 dark:text-indigo-400 mb-2" />
+              <span className="font-medium text-gray-800 dark:text-gray-200">Ver pedidos</span>
+              <span className="text-xs text-gray-500 dark:text-gray-400 mt-1">Órdenes de compra</span>
             </Link>
           </div>
         </div>
@@ -178,7 +210,7 @@ export default function Dashboard() {
               <Link
                 key={action.key}
                 to={action.path}
-                className={`flex flex-col items-center justify-center min-h-[72px] rounded-xl font-bold text-lg shadow-sm transition-colors ${action.color}`}
+                className={`flex flex-col items-center justify-center min-h-[72px] rounded-xl font-bold text-lg shadow-sm transition-all transform hover:scale-105 active:scale-95 ${action.color}`}
               >
                 <Icon className="w-6 h-6 mb-1" />
                 {action.label}
@@ -201,7 +233,7 @@ export default function Dashboard() {
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
                   isActive
                     ? 'bg-blue-600 text-white shadow-md'
-                    : 'bg-white border border-gray-200 text-gray-700 hover:border-blue-300 hover:text-blue-600 shadow-sm'
+                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 shadow-sm'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -213,10 +245,10 @@ export default function Dashboard() {
 
         {/* Panel: ¿Qué me falta reponer? */}
         {activeChip === 'reponer' && (
-          <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800 rounded-lg p-4 space-y-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
-              <p className="text-gray-800">
+              <p className="text-gray-800 dark:text-gray-200">
                 {stockBajo > 0
                   ? `Tenés ${stockBajo} producto${stockBajo !== 1 ? 's' : ''} con stock bajo que necesitan reposición.`
                   : 'Todo el stock está en niveles normales. No necesitás reponer nada por ahora.'}
@@ -236,20 +268,20 @@ export default function Dashboard() {
 
         {/* Panel: ¿Productos con riesgo? */}
         {activeChip === 'riesgo' && (
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 space-y-3">
+          <div className="bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800 rounded-lg p-4 space-y-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-orange-600 mt-0.5 flex-shrink-0" />
               {vencimientosCountQuery.isLoading ? (
-                <p className="text-gray-500">Analizando productos...</p>
+                <p className="text-gray-500 dark:text-gray-400">Analizando productos...</p>
               ) : (
                 <div className="space-y-1">
-                  <p className="text-gray-800">
+                  <p className="text-gray-800 dark:text-gray-200">
                     {(vencimientosCountQuery.data ?? 0) > 0
                       ? `Hay ${vencimientosCountQuery.data} producto${(vencimientosCountQuery.data ?? 0) !== 1 ? 's' : ''} próximos a vencer que necesitan atención.`
                       : 'No hay productos próximos a vencer.'}
                   </p>
                   {stockBajo > 0 && (
-                    <p className="text-gray-600 text-sm">
+                    <p className="text-gray-600 dark:text-gray-400 text-sm">
                       Además, {stockBajo} producto{stockBajo !== 1 ? 's' : ''} con stock bajo.
                     </p>
                   )}
@@ -270,12 +302,12 @@ export default function Dashboard() {
 
         {/* Panel: Resumen del día */}
         {activeChip === 'resumen' && (
-          <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
+          <div className="bg-green-50 dark:bg-green-950/40 border border-green-200 dark:border-green-800 rounded-lg p-4 space-y-3">
             <div className="flex items-start gap-3">
               <Lightbulb className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
               <div className="space-y-1">
-                <p className="text-gray-800 font-medium">Estado actual del negocio:</p>
-                <ul className="text-gray-700 text-sm space-y-1">
+                <p className="text-gray-800 dark:text-gray-200 font-medium">Estado actual del negocio:</p>
+                <ul className="text-gray-700 dark:text-gray-300 text-sm space-y-1">
                   <li>• {totalProductos} productos registrados</li>
                   <li>• {stockBajo > 0 ? `${stockBajo} con stock bajo` : 'Stock en niveles normales'}</li>
                   <li>• {tareasUrgentes > 0 ? `${tareasUrgentes} tarea${tareasUrgentes !== 1 ? 's' : ''} urgente${tareasUrgentes !== 1 ? 's' : ''}` : 'Sin tareas urgentes'}</li>
@@ -305,51 +337,109 @@ export default function Dashboard() {
 
       {/* Métricas principales */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gradient-to-br from-red-50 to-red-100 dark:from-red-950/40 dark:to-red-900/30 p-6 rounded-lg shadow transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Tareas Urgentes</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tareas Urgentes</p>
               <p className="text-3xl font-bold text-red-600">{tareasUrgentes}</p>
             </div>
             <AlertTriangle className="w-12 h-12 text-red-600" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/40 dark:to-orange-900/30 p-6 rounded-lg shadow transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Stock Bajo</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Stock Bajo</p>
               <p className="text-3xl font-bold text-orange-600">{stockBajo}</p>
             </div>
             <Package className="w-12 h-12 text-orange-600" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/40 dark:to-blue-900/30 p-6 rounded-lg shadow transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total Productos</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Total Productos</p>
               <p className="text-3xl font-bold text-blue-600">{totalProductos}</p>
             </div>
             <TrendingUp className="w-12 h-12 text-blue-600" />
           </div>
         </div>
 
-        <div className="bg-white p-6 rounded-lg shadow">
+        <div className="bg-gradient-to-br from-green-50 to-green-100 dark:from-green-950/40 dark:to-green-900/30 p-6 rounded-lg shadow transition-all hover:shadow-md hover:-translate-y-0.5">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Tareas Pendientes</p>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Tareas Pendientes</p>
               <p className="text-3xl font-bold text-green-600">{totalTareasPendientes}</p>
             </div>
             <CheckCircle className="w-12 h-12 text-green-600" />
           </div>
         </div>
+
+        <Link to="/cuaderno" className="bg-gradient-to-br from-amber-50 to-amber-100 dark:from-amber-950/40 dark:to-amber-900/30 p-6 rounded-lg shadow hover:ring-2 hover:ring-orange-300 transition-all">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 dark:text-gray-400">Faltantes</p>
+              <p className="text-3xl font-bold text-orange-600">
+                {faltantesCountQuery.data ?? 0}
+              </p>
+            </div>
+            <BookOpen className="w-12 h-12 text-orange-600" />
+          </div>
+        </Link>
+      </div>
+
+      {/* Gráficos visuales */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Distribución de Stock</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={stockChartData} barSize={48}>
+              <XAxis dataKey="name" tick={{ fontSize: 12 }} stroke="#9ca3af" />
+              <YAxis allowDecimals={false} tick={{ fontSize: 12 }} stroke="#9ca3af" />
+              <Tooltip
+                contentStyle={{ backgroundColor: 'var(--tooltip-bg, #fff)', border: '1px solid #e5e7eb', borderRadius: 8 }}
+                labelStyle={{ fontWeight: 600 }}
+              />
+              <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                {stockChartData.map((_entry, i) => (
+                  <Cell key={`stock-${i}`} fill={STOCK_COLORS[i]} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
+
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Tareas por Prioridad</h3>
+          <ResponsiveContainer width="100%" height={200}>
+            <PieChart>
+              <Pie
+                data={taskChartData}
+                cx="50%"
+                cy="50%"
+                innerRadius={50}
+                outerRadius={80}
+                paddingAngle={4}
+                dataKey="value"
+                label={({ name, value }) => `${name}: ${value}`}
+                labelLine={false}
+              >
+                {taskChartData.map((_entry, i) => (
+                  <Cell key={`task-${i}`} fill={TASK_COLORS[i]} />
+                ))}
+              </Pie>
+              <Tooltip />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Cuenta Corriente */}
       {ccEnabled && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Cuenta Corriente</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Cuenta Corriente</h2>
           {ccResumenQuery.isLoading ? (
             <div className="mt-3 space-y-2">
               <SkeletonText width="w-32" className="h-4" />
@@ -366,14 +456,14 @@ export default function Dashboard() {
           ) : (
             <div className="mt-3 flex flex-wrap gap-6">
               <div>
-                <div className="text-sm text-gray-600">Dinero en la calle</div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Dinero en la calle</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                   ${money(Number(ccResumenQuery.data?.dinero_en_la_calle ?? 0))}
                 </div>
               </div>
               <div>
-                <div className="text-sm text-gray-600">Clientes con deuda</div>
-                <div className="text-3xl font-bold text-gray-900">
+                <div className="text-sm text-gray-600 dark:text-gray-400">Clientes con deuda</div>
+                <div className="text-3xl font-bold text-gray-900 dark:text-gray-100">
                   {Number(ccResumenQuery.data?.clientes_con_deuda ?? 0)}
                 </div>
               </div>
@@ -384,8 +474,8 @@ export default function Dashboard() {
 
       {/* Bitácora de turnos (admin) */}
       {bitacoraEnabled && (
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-gray-900">Bitácora de Turno</h2>
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">Bitácora de Turno</h2>
           {bitacoraQuery.isLoading ? (
             <div className="mt-3 space-y-2">
               <SkeletonText width="w-full" className="h-4" />
@@ -400,18 +490,18 @@ export default function Dashboard() {
               size="sm"
             />
           ) : (bitacoraQuery.data ?? []).length === 0 ? (
-            <div className="mt-3 text-gray-500">Sin notas</div>
+            <div className="mt-3 text-gray-500 dark:text-gray-400">Sin notas</div>
           ) : (
             <div className="mt-3 space-y-3">
               {(bitacoraQuery.data ?? []).slice(0, 5).map((n) => (
-                <div key={n.id} className="p-3 rounded-lg border bg-gray-50">
-                  <div className="text-xs text-gray-500 flex flex-wrap gap-x-3 gap-y-1">
+                <div key={n.id} className="p-3 rounded-lg border dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+                  <div className="text-xs text-gray-500 dark:text-gray-400 flex flex-wrap gap-x-3 gap-y-1">
                     <span>{new Date(n.created_at).toLocaleString('es-AR')}</span>
-                    <span className="font-medium text-gray-700">
+                    <span className="font-medium text-gray-700 dark:text-gray-300">
                       {n.usuario_nombre || n.usuario_email || n.usuario_rol || '—'}
                     </span>
                   </div>
-                  <div className="mt-1 text-sm text-gray-800 whitespace-pre-wrap">{n.nota}</div>
+                  <div className="mt-1 text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">{n.nota}</div>
                 </div>
               ))}
             </div>
@@ -420,9 +510,9 @@ export default function Dashboard() {
       )}
 
       {/* Tareas recientes */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-xl font-semibold">
+      <div className="bg-white dark:bg-gray-900 rounded-lg shadow">
+        <div className="p-6 border-b dark:border-gray-700">
+          <h2 className="text-xl font-semibold dark:text-gray-100">
             {totalTareasPendientes > tareasPendientes.length
               ? `Top ${tareasPendientes.length} Tareas Pendientes (${totalTareasPendientes} total)`
               : 'Tareas Pendientes Prioritarias'}
@@ -430,24 +520,24 @@ export default function Dashboard() {
         </div>
         <div className="p-6">
           {tareasPendientes.length === 0 ? (
-            <p className="text-gray-500 text-center py-4">No hay tareas pendientes</p>
+            <p className="text-gray-500 dark:text-gray-400 text-center py-4">No hay tareas pendientes</p>
           ) : (
             <div className="space-y-3">
               {tareasPendientes.map((tarea) => (
                 <div
                   key={tarea.id}
                   className={`p-4 rounded-lg border-l-4 ${tarea.prioridad === 'urgente'
-                    ? 'border-red-500 bg-red-50'
+                    ? 'border-red-500 bg-red-50 dark:bg-red-950/30'
                     : tarea.prioridad === 'normal'
-                      ? 'border-yellow-500 bg-yellow-50'
-                      : 'border-blue-500 bg-blue-50'
+                      ? 'border-yellow-500 bg-yellow-50 dark:bg-yellow-950/30'
+                      : 'border-blue-500 bg-blue-50 dark:bg-blue-950/30'
                     }`}
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="font-medium text-gray-900">{tarea.titulo}</h3>
-                      <p className="text-sm text-gray-600 mt-1">{tarea.descripcion}</p>
-                      <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500">
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100">{tarea.titulo}</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{tarea.descripcion}</p>
+                      <div className="mt-2 flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
                         <span>Asignado a: {tarea.asignada_a_nombre || 'Sin asignar'}</span>
                         {tarea.fecha_vencimiento && (
                           <span>Vence: {new Date(tarea.fecha_vencimiento).toLocaleDateString('es-AR')}</span>

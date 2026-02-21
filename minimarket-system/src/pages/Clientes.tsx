@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { AlertTriangle, DollarSign, Edit3, Loader2, MessageCircle, Plus, Search, Users } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
@@ -99,7 +99,6 @@ export default function Clientes() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" richColors />
 
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
@@ -123,8 +122,9 @@ export default function Clientes() {
         <div className="bg-white border rounded-xl p-4 shadow-sm">
           <div className="text-sm text-gray-600">Dinero en la calle</div>
           {resumenQuery.isLoading ? (
-            <div className="mt-2 text-gray-500 flex items-center gap-2">
-              <Loader2 className="w-4 h-4 animate-spin" /> Cargando…
+            <div className="mt-2 space-y-2" aria-label="Cargando resumen de cuenta corriente">
+              <SkeletonText width="w-20" className="h-4" />
+              <SkeletonText width="w-32" className="h-8" />
             </div>
           ) : (
             <div className="mt-1 text-3xl font-black text-gray-900">

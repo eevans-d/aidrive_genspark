@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { TrendingUp, TrendingDown, Plus, DollarSign, Loader2 } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { useProductos, ProductoConHistorial, ProductosResult } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
@@ -186,7 +186,6 @@ export default function Productos() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" richColors />
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Gestion de Productos y Precios</h1>
         <button

@@ -20,6 +20,11 @@ vi.mock('@/hooks/useVerifiedRole', () => ({
         })
 }));
 
+// Mock next-themes
+vi.mock('next-themes', () => ({
+        useTheme: () => ({ resolvedTheme: 'light', setTheme: vi.fn() })
+}));
+
 // Mock useAuth
 vi.mock('@/hooks/useAuth', () => ({
         useAuth: () => ({
@@ -73,6 +78,11 @@ vi.mock('@/components/GlobalSearch', () => ({
 vi.mock('@/components/AlertsDrawer', () => ({
         default: ({ isOpen }: { isOpen: boolean }) =>
                 isOpen ? <div data-testid="alerts-drawer">AlertsDrawer</div> : null
+}));
+
+// Mock QuickNoteButton (uses React Query hooks)
+vi.mock('@/components/QuickNoteButton', () => ({
+        default: () => <button data-testid="quick-note-fab">+</button>
 }));
 
 describe('Layout Component (Sidebar)', () => {

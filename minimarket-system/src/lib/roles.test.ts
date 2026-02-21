@@ -109,10 +109,10 @@ describe('canAccessRoute', () => {
         });
 
         describe('caso especial: usuario rol usuario solo ve publicas', () => {
-                it('usuario solo puede acceder a /, /stock, /tareas', () => {
+                it('usuario solo puede acceder a /, /stock, /tareas, /cuaderno', () => {
                         const allowed = getRoutesForRole('usuario');
-                        expect(allowed).toEqual(expect.arrayContaining(['/', '/stock', '/tareas']));
-                        expect(allowed).toHaveLength(3);
+                        expect(allowed).toEqual(expect.arrayContaining(['/', '/stock', '/tareas', '/cuaderno']));
+                        expect(allowed).toHaveLength(4);
                 });
         });
 

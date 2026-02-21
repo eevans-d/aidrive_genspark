@@ -10,6 +10,7 @@ Las siguientes funciones cron auxiliares están activas:
 | `cron-notifications` | Sistema de notificaciones (email/SMS/slack) | `rate-limit.ts`, `logger.ts`, `cors.ts` |
 | `cron-dashboard` | API para dashboard de monitoreo | `logger.ts`, `cors.ts` |
 | `cron-health-monitor` | Health checks y métricas del sistema | `logger.ts`, `cors.ts` |
+| `backfill-faltantes-recordatorios` | Backfill diario idempotente: crea recordatorios en `tareas_pendientes` para faltantes críticos sin tarea asociada. Soporta `?dry_run=true`. | `logger.ts`, `cors.ts`, `response.ts`, `internal-auth.ts` |
 
 ## Decisión de Arquitectura
 

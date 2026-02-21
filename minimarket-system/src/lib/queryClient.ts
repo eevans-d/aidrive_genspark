@@ -54,6 +54,11 @@ export const queryKeys = {
   proveedorById: (id: string) => 
     ['proveedores', 'detail', id] as const,
 
+  // Faltantes (Cuaderno Inteligente)
+  faltantes: ['faltantes'] as const,
+  faltantesByProveedor: (proveedorId: string) =>
+    ['faltantes', 'proveedor', proveedorId] as const,
+
   // Dashboard (agregaciones)
   dashboard: ['dashboard'] as const,
   dashboardStats: ['dashboard', 'stats'] as const,

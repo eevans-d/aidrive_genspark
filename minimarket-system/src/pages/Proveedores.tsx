@@ -1,8 +1,8 @@
 import { useState } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { Phone, Mail, Package, Plus, Edit3, X, Loader2 } from 'lucide-react'
-import { toast, Toaster } from 'sonner'
-import { useProveedores, ProveedorConProductos } from '../hooks/queries'
+import { Phone, Mail, Package, Plus, Edit3, X, Loader2, BookOpen, Check } from 'lucide-react'
+import { toast } from 'sonner'
+import { useProveedores, ProveedorConProductos, useFaltantes, useUpdateFaltante, type FaltanteRow } from '../hooks/queries'
 import { proveedoresApi, CreateProveedorParams } from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
@@ -146,7 +146,6 @@ export default function Proveedores() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" />
 
       <div className="flex items-center justify-between">
         <h1 className="text-3xl font-bold text-gray-900">Gesti&oacute;n de Proveedores</h1>
@@ -344,6 +343,9 @@ export default function Proveedores() {
                     No hay productos asignados a este proveedor
                   </div>
                 )}
+
+                {/* Faltantes pendientes para este proveedor */}
+                <ProveedorFaltantes proveedorId={selectedProveedor.id} />
               </div>
             ) : (
               <p className="text-gray-500 text-center py-8">
@@ -476,6 +478,67 @@ export default function Proveedores() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+function ProveedorFaltantes({ proveedorId }: { proveedorId: string }) {
+  const { data, isLoading } = useFaltantes({ proveedorId, resuelto: false, limit: 20 })
+  const updateFaltante = useUpdateFaltante()
+
+  const handleResolve = (id: string) => {
+    updateFaltante.mutate({ id, resuelto: true }, {
+      onSuccess: () => toast.success('Faltante resuelto'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+    })
+  }
+
+  const faltantes = data?.faltantes ?? []
+
+  return (
+    <div>
+      <h4 className="font-semibold text-gray-900 mb-3 flex items-center gap-2">
+        <BookOpen className="w-5 h-5 text-orange-600" />
+        Faltantes pendientes
+        {faltantes.length > 0 && (
+          <span className="px-2 py-0.5 text-xs font-bold bg-orange-100 text-orange-700 rounded-full">
+            {faltantes.length}
+          </span>
+        )}
+      </h4>
+      {isLoading ? (
+        <div className="animate-pulse space-y-2">
+          <div className="h-4 bg-gray-100 rounded w-3/4" />
+          <div className="h-4 bg-gray-100 rounded w-1/2" />
+        </div>
+      ) : faltantes.length === 0 ? (
+        <p className="text-sm text-gray-400">Sin faltantes pendientes para este proveedor</p>
+      ) : (
+        <div className="space-y-2 max-h-60 overflow-y-auto">
+          {faltantes.map((item: FaltanteRow) => {
+            const prioColor = item.prioridad === 'alta' ? 'border-red-300 bg-red-50' : 'border-gray-200 bg-gray-50'
+            return (
+              <div key={item.id} className={`p-3 rounded-lg border ${prioColor} flex items-center justify-between gap-2`}>
+                <div className="min-w-0 flex-1">
+                  <div className="text-sm font-medium text-gray-900 truncate">{item.producto_nombre || 'Sin nombre'}</div>
+                  <div className="text-xs text-gray-500">
+                    {item.cantidad_faltante ? `x${item.cantidad_faltante} ` : ''}
+                    {item.prioridad === 'alta' ? 'Urgente' : item.prioridad === 'baja' ? 'Baja' : ''}
+                    {item.reportado_por_nombre ? ` - ${item.reportado_por_nombre}` : ''}
+                  </div>
+                </div>
+                <button
+                  onClick={() => handleResolve(item.id)}
+                  className="px-2 py-1.5 min-h-[36px] bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1 shrink-0"
+                >
+                  <Check className="w-3 h-3" />
+                  Listo
+                </button>
+              </div>
+            )
+          })}
         </div>
       )}
     </div>

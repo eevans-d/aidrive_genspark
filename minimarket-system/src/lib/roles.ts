@@ -27,6 +27,7 @@ export const ROUTE_CONFIG: Record<string, UserRole[]> = {
         '/rentabilidad': ['admin', 'deposito'],
         '/stock': PUBLIC_ROLES, // Stock - todos
         '/tareas': PUBLIC_ROLES, // Tareas - todos
+        '/cuaderno': PUBLIC_ROLES, // Cuaderno Inteligente - todos
         '/productos': ['admin', 'deposito', 'ventas'],
         '/proveedores': ['admin', 'deposito'],
         '/pedidos': ['admin', 'deposito', 'ventas'],

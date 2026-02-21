@@ -126,6 +126,8 @@ export default function Pos() {
       return
     }
 
+    navigator.vibrate?.(25)
+
     setCart((prev) => {
       const existing = prev.find((it) => it.producto_id === p.id)
       if (!existing) {
@@ -203,6 +205,7 @@ export default function Pos() {
     },
     onSuccess: (venta) => {
       toast.success(`Venta ${venta.status === 'existing' ? 'idempotente' : 'registrada'}: $${money(venta.monto_total)}`)
+      navigator.vibrate?.([30, 50, 30])
       queryClient.invalidateQueries({ queryKey: ['ventas'] })
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -580,8 +583,10 @@ export default function Pos() {
 
               <div className="mt-3 max-h-[50vh] overflow-auto space-y-2">
                 {clienteListQuery.isLoading ? (
-                  <div className="py-10 flex items-center justify-center text-gray-500">
-                    <Loader2 className="w-6 h-6 animate-spin mr-2" /> Cargando…
+                  <div className="py-4 space-y-3" aria-label="Cargando clientes">
+                    {Array.from({ length: 4 }).map((_, idx) => (
+                      <div key={idx} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
+                    ))}
                   </div>
                 ) : (clienteListQuery.data ?? []).length === 0 ? (
                   <div className="py-10 text-center text-gray-500">Sin resultados</div>

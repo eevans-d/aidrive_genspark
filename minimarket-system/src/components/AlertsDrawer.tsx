@@ -1,10 +1,11 @@
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { Bell, Package, Clock, AlertTriangle, X, ExternalLink, TrendingDown, ShoppingCart, Loader2 } from 'lucide-react'
+import { Bell, Package, Clock, AlertTriangle, X, ExternalLink, TrendingDown, ShoppingCart, Loader2, BookOpen } from 'lucide-react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useAlertas } from '../hooks/useAlertas'
 import { ofertasApi, tareasApi, preciosApi } from '../lib/apiClient'
+import { supabase } from '../lib/supabase'
 import type { ArbitrajeItem, OportunidadCompraItem } from '../lib/apiClient'
 import type { StockBajoItem, VencimientoItem, AlertaPrecioItem, TareaPendienteItem } from '../hooks/useAlertas'
 import { money } from '../utils/currency'
@@ -69,13 +70,15 @@ function EmptyState() {
 
 function LoadingState() {
   return (
-    <div className="px-3 py-4 text-sm text-gray-400 text-center">
-      Cargando...
+    <div className="px-3 py-4 space-y-2" role="status" aria-live="polite" aria-label="Cargando alertas">
+      <div className="h-4 rounded bg-gray-100 animate-pulse" />
+      <div className="h-4 rounded bg-gray-100 animate-pulse w-5/6" />
+      <div className="h-4 rounded bg-gray-100 animate-pulse w-2/3" />
     </div>
   )
 }
 
-function StockBajoItemRow({ item, onCreateTask }: { item: StockBajoItem; onCreateTask: (item: StockBajoItem) => void }) {
+function StockBajoItemRow({ item, onCreateTask, onCreateFaltante }: { item: StockBajoItem; onCreateTask: (item: StockBajoItem) => void; onCreateFaltante: (item: StockBajoItem) => void }) {
   return (
     <div className="py-2 px-3 hover:bg-gray-50 transition-colors">
       <div className="flex items-center justify-between">
@@ -98,6 +101,13 @@ function StockBajoItemRow({ item, onCreateTask }: { item: StockBajoItem; onCreat
           className="text-xs px-2 py-1 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded transition-colors"
         >
           Crear tarea reposicion
+        </button>
+        <button
+          onClick={() => onCreateFaltante(item)}
+          className="text-xs px-2 py-1 bg-orange-50 text-orange-700 hover:bg-orange-100 rounded transition-colors flex items-center gap-1"
+        >
+          <BookOpen className="w-3 h-3" />
+          Anotar faltante
         </button>
       </div>
     </div>
@@ -380,6 +390,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
         precio_compra: confirmItem.costo_proveedor_actual,
       })
       toast.success(`Precio recalculado para ${confirmItem.nombre_producto}`)
+      navigator.vibrate?.(30)
       setConfirmItem(null)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al aplicar precio'
@@ -398,6 +409,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
         prioridad: 'urgente',
       })
       toast.success(`Recordatorio creado: ${item.nombre_producto}`)
+      navigator.vibrate?.(30)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al crear recordatorio'
       toast.error(msg)
@@ -414,8 +426,36 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
         prioridad: item.nivel_stock === 'sin_stock' || item.nivel_stock === 'critico' ? 'urgente' : 'normal',
       })
       toast.success(`Tarea de reposicion creada: ${item.producto_nombre}`)
+      navigator.vibrate?.(30)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al crear tarea'
+      toast.error(msg)
+    }
+  }
+
+  // CTA: Create faltante entry from stock bajo alert
+  const handleCreateFaltante = async (item: StockBajoItem) => {
+    try {
+      const deficit = item.stock_minimo - item.cantidad_actual
+      const { error } = await supabase
+        .from('productos_faltantes')
+        .insert({
+          producto_id: item.producto_id,
+          producto_nombre: item.producto_nombre,
+          cantidad_faltante: deficit > 0 ? deficit : 1,
+          prioridad: item.nivel_stock === 'sin_stock' || item.nivel_stock === 'critico' ? 'alta' : 'normal',
+          estado: 'pendiente',
+          observaciones: `Stock bajo detectado: ${item.cantidad_actual}/${item.stock_minimo}`,
+          resuelto: false,
+          fecha_reporte: new Date().toISOString(),
+          fecha_deteccion: new Date().toISOString(),
+        })
+      if (error) throw error
+      toast.success(`Faltante anotado: ${item.producto_nombre}`)
+      navigator.vibrate?.(30)
+      qc.invalidateQueries({ queryKey: ['faltantes'] })
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al anotar faltante'
       toast.error(msg)
     }
   }
@@ -426,6 +466,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
       const res = await ofertasApi.aplicar({ stock_id: stockId, descuento_pct: 30 })
       const status = typeof (res as any)?.status === 'string' ? String((res as any).status) : ''
       toast.success(status === 'existing' ? 'Oferta ya estaba activa' : 'Oferta aplicada (30% OFF)')
+      navigator.vibrate?.(30)
       qc.invalidateQueries({ queryKey: ['alertas', 'ofertas-sugeridas'] })
       qc.invalidateQueries({ queryKey: ['ofertas', 'activas'] })
     } catch (err) {
@@ -520,7 +561,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
             ) : (
               <div className="divide-y divide-gray-100">
                 {stockBajo.map((item) => (
-                  <StockBajoItemRow key={item.producto_id} item={item} onCreateTask={handleCreateRepoTask} />
+                  <StockBajoItemRow key={item.producto_id} item={item} onCreateTask={handleCreateRepoTask} onCreateFaltante={handleCreateFaltante} />
                 ))}
               </div>
             )}

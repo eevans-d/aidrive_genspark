@@ -41,3 +41,7 @@ export type { StockDepositoConProducto, DepositoResult } from './useDeposito';
 export { usePedidos, usePedido, useCreatePedido, useUpdateEstadoPedido, useUpdatePagoPedido, useUpdateItemPreparado } from './usePedidos';
 export type { PedidosFilters, PedidosResult } from './usePedidos';
 
+// Faltantes (Cuaderno Inteligente)
+export { useFaltantes, useRecentFaltantes, useFaltantesByProveedor, useCreateFaltante, useUpdateFaltante, useFaltantesCountByProveedor } from './useFaltantes';
+export type { FaltanteRow, FaltantesResult, CreateFaltanteParams, UseFaltantesOptions } from './useFaltantes';
+

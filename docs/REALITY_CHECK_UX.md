@@ -1,10 +1,27 @@
 # RealityCheck Report
 
-- Fecha: `2026-02-19`
+- Fecha: `2026-02-21`
 - Scope: `full` (frontend UX operativo + navegación + interacción IA asistida)
 - Depth: `deep`
 - Focus: `ux`
 - Método: análisis estático del código actual (sin sesión de navegador en vivo en esta pasada).
+
+## Addendum 2026-02-21 (D-147) — Fact-check Cuaderno Post-Claude
+
+| Elemento auditado | Estado | Evidencia |
+|---|---|---|
+| Parser + deduplicación + asignación de proveedor | REAL | `minimarket-system/src/utils/cuadernoParser.ts`, `tests/unit/cuadernoParser.test.ts` |
+| Sub-cuaderno por proveedor (tabs + agrupación + acciones 1 toque) | REAL | `minimarket-system/src/pages/Cuaderno.tsx`, `minimarket-system/src/pages/Cuaderno.test.tsx` |
+| Accesos contextuales desde Search/Alerts/Dashboard | REAL | `minimarket-system/src/components/GlobalSearch.tsx`, `minimarket-system/src/components/AlertsDrawer.tsx`, `minimarket-system/src/pages/Dashboard.tsx` |
+| Prefill real desde Search al QuickNote | REAL (corregido D-147) | `minimarket-system/src/components/Layout.tsx`, `minimarket-system/src/components/QuickNoteButton.tsx` |
+| Recordatorio automático para faltantes críticos | PARCIAL (corregido D-147) | `minimarket-system/src/hooks/queries/useFaltantes.ts` |
+| FAB de cuaderno visible en absolutamente todas las rutas | PARCIAL | `minimarket-system/src/App.tsx`, `minimarket-system/src/components/Layout.tsx` |
+
+### Hallazgos D-147
+
+- P0: sin nuevos bloqueantes.
+- P1: `QuickNoteButton` no se renderiza en rutas standalone `/pos` y `/pocket`.
+- P1: el recordatorio automático cubre faltantes críticos nuevos, pero no hace backfill de faltantes históricos no resueltos.
 
 ## Clasificación REAL / A CREAR / PROPUESTA
 

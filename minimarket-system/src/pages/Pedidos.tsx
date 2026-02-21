@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils';
-import { Toaster, toast } from 'sonner';
+import { toast } from 'sonner';
 import { money } from '../utils/currency';
 
 // ============================================================================
@@ -99,7 +99,6 @@ export default function Pedidos() {
 
         return (
                 <div className="space-y-6">
-                        <Toaster position="top-right" richColors />
                         {/* Header */}
                         <div className="flex justify-between items-center">
                                 <div>

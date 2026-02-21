@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-20 (validación independiente post-ejecución UX V2)
+**Última actualización:** 2026-02-21 (Verificación independiente post-Claude del Cuaderno, D-147)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Estado Mega Plan (2026-02-13)
@@ -56,7 +56,23 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 | ~~V2-04 incompleto: `Clientes.tsx` sin skeleton~~ | ✅ CERRADO (2026-02-20) | Skeleton implementado en `Clientes.tsx:85-97`. Test actualizado a async en `Clientes.test.tsx`. | — |
 | ~~V2-10 desviación criterio aceptación~~ | ✅ CERRADO (2026-02-20) | DoD formalizado en `PLAN_FRONTEND_UX_V2_2026-02-19.md:248-257`: touch targets >=48px (todas las acciones primarias/modales actualizadas), tipografía >=16px en acciones primarias, >=14px permitido en nav compacto/table headers con justificación. Test a11y con vitest-axe: `a11y.test.tsx`. | — |
 | ~~Inconsistencias documentales en evidencia/reporte V2~~ | ✅ CERRADO (2026-02-20) | V2-06 consolidado en archivo canónico único. Planes duplicados marcados. Reporte cierre final con trazabilidad archivo:línea. | — |
-| Inline "Cargando..." residual en refetch (Pos:584, Clientes:127, AlertsDrawer:73) | ℹ️ COSMÉTICO (P3) | Son indicadores inline de refetch/actualización (post-carga inicial). No afectan UX de primera carga (skeleton aplicado). | Considerar reemplazar en futura sesión si hay feedback del usuario. |
+| ~~Inline "Cargando..." residual en refetch (Pos:584, Clientes:127, AlertsDrawer:73)~~ | ✅ CERRADO (2026-02-20) | Reemplazado por estados visuales consistentes sin texto plano en `Pos.tsx:583-586`, `Clientes.tsx:126-129`, `AlertsDrawer.tsx:72-75`. Barrido final: `rg -n "Cargando\\.\\.\\.|Cargando…"` => `NO_MATCHES_CARGANDO`. | — |
+
+---
+
+## Cuaderno Inteligente MVP (2026-02-20, D-146) — Estado post-implementación
+
+| Pendiente | Estado | Evidencia | Siguiente acción |
+|-----------|--------|-----------|------------------|
+| Parser determinístico de texto libre | ✅ CERRADO | `minimarket-system/src/utils/cuadernoParser.ts` — `parseNote()`, `resolveProveedor()`, `isDuplicate()`, `generatePurchaseSummary()` | — |
+| CRUD hooks directos Supabase (sin API gateway) | ✅ CERRADO | `minimarket-system/src/hooks/queries/useFaltantes.ts` — 6 hooks, RLS protege tabla | — |
+| FAB QuickNoteButton (captura desde cualquier pantalla) | ⚠️ PARCIAL | El FAB global vive en `Layout.tsx`, pero `/pos` y `/pocket` son rutas standalone en `App.tsx` sin `Layout`. | Evaluar inyección de `QuickNoteButton` en `Pos.tsx` y `Pocket.tsx` sin romper UX de caja/scanner. |
+| Página Cuaderno con 3 tabs | ✅ CERRADO | `minimarket-system/src/pages/Cuaderno.tsx` — Todos/Por Proveedor/Resueltos, acciones 1-touch | — |
+| Integración en Proveedores.tsx | ✅ CERRADO | `minimarket-system/src/pages/Proveedores.tsx:488-547` — `ProveedorFaltantes` component | — |
+| Accesos contextuales (GlobalSearch, AlertsDrawer, Dashboard) | ✅ CERRADO | `Layout.tsx` + `QuickNoteButton.tsx` ahora consumen `quickAction/prefillProduct` para auto-open/prefill real en `/cuaderno`; AlertsDrawer y Dashboard mantienen CTA activos. | — |
+| Recordatorios automáticos para faltantes críticos | ✅ CERRADO (D-148) | `useCreateFaltante` crea tarea urgente para nuevos faltantes `prioridad=alta`. Edge function `backfill-faltantes-recordatorios` cubre faltantes históricos no resueltos (cron diario idempotente). | — |
+| Tests unitarios para cuadernoParser | ✅ CERRADO | `tests/unit/cuadernoParser.test.ts` — 54 tests (parseNote, resolveProveedor, isDuplicate, generatePurchaseSummary). | — |
+| Tests component para Cuaderno.tsx y QuickNoteButton.tsx | ✅ CERRADO | `minimarket-system/src/pages/Cuaderno.test.tsx` (6 tests), `minimarket-system/src/components/QuickNoteButton.test.tsx` (7 tests). | — |
 
 ---
 
@@ -118,6 +134,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.
 - **CORS:** `ALLOWED_ORIGINS` en Supabase incluye dominios Cloudflare Pages + localhost. Tras cambios, redeploy `api-minimarket` con `--no-verify-jwt`.
 - **D-142 (2026-02-19):** `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` reescrito contra 44 migraciones (38 tablas, 11 vistas, 3 MV, 30+ funciones, 3 triggers). `supabase/functions/api-minimarket/routers/` eliminado (6 archivos dead code). 3 defectos de drift documentados. Tests 1561/1561 PASS post-cambios.
+- **D-146 (2026-02-20):** Cuaderno Inteligente MVP implementado. 4 archivos nuevos (`cuadernoParser.ts`, `useFaltantes.ts`, `QuickNoteButton.tsx`, `Cuaderno.tsx`) + 9 archivos modificados + 3 test files nuevos (`cuadernoParser.test.ts` 54 tests, `Cuaderno.test.tsx` 6 tests, `QuickNoteButton.test.tsx` 7 tests). Frontend: 16 páginas. Verificación: 1615/1615 unit tests PASS, 197/197 component tests PASS, lint PASS, build PASS.
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.

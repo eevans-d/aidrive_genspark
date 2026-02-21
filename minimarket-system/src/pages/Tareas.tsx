@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { CheckCircle, X, Plus } from 'lucide-react'
-import { Toaster, toast } from 'sonner'
+import { toast } from 'sonner'
 import { useTareas, TareaPendiente, type TareasResult } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tareasApi, ApiError } from '../lib/apiClient'
@@ -262,7 +262,6 @@ export default function Tareas() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" richColors />
       <div className="flex justify-between items-center">
         <h1 className="text-3xl font-bold text-gray-900">Gestión de Tareas</h1>
         <button

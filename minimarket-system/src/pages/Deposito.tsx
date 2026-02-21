@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
 import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
-import { toast, Toaster } from 'sonner'
+import { toast } from 'sonner'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
@@ -248,7 +248,6 @@ export default function Deposito() {
 
   return (
     <div className="space-y-6">
-      <Toaster position="top-right" richColors />
 
       <h1 className="text-3xl font-bold text-gray-900">Gestion de Deposito</h1>
 

@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Search, Package, Users, CheckSquare, X, ClipboardList, UserCircle, Plus, Warehouse, ArrowRight, Printer, TrendingDown, ShoppingCart } from 'lucide-react'
+import { Search, Package, Users, CheckSquare, X, ClipboardList, UserCircle, Plus, Warehouse, ArrowRight, Printer, TrendingDown, ShoppingCart, BookOpen } from 'lucide-react'
 import { useQuery } from '@tanstack/react-query'
 import { useGlobalSearch } from '../hooks/useGlobalSearch'
 import { insightsApi, type ArbitrajeItem } from '../lib/apiClient'
@@ -41,6 +41,7 @@ const CATEGORY_CONFIG: Record<ResultCategory, { label: string; icon: typeof Pack
 const CATEGORIES: ResultCategory[] = ['productos', 'pedidos', 'clientes', 'proveedores', 'tareas']
 
 const QUICK_ACTIONS: QuickAction[] = [
+  { id: 'new-faltante', label: 'Anotar faltante', icon: BookOpen, path: '/cuaderno', description: 'Registrar producto faltante' },
   { id: 'new-task', label: 'Nueva tarea', icon: Plus, path: '/tareas', description: 'Crear tarea rapida' },
   { id: 'deposit', label: 'Registrar entrada', icon: Warehouse, path: '/deposito', description: 'Ingreso de mercaderia' },
   { id: 'new-order', label: 'Nuevo pedido', icon: ClipboardList, path: '/pedidos', description: 'Crear pedido de cliente' },
@@ -497,6 +498,21 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
                   <div>
                     <div className="font-bold text-gray-900">Ir a Depósito</div>
                     <div className="text-xs text-gray-500">Actualizar stock</div>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => {
+                    navigate('/cuaderno', { state: { prefillProduct: productoAccion?.nombre } })
+                    setProductoAccion(null)
+                    onClose()
+                  }}
+                  className="p-3 rounded-xl border bg-white hover:bg-gray-50 text-left flex items-center gap-3"
+                >
+                  <BookOpen className="w-5 h-5 text-orange-600" />
+                  <div>
+                    <div className="font-bold text-gray-900">Anotar faltante</div>
+                    <div className="text-xs text-gray-500">Registrar en cuaderno</div>
                   </div>
                 </button>
 

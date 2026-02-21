@@ -1,8 +1,73 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-20
-**Estado:** **GO** (D-144: cierre definitivo UX/Frontend V2; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-21
+**Estado:** **GO** (D-149: Paquete documental V1 para producción operativo; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-21 — Ejecucion documental V1 produccion (D-149)
+- Se implemento paquete documental orientado a uso real (dueno + staff no tecnico), con foco operativo en **Venta + Faltantes**.
+- **Artefactos creados/actualizados:**
+  - `docs/MANUAL_USUARIO_FINAL.md`
+  - `docs/GUIA_RAPIDA_OPERACION_DIARIA.md`
+  - `docs/TROUBLESHOOTING.md`
+  - `docs/MONITORING.md`
+  - `docs/INSTALLATION.md`
+  - `docs/TESTING.md`
+  - `docs/OPERATIONS_RUNBOOK.md` (expansion operativa)
+  - `minimarket-system/README.md` (reemplazo de template Vite)
+  - `docs/closure/# PROMPTS EJECUTABLES PARA DOCUMENTACIÓN.ini` (v5.1 con `PROMPT 0` bloqueante y objetivo `MANUAL_USUARIO_FINAL`)
+- **FactPack de sesion:** 14 Edge Functions, 22 skills, 201 archivos markdown en `docs/`, 44 migraciones.
+- **Verificacion ejecutada:** scan de secretos (0 hallazgos), `node scripts/validate-doc-links.mjs` PASS (`87 files`).
+- Referencias: D-149 en `docs/DECISION_LOG.md`, reporte de ejecucion en `docs/closure/REPORTE_EJECUCION_DOCUMENTAL_PRODUCCION_2026-02-21.md`.
+
+## Addendum Sesion 2026-02-21 — Backfill faltantes + auditoría producción (D-148)
+- Baseline auditado: worktree post D-147.
+- **Edge function `backfill-faltantes-recordatorios` implementada:**
+  - Cron diario: detecta faltantes `resuelto=false AND prioridad='alta'` sin tarea activa asociada.
+  - Idempotencia: dedup via Set de `datos->>'faltante_id'` en tareas activas (pendiente/en_progreso).
+  - Trazabilidad: `datos.origen='cuaderno'`, `datos.faltante_id`, `datos.backfill_version='1.0.0'`.
+  - Fail-safe: batch insert con fallback per-row; errores por fila no abortan lote.
+  - Dry-run: `?dry_run=true` retorna plan sin escrituras en DB.
+  - Auth: `requireServiceRoleAuth` (patrón alertas-stock).
+  - Sin migración requerida.
+- **Automatizaciones implementadas:**
+  - `scripts/audit-cuaderno-integrity.mjs` — 22 checks estáticos de integridad cuaderno/faltantes.
+  - `scripts/verify-cuaderno-flow.sh` — runner unificado (lint + tests + build + integridad + doc-links).
+- **25 tests unitarios para backfill:** idempotencia, payload, dry-run, fail-safe, double/triple-run (QG1 PASS).
+- **Auditoría pasiva 6 ejes:** funcional REAL, UX REAL, confiabilidad REAL, seguridad REAL, performance REAL, docs actualizada.
+- **Verificación:** lint PASS, build PASS, 1640/1640 unit tests PASS (78 files), 22/22 integrity checks PASS, doc-links 81 OK.
+- Referencias: D-148 en `docs/DECISION_LOG.md`, reporte en `docs/closure/REPORTE_BACKFILL_FALTANTES_AUDITORIA_PRODUCCION_2026-02-21.md`.
+
+## Addendum Sesion 2026-02-21 — Verificación independiente post-Claude (D-147)
+- Baseline auditado: worktree con cambios previos de sesión Claude (sin reversión).
+- **Fact-check técnico del cuaderno** (REAL/PARCIAL/NO REAL) ejecutado contra código y tests.
+- **Gaps cerrados en esta sesión:**
+  - `GlobalSearch` -> `/cuaderno` con `state.prefillProduct/quickAction` ahora abre y prefilla `QuickNoteButton` en runtime.
+  - `QuickNoteButton` soporta `autoOpen` reactivo por navegación (no solo en primer mount).
+  - Al crear faltante `prioridad=alta`, `useCreateFaltante` genera tarea urgente en `tareas_pendientes` (recordatorio automático no bloqueante).
+- **Residual vigente documentado:** el FAB global no aparece en rutas standalone `/pos` y `/pocket` porque no renderizan `Layout`.
+- **Verificación ejecutada:** `pnpm -C minimarket-system lint` PASS, `pnpm -C minimarket-system test:components` PASS (197/197), `pnpm -C minimarket-system build` PASS, `npm run test:unit` PASS (1615/1615), `npm run test:integration` PASS (68/68), `node scripts/validate-doc-links.mjs` PASS.
+- Referencias: D-147 en `docs/DECISION_LOG.md`, reporte en `docs/closure/REPORTE_VERIFICACION_POST_CLAUDE_CUADERNO_2026-02-21.md`.
+
+## Addendum Sesion 2026-02-20 — Cuaderno Inteligente MVP + Automatizaciones (D-146)
+- Baseline: commit `c8b1325`, branch `main`.
+- **Cuaderno Inteligente MVP operativo** — captura rapida de faltantes/observaciones desde cualquier pantalla:
+  - FAB naranja flotante en todas las pantallas (`QuickNoteButton.tsx`).
+  - Parser deterministico de texto libre con extraccion de accion, prioridad, cantidad, proveedor.
+  - Asignacion automatica de proveedor (por mencion textual o vinculo producto-proveedor).
+  - Deduplicacion en ventana temporal de 60 min.
+- **Sub-cuaderno por proveedor** (`/cuaderno`) con tabs Todos/Por Proveedor/Resueltos.
+  - Agrupacion colapsable por proveedor + seccion "Sin proveedor".
+  - Acciones 1 toque: resolver, editar, reasignar proveedor.
+  - "Copiar resumen para compra" por proveedor (texto listo para WhatsApp).
+- **Automatizaciones operativas:**
+  - KPI "Faltantes" en Dashboard con link directo a /cuaderno.
+  - Quick action "Anotar faltante" en GlobalSearch (primera opcion).
+  - Boton "Anotar faltante" en menu producto de GlobalSearch y en alertas de stock bajo.
+  - Seccion faltantes pendientes en detalle de proveedor (Proveedores.tsx).
+- **Sin migracion** — reutiliza tabla `productos_faltantes` existente con RLS.
+- **Verificacion:** lint PASS, build PASS, 197/197 component tests PASS (33 files), 1615/1615 unit tests PASS (77 files), 54/54 cuadernoParser tests PASS, doc links 81 OK.
+- Referencia: D-146 en `docs/DECISION_LOG.md`, reporte en `docs/closure/REPORTE_IMPLEMENTACION_CUADERNO_AUTOMATIZACIONES_2026-02-20.md`.
 **Fuente ejecutiva:** `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
 
 ## Addendum Sesion 2026-02-20 — Cierre definitivo UX/Frontend V2 (D-144)
@@ -18,6 +83,26 @@
 - **Verificacion final:** lint PASS, build PASS, 184/184 component tests PASS, 1561/1561 unit tests PASS, doc links 81 OK.
 - **Veredicto UX V2:** **GO** — sin desvios P1 pendientes.
 - Referencia: D-144 en `docs/DECISION_LOG.md`.
+
+## Addendum Sesion 2026-02-20 — Verificacion intensiva cero-residuos (D-145)
+- Se cerraron los últimos residuos UX P3 de texto de carga inline:
+  - `minimarket-system/src/pages/Clientes.tsx:126-129`
+  - `minimarket-system/src/pages/Pos.tsx:583-586`
+  - `minimarket-system/src/components/AlertsDrawer.tsx:72-75`
+- Barrido final de residuos de carga textual: `rg -n "Cargando\\.\\.\\.|Cargando…"` -> `NO_MATCHES_CARGANDO`.
+- Revalidación técnica exhaustiva:
+  - `pnpm -C minimarket-system lint` PASS
+  - `pnpm -C minimarket-system test:components` PASS (`184/184`)
+  - `pnpm -C minimarket-system build` PASS
+  - `npm run test:unit` PASS (`1561/1561`)
+  - `npm run test:integration` PASS (`68/68`)
+  - `npm run test:e2e` PASS (`4/4`)
+  - `npm run test:contracts` PASS (`17/17`, `1 skipped`)
+  - `npm run test:security` PASS (`11/11`, `3 skipped`)
+  - `npm run test:performance` PASS (`17/17`)
+  - `node scripts/validate-doc-links.mjs` PASS (`81 files`)
+- Veredicto operativo: sin residuos UX abiertos en cierre V2. Solo recomendaciones operativas no bloqueantes (PATH Deno y smoke real de seguridad periódica).
+- Referencia: D-145 en `docs/DECISION_LOG.md`.
 
 ## Addendum Sesion 2026-02-19 — Schema Doc + Dead Code Cleanup (D-142)
 - Baseline: commit `e125577`, branch `main`.
@@ -170,9 +255,9 @@
 ### Baseline remoto
 - Migraciones: 44 local / 44 remoto (sin drift).
 - Edge Functions activas: 13.
-- Páginas frontend: 15 (React.lazy en App.tsx).
+- Páginas frontend: 16 (React.lazy en App.tsx, incluye /cuaderno).
 - Componentes compartidos: 7 .tsx + 1 .ts.
-- Archivos de test: 117 (76 unit + 30 frontend + 4 e2e-playwright + 3 contract + 1 e2e-smoke + 1 security + 1 performance + 1 api-contracts).
+- Archivos de test: 121 (77 unit + 33 frontend + 4 e2e-playwright + 3 contract + 1 e2e-smoke + 1 security + 1 performance + 1 api-contracts).
 - Evidencia:
   - `supabase migration list --linked`
   - `supabase functions list`
@@ -195,14 +280,14 @@
 | reposicion-sugerida | v17 | ACTIVE |
 | scraper-maxiconsumo | v21 | ACTIVE |
 
-## 3) Resultado De Calidad (snapshot 2026-02-19)
-- Unit tests: 1561/1561 PASS (76 archivos).
+## 3) Resultado De Calidad (snapshot 2026-02-21)
+- Unit tests: 1615/1615 PASS (77 archivos).
 - Coverage: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines (threshold 80% global).
 - Security tests: 11/11 PASS + 3 skipped (env-conditional).
 - Contract tests: 17/17 PASS + 1 skipped (env-conditional).
 - Integration tests: PASS (`68/68`, `tests/contract/*` vía `vitest.integration.config.ts`).
 - E2E smoke: 4/4 PASS contra endpoints remotos reales (api-proveedor).
-- Frontend component tests: 175/175 PASS (30 archivos).
+- Frontend component tests: 197/197 PASS (33 archivos).
 - Lint frontend: 0 errors, 0 warnings.
 - Build frontend: PASS (PWA v1.2.0).
 - Doc links: PASS (81 archivos).

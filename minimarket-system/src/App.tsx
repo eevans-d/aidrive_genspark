@@ -2,6 +2,7 @@ import { Suspense, lazy } from 'react'
 import { BrowserRouter as Router, Routes, Route, Navigate, useLocation } from 'react-router-dom'
 import { QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
+import { ThemeProvider } from 'next-themes'
 import { queryClient } from './lib/queryClient'
 import { AuthProvider } from './contexts/AuthContext'
 import { useAuth } from './hooks/useAuth'
@@ -17,6 +18,7 @@ const Kardex = lazy(() => import('./pages/Kardex'))
 const Rentabilidad = lazy(() => import('./pages/Rentabilidad'))
 const Stock = lazy(() => import('./pages/Stock'))
 const Tareas = lazy(() => import('./pages/Tareas'))
+const Cuaderno = lazy(() => import('./pages/Cuaderno'))
 const Productos = lazy(() => import('./pages/Productos'))
 const Proveedores = lazy(() => import('./pages/Proveedores'))
 const Ventas = lazy(() => import('./pages/Ventas'))
@@ -137,6 +139,16 @@ export function AppRoutes() {
           }
         />
         <Route
+          path="/cuaderno"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Cuaderno />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
           path="/productos"
           element={
             <ProtectedRoute>
@@ -221,11 +233,13 @@ export function AppRoutes() {
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      <Router>
-        <AuthProvider>
-          <AppRoutes />
-        </AuthProvider>
-      </Router>
+      <ThemeProvider attribute="class" defaultTheme="light" enableSystem={false}>
+        <Router>
+          <AuthProvider>
+            <AppRoutes />
+          </AuthProvider>
+        </Router>
+      </ThemeProvider>
       {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
     </QueryClientProvider>
   )
