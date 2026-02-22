@@ -1,17 +1,17 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (D-155 cierre final pre-merge)
+**Última actualización:** 2026-02-22 (D-155 post-merge + activacion operativa)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
-| Cambios D-150..D-155 aún no integrados en `main` (rama actual ahead `0/7`) | 🔴 ALTO | Abrir/mergear PR `docs/d150-cierre-documental-final` -> `main` para activar workflows y considerar cierre productivo en rama de release. |
-| `api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22) | 🔴 ALTO | Deploy explícito: `supabase functions deploy api-minimarket --no-verify-jwt`. |
-| `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto | 🔴 ALTO | Deploy de función faltante y verificar cron/scheduler asociado. |
-| `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub | 🟠 MEDIO | Crear variables repo (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) o cambiar workflow para consumir secrets equivalentes. |
-| `backup.yml` requiere `SUPABASE_DB_URL` y el secret no está configurado en GitHub | 🟠 MEDIO | Crear secret `SUPABASE_DB_URL` para activar backup diario real. |
+| ~~Cambios D-150..D-155 aún no integrados en `main` (rama actual ahead `0/7`)~~ | ✅ CERRADO (D-155) | PR #82 mergeado en `main` (commit `9aba817`, 2026-02-22T03:41:18Z). |
+| ~~`api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22)~~ | ✅ CERRADO (D-155) | Deployed v32 (2026-02-22T04:25:00Z) con `--no-verify-jwt`. Fix D-007 activo en produccion. |
+| ~~`backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto~~ | ✅ CERRADO (D-155) | Deployed v1 (2026-02-22T04:25:11Z). 14/14 Edge Functions activas en remoto. |
+| ~~`security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub~~ | ✅ CERRADO (D-155) | Variables repo creadas: `VITE_SUPABASE_URL` (2026-02-22T03:40:21Z), `VITE_SUPABASE_ANON_KEY` (2026-02-22T03:43:41Z). |
+| ~~`backup.yml` requiere `SUPABASE_DB_URL` y el secret no está configurado en GitHub~~ | ✅ CERRADO (D-155) | Secret `SUPABASE_DB_URL` creado (2026-02-22T04:01:11Z). |
 | ~~`POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor`~~ | ✅ CERRADO (D-153) | Insert desalineado eliminado. Precio de compra se acepta en request pero no se persiste hasta definir modelo dedicado. Fix: `supabase/functions/api-minimarket/index.ts:1643-1648`. |
 | Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
 | ~~FAB global de faltantes no visible en `/pos` y `/pocket`~~ | ✅ EXCLUIDO (D-153) | Exclusión formal por diseño: `/pos` y `/pocket` son rutas standalone fullscreen para workflows de foco (caja/scanner). FAB podría interferir con touch targets, scanner race lock y flujo de pago. No es un bug sino una decisión de UX. |
