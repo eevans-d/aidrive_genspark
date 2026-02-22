@@ -1,8 +1,20 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 **Ultima actualizacion:** 2026-02-22
-**Estado:** **GO** (D-152: Auditoría intensiva de pendientes ocultos + prompt de cierre Claude; ver `docs/closure/OPEN_ISSUES.md`)
+**Estado:** **GO** (D-153: revisión exhaustiva intensiva + normalización de pendientes ocultos; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — Revision exhaustiva intensiva + prompt continuidad (D-153)
+- Se ejecutó una segunda pasada intensiva DocuGuard para detectar drift residual y pendientes ocultos no explicitados.
+- Normalización documental aplicada:
+  - D-058/D-059/D-060 quedaron normalizadas como cerradas en `docs/DECISION_LOG.md` (eran parciales históricas).
+  - D-082/D-099 quedaron marcadas como históricas supersedidas por D-100 (Sentry cerrado).
+- Pendiente oculto técnico de alto impacto detectado y agregado a backlog activo:
+  - `POST /deposito/ingreso` intenta insertar columnas inexistentes en `precios_proveedor` cuando llega `precio_compra` + `proveedor_id`.
+- D-007 quedó reabierta como `DESINCRONIZADO` hasta corregir el modelo/flujo de precio de compra.
+- Se creó contexto prompt engineering de continuidad para nueva ventana Claude Code con fases y gates de cierre técnico-documental.
+- Snapshot post-cierre D-153: `docs=206`, `Edge Functions=14`, `skills=22`, links docs PASS.
+- Referencias: D-153 en `docs/DECISION_LOG.md`, `docs/closure/OPEN_ISSUES.md`, reporte `docs/closure/AUDITORIA_EXHAUSTIVA_PENDIENTES_OCULTOS_D153_2026-02-22.md`, contexto `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`.
 
 ## Addendum Sesion 2026-02-22 — Auditoria intensiva de pendientes ocultos (D-152)
 - Se ejecutó barrido documental intensivo para detectar pendientes no explícitos en la lista operativa principal.

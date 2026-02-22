@@ -4,7 +4,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 
 ## Estado Actual
 - Fecha de referencia: 2026-02-22
-- Veredicto: **GO** (D-152: auditoría intensiva de pendientes ocultos + plan de cierre)
+- Veredicto: **GO** (D-153: revisión exhaustiva intensiva + normalización de pendientes ocultos)
 - Score operativo: 100% (11/11 gates de referencia operativa)
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 - Pendientes operativos: `docs/closure/OPEN_ISSUES.md`
@@ -14,7 +14,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 - Migraciones SQL: 44
 - Base de datos: 38 tablas documentadas
 - Skills locales: 22
-- Archivos markdown en `docs/`: 204
+- Archivos markdown en `docs/`: 206
 - Frontend productivo: https://aidrive-genspark.pages.dev
 
 ## Integracion Reciente (Claude Code + DocuGuard)
@@ -22,6 +22,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 - D-149: paquete documental V1 para operacion real (manual de uso, guia rapida, troubleshooting, monitoreo, install/testing, runbook expandido).
 - D-150: pulido final de claridad y gobernanza documental (sincronizacion de docs principales y cierre de docs de comunidad).
 - D-151/D-152: auditorias de pendientes vigentes y pendientes ocultos con plan de cierre para nueva sesion Claude Code.
+- D-153: revision exhaustiva adicional con deteccion de un pendiente tecnico oculto en `POST /deposito/ingreso` (desalineacion entre handler y esquema de `precios_proveedor`).
 
 ## Calidad Verificada (segun estado vigente)
 - Unit: 1640/1640 PASS (ultimo addendum tecnico D-148)

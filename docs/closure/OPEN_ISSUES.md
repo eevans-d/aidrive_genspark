@@ -1,26 +1,27 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (Auditoría intensiva de pendientes ocultos)
+**Última actualización:** 2026-02-22 (Auditoría exhaustiva D-153)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
+| `POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor` | 🔴 ALTO | Definir modelo final de precio de compra (tabla dedicada o flujo alterno) y corregir handler para no escribir columnas no presentes (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`). |
 | Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
 | FAB global de faltantes no visible en `/pos` y `/pocket` | ⚠️ PARCIAL | Evaluar inyección controlada de `QuickNoteButton` en rutas standalone sin romper flujo de caja/scanner. |
 | Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida nocturna o pre-release y archivar evidencia en `docs/closure/`. |
 | Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
 
-## Pendientes Ocultos Detectados (2026-02-22)
+## Pendientes Ocultos Revalidados (D-153)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
-| D-007 (`precios_compra_proveedor`) pendiente histórico sin trazabilidad de cierre en `OPEN_ISSUES` | ⚠️ REVALIDAR | Confirmar estado real en esquema/código y cerrar o reabrir formalmente con evidencia en `DECISION_LOG` y `OPEN_ISSUES`. |
-| D-010 (auth `api-proveedor` descrita como temporal en 2026-01-11) | ⚠️ REVALIDAR | Verificar si el diseño actual (shared secret + hardening) es definitivo o requiere evolución; documentar decisión final. |
-| D-058/D-059/D-060 figuran como `Parcial` histórico, pero hay migraciones y despliegues posteriores | ⚠️ REVALIDAR | Ejecutar verificación puntual de runtime + DB y normalizar estado documental para evitar drift histórico. |
-| D-082/D-099 (Sentry parcial histórico) vs D-100 (cierre) | ⚠️ CONSISTENCIA | Unificar narrativa en una sola entrada canónica de cierre para evitar lectura ambigua. |
-| Duplicación de pendiente FAB (`/pos` y `/pocket`) en dos secciones del mismo archivo | ⚠️ HIGIENE DOC | Mantener la entrada en `Pendientes Vigentes` y referenciarla desde secciones históricas sin duplicar. |
+| D-007 (`precios_compra_proveedor`) | 🔴 REABIERTO (DESINCRONIZADO) | Resolver desalineación de diseño vs implementación y corregir flujo `POST /deposito/ingreso` (ver pendiente ALTO en tabla vigente). |
+| D-010 (auth `api-proveedor` “temporal”) | ⚠️ VIGENTE | Definir si el esquema `x-api-secret` pasa a definitivo o migra a autenticación más robusta; registrar decisión cerrada. |
+| D-058/D-059/D-060 (reservas/locks) | ✅ NORMALIZADO | Estados parciales históricos cerrados y normalizados en `docs/DECISION_LOG.md` (D-153). |
+| D-082/D-099 vs D-100 (Sentry) | ✅ NORMALIZADO | Se mantiene D-100 como cierre canónico; D-082/D-099 quedan marcadas como etapas históricas. |
+| Duplicación de pendiente FAB en secciones internas | ✅ HIGIENE DOC | Se mantiene un único pendiente vivo en `Pendientes Vigentes`. |
 
 ## Estado Mega Plan (2026-02-13)
 
@@ -181,8 +182,9 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
 - ✅ Adopción `ErrorMessage` completada en 14/14 páginas principales (excluye `NotFound.tsx`).
 
-## Issues técnicos conocidos (no bloqueantes)
+## Issues técnicos conocidos
 
+- `POST /deposito/ingreso` registra precio de compra en `precios_proveedor` con columnas que no existen en el esquema actual (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`) y puede fallar en runtime cuando se envía `precio_compra` + `proveedor_id`. Seguimiento activo en D-153.
 - ~~`precios_proveedor`: RLS activo en remoto sin migración explícita de habilitación en repo (deuda de trazabilidad).~~ CERRADO: migración `20260216040000` creada.
 - ~~`scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).~~ CERRADO: wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`.
 - ~~`minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).~~ CERRADO: `QueryClientProvider` + mocks de `apiClient`, `ErrorMessage`, `sonner` agregados.

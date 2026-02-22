@@ -1,6 +1,6 @@
 # PROMPTS EJECUTABLES PARA DOCUMENTACION (FINAL DEFINITIVA)
 
-Version: 5.2
+Version: 5.3
 Fecha: 2026-02-22
 Estado: VERIFICADO
 
@@ -11,7 +11,7 @@ Estado: VERIFICADO
 | Rama activa | `docs/d150-cierre-documental-final` |
 | Edge Functions detectadas | 14 (excluyendo `_shared`) |
 | Skills detectadas | 22 |
-| Archivos Markdown en `docs/` | 204 |
+| Archivos Markdown en `docs/` | 206 |
 | Secretos hardcodeados (scan patrones) | 0 hallazgos |
 | `console.*` en TS/TSX | solo `_shared/logger.ts` (uso intencional) |
 | Links internos docs | PASS (`Doc link check OK (87 files)`) |
@@ -211,7 +211,7 @@ Contexto obligatorio:
 - docs/ESTADO_ACTUAL.md
 - docs/DECISION_LOG.md
 - docs/closure/OPEN_ISSUES.md
-- docs/closure/REPORTE_AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_<fecha>.md (si existe)
+- docs/closure/AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_2026-02-22.md (si existe)
 
 Objetivos:
 1) Revalidar decisiones historicas con estado PARCIAL/BLOQUEADA y normalizar su estado final.
@@ -223,6 +223,7 @@ Pendientes ocultos minimos a revisar:
 - D-007, D-010
 - D-058, D-059, D-060
 - D-082, D-099 (consistencia contra cierres posteriores)
+- `POST /deposito/ingreso` + insercion en `precios_proveedor` (esquema vs handler)
 - Deno PATH global
 - FAB `/pos` y `/pocket`
 - periodicidad de smoke real de seguridad
@@ -232,6 +233,44 @@ Salida obligatoria:
 2) Lista de cambios aplicados en docs canonicas.
 3) Prompt final listo para ejecutar en nueva ventana Claude Code.
 4) Reporte en docs/closure con gates PASS/FAIL.
+```
+
+---
+
+## PROMPT 6 - CIERRE EXHAUSTIVO D-153 (NUEVA VENTANA CLAUDE CODE)
+
+```text
+Eres Claude Code en modo ejecutor técnico-documental. Tu objetivo es cerrar los pendientes reales del D-153 con evidencia.
+
+Entradas canónicas:
+- docs/ESTADO_ACTUAL.md
+- docs/DECISION_LOG.md
+- docs/closure/OPEN_ISSUES.md
+- docs/closure/AUDITORIA_EXHAUSTIVA_PENDIENTES_OCULTOS_D153_2026-02-22.md
+
+Fases obligatorias:
+1) FactPack bloqueante (rama, status, conteos, links docs).
+2) Validar y resolver D-007:
+   - Contrastar `supabase/functions/api-minimarket/index.ts` vs `supabase/migrations/20260109060000_create_precios_proveedor.sql`.
+   - Corregir runtime o documentar decisión final de modelo de datos.
+3) Revalidar D-010:
+   - Confirmar si `x-api-secret` queda como definitivo o no.
+   - Registrar decisión cerrada y criterio de seguridad.
+4) Resolver pendiente FAB en `/pos` y `/pocket` (implementar o justificar con criterio operativo).
+5) Definir automatización mínima de smoke real (`RUN_REAL_TESTS=true`) y ruta de evidencia.
+6) Sincronizar docs canónicas y generar reporte de cierre.
+
+Gates de salida:
+- `node scripts/validate-doc-links.mjs` PASS.
+- `pnpm -C minimarket-system lint` PASS (si hay cambios frontend).
+- `pnpm -C minimarket-system build` PASS (si hay cambios frontend).
+- Cero contradicciones entre `ESTADO_ACTUAL`, `DECISION_LOG`, `OPEN_ISSUES`.
+
+Entregables obligatorios:
+1) `docs/closure/REPORTE_CIERRE_EXHAUSTIVO_D153_<YYYY-MM-DD>.md`
+2) Actualización de `docs/DECISION_LOG.md`
+3) Actualización de `docs/closure/OPEN_ISSUES.md`
+4) Actualización de `docs/ESTADO_ACTUAL.md`
 ```
 
 ---
