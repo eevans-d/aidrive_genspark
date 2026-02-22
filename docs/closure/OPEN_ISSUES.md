@@ -1,7 +1,16 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-21 (Pulido documental final + gobernanza cerrada, D-150)
+**Última actualización:** 2026-02-22 (Auditoría de pendientes y deprecación documental)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+
+## Pendientes Vigentes (2026-02-22)
+
+| Item | Estado | Próxima acción |
+|---|---|---|
+| Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
+| FAB global de faltantes no visible en `/pos` y `/pocket` | ⚠️ PARCIAL | Evaluar inyección controlada de `QuickNoteButton` en rutas standalone sin romper flujo de caja/scanner. |
+| Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida nocturna o pre-release y archivar evidencia en `docs/closure/`. |
+| Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
 
 ## Estado Mega Plan (2026-02-13)
 
@@ -130,7 +139,8 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 ## Notas operativas
 
 - Migraciones: `44` local, `44` remoto (sincronizado D-139).
-- Snapshot remoto actual 2026-02-19: 13 funciones activas; `api-minimarket v29` (redeploy CORS Cloudflare Pages), `api-proveedor v20`, `cron-notifications v26`, `notificaciones-tareas v20`, `scraper-maxiconsumo v21`, `alertas-stock v18`, `reportes-automaticos v18`.
+- Snapshot remoto referencia 2026-02-19 (histórico): 13 funciones activas.
+- FactPack repo 2026-02-22 (canónico local): 14 Edge Functions en código (incluye `backfill-faltantes-recordatorios`).
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.
 - **CORS:** `ALLOWED_ORIGINS` en Supabase incluye dominios Cloudflare Pages + localhost. Tras cambios, redeploy `api-minimarket` con `--no-verify-jwt`.

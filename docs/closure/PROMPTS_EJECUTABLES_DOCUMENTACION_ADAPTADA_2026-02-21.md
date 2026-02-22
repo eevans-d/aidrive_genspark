@@ -1,12 +1,13 @@
 # PROMPTS EJECUTABLES PARA DOCUMENTACION (ADAPTADA)
 
-Estado: Alias informativo
-Ultima actualizacion: 2026-02-21
+Estado: [DEPRECADO: 2026-02-22] Alias informativo
+Ultima actualizacion: 2026-02-22
 Fuente de verdad: docs/closure/# PROMPTS EJECUTABLES PARA DOCUMENTACIÓN.ini
 Owner documental: DocuGuard
 
 ## Objetivo
-Mantener compatibilidad de referencias historicas al nombre "ADAPTADA" sin duplicar mantenimiento.
+Mantener compatibilidad temporal de referencias historicas al nombre "ADAPTADA" sin duplicar mantenimiento.
+Este alias queda candidato a eliminación en próxima limpieza si no existen referencias activas.
 
 ## Procedimiento Paso A Paso
 1. Usar como documento canonico `docs/closure/# PROMPTS EJECUTABLES PARA DOCUMENTACIÓN.ini`.

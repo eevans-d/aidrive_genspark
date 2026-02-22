@@ -68,6 +68,8 @@ pnpm -C minimarket-system test:components
 - `docs/MONITORING.md`
 - `docs/INSTALLATION.md`
 - `docs/TESTING.md`
+- `CONTRIBUTING.md`
+- `CODE_OF_CONDUCT.md`
 
 ## Nota de Vigencia
 Los documentos fechados en `docs/closure/`, `docs/archive/` y `docs/mpc/` se consideran snapshots historicos de su fecha.

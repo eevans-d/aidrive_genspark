@@ -1,8 +1,16 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-21
-**Estado:** **GO** (D-150: Cierre documental final y gobernanza completa; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-22
+**Estado:** **GO** (D-151: Auditoría de pendientes/documentación y deprecación controlada; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — Auditoria de pendientes y depuracion documental (D-151)
+- Se ejecutó revisión DocuGuard de pendientes operativos/documentales y estado de deprecación post D-150.
+- Se actualizaron pendientes vigentes en `docs/closure/OPEN_ISSUES.md` (Deno PATH, FAB en rutas standalone, smoke real de seguridad, bloqueo externo plan Pro).
+- Se normalizó snapshot técnico en `OPEN_ISSUES`: referencia histórica remota (13) + FactPack canónico local vigente (14 Edge Functions en repo).
+- Se actualizó índice canónico en `README.md` incorporando `CONTRIBUTING.md` y `CODE_OF_CONDUCT.md`.
+- `docs/closure/PROMPTS_EJECUTABLES_DOCUMENTACION_ADAPTADA_2026-02-21.md` quedó marcado como `[DEPRECADO: 2026-02-22]` para limpieza futura sin borrar trazabilidad.
+- Referencias: D-151 en `docs/DECISION_LOG.md`, reporte `docs/closure/AUDITORIA_PENDIENTES_Y_DEPURACION_DOCS_2026-02-22.md`.
 
 ## Addendum Sesion 2026-02-21 — Cierre documental final y claridad canónica (D-150)
 - Se ejecuto pasada DocuGuard de detalle para pulir claridad en docs principales y sincronizar referencias cruzadas.
