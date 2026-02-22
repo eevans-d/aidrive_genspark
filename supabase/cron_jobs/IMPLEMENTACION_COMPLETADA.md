@@ -13,6 +13,7 @@ supabase/cron_jobs/
 ├── job_daily_price_update.json          # Job diario (02:00 AM)
 ├── job_weekly_trend_analysis.json       # Job semanal (Domingos 03:00)
 ├── job_realtime_alerts.json             # Alertas tiempo real (15 min)
+├── job_maintenance_cleanup.json         # Maintenance semanal (Domingos 04:00)
 ├── job_2.json                           # Invoca notificaciones-tareas
 ├── job_3.json                           # Invoca alertas-stock
 ├── job_4.json                           # Invoca reportes-automaticos
@@ -154,7 +155,7 @@ curl -X GET https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/cron-jobs-maxi
 #### Verificación en BD
 ```sql
 -- Jobs activos
-SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts');
+SELECT * FROM cron.job WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts', 'maintenance_cleanup');
 
 -- Logs recientes
 SELECT * FROM cron.job_run_details WHERE jobname = 'daily_price_update' ORDER BY run_time DESC LIMIT 5;

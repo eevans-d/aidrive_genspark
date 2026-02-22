@@ -6,6 +6,22 @@
 - Focus: `ux`
 - Método: análisis estático del código actual (sin sesión de navegador en vivo en esta pasada).
 
+## Addendum 2026-02-22 (D-153) — Revalidación Pre-Producción
+
+| Elemento auditado | Estado | Evidencia |
+|---|---|---|
+| HC-1 (cron jobs con Authorization) | REAL (corregido/sincronizado) | `supabase/cron_jobs/deploy_all_cron_jobs.sql`, `docs/CRON_JOBS_STATUS.md` |
+| HC-2 (deploy seguro _shared + no-verify-jwt api-minimarket) | REAL | `deploy.sh:380`, `deploy.sh:443` |
+| HC-3 (mutaciones con feedback visual) | REAL | `minimarket-system/src/pages/` (`console.error` sin feedback = 0) |
+| Health API productiva | REAL | `GET /functions/v1/api-minimarket/health` => HTTP 200 con `success:true` |
+| Runtime auth en funciones cron | REAL | Sin Bearer retorna 401 en `notificaciones-tareas`, `alertas-stock`, `reportes-automaticos`, `cron-jobs-maxiconsumo` |
+
+### Hallazgos D-153
+
+- P0 resuelto en repo: la regresión de auth en `deploy_all_cron_jobs.sql` quedó corregida (7/7 invocaciones con Authorization).
+- P1 pendiente: baseline de performance versionado (`docs/closure/PERF_BASELINE_*.md`) sigue ausente.
+- Limitación explícita: no se verificó ejecución de `cron.schedule` en la BD remota desde esta sesión (sin acceso SQL remoto en esta corrida).
+
 ## Addendum 2026-02-21 (D-147) — Fact-check Cuaderno Post-Claude
 
 | Elemento auditado | Estado | Evidencia |

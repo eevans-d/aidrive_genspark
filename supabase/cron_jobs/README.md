@@ -41,6 +41,18 @@
   - `escalation_enabled`: true
 - **Descripción**: Monitoreo continuo con alertas instantáneas para cambios > 15%
 
+### 4. Job Semanal de Maintenance Cleanup
+- **Archivo**: `job_maintenance_cleanup.json`
+- **ID**: 8
+- **Cron Expression**: `0 4 * * 0` (Domingos 04:00 AM)
+- **Función Edge**: `cron-jobs-maxiconsumo`
+- **Parámetros**:
+  - `job_type`: "maintenance_cleanup"
+  - `retention_days`: 30
+  - `vacuum_tables`: true
+  - `clean_execution_logs`: true
+- **Descripción**: Limpieza semanal de logs/métricas y mantenimiento operativo
+
 ## Implementación en Supabase
 
 ### Paso 1: Crear los Jobs en la Base de Datos
@@ -51,6 +63,7 @@
 -- Alternativa:
 -- Ejecutar el `raw_sql` de cada archivo JSON en Supabase SQL Editor.
 -- El `raw_sql` contiene la creación del procedimiento + el schedule.
+-- Todos los jobs usan Authorization Bearer leyendo `service_role_key` desde `vault.decrypted_secrets`.
 ```
 
 ### Paso 2: Verificar el Estado de los Jobs
@@ -60,7 +73,7 @@ SELECT * FROM cron.job;
 
 -- Ver próximas ejecuciones
 SELECT * FROM cron.job_run_details 
-WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts')
+WHERE jobname IN ('daily_price_update', 'weekly_trend_analysis', 'realtime_change_alerts', 'maintenance_cleanup')
 ORDER BY run_time DESC;
 ```
 
