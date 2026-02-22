@@ -89,9 +89,9 @@ Object.defineProperty(window, 'matchMedia', {
         })),
 });
 
-// Mock ResizeObserver
-global.ResizeObserver = vi.fn().mockImplementation(() => ({
-        observe: vi.fn(),
-        unobserve: vi.fn(),
-        disconnect: vi.fn(),
-}));
+// Mock ResizeObserver (must use class — arrow functions are not constructable)
+global.ResizeObserver = class {
+        observe() {}
+        unobserve() {}
+        disconnect() {}
+} as unknown as typeof ResizeObserver;
