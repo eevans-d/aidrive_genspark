@@ -1,17 +1,17 @@
 # PROMPTS EJECUTABLES PARA DOCUMENTACION (FINAL DEFINITIVA)
 
-Version: 5.1
-Fecha: 2026-02-21
+Version: 5.2
+Fecha: 2026-02-22
 Estado: VERIFICADO
 
 ## Verificacion ejecutada (esta sesion)
 
 | Check | Resultado |
 |---|---|
-| Rama activa | `main` |
+| Rama activa | `docs/d150-cierre-documental-final` |
 | Edge Functions detectadas | 14 (excluyendo `_shared`) |
 | Skills detectadas | 22 |
-| Archivos Markdown en `docs/` | 201 |
+| Archivos Markdown en `docs/` | 204 |
 | Secretos hardcodeados (scan patrones) | 0 hallazgos |
 | `console.*` en TS/TSX | solo `_shared/logger.ts` (uso intencional) |
 | Links internos docs | PASS (`Doc link check OK (87 files)`) |
@@ -198,6 +198,40 @@ Salida:
 - Riesgos no bloqueantes
 - Plan 30/60/90 dias
 - Checklist ejecutable proxima sesion
+```
+
+---
+
+## PROMPT 5 - AUDITORIA INTENSIVA DE PENDIENTES OCULTOS (CLAUDE CODE)
+
+```text
+Eres auditor tecnico + executor de cierre. Tu tarea es detectar y cerrar pendientes ocultos no explicitados en backlog activo.
+
+Contexto obligatorio:
+- docs/ESTADO_ACTUAL.md
+- docs/DECISION_LOG.md
+- docs/closure/OPEN_ISSUES.md
+- docs/closure/REPORTE_AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_<fecha>.md (si existe)
+
+Objetivos:
+1) Revalidar decisiones historicas con estado PARCIAL/BLOQUEADA y normalizar su estado final.
+2) Detectar duplicaciones o ambiguedades en OPEN_ISSUES.
+3) Cerrar drift entre snapshot canónico y FactPack vigente.
+4) Emitir prompt/contexto ejecutable para siguiente ventana Claude Code.
+
+Pendientes ocultos minimos a revisar:
+- D-007, D-010
+- D-058, D-059, D-060
+- D-082, D-099 (consistencia contra cierres posteriores)
+- Deno PATH global
+- FAB `/pos` y `/pocket`
+- periodicidad de smoke real de seguridad
+
+Salida obligatoria:
+1) Tabla de pendientes ocultos (estado, evidencia, accion).
+2) Lista de cambios aplicados en docs canonicas.
+3) Prompt final listo para ejecutar en nueva ventana Claude Code.
+4) Reporte en docs/closure con gates PASS/FAIL.
 ```
 
 ---

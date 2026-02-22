@@ -3,24 +3,25 @@
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
 ## Estado Actual
-- Fecha de referencia: 2026-02-21
-- Veredicto: **GO** (D-149: paquete documental V1 produccion + estado tecnico vigente D-148)
+- Fecha de referencia: 2026-02-22
+- Veredicto: **GO** (D-152: auditoría intensiva de pendientes ocultos + plan de cierre)
 - Score operativo: 100% (11/11 gates de referencia operativa)
 - Fuente de verdad: `docs/ESTADO_ACTUAL.md`
 - Pendientes operativos: `docs/closure/OPEN_ISSUES.md`
 
-## Snapshot Tecnico (FactPack 2026-02-21)
+## Snapshot Tecnico (FactPack 2026-02-22)
 - Edge Functions en repo: 14 (excluyendo `_shared`)
 - Migraciones SQL: 44
 - Base de datos: 38 tablas documentadas
 - Skills locales: 22
-- Archivos markdown en `docs/`: 201
+- Archivos markdown en `docs/`: 204
 - Frontend productivo: https://aidrive-genspark.pages.dev
 
 ## Integracion Reciente (Claude Code + DocuGuard)
 - D-146 a D-148: implementaciones reales de Cuaderno Inteligente, verificacion independiente post-Claude y backfill idempotente de recordatorios.
 - D-149: paquete documental V1 para operacion real (manual de uso, guia rapida, troubleshooting, monitoreo, install/testing, runbook expandido).
 - D-150: pulido final de claridad y gobernanza documental (sincronizacion de docs principales y cierre de docs de comunidad).
+- D-151/D-152: auditorias de pendientes vigentes y pendientes ocultos con plan de cierre para nueva sesion Claude Code.
 
 ## Calidad Verificada (segun estado vigente)
 - Unit: 1640/1640 PASS (ultimo addendum tecnico D-148)

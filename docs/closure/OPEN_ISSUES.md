@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (Auditoría de pendientes y deprecación documental)
+**Última actualización:** 2026-02-22 (Auditoría intensiva de pendientes ocultos)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
@@ -11,6 +11,16 @@
 | FAB global de faltantes no visible en `/pos` y `/pocket` | ⚠️ PARCIAL | Evaluar inyección controlada de `QuickNoteButton` en rutas standalone sin romper flujo de caja/scanner. |
 | Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida nocturna o pre-release y archivar evidencia en `docs/closure/`. |
 | Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
+
+## Pendientes Ocultos Detectados (2026-02-22)
+
+| Item | Estado | Próxima acción |
+|---|---|---|
+| D-007 (`precios_compra_proveedor`) pendiente histórico sin trazabilidad de cierre en `OPEN_ISSUES` | ⚠️ REVALIDAR | Confirmar estado real en esquema/código y cerrar o reabrir formalmente con evidencia en `DECISION_LOG` y `OPEN_ISSUES`. |
+| D-010 (auth `api-proveedor` descrita como temporal en 2026-01-11) | ⚠️ REVALIDAR | Verificar si el diseño actual (shared secret + hardening) es definitivo o requiere evolución; documentar decisión final. |
+| D-058/D-059/D-060 figuran como `Parcial` histórico, pero hay migraciones y despliegues posteriores | ⚠️ REVALIDAR | Ejecutar verificación puntual de runtime + DB y normalizar estado documental para evitar drift histórico. |
+| D-082/D-099 (Sentry parcial histórico) vs D-100 (cierre) | ⚠️ CONSISTENCIA | Unificar narrativa en una sola entrada canónica de cierre para evitar lectura ambigua. |
+| Duplicación de pendiente FAB (`/pos` y `/pocket`) en dos secciones del mismo archivo | ⚠️ HIGIENE DOC | Mantener la entrada en `Pendientes Vigentes` y referenciarla desde secciones históricas sin duplicar. |
 
 ## Estado Mega Plan (2026-02-13)
 
@@ -75,7 +85,7 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 |-----------|--------|-----------|------------------|
 | Parser determinístico de texto libre | ✅ CERRADO | `minimarket-system/src/utils/cuadernoParser.ts` — `parseNote()`, `resolveProveedor()`, `isDuplicate()`, `generatePurchaseSummary()` | — |
 | CRUD hooks directos Supabase (sin API gateway) | ✅ CERRADO | `minimarket-system/src/hooks/queries/useFaltantes.ts` — 6 hooks, RLS protege tabla | — |
-| FAB QuickNoteButton (captura desde cualquier pantalla) | ⚠️ PARCIAL | El FAB global vive en `Layout.tsx`, pero `/pos` y `/pocket` son rutas standalone en `App.tsx` sin `Layout`. | Evaluar inyección de `QuickNoteButton` en `Pos.tsx` y `Pocket.tsx` sin romper UX de caja/scanner. |
+| FAB QuickNoteButton (captura desde cualquier pantalla) | ℹ️ Referenciado | Ver `Pendientes Vigentes (2026-02-22)` para estado activo único. | Evitar duplicación de tracking en secciones históricas. |
 | Página Cuaderno con 3 tabs | ✅ CERRADO | `minimarket-system/src/pages/Cuaderno.tsx` — Todos/Por Proveedor/Resueltos, acciones 1-touch | — |
 | Integración en Proveedores.tsx | ✅ CERRADO | `minimarket-system/src/pages/Proveedores.tsx:488-547` — `ProveedorFaltantes` component | — |
 | Accesos contextuales (GlobalSearch, AlertsDrawer, Dashboard) | ✅ CERRADO | `Layout.tsx` + `QuickNoteButton.tsx` ahora consumen `quickAction/prefillProduct` para auto-open/prefill real en `/cuaderno`; AlertsDrawer y Dashboard mantienen CTA activos. | — |
@@ -177,6 +187,6 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - ~~`scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).~~ CERRADO: wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`.
 - ~~`minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).~~ CERRADO: `QueryClientProvider` + mocks de `apiClient`, `ErrorMessage`, `sonner` agregados.
 - ~~Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.~~ CERRADO: lint-staged apunta a `minimarket-system/node_modules/.bin/eslint`.
-- `minimarket-system/src/pages/Pedidos.test.tsx`: mock de `sonner` faltaba `Toaster` export (pre-existente, corregido).
+- ~~`minimarket-system/src/pages/Pedidos.test.tsx`: mock de `sonner` faltaba `Toaster` export (pre-existente, corregido).~~ CERRADO: incluido en D-117.
 - Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).
 - ~~Auditoria global de referencias en `docs/` (2026-02-16): 88 referencias en backticks apuntan a rutas historicas removidas o no aplicables fuera del set canonico.~~ CERRADO: limpieza incremental completada (D-122). 13 rutas stale anotadas con `[removido en D-109]` en 14 archivos de docs (AGENTS, CHECKLIST_CIERRE, DB_GAPS, HOJA_RUTA, IA_USAGE_GUIDE, E2E_SETUP, C4_HANDOFF, ANTIGRAVITY_PLANNING_RUNBOOK, AUDITORIA_DOCUMENTAL_ABSOLUTA, AUDITORIA_DOCS_VS_REALIDAD, mpc/C1, mpc/C2, mpc/C4).

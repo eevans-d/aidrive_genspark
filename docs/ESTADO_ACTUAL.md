@@ -1,8 +1,18 @@
 # ESTADO ACTUAL DEL PROYECTO
 
 **Ultima actualizacion:** 2026-02-22
-**Estado:** **GO** (D-151: Auditoría de pendientes/documentación y deprecación controlada; ver `docs/closure/OPEN_ISSUES.md`)
+**Estado:** **GO** (D-152: Auditoría intensiva de pendientes ocultos + prompt de cierre Claude; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — Auditoria intensiva de pendientes ocultos (D-152)
+- Se ejecutó barrido documental intensivo para detectar pendientes no explícitos en la lista operativa principal.
+- Se detectaron y registraron pendientes ocultos de gobernanza/seguimiento:
+  - decisiones históricas con estado `Parcial/Bloqueada` que requieren revalidación/cierre documental (D-007, D-010, D-058/059/060, D-082/D-099);
+  - duplicación de pendiente FAB (`/pos` y `/pocket`) en secciones distintas de `OPEN_ISSUES`;
+  - issue técnico ya corregido pero no normalizado como cerrado (`Pedidos.test.tsx`).
+- Se actualizó snapshot canónico de referencia a FactPack 2026-02-22 (`docs=204`, `Edge Functions=14`, `skills=22`, links docs PASS).
+- Se creó contexto de ejecución especializado para nueva ventana Claude Code orientado a cierre de pendientes ocultos con gates y evidencia.
+- Referencias: D-152 en `docs/DECISION_LOG.md`, reporte `docs/closure/AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_2026-02-22.md`, contexto `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_2026-02-22.md`.
 
 ## Addendum Sesion 2026-02-22 — Auditoria de pendientes y depuracion documental (D-151)
 - Se ejecutó revisión DocuGuard de pendientes operativos/documentales y estado de deprecación post D-150.
