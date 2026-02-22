@@ -1,24 +1,24 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (Auditoría exhaustiva D-153)
+**Última actualización:** 2026-02-22 (Cierre técnico D-153)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
-| `POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor` | 🔴 ALTO | Definir modelo final de precio de compra (tabla dedicada o flujo alterno) y corregir handler para no escribir columnas no presentes (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`). |
+| ~~`POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor`~~ | ✅ CERRADO (D-153) | Insert desalineado eliminado. Precio de compra se acepta en request pero no se persiste hasta definir modelo dedicado. Fix: `supabase/functions/api-minimarket/index.ts:1643-1648`. |
 | Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
-| FAB global de faltantes no visible en `/pos` y `/pocket` | ⚠️ PARCIAL | Evaluar inyección controlada de `QuickNoteButton` en rutas standalone sin romper flujo de caja/scanner. |
-| Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida nocturna o pre-release y archivar evidencia en `docs/closure/`. |
+| ~~FAB global de faltantes no visible en `/pos` y `/pocket`~~ | ✅ EXCLUIDO (D-153) | Exclusión formal por diseño: `/pos` y `/pocket` son rutas standalone fullscreen para workflows de foco (caja/scanner). FAB podría interferir con touch targets, scanner race lock y flujo de pago. No es un bug sino una decisión de UX. |
+| ~~Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Prerequisito: configurar `SUPABASE_SERVICE_ROLE_KEY` como secret en GitHub Actions. |
 | Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
 
 ## Pendientes Ocultos Revalidados (D-153)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
-| D-007 (`precios_compra_proveedor`) | 🔴 REABIERTO (DESINCRONIZADO) | Resolver desalineación de diseño vs implementación y corregir flujo `POST /deposito/ingreso` (ver pendiente ALTO en tabla vigente). |
-| D-010 (auth `api-proveedor` “temporal”) | ⚠️ VIGENTE | Definir si el esquema `x-api-secret` pasa a definitivo o migra a autenticación más robusta; registrar decisión cerrada. |
+| D-007 (`precios_compra_proveedor`) | ✅ CERRADO (D-153) | Insert desalineado eliminado del handler. `precios_proveedor` conserva esquema de scraping. Persistencia de precios de compra diferida como feature futura. |
+| D-010 (auth `api-proveedor` "temporal") | ✅ CERRADO (D-153) | Esquema `x-api-secret` formalizado como definitivo con controles: timing-safe, min 32 chars, origin allowlist, rotación documentada (D-076). |
 | D-058/D-059/D-060 (reservas/locks) | ✅ NORMALIZADO | Estados parciales históricos cerrados y normalizados en `docs/DECISION_LOG.md` (D-153). |
 | D-082/D-099 vs D-100 (Sentry) | ✅ NORMALIZADO | Se mantiene D-100 como cierre canónico; D-082/D-099 quedan marcadas como etapas históricas. |
 | Duplicación de pendiente FAB en secciones internas | ✅ HIGIENE DOC | Se mantiene un único pendiente vivo en `Pendientes Vigentes`. |
@@ -102,7 +102,7 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 |-----------|--------|------------------|
 | ~~`precios_proveedor`: RLS habilitado en remoto pero sin migración explícita en repo (drift de trazabilidad)~~ | ✅ CERRADO | Migración `20260216040000_rls_precios_proveedor.sql` aplicada en remoto via `supabase db push`. RLS=true, grants revocados, service_role OK. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
 | ~~`scraper-maxiconsumo`: `DEFAULT_CORS_HEADERS` usa `Access-Control-Allow-Origin: '*'` (anti-patrón cosmético, mitigado por `validateOrigin`)~~ | ✅ CERRADO | Wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`. Desplegado en remoto via `supabase functions deploy`. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
-| Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
+| ~~Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC). |
 | ~~Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`)~~ | ✅ CERRADO (D-121) | Matriz documentada: 4 canales analizados (email, webhook, slack, sms) con auto-disable, rate limits, recomendaciones por entorno. Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md`. |
 | Consolidación de artefactos históricos | ✅ CERRADO | Limpieza D-109 (2026-02-15): 79 archivos obsoletos eliminados. `docs/` reducido de ~2.5MB a ~1.3MB. |
 | ~~Documentación de comunidad (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`)~~ | ✅ CERRADO | `CONTRIBUTING.md` y `CODE_OF_CONDUCT.md` creados para cerrar gobernanza de colaboración y conducta base del repo. |
@@ -184,7 +184,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 ## Issues técnicos conocidos
 
-- `POST /deposito/ingreso` registra precio de compra en `precios_proveedor` con columnas que no existen en el esquema actual (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`) y puede fallar en runtime cuando se envía `precio_compra` + `proveedor_id`. Seguimiento activo en D-153.
+- ~~`POST /deposito/ingreso` registra precio de compra en `precios_proveedor` con columnas que no existen en el esquema actual (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`) y puede fallar en runtime cuando se envía `precio_compra` + `proveedor_id`.~~ CERRADO (D-153): insert desalineado eliminado. Precio de compra diferido como feature futura.
 - ~~`precios_proveedor`: RLS activo en remoto sin migración explícita de habilitación en repo (deuda de trazabilidad).~~ CERRADO: migración `20260216040000` creada.
 - ~~`scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).~~ CERRADO: wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`.
 - ~~`minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).~~ CERRADO: `QueryClientProvider` + mocks de `apiClient`, `ErrorMessage`, `sonner` agregados.

@@ -1,17 +1,26 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-22
-**Estado:** **GO** (D-153: revisión exhaustiva intensiva + normalización de pendientes ocultos; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-22 (cierre tecnico D-153)
+**Estado:** **GO** (D-153: cierre técnico con D-007/D-010 cerradas, FAB excluido por diseño, smoke nightly operativo; ver `docs/closure/OPEN_ISSUES.md`)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 
-## Addendum Sesion 2026-02-22 — Revision exhaustiva intensiva + prompt continuidad (D-153)
+## Addendum Sesion 2026-02-22 — Cierre tecnico D-153 (ejecucion)
+- D-007 CERRADA: insert desalineado en `POST /deposito/ingreso` eliminado (`index.ts:1643-1648`). La tabla `precios_proveedor` conserva esquema de scraping; persistencia de precios de compra diferida como feature futura.
+- D-010 CERRADA: esquema `x-api-secret` formalizado como definitivo para `api-proveedor` (timing-safe, min 32 chars, origin allowlist, rotación documentada D-076).
+- FAB en `/pos`/`/pocket` EXCLUIDO formalmente: rutas standalone por diseño para workflows de foco (caja/scanner). No es bug sino decisión UX.
+- Smoke nightly OPERATIVO: `.github/workflows/security-nightly.yml` creado (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Prerequisito: `SUPABASE_SERVICE_ROLE_KEY` como secret en GitHub Actions.
+- Pendientes residuales: Deno PATH (recomendado), leaked password protection (bloqueado externo plan Pro).
+- Docs canónicas sincronizadas: `DECISION_LOG`, `OPEN_ISSUES`, `ESTADO_ACTUAL`.
+- Referencias: D-153 en `docs/DECISION_LOG.md`, reporte `docs/closure/REPORTE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`.
+
+## Addendum Sesion 2026-02-22 — Revision exhaustiva intensiva + prompt continuidad (D-153, auditoria)
 - Se ejecutó una segunda pasada intensiva DocuGuard para detectar drift residual y pendientes ocultos no explicitados.
 - Normalización documental aplicada:
   - D-058/D-059/D-060 quedaron normalizadas como cerradas en `docs/DECISION_LOG.md` (eran parciales históricas).
   - D-082/D-099 quedaron marcadas como históricas supersedidas por D-100 (Sentry cerrado).
 - Pendiente oculto técnico de alto impacto detectado y agregado a backlog activo:
   - `POST /deposito/ingreso` intenta insertar columnas inexistentes en `precios_proveedor` cuando llega `precio_compra` + `proveedor_id`.
-- D-007 quedó reabierta como `DESINCRONIZADO` hasta corregir el modelo/flujo de precio de compra.
+- ~~D-007 quedó reabierta como `DESINCRONIZADO` hasta corregir el modelo/flujo de precio de compra.~~ **RESUELTO en cierre tecnico D-153 (ver addendum superior).**
 - Se creó contexto prompt engineering de continuidad para nueva ventana Claude Code con fases y gates de cierre técnico-documental.
 - Snapshot post-cierre D-153: `docs=206`, `Edge Functions=14`, `skills=22`, links docs PASS.
 - Referencias: D-153 en `docs/DECISION_LOG.md`, `docs/closure/OPEN_ISSUES.md`, reporte `docs/closure/AUDITORIA_EXHAUSTIVA_PENDIENTES_OCULTOS_D153_2026-02-22.md`, contexto `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`.
@@ -386,7 +395,7 @@ Archivos modificados/creados:
 1. SendGrid/SMTP: **CERRADO** (rotacion + secrets + redeploy + smoke + evidencia externa).
    - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
-3. (Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.
+3. ~~(Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.~~ CERRADO (D-153): `.github/workflows/security-nightly.yml` operativo.
 4. Issues técnicos preexistentes no bloqueantes: ~~`Proveedores.test.tsx` requiere `QueryClientProvider`~~ CERRADO (D-117). ~~`lint-staged` fallaba por resolución de `eslint`~~ CERRADO (D-117). `Pedidos.test.tsx` mock de `sonner` corregido (D-117).
 
 Referencia operativa:
