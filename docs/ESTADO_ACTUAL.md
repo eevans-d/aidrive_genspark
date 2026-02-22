@@ -1,8 +1,21 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-22 (verificacion independiente post D-153)
+**Ultima actualizacion:** 2026-02-22 (D-155 cierre final pre-merge)
 **Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (cierre técnico D-153 completado en repo; faltan activaciones de producción en remoto/main)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — D-155 cierre final pre-merge
+- Cambios pendientes formalizados y commiteados:
+  - `docs/METRICS.md` actualizado a conteo real (14 EFs, 16 paginas, 122 test files).
+  - Archivo PROMPTS renombrado a nombre ASCII-safe (`PROMPTS_EJECUTABLES_DOCUMENTACION.ini`).
+  - `setupTests.ts`: ResizeObserver mock corregido (class en vez de arrow fn, que no es constructable).
+  - `vitest.config.ts`: `root: __dirname` agregado para resolucion correcta de paths.
+- Validaciones ejecutadas:
+  - `npx vitest run` PASS (1640/1640, 78 files)
+  - Frontend tests PASS (197/197, 33 files)
+  - lint-staged PASS en commit
+- Rama `docs/d150-cierre-documental-final` ahora 7 commits ahead de `main`.
+- Proximo paso: PR y merge a `main`.
 
 ## Addendum Sesion 2026-02-22 — Verificacion independiente post D-153 (D-154)
 - Se verificó de forma independiente (sin asumir cierres documentales) el estado de rama, remoto Supabase y GitHub Actions.

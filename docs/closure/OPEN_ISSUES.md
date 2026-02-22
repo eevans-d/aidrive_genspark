@@ -1,13 +1,13 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (Verificación independiente post D-153)
+**Última actualización:** 2026-02-22 (D-155 cierre final pre-merge)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
-| Cambios D-150..D-153 aún no integrados en `main` (rama actual ahead `0/5`) | 🔴 ALTO | Abrir/mergear PR `docs/d150-cierre-documental-final` -> `main` para activar workflows y considerar cierre productivo en rama de release. |
+| Cambios D-150..D-155 aún no integrados en `main` (rama actual ahead `0/7`) | 🔴 ALTO | Abrir/mergear PR `docs/d150-cierre-documental-final` -> `main` para activar workflows y considerar cierre productivo en rama de release. |
 | `api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22) | 🔴 ALTO | Deploy explícito: `supabase functions deploy api-minimarket --no-verify-jwt`. |
 | `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto | 🔴 ALTO | Deploy de función faltante y verificar cron/scheduler asociado. |
 | `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub | 🟠 MEDIO | Crear variables repo (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) o cambiar workflow para consumir secrets equivalentes. |
