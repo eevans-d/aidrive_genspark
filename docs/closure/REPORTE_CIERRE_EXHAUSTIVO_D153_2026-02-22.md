@@ -16,7 +16,7 @@ Se ejecuto el cierre tecnico de los 4 objetivos obligatorios identificados en D-
 | OBJ-3: FAB en /pos y /pocket | EXCLUIDO | Exclusion por diseno + doc |
 | OBJ-4: Smoke real de seguridad | OPERATIVIZADO | Workflow nightly + doc |
 
-Pendientes residuales: 2 (Deno PATH recomendado, leaked password protection bloqueado externo).
+Pendientes residuales (revalidados): 7 (5 operativos + 2 no bloqueantes: Deno PATH y leaked password protection bloqueado externo).
 
 ## 2. Cambios Aplicados
 
@@ -59,22 +59,30 @@ Pendientes residuales: 2 (Deno PATH recomendado, leaked password protection bloq
 | QG4: pruebas/lint/build en PASS o bloqueo documentado | PASS | 1640/1640 unit tests PASS, Deno check PASS |
 | QG5: reporte final emitido con evidencia archivo:linea | PASS | Este reporte |
 
-## 5. Riesgos Residuales
+## 5. Riesgos Residuales (revalidados)
 
 | Riesgo | Severidad | Mitigacion |
 |---|---|---|
 | Deno no en PATH global | Baja | Usar ruta absoluta `~/.deno/bin/deno` o exportar en shell profile |
 | Leaked password protection | Baja (bloqueado externo) | Requiere plan Pro de Supabase. No hay accion posible sin upgrade. |
-| `api-minimarket` no redeployado | Media | El fix de D-007 esta en repo pero no en remoto. Requiere `supabase functions deploy api-minimarket --no-verify-jwt` para activar en produccion. |
-| Workflow nightly requiere secret | Baja | `SUPABASE_SERVICE_ROLE_KEY` debe configurarse en GitHub Actions. Si no existe, el workflow fallara informativamente. |
+| Cambios D-150..D-153 no integrados aún en `main` | Alta | Merge de rama `docs/d150-cierre-documental-final` hacia `main` (actualmente ahead `0/5`). |
+| `api-minimarket` no redeployado | Media | El fix de D-007 está en repo pero no en remoto (remote `api-minimarket` v30, 2026-02-19). Requiere `supabase functions deploy api-minimarket --no-verify-jwt`. |
+| `backfill-faltantes-recordatorios` no desplegada en remoto | Media | Desplegar function faltante para completar automatización operativa de faltantes. |
+| Workflow nightly con variables no configuradas | Media | `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY`; deben existir como variables repo (o migrar a secrets). |
+| Backup workflow sin secret requerido | Media | `backup.yml` requiere `SUPABASE_DB_URL`; crear secret para habilitar backup diario real. |
 
-## 6. Proximo Paso Unico Recomendado
+## 6. Próximos Pasos Mínimos Para Producción
 
-Ejecutar deploy de `api-minimarket` con el fix de D-007:
+1. Mergear rama `docs/d150-cierre-documental-final` en `main`.
+2. Desplegar funciones pendientes:
 ```bash
 supabase functions deploy api-minimarket --no-verify-jwt
+supabase functions deploy backfill-faltantes-recordatorios
 ```
-Esto activa la correccion en produccion y elimina el riesgo de fallo runtime en `POST /deposito/ingreso` con `precio_compra`.
+3. Activar workflows:
+   - Crear variables repo: `VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`.
+   - Crear secret repo: `SUPABASE_DB_URL`.
+4. Ejecutar un smoke post-deploy y archivar evidencia en `docs/closure/`.
 
 ## 7. Pasada de Verificacion Post-Cierre
 

@@ -1,8 +1,22 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-22 (cierre tecnico D-153)
-**Estado:** **GO** (D-153: cierre técnico con D-007/D-010 cerradas, FAB excluido por diseño, smoke nightly operativo; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-22 (verificacion independiente post D-153)
+**Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (cierre técnico D-153 completado en repo; faltan activaciones de producción en remoto/main)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — Verificacion independiente post D-153 (D-154)
+- Se verificó de forma independiente (sin asumir cierres documentales) el estado de rama, remoto Supabase y GitHub Actions.
+- Hallazgos operativos reales:
+  - la rama `docs/d150-cierre-documental-final` sigue ahead `0/5` contra `main` (cambios D-150..D-153 aún no integrados en default branch);
+  - `api-minimarket` remoto sigue en versión previa al fix D-007 (updated_at 2026-02-19);
+  - la función `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto;
+  - `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY`, pero esas variables no están configuradas en GitHub;
+  - `backup.yml` requiere secret `SUPABASE_DB_URL`, no presente en GitHub.
+- Validaciones de consistencia ejecutadas:
+  - `node scripts/validate-doc-links.mjs` PASS (87 files)
+  - `npm run test:unit` PASS (1640/1640)
+  - `supabase migration list --linked` sincronizado (44/44)
+- Referencias: `docs/closure/OPEN_ISSUES.md`, `docs/closure/REPORTE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`, `.github/workflows/security-nightly.yml`, `.github/workflows/backup.yml`.
 
 ## Addendum Sesion 2026-02-22 — Cierre tecnico D-153 (ejecucion)
 - D-007 CERRADA: insert desalineado en `POST /deposito/ingreso` eliminado (`index.ts:1643-1648`). La tabla `precios_proveedor` conserva esquema de scraping; persistencia de precios de compra diferida como feature futura.

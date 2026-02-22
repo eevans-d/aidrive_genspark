@@ -1,16 +1,21 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (Cierre técnico D-153)
+**Última actualización:** 2026-02-22 (Verificación independiente post D-153)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
 
 | Item | Estado | Próxima acción |
 |---|---|---|
+| Cambios D-150..D-153 aún no integrados en `main` (rama actual ahead `0/5`) | 🔴 ALTO | Abrir/mergear PR `docs/d150-cierre-documental-final` -> `main` para activar workflows y considerar cierre productivo en rama de release. |
+| `api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22) | 🔴 ALTO | Deploy explícito: `supabase functions deploy api-minimarket --no-verify-jwt`. |
+| `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto | 🔴 ALTO | Deploy de función faltante y verificar cron/scheduler asociado. |
+| `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub | 🟠 MEDIO | Crear variables repo (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) o cambiar workflow para consumir secrets equivalentes. |
+| `backup.yml` requiere `SUPABASE_DB_URL` y el secret no está configurado en GitHub | 🟠 MEDIO | Crear secret `SUPABASE_DB_URL` para activar backup diario real. |
 | ~~`POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor`~~ | ✅ CERRADO (D-153) | Insert desalineado eliminado. Precio de compra se acepta en request pero no se persiste hasta definir modelo dedicado. Fix: `supabase/functions/api-minimarket/index.ts:1643-1648`. |
 | Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
 | ~~FAB global de faltantes no visible en `/pos` y `/pocket`~~ | ✅ EXCLUIDO (D-153) | Exclusión formal por diseño: `/pos` y `/pocket` son rutas standalone fullscreen para workflows de foco (caja/scanner). FAB podría interferir con touch targets, scanner race lock y flujo de pago. No es un bug sino una decisión de UX. |
-| ~~Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Prerequisito: configurar `SUPABASE_SERVICE_ROLE_KEY` como secret en GitHub Actions. |
+| ~~Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153, infraestructura creada) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Queda pendiente su activación operativa (merge a `main` + variables repo). |
 | Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
 
 ## Pendientes Ocultos Revalidados (D-153)
