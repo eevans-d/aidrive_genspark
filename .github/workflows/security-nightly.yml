@@ -1,0 +1,47 @@
+name: Security Smoke Tests (Nightly)
+
+on:
+  schedule:
+    # Daily at 04:00 UTC (after backup at 03:00)
+    - cron: '0 4 * * *'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+
+jobs:
+  security-smoke:
+    name: Security Smoke (Real Endpoints)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run security tests with real endpoints
+        run: npx vitest run tests/security --config vitest.auxiliary.config.ts --reporter=verbose
+        env:
+          RUN_REAL_TESTS: 'true'
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Run API contract tests with real endpoints
+        run: npx vitest run tests/api-contracts --config vitest.auxiliary.config.ts --reporter=verbose
+        env:
+          RUN_REAL_TESTS: 'true'
+          SUPABASE_URL: ${{ vars.VITE_SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ vars.VITE_SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+      - name: Notify on failure
+        if: failure()
+        run: |
+          echo "::error::Security smoke tests failed! Review logs for details."
+          echo "::warning::Manual investigation required before next release."

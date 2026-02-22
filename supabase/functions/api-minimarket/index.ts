@@ -1640,15 +1640,12 @@ Deno.serve(async (req) => {
         p_proveedor_id: proveedorId,
       });
 
-      // Si hay precio de compra, registrar en precios_proveedor
-      if (precioCompraNumero !== null && proveedorId) {
-        await insertTable(supabaseUrl, 'precios_proveedor', requestHeaders(), {
-          proveedor_id: proveedorId,
-          producto_id,
-          precio: precioCompraNumero,
-          fecha_actualizacion: new Date().toISOString(),
-        });
-      }
+      // D-007 (D-153 cierre): precio_compra se acepta en el request body pero NO se
+      // persiste — la tabla precios_proveedor es de scraping (Maxiconsumo) y no tiene
+      // columnas para precio de compra interno. Persistencia de precios de compra queda
+      // diferida hasta que se defina un modelo dedicado (ver DECISION_LOG D-007).
+      // precioCompraNumero y proveedorId ya fueron validados arriba y se usan en el
+      // movimiento de inventario (p_origen, p_proveedor_id).
 
       return respondOk(movimiento, 201, { message: 'Ingreso de mercaderia registrado exitosamente' });
     }

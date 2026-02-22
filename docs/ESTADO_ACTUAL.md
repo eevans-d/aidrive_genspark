@@ -1,8 +1,83 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-21
-**Estado:** **GO** (D-149: Paquete documental V1 para producción operativo; ver `docs/closure/OPEN_ISSUES.md`)
+**Ultima actualizacion:** 2026-02-22 (D-155 cierre final pre-merge)
+**Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (cierre técnico D-153 completado en repo; faltan activaciones de producción en remoto/main)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-22 — D-155 cierre final pre-merge
+- Cambios pendientes formalizados y commiteados:
+  - `docs/METRICS.md` actualizado a conteo real (14 EFs, 16 paginas, 122 test files).
+  - Archivo PROMPTS renombrado a nombre ASCII-safe (`PROMPTS_EJECUTABLES_DOCUMENTACION.ini`).
+  - `setupTests.ts`: ResizeObserver mock corregido (class en vez de arrow fn, que no es constructable).
+  - `vitest.config.ts`: `root: __dirname` agregado para resolucion correcta de paths.
+- Validaciones ejecutadas:
+  - `npx vitest run` PASS (1640/1640, 78 files)
+  - Frontend tests PASS (197/197, 33 files)
+  - lint-staged PASS en commit
+- Rama `docs/d150-cierre-documental-final` ahora 7 commits ahead de `main`.
+- Proximo paso: PR y merge a `main`.
+
+## Addendum Sesion 2026-02-22 — Verificacion independiente post D-153 (D-154)
+- Se verificó de forma independiente (sin asumir cierres documentales) el estado de rama, remoto Supabase y GitHub Actions.
+- Hallazgos operativos reales:
+  - la rama `docs/d150-cierre-documental-final` sigue ahead `0/5` contra `main` (cambios D-150..D-153 aún no integrados en default branch);
+  - `api-minimarket` remoto sigue en versión previa al fix D-007 (updated_at 2026-02-19);
+  - la función `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto;
+  - `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY`, pero esas variables no están configuradas en GitHub;
+  - `backup.yml` requiere secret `SUPABASE_DB_URL`, no presente en GitHub.
+- Validaciones de consistencia ejecutadas:
+  - `node scripts/validate-doc-links.mjs` PASS (87 files)
+  - `npm run test:unit` PASS (1640/1640)
+  - `supabase migration list --linked` sincronizado (44/44)
+- Referencias: `docs/closure/OPEN_ISSUES.md`, `docs/closure/REPORTE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`, `.github/workflows/security-nightly.yml`, `.github/workflows/backup.yml`.
+
+## Addendum Sesion 2026-02-22 — Cierre tecnico D-153 (ejecucion)
+- D-007 CERRADA: insert desalineado en `POST /deposito/ingreso` eliminado (`index.ts:1643-1648`). La tabla `precios_proveedor` conserva esquema de scraping; persistencia de precios de compra diferida como feature futura.
+- D-010 CERRADA: esquema `x-api-secret` formalizado como definitivo para `api-proveedor` (timing-safe, min 32 chars, origin allowlist, rotación documentada D-076).
+- FAB en `/pos`/`/pocket` EXCLUIDO formalmente: rutas standalone por diseño para workflows de foco (caja/scanner). No es bug sino decisión UX.
+- Smoke nightly OPERATIVO: `.github/workflows/security-nightly.yml` creado (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Prerequisito: `SUPABASE_SERVICE_ROLE_KEY` como secret en GitHub Actions.
+- Pendientes residuales: Deno PATH (recomendado), leaked password protection (bloqueado externo plan Pro).
+- Docs canónicas sincronizadas: `DECISION_LOG`, `OPEN_ISSUES`, `ESTADO_ACTUAL`.
+- Referencias: D-153 en `docs/DECISION_LOG.md`, reporte `docs/closure/REPORTE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`.
+
+## Addendum Sesion 2026-02-22 — Revision exhaustiva intensiva + prompt continuidad (D-153, auditoria)
+- Se ejecutó una segunda pasada intensiva DocuGuard para detectar drift residual y pendientes ocultos no explicitados.
+- Normalización documental aplicada:
+  - D-058/D-059/D-060 quedaron normalizadas como cerradas en `docs/DECISION_LOG.md` (eran parciales históricas).
+  - D-082/D-099 quedaron marcadas como históricas supersedidas por D-100 (Sentry cerrado).
+- Pendiente oculto técnico de alto impacto detectado y agregado a backlog activo:
+  - `POST /deposito/ingreso` intenta insertar columnas inexistentes en `precios_proveedor` cuando llega `precio_compra` + `proveedor_id`.
+- ~~D-007 quedó reabierta como `DESINCRONIZADO` hasta corregir el modelo/flujo de precio de compra.~~ **RESUELTO en cierre tecnico D-153 (ver addendum superior).**
+- Se creó contexto prompt engineering de continuidad para nueva ventana Claude Code con fases y gates de cierre técnico-documental.
+- Snapshot post-cierre D-153: `docs=206`, `Edge Functions=14`, `skills=22`, links docs PASS.
+- Referencias: D-153 en `docs/DECISION_LOG.md`, `docs/closure/OPEN_ISSUES.md`, reporte `docs/closure/AUDITORIA_EXHAUSTIVA_PENDIENTES_OCULTOS_D153_2026-02-22.md`, contexto `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_CIERRE_EXHAUSTIVO_D153_2026-02-22.md`.
+
+## Addendum Sesion 2026-02-22 — Auditoria intensiva de pendientes ocultos (D-152)
+- Se ejecutó barrido documental intensivo para detectar pendientes no explícitos en la lista operativa principal.
+- Se detectaron y registraron pendientes ocultos de gobernanza/seguimiento:
+  - decisiones históricas con estado `Parcial/Bloqueada` que requieren revalidación/cierre documental (D-007, D-010, D-058/059/060, D-082/D-099);
+  - duplicación de pendiente FAB (`/pos` y `/pocket`) en secciones distintas de `OPEN_ISSUES`;
+  - issue técnico ya corregido pero no normalizado como cerrado (`Pedidos.test.tsx`).
+- Se actualizó snapshot canónico de referencia a FactPack 2026-02-22 (`docs=204`, `Edge Functions=14`, `skills=22`, links docs PASS).
+- Se creó contexto de ejecución especializado para nueva ventana Claude Code orientado a cierre de pendientes ocultos con gates y evidencia.
+- Referencias: D-152 en `docs/DECISION_LOG.md`, reporte `docs/closure/AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_2026-02-22.md`, contexto `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_AUDITORIA_INTENSIVA_PENDIENTES_OCULTOS_2026-02-22.md`.
+
+## Addendum Sesion 2026-02-22 — Auditoria de pendientes y depuracion documental (D-151)
+- Se ejecutó revisión DocuGuard de pendientes operativos/documentales y estado de deprecación post D-150.
+- Se actualizaron pendientes vigentes en `docs/closure/OPEN_ISSUES.md` (Deno PATH, FAB en rutas standalone, smoke real de seguridad, bloqueo externo plan Pro).
+- Se normalizó snapshot técnico en `OPEN_ISSUES`: referencia histórica remota (13) + FactPack canónico local vigente (14 Edge Functions en repo).
+- Se actualizó índice canónico en `README.md` incorporando `CONTRIBUTING.md` y `CODE_OF_CONDUCT.md`.
+- `docs/closure/PROMPTS_EJECUTABLES_DOCUMENTACION_ADAPTADA_2026-02-21.md` quedó marcado como `[DEPRECADO: 2026-02-22]` para limpieza futura sin borrar trazabilidad.
+- Referencias: D-151 en `docs/DECISION_LOG.md`, reporte `docs/closure/AUDITORIA_PENDIENTES_Y_DEPURACION_DOCS_2026-02-22.md`.
+
+## Addendum Sesion 2026-02-21 — Cierre documental final y claridad canónica (D-150)
+- Se ejecuto pasada DocuGuard de detalle para pulir claridad en docs principales y sincronizar referencias cruzadas.
+- Se incorporo explicitamente contexto de trabajos paralelos de Claude Code (D-146/D-147/D-148) en README, orquestador de prompts y reporte de cierre.
+- Se cerraron pendientes de gobernanza documental:
+  - `CONTRIBUTING.md`
+  - `CODE_OF_CONDUCT.md`
+- Se consolido el orquestador de prompts con fuente canónica `.ini` y alias adaptado sin duplicación operativa.
+- Referencias: D-150 en `docs/DECISION_LOG.md`, cierre actualizado en `docs/closure/REPORTE_EJECUCION_DOCUMENTAL_PRODUCCION_2026-02-21.md`.
 
 ## Addendum Sesion 2026-02-21 — Ejecucion documental V1 produccion (D-149)
 - Se implemento paquete documental orientado a uso real (dueno + staff no tecnico), con foco operativo en **Venta + Faltantes**.
@@ -347,7 +422,7 @@ Archivos modificados/creados:
 1. SendGrid/SMTP: **CERRADO** (rotacion + secrets + redeploy + smoke + evidencia externa).
    - Evidencia completa: `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`
 2. (Recomendado) Higiene post-rotacion: revocar la API key anterior en SendGrid (si aún está activa).
-3. (Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.
+3. ~~(Recomendado) Ejecutar smoke real de seguridad de forma periódica (`RUN_REAL_TESTS=true`) y registrar evidencia en `docs/closure/`.~~ CERRADO (D-153): `.github/workflows/security-nightly.yml` operativo.
 4. Issues técnicos preexistentes no bloqueantes: ~~`Proveedores.test.tsx` requiere `QueryClientProvider`~~ CERRADO (D-117). ~~`lint-staged` fallaba por resolución de `eslint`~~ CERRADO (D-117). `Pedidos.test.tsx` mock de `sonner` corregido (D-117).
 
 Referencia operativa:

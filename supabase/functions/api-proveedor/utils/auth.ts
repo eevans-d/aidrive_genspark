@@ -1,9 +1,14 @@
 /**
  * Auth helper para API proveedor (shared secret validation)
- * 
+ *
  * NOTA: Esta API es interna (server-to-server). La autenticación por shared secret
- * es un patrón temporal. Ver D-010 en DECISION_LOG para hardening futuro.
- * 
+ * es el esquema definitivo (D-010, cerrada D-153). Controles:
+ * - Comparación timing-safe para evitar timing attacks
+ * - Longitud mínima de secret: 32 caracteres
+ * - Origin allowlist configurable via INTERNAL_ORIGINS_ALLOWLIST
+ * - Server-to-server (sin Origin) permitido
+ * - Plan de rotación documentado en docs/SECRET_ROTATION_PLAN.md
+ *
  * Flujo de autenticación:
  * 1. Validar que existe API_PROVEEDOR_SECRET en env
  * 2. Validar que request incluye header x-api-secret

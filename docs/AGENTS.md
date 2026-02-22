@@ -1,18 +1,18 @@
 # Guia Para Agentes IA (Canonica)
 
 **Proyecto:** Mini Market System  
-**Ultima actualizacion:** 2026-02-18
+**Ultima actualizacion:** 2026-02-21
 
 ## Estado Rapido
 | Metrica | Valor |
 |---|---|
-| Estado global | **GO** (9/9 gates PASS D-137; 8/8 VULNs cerradas; ver OPEN_ISSUES) |
-| Score operativo | 100% (GO D-137) |
-| Migraciones | 43/43 synced remoto (D-132) + 1 nueva local = 44 fisicas |
-| Edge Functions activas | 13 |
+| Estado global | **GO** (D-149 operativo + D-148 tecnico vigente; ver `docs/closure/OPEN_ISSUES.md`) |
+| Score operativo | 100% (11/11 gates de referencia operativa, D-140) |
+| Migraciones | 44/44 synced remoto |
+| Edge Functions activas | 14 |
 | Skills locales | 22 |
 | Workflows documentados | 12 |
-| Quality gates | PASS (`test-reports/quality-gates_20260213-061657.log`) |
+| Quality gates | PASS (`node scripts/validate-doc-links.mjs` -> `Doc link check OK (87 files)`) |
 
 ## Fuente de Verdad (orden de prioridad)
 1. `docs/ESTADO_ACTUAL.md`
@@ -42,6 +42,7 @@
 ```
 3. Ejecucion del plan vigente:
 - usar `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md`
+- para continuidad de avances paralelos Claude: usar `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_*`
 4. Cierre documental:
 ```bash
 .agent/scripts/p0.sh session-end

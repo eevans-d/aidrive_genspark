@@ -4,6 +4,7 @@ import path from 'path';
 
 export default defineConfig({
         plugins: [react()],
+        root: __dirname,
         test: {
                 // Use jsdom for browser-like environment
                 environment: 'jsdom',

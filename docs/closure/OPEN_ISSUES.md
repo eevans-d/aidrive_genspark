@@ -1,7 +1,32 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-21 (Verificación independiente post-Claude del Cuaderno, D-147)
+**Última actualización:** 2026-02-22 (D-155 cierre final pre-merge)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
+
+## Pendientes Vigentes (2026-02-22)
+
+| Item | Estado | Próxima acción |
+|---|---|---|
+| Cambios D-150..D-155 aún no integrados en `main` (rama actual ahead `0/7`) | 🔴 ALTO | Abrir/mergear PR `docs/d150-cierre-documental-final` -> `main` para activar workflows y considerar cierre productivo en rama de release. |
+| `api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22) | 🔴 ALTO | Deploy explícito: `supabase functions deploy api-minimarket --no-verify-jwt`. |
+| `backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto | 🔴 ALTO | Deploy de función faltante y verificar cron/scheduler asociado. |
+| `security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub | 🟠 MEDIO | Crear variables repo (`VITE_SUPABASE_URL`, `VITE_SUPABASE_ANON_KEY`) o cambiar workflow para consumir secrets equivalentes. |
+| `backup.yml` requiere `SUPABASE_DB_URL` y el secret no está configurado en GitHub | 🟠 MEDIO | Crear secret `SUPABASE_DB_URL` para activar backup diario real. |
+| ~~`POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor`~~ | ✅ CERRADO (D-153) | Insert desalineado eliminado. Precio de compra se acepta en request pero no se persiste hasta definir modelo dedicado. Fix: `supabase/functions/api-minimarket/index.ts:1643-1648`. |
+| Deno no disponible en PATH global | ⚠️ RECOMENDADO | Exportar `~/.deno/bin` en shell/CI para evitar falsos FAIL de prechecks. |
+| ~~FAB global de faltantes no visible en `/pos` y `/pocket`~~ | ✅ EXCLUIDO (D-153) | Exclusión formal por diseño: `/pos` y `/pocket` son rutas standalone fullscreen para workflows de foco (caja/scanner). FAB podría interferir con touch targets, scanner race lock y flujo de pago. No es un bug sino una decisión de UX. |
+| ~~Smoke real de seguridad periódico (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153, infraestructura creada) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC, `RUN_REAL_TESTS=true`). Queda pendiente su activación operativa (merge a `main` + variables repo). |
+| Leaked password protection (plan Pro) | ⛔ BLOQUEADO EXTERNO | Mantener en backlog hasta cambio de plan/capacidades del proveedor. |
+
+## Pendientes Ocultos Revalidados (D-153)
+
+| Item | Estado | Próxima acción |
+|---|---|---|
+| D-007 (`precios_compra_proveedor`) | ✅ CERRADO (D-153) | Insert desalineado eliminado del handler. `precios_proveedor` conserva esquema de scraping. Persistencia de precios de compra diferida como feature futura. |
+| D-010 (auth `api-proveedor` "temporal") | ✅ CERRADO (D-153) | Esquema `x-api-secret` formalizado como definitivo con controles: timing-safe, min 32 chars, origin allowlist, rotación documentada (D-076). |
+| D-058/D-059/D-060 (reservas/locks) | ✅ NORMALIZADO | Estados parciales históricos cerrados y normalizados en `docs/DECISION_LOG.md` (D-153). |
+| D-082/D-099 vs D-100 (Sentry) | ✅ NORMALIZADO | Se mantiene D-100 como cierre canónico; D-082/D-099 quedan marcadas como etapas históricas. |
+| Duplicación de pendiente FAB en secciones internas | ✅ HIGIENE DOC | Se mantiene un único pendiente vivo en `Pendientes Vigentes`. |
 
 ## Estado Mega Plan (2026-02-13)
 
@@ -66,7 +91,7 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 |-----------|--------|-----------|------------------|
 | Parser determinístico de texto libre | ✅ CERRADO | `minimarket-system/src/utils/cuadernoParser.ts` — `parseNote()`, `resolveProveedor()`, `isDuplicate()`, `generatePurchaseSummary()` | — |
 | CRUD hooks directos Supabase (sin API gateway) | ✅ CERRADO | `minimarket-system/src/hooks/queries/useFaltantes.ts` — 6 hooks, RLS protege tabla | — |
-| FAB QuickNoteButton (captura desde cualquier pantalla) | ⚠️ PARCIAL | El FAB global vive en `Layout.tsx`, pero `/pos` y `/pocket` son rutas standalone en `App.tsx` sin `Layout`. | Evaluar inyección de `QuickNoteButton` en `Pos.tsx` y `Pocket.tsx` sin romper UX de caja/scanner. |
+| FAB QuickNoteButton (captura desde cualquier pantalla) | ℹ️ Referenciado | Ver `Pendientes Vigentes (2026-02-22)` para estado activo único. | Evitar duplicación de tracking en secciones históricas. |
 | Página Cuaderno con 3 tabs | ✅ CERRADO | `minimarket-system/src/pages/Cuaderno.tsx` — Todos/Por Proveedor/Resueltos, acciones 1-touch | — |
 | Integración en Proveedores.tsx | ✅ CERRADO | `minimarket-system/src/pages/Proveedores.tsx:488-547` — `ProveedorFaltantes` component | — |
 | Accesos contextuales (GlobalSearch, AlertsDrawer, Dashboard) | ✅ CERRADO | `Layout.tsx` + `QuickNoteButton.tsx` ahora consumen `quickAction/prefillProduct` para auto-open/prefill real en `/cuaderno`; AlertsDrawer y Dashboard mantienen CTA activos. | — |
@@ -82,9 +107,10 @@ Checkpoints obligatorios: removidos en limpieza documental D-109 (todos PASS, ev
 |-----------|--------|------------------|
 | ~~`precios_proveedor`: RLS habilitado en remoto pero sin migración explícita en repo (drift de trazabilidad)~~ | ✅ CERRADO | Migración `20260216040000_rls_precios_proveedor.sql` aplicada en remoto via `supabase db push`. RLS=true, grants revocados, service_role OK. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
 | ~~`scraper-maxiconsumo`: `DEFAULT_CORS_HEADERS` usa `Access-Control-Allow-Origin: '*'` (anti-patrón cosmético, mitigado por `validateOrigin`)~~ | ✅ CERRADO | Wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`. Desplegado en remoto via `supabase functions deploy`. Evidencia: `docs/closure/EVIDENCIA_P2_FIXES_2026-02-16_REMOTE.md`. |
-| Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`) | ⚠️ RECOMENDADO | Programar corrida controlada (nightly o pre-release) para endpoints cron críticos y registrar evidencia en `docs/closure/`. |
+| ~~Ejecución periódica de smoke real de seguridad (`RUN_REAL_TESTS=true`)~~ | ✅ CERRADO (D-153) | Workflow nightly creado: `.github/workflows/security-nightly.yml` (cron 04:00 UTC). |
 | ~~Definir matriz por entorno para canales opcionales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`)~~ | ✅ CERRADO (D-121) | Matriz documentada: 4 canales analizados (email, webhook, slack, sms) con auto-disable, rate limits, recomendaciones por entorno. Evidencia: `docs/closure/EVIDENCIA_CHANNEL_MATRIX_2026-02-16.md`. |
 | Consolidación de artefactos históricos | ✅ CERRADO | Limpieza D-109 (2026-02-15): 79 archivos obsoletos eliminados. `docs/` reducido de ~2.5MB a ~1.3MB. |
+| ~~Documentación de comunidad (`CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`)~~ | ✅ CERRADO | `CONTRIBUTING.md` y `CODE_OF_CONDUCT.md` creados para cerrar gobernanza de colaboración y conducta base del repo. |
 
 ---
 
@@ -129,7 +155,8 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 ## Notas operativas
 
 - Migraciones: `44` local, `44` remoto (sincronizado D-139).
-- Snapshot remoto actual 2026-02-19: 13 funciones activas; `api-minimarket v29` (redeploy CORS Cloudflare Pages), `api-proveedor v20`, `cron-notifications v26`, `notificaciones-tareas v20`, `scraper-maxiconsumo v21`, `alertas-stock v18`, `reportes-automaticos v18`.
+- Snapshot remoto referencia 2026-02-19 (histórico): 13 funciones activas.
+- FactPack repo 2026-02-22 (canónico local): 14 Edge Functions en código (incluye `backfill-faltantes-recordatorios`).
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.
 - **CORS:** `ALLOWED_ORIGINS` en Supabase incluye dominios Cloudflare Pages + localhost. Tras cambios, redeploy `api-minimarket` con `--no-verify-jwt`.
@@ -160,12 +187,13 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - ✅ Snapshot vigente en `ESTADO_ACTUAL` normalizado contra baseline remoto.
 - ✅ Adopción `ErrorMessage` completada en 14/14 páginas principales (excluye `NotFound.tsx`).
 
-## Issues técnicos conocidos (no bloqueantes)
+## Issues técnicos conocidos
 
+- ~~`POST /deposito/ingreso` registra precio de compra en `precios_proveedor` con columnas que no existen en el esquema actual (`proveedor_id`, `producto_id`, `precio`, `fecha_actualizacion`) y puede fallar en runtime cuando se envía `precio_compra` + `proveedor_id`.~~ CERRADO (D-153): insert desalineado eliminado. Precio de compra diferido como feature futura.
 - ~~`precios_proveedor`: RLS activo en remoto sin migración explícita de habilitación en repo (deuda de trazabilidad).~~ CERRADO: migración `20260216040000` creada.
 - ~~`scraper-maxiconsumo`: CORS default `*` residual en constante local (mitigado por validación de origin).~~ CERRADO: wildcard eliminado, constante renombrada a `SCRAPER_CORS_OVERRIDES`.
 - ~~`minimarket-system/src/pages/Proveedores.test.tsx`: falta envolver con `QueryClientProvider` (pre-existente).~~ CERRADO: `QueryClientProvider` + mocks de `apiClient`, `ErrorMessage`, `sonner` agregados.
 - ~~Pre-commit/lint-staged: `eslint` puede fallar por resolución de binarios fuera de `minimarket-system/node_modules` (pre-existente). Workaround documentado: `git commit --no-verify`.~~ CERRADO: lint-staged apunta a `minimarket-system/node_modules/.bin/eslint`.
-- `minimarket-system/src/pages/Pedidos.test.tsx`: mock de `sonner` faltaba `Toaster` export (pre-existente, corregido).
+- ~~`minimarket-system/src/pages/Pedidos.test.tsx`: mock de `sonner` faltaba `Toaster` export (pre-existente, corregido).~~ CERRADO: incluido en D-117.
 - Leaked password protection: requiere plan Pro (bloqueado por plan; ver D-055).
 - ~~Auditoria global de referencias en `docs/` (2026-02-16): 88 referencias en backticks apuntan a rutas historicas removidas o no aplicables fuera del set canonico.~~ CERRADO: limpieza incremental completada (D-122). 13 rutas stale anotadas con `[removido en D-109]` en 14 archivos de docs (AGENTS, CHECKLIST_CIERRE, DB_GAPS, HOJA_RUTA, IA_USAGE_GUIDE, E2E_SETUP, C4_HANDOFF, ANTIGRAVITY_PLANNING_RUNBOOK, AUDITORIA_DOCUMENTAL_ABSOLUTA, AUDITORIA_DOCS_VS_REALIDAD, mpc/C1, mpc/C2, mpc/C4).
