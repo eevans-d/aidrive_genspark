@@ -2246,6 +2246,229 @@ Deno.serve(async (req) => {
     }
 
     // ====================================================================
+    // FACTURAS — PUT /facturas/items/:id/validar
+    // ====================================================================
+
+    if (path.match(/^\/facturas\/items\/[a-f0-9-]+\/validar$/) && method === 'PUT') {
+      checkRole(['admin', 'deposito']);
+
+      const itemId = path.split('/')[3];
+      if (!isUuid(itemId)) {
+        return respondFail('VALIDATION_ERROR', 'item_id invalido', 400);
+      }
+
+      const bodyResult = await parseJsonBody();
+      if (bodyResult instanceof Response) return bodyResult;
+      const { estado_match, producto_id, guardar_alias, alias_texto } = bodyResult as Record<string, unknown>;
+
+      // Validate estado_match
+      const validEstados = ['confirmada', 'rechazada'];
+      if (!estado_match || !validEstados.includes(String(estado_match))) {
+        return respondFail('VALIDATION_ERROR', 'estado_match debe ser confirmada o rechazada', 400);
+      }
+
+      // Validate producto_id if confirming
+      let productoIdFinal: string | null = null;
+      if (String(estado_match) === 'confirmada') {
+        if (!producto_id || typeof producto_id !== 'string' || !isUuid(String(producto_id))) {
+          return respondFail('VALIDATION_ERROR', 'producto_id requerido para confirmacion', 400);
+        }
+        productoIdFinal = String(producto_id);
+      }
+
+      // Update item
+      const updated = await updateTable(supabaseUrl, 'facturas_ingesta_items', itemId, requestHeaders(), {
+        estado_match: String(estado_match),
+        producto_id: productoIdFinal,
+      });
+
+      // Save alias if requested
+      if (guardar_alias && alias_texto && productoIdFinal) {
+        try {
+          // Fetch factura to get proveedor_id
+          const items = await queryTable(supabaseUrl, 'facturas_ingesta_items', requestHeaders(), { id: itemId });
+          const item = (items as Record<string, unknown>[])[0];
+          if (item) {
+            const facturas = await queryTable(supabaseUrl, 'facturas_ingesta', requestHeaders(), { id: item.factura_id });
+            const factura = (facturas as Record<string, unknown>[])[0];
+
+            await insertTable(supabaseUrl, 'producto_aliases', requestHeaders(), {
+              alias_texto: String(alias_texto).trim(),
+              producto_id: productoIdFinal,
+              proveedor_id: factura?.proveedor_id ?? null,
+              confianza: 'alta',
+              origen: 'manual',
+              created_by: user!.id,
+            });
+          }
+        } catch (e) {
+          logger.warn('ALIAS_INSERT_FAILED', { requestId, itemId, alias_texto, error: String(e) });
+        }
+      }
+
+      // Check if all items are validated — if so, update factura estado to 'validada'
+      try {
+        const items = await queryTable(supabaseUrl, 'facturas_ingesta_items', requestHeaders(), { id: itemId });
+        const item = (items as Record<string, unknown>[])[0];
+        if (item) {
+          const allItems = await queryTable(
+            supabaseUrl, 'facturas_ingesta_items', requestHeaders(),
+            { factura_id: item.factura_id },
+          );
+          const allDone = (allItems as Record<string, unknown>[]).every(
+            (i) => i.estado_match === 'confirmada' || i.estado_match === 'rechazada',
+          );
+          if (allDone) {
+            await updateTable(supabaseUrl, 'facturas_ingesta', String(item.factura_id), requestHeaders(), {
+              estado: 'validada',
+            });
+            // Register audit event
+            await insertTable(supabaseUrl, 'facturas_ingesta_eventos', requestHeaders(), {
+              factura_id: item.factura_id,
+              evento: 'validada',
+              datos: { validada_por: user!.id, request_id: requestId },
+              usuario_id: user!.id,
+            });
+          }
+        }
+      } catch (e) {
+        logger.warn('FACTURA_AUTO_VALIDATE_FAILED', { requestId, error: String(e) });
+      }
+
+      return respondOk(updated, 200, { message: 'Item actualizado' });
+    }
+
+    // ====================================================================
+    // FACTURAS — POST /facturas/:id/aplicar
+    // ====================================================================
+
+    if (path.match(/^\/facturas\/[a-f0-9-]+\/aplicar$/) && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const facturaId = path.split('/')[2];
+      if (!isUuid(facturaId)) {
+        return respondFail('VALIDATION_ERROR', 'factura_id invalido', 400);
+      }
+
+      // Fetch factura
+      const facturas = await queryTable(supabaseUrl, 'facturas_ingesta', requestHeaders(), { id: facturaId });
+      const factura = (facturas as Record<string, unknown>[])[0];
+      if (!factura) {
+        return respondFail('NOT_FOUND', 'Factura no encontrada', 404);
+      }
+      if (factura.estado === 'aplicada') {
+        return respondFail('CONFLICT', 'Factura ya fue aplicada', 409);
+      }
+      if (factura.estado !== 'validada') {
+        return respondFail('VALIDATION_ERROR', 'Factura debe estar validada antes de aplicar', 400);
+      }
+
+      // Fetch confirmed items
+      const allItems = await queryTable(
+        supabaseUrl, 'facturas_ingesta_items', requestHeaders(),
+        { factura_id: facturaId },
+      );
+      const confirmedItems = (allItems as Record<string, unknown>[]).filter(
+        (i) => i.estado_match === 'confirmada' && i.producto_id,
+      );
+
+      if (confirmedItems.length === 0) {
+        return respondFail('VALIDATION_ERROR', 'No hay items confirmados para aplicar', 400);
+      }
+
+      const results: Record<string, unknown>[] = [];
+      const errors: Record<string, unknown>[] = [];
+
+      for (const item of confirmedItems) {
+        try {
+          // Check idempotency: already applied?
+          const existing = await queryTable(
+            supabaseUrl, 'movimientos_deposito', requestHeaders(),
+            { factura_ingesta_item_id: String(item.id) },
+          );
+          if ((existing as unknown[]).length > 0) {
+            results.push({ item_id: item.id, status: 'already_applied' });
+            continue;
+          }
+
+          // Create inventory movement
+          const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
+            p_producto_id: String(item.producto_id),
+            p_tipo: 'entrada',
+            p_cantidad: Number(item.cantidad),
+            p_origen: `Factura:${factura.numero || facturaId}`,
+            p_destino: 'Principal',
+            p_usuario: user!.id,
+            p_proveedor_id: factura.proveedor_id || null,
+          });
+
+          // Link movement to factura item (update factura_ingesta_item_id)
+          if (movimiento && typeof movimiento === 'object' && 'id' in movimiento) {
+            try {
+              await updateTable(
+                supabaseUrl, 'movimientos_deposito',
+                String((movimiento as Record<string, unknown>).id),
+                requestHeaders(),
+                { factura_ingesta_item_id: String(item.id) },
+              );
+            } catch (e) {
+              logger.warn('MOVIMIENTO_LINK_FAILED', { requestId, item_id: item.id, error: String(e) });
+            }
+          }
+
+          // Persist cost in precios_compra
+          if (item.precio_unitario != null) {
+            try {
+              await insertTable(supabaseUrl, 'precios_compra', requestHeaders(), {
+                producto_id: String(item.producto_id),
+                proveedor_id: factura.proveedor_id || null,
+                precio_unitario: Number(item.precio_unitario),
+                factura_ingesta_item_id: String(item.id),
+                origen: 'factura',
+                created_by: user!.id,
+              });
+            } catch (e) {
+              logger.warn('PRECIO_COMPRA_FACTURA_FAILED', { requestId, item_id: item.id, error: String(e) });
+            }
+          }
+
+          results.push({ item_id: item.id, status: 'applied', movimiento_id: movimiento && typeof movimiento === 'object' && 'id' in movimiento ? (movimiento as Record<string, unknown>).id : null });
+        } catch (e) {
+          errors.push({ item_id: item.id, error: String(e) });
+          logger.error('FACTURA_APPLY_ITEM_FAILED', { requestId, item_id: item.id, error: String(e) });
+        }
+      }
+
+      // Update factura estado to 'aplicada'
+      if (errors.length === 0) {
+        await updateTable(supabaseUrl, 'facturas_ingesta', facturaId, requestHeaders(), {
+          estado: 'aplicada',
+        });
+        // Register audit event
+        await insertTable(supabaseUrl, 'facturas_ingesta_eventos', requestHeaders(), {
+          factura_id: facturaId,
+          evento: 'aplicada',
+          datos: {
+            aplicada_por: user!.id,
+            request_id: requestId,
+            items_aplicados: results.length,
+            items_errores: errors.length,
+          },
+          usuario_id: user!.id,
+        });
+      }
+
+      return respondOk({
+        factura_id: facturaId,
+        items_aplicados: results.filter(r => r.status === 'applied').length,
+        items_ya_aplicados: results.filter(r => r.status === 'already_applied').length,
+        items_errores: errors.length,
+        results,
+        errors,
+      }, errors.length > 0 ? 207 : 200, { message: errors.length > 0 ? 'Aplicacion parcial' : 'Factura aplicada exitosamente' });
+    }
+
+    // ====================================================================
     // RUTA NO ENCONTRADA
     // ====================================================================
 

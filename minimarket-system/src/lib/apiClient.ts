@@ -980,12 +980,38 @@ export interface FacturaIngestaItemResponse {
         confianza_match: number | null;
 }
 
+export interface ValidarItemParams {
+        estado_match: 'confirmada' | 'rechazada';
+        producto_id?: string | null;
+        guardar_alias?: boolean;
+        alias_texto?: string;
+}
+
+export interface AplicarFacturaResponse {
+        factura_id: string;
+        items_aplicados: number;
+        items_ya_aplicados: number;
+        items_errores: number;
+        results: Array<{ item_id: string; status: string; movimiento_id?: string }>;
+        errors: Array<{ item_id: string; error: string }>;
+}
+
 export const facturasApi = {
-        /**
-         * Invoke OCR extraction on a factura
-         */
         async extraer(facturaId: string): Promise<{ factura_id: string; items_count: number; estado: string }> {
                 return apiRequest<{ factura_id: string; items_count: number; estado: string }>(`/facturas/${facturaId}/extraer`, {
+                        method: 'POST',
+                });
+        },
+
+        async validarItem(itemId: string, params: ValidarItemParams): Promise<Record<string, unknown>> {
+                return apiRequest<Record<string, unknown>>(`/facturas/items/${itemId}/validar`, {
+                        method: 'PUT',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        async aplicar(facturaId: string): Promise<AplicarFacturaResponse> {
+                return apiRequest<AplicarFacturaResponse>(`/facturas/${facturaId}/aplicar`, {
                         method: 'POST',
                 });
         },

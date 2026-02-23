@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { queryKeys } from '../../lib/queryClient'
+import { facturasApi, ValidarItemParams, AplicarFacturaResponse } from '../../lib/apiClient'
 
 export interface FacturaIngesta {
   id: string
@@ -100,6 +101,35 @@ export function useCreateFactura() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: queryKeys.facturas })
+    },
+  })
+}
+
+export function useValidarFacturaItem(facturaId: string | null) {
+  const qc = useQueryClient()
+
+  return useMutation({
+    mutationFn: async ({ itemId, params }: { itemId: string; params: ValidarItemParams }) => {
+      return facturasApi.validarItem(itemId, params)
+    },
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.facturas })
+      if (facturaId) {
+        qc.invalidateQueries({ queryKey: queryKeys.facturaItems(facturaId) })
+      }
+    },
+  })
+}
+
+export function useAplicarFactura() {
+  const qc = useQueryClient()
+
+  return useMutation<AplicarFacturaResponse, Error, string>({
+    mutationFn: (facturaId: string) => facturasApi.aplicar(facturaId),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: queryKeys.facturas })
+      qc.invalidateQueries({ queryKey: ['kardex'] })
+      qc.invalidateQueries({ queryKey: ['stock'] })
     },
   })
 }
