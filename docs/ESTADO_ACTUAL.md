@@ -1,8 +1,50 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-23 (Fase 2 — Validar/Aplicar facturas + trazabilidad)
-**Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (pipeline OCR desplegado; falta secret GCV_API_KEY)
+**Ultima actualizacion:** 2026-02-23 (Mega Plan Completo — Fases 0+1+2+3)
+**Estado:** **GO — OPERATIVO** (pipeline OCR completo, secret GCV_API_KEY configurado)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-23 — Fase 3: Cierre Mega Plan (UI completa, KPIs, tests)
+
+**Tarea 1.4 — Validacion humana asistida (Facturas.tsx):**
+- Botones Confirmar / Rechazar / Asignar producto por item
+- Dropdown busqueda de productos con filtro por nombre
+- Checkbox + input para guardar alias en `producto_aliases`
+- Boton "Aplicar al deposito" visible para facturas en estado `validada`
+- Hooks `useValidarFacturaItem` + `useAplicarFactura` conectados a UI
+
+**Tarea 2.2 — Trazabilidad Kardex (Kardex.tsx):**
+- Nueva columna "Origen" con icono factura + numero + proveedor
+- Query join `facturas_ingesta_items` -> `facturas_ingesta` -> `proveedores`
+- Interfaz `KardexMovimiento` extendida con `factura_numero`, `factura_proveedor`
+
+**Tarea 3.1 — Recepcion OC (Deposito.tsx):**
+- Tab "Recepcion OC" con lista de ordenes pendientes/parciales
+- Card por OC con producto, proveedor, cantidades pedido/recibido/pendiente
+- Input cantidad a recibir + boton Confirmar via `depositoApi.recepcionCompra()`
+- Query `ordenes_compra` con join productos/proveedores
+
+**Tarea 3.2 — KPIs factura en Dashboard:**
+- Card "OCR Facturas — Metricas" con 4 KPIs:
+  - Precision auto-match (%)
+  - Facturas aplicadas / total
+  - Items confirmados (auto + alias + manual)
+  - Items pendientes
+- Query agregacion `facturas_ingesta_items` + `facturas_ingesta`
+
+**Tarea 3.3 — Tests integrales (Facturas.test.tsx):**
+- 8 tests: render, upload panel, cancel, proveedor selector, estado badges
+- Mocks completos de supabase, apiClient, FacturaUpload, useProveedores
+
+**Validaciones finales:**
+- Lint: PASS
+- Build frontend: PASS (PWA, 29 entries precached)
+- Tests: 1640/1640 PASS (78 archivos root) + 8/8 Facturas page
+- Health api-minimarket: 200 healthy
+- facturas-ocr: 401 (auth requerida, correcto)
+- Migraciones: 50/50 sincronizadas
+
+**Commit:** `e53c788` — 9 archivos, +3374 lineas
 
 ## Addendum Sesion 2026-02-23 — Fase 2: Validar/Aplicar Facturas + Trazabilidad
 
