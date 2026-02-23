@@ -2,11 +2,19 @@
 
 Estado: Activo
 Audiencia: Tecnico interno
-Ultima actualizacion: 2026-02-21
+Ultima actualizacion: 2026-02-23
 Fuente de verdad: docs/ESTADO_ACTUAL.md
 Owner documental: QA + Desarrollo
 
-> Referencias: FactPack 2026-02-21 (`unit_files=78`, `contract_files=3`, `e2e_files=1`, `frontend_test_files=33`) y estado operativo D-148/D-147 en `docs/ESTADO_ACTUAL.md`.
+> Referencias: corrida de cierre 2026-02-23 (`unit_files=80`, `unit_tests=1711`, `component_files=46`, `component_tests=238`) y estado operativo en `docs/ESTADO_ACTUAL.md`.
+
+## Estado Verificado 2026-02-23 (Cierre Final)
+- Unit (root): `80/80` files, `1711/1711` tests PASS.
+- Components (frontend): `46/46` files, `238/238` tests PASS.
+- Security: `1/1` file, `11 PASS | 3 skipped` (`14` total).
+- Coverage global (unit): `90.19% statements`, `82.76% branches`, `91.16% functions`, `91.29% lines`.
+- Build frontend: PASS (`vite build` + PWA assets generados).
+- TypeCheck frontend: PASS (`npx tsc --noEmit`, 0 errores).
 
 ## Objetivo
 Estandarizar como ejecutar, interpretar y mantener tests del proyecto sin ambiguedad.
