@@ -1,7 +1,7 @@
 # Esquema de Base de Datos - Sistema Mini Market
 
-**Actualizado:** 2026-02-19 (D-142: reescritura completa contra 44 migraciones SQL)
-**Migraciones:** 44/44 sincronizadas (local = remoto)
+**Actualizado:** 2026-02-23 (49 migraciones, +5 tablas OCR/facturas)
+**Migraciones:** 49/49 sincronizadas (local = remoto)
 **Fuente de verdad:** `supabase/migrations/*.sql` (este documento es derivado)
 
 ---
@@ -10,12 +10,12 @@
 
 | Metrica | Valor |
 |---------|-------|
-| Tablas | 38 |
+| Tablas | 43 |
 | Vistas no materializadas | 11 |
 | Vistas materializadas | 3 |
 | Funciones/Stored Procedures | 30+ |
-| Triggers | 3 |
-| Migraciones | 44 |
+| Triggers | 4 |
+| Migraciones | 49 |
 
 ---
 
@@ -33,6 +33,7 @@
 | Gestion: Personal | personal |
 | Proveedor/Scraper | cache_proveedor, configuracion_proveedor, estadisticas_scraping, comparacion_precios, alertas_cambios_precios |
 | Cron Jobs | cron_jobs_tracking, cron_jobs_execution_log, cron_jobs_alerts, cron_jobs_notifications, cron_jobs_metrics, cron_jobs_monitoring_history, cron_jobs_health_checks, cron_jobs_config, cron_jobs_notification_preferences, cron_jobs_locks |
+| OCR/Facturas | facturas_ingesta, facturas_ingesta_items, facturas_ingesta_eventos, producto_aliases, precios_compra |
 | Infraestructura | rate_limit_state, circuit_breaker_state |
 
 ---
@@ -943,7 +944,121 @@ Estado de circuit breakers.
 
 ---
 
-## 12. Vistas
+## 12. OCR / Facturas de Ingesta
+
+### facturas_ingesta
+
+Cabecera de facturas de compra ingresadas (OCR o manual).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| proveedor_id | uuid | NOT NULL | | FK -> proveedores(id) ON DELETE RESTRICT |
+| tipo_comprobante | text | NOT NULL | 'factura' | |
+| numero | text | NULL | | |
+| fecha_factura | date | NULL | | |
+| total | numeric(12,2) | NULL | | |
+| estado | text | NOT NULL | 'pendiente' | CHECK IN ('pendiente','extraida','validada','aplicada','error','rechazada') |
+| imagen_url | text | NULL | | Ruta en Storage bucket `facturas` |
+| datos_extraidos | jsonb | NULL | | JSON crudo del OCR |
+| score_confianza | numeric(5,2) | NULL | | |
+| request_id | text | NULL | | Tracing |
+| created_by | uuid | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Constraint:** `facturas_ingesta_unique_factura UNIQUE NULLS NOT DISTINCT (proveedor_id, tipo_comprobante, numero, fecha_factura)` — idempotencia.
+**Indices:** `idx_facturas_ingesta_proveedor(proveedor_id)`, `idx_facturas_ingesta_estado(estado)`, `idx_facturas_ingesta_fecha(fecha_factura DESC)`, `idx_facturas_ingesta_created(created_at DESC)`
+**RLS:** ENABLED. Policies: `fi_select_staff`, `fi_insert_staff`, `fi_update_staff` (admin, deposito), `fi_delete_admin` (admin).
+
+---
+
+### facturas_ingesta_items
+
+Items/lineas individuales de cada factura.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| factura_id | uuid | NOT NULL | | FK -> facturas_ingesta(id) ON DELETE CASCADE |
+| descripcion_original | text | NOT NULL | | Texto crudo del OCR |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE SET NULL |
+| alias_usado | text | NULL | | Alias que logro el match |
+| cantidad | numeric(12,3) | NOT NULL | 1 | |
+| unidad | text | NULL | 'u' | |
+| precio_unitario | numeric(12,2) | NULL | | |
+| subtotal | numeric(12,2) | NULL | | |
+| estado_match | text | NOT NULL | 'fuzzy_pendiente' | CHECK IN ('auto_match','alias_match','fuzzy_pendiente','confirmada','rechazada') |
+| confianza_match | numeric(5,2) | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_fi_items_factura(factura_id)`, `idx_fi_items_producto(producto_id)`, `idx_fi_items_estado(estado_match)`
+**RLS:** ENABLED. Policies: `fi_items_select_staff`, `fi_items_insert_staff`, `fi_items_update_staff` (admin, deposito), `fi_items_delete_admin` (admin).
+
+---
+
+### facturas_ingesta_eventos
+
+Registro de auditoria/eventos por factura.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| factura_id | uuid | NOT NULL | | FK -> facturas_ingesta(id) ON DELETE CASCADE |
+| evento | text | NOT NULL | | Tipo de evento (ej: 'ocr_iniciado', 'match_completado') |
+| datos | jsonb | NULL | | Payload del evento |
+| usuario_id | uuid | NULL | | |
+| created_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_fi_eventos_factura(factura_id)`, `idx_fi_eventos_created(created_at DESC)`
+**RLS:** ENABLED. Policies: `fi_eventos_select_staff`, `fi_eventos_insert_staff` (admin, deposito).
+
+---
+
+### producto_aliases
+
+Tabla de aliases para matching multinivel de nombres de factura a producto canonico.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| alias_texto | text | NOT NULL | | Texto original del alias |
+| alias_normalizado | text | NOT NULL | GENERATED ALWAYS AS (lower(translate(trim(alias_texto), accents, plain))) STORED | Sin acentos, lowercase, trimmed |
+| producto_id | uuid | NOT NULL | | FK -> productos(id) ON DELETE CASCADE |
+| proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| confianza | text | NOT NULL | 'media' | CHECK IN ('alta','media','baja') |
+| origen | text | NULL | | CHECK IN ('manual','ocr','cuaderno') |
+| activo | boolean | NOT NULL | true | |
+| created_at | timestamptz | NULL | now() | |
+| created_by | uuid | NULL | | |
+
+**Indices:** `idx_pa_alias_proveedor_unique(alias_normalizado, proveedor_id) UNIQUE NULLS NOT DISTINCT`, `idx_pa_producto(producto_id)`, `idx_pa_alias_normalizado(alias_normalizado)`, `idx_pa_activo(activo) PARTIAL WHERE activo = true`
+**RLS:** ENABLED. Policies: `pa_select_all` (todos los roles), `pa_insert_staff`, `pa_update_staff` (admin, deposito), `pa_delete_admin` (admin).
+
+---
+
+### precios_compra
+
+Historial de precios de compra internos, vinculable a factura.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| producto_id | uuid | NOT NULL | | FK -> productos(id) ON DELETE CASCADE |
+| proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
+| precio_unitario | numeric(12,2) | NOT NULL | | |
+| factura_ingesta_item_id | uuid | NULL | | FK -> facturas_ingesta_items(id) ON DELETE SET NULL |
+| origen | text | NOT NULL | 'manual' | CHECK IN ('manual','factura','recepcion') |
+| created_at | timestamptz | NULL | now() | |
+| created_by | uuid | NULL | | |
+
+**Indices:** `idx_pc_producto_fecha(producto_id, created_at DESC)`, `idx_pc_proveedor_producto(proveedor_id, producto_id)`, `idx_pc_factura_item(factura_ingesta_item_id) PARTIAL WHERE NOT NULL`
+**Trigger:** `trg_update_precio_costo` — AFTER INSERT ejecuta `fn_update_precio_costo()` que actualiza `productos.precio_costo` con el valor insertado.
+**RLS:** ENABLED. Policies: `pc_select_staff`, `pc_insert_staff` (admin, deposito), `pc_update_admin`, `pc_delete_admin` (admin).
+
+---
+
+## 13. Vistas
 
 ### Vistas materializadas
 
@@ -971,7 +1086,7 @@ Estado de circuit breakers.
 
 ---
 
-## 13. Funciones y Stored Procedures (principales)
+## 14. Funciones y Stored Procedures (principales)
 
 ### Funciones de negocio
 
@@ -1010,6 +1125,7 @@ Estado de circuit breakers.
 | `fn_refresh_stock_views()` | SECURITY DEFINER | Refresh de vistas materializadas (para cron). |
 | `fnc_redondear_precio(numeric)` | IMMUTABLE | Redondea precio a 2 decimales. |
 | `fnc_margen_sugerido(uuid)` | - | Calcula margen sugerido para un producto. |
+| `fn_update_precio_costo()` | SECURITY DEFINER, TRIGGER | Actualiza `productos.precio_costo` al insertar en `precios_compra`. |
 
 ### Triggers
 
@@ -1018,10 +1134,11 @@ Estado de circuit breakers.
 | `set_clientes_updated_at` | clientes | Auto-update `updated_at` |
 | `clientes_limite_credito_only_admin` | clientes | Solo admin puede modificar `limite_credito` |
 | `set_pedidos_updated_at` | pedidos | Auto-update `updated_at` |
+| `trg_update_precio_costo` | precios_compra | AFTER INSERT: actualiza `productos.precio_costo` con el ultimo valor |
 
 ---
 
-## 14. Notas de Drift Detectado
+## 15. Notas de Drift Detectado
 
 1. **`precios_historicos.fecha`**: Columna legacy residual. No fue eliminada en la migracion de cleanup (20260213). No es usada por codigo activo.
 2. **`cache_proveedor` RLS**: No tiene `ENABLE ROW LEVEL SECURITY` explicito en migraciones. Solo tiene REVOKE de anon.
@@ -1029,5 +1146,5 @@ Estado de circuit breakers.
 
 ---
 
-**Version:** Post-D-142 (GO, 44 migraciones, 38 tablas, 11 vistas, 3 MV)
-**Estado:** Produccion estable
+**Version:** Post-Mega-Plan-O1 (GO, 49 migraciones, 43 tablas, 11 vistas, 3 MV)
+**Estado:** Produccion estable (pipeline OCR desplegado; falta secret GCV_API_KEY)

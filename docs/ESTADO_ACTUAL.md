@@ -1,8 +1,56 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-22 (D-155 cierre final pre-merge)
-**Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (cierre técnico D-153 completado en repo; faltan activaciones de producción en remoto/main)
+**Ultima actualizacion:** 2026-02-23 (Mega Plan O1 — Fase 0 + Fase 1 completadas)
+**Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (pipeline OCR desplegado; falta secret GCV_API_KEY)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-23 — Mega Plan O1: Sistema OCR Facturas (Fase 0 + Fase 1)
+
+Implementacion completa del sistema de ingesta de facturas con OCR:
+
+**Fase 0 — Fundacion SQL (4 migraciones, 49/49 sincronizadas):**
+- `facturas_ingesta` (cabecera) + `facturas_ingesta_items` (items) + `facturas_ingesta_eventos` (audit)
+- `producto_aliases` con `alias_normalizado` GENERATED ALWAYS AS (accent-stripped)
+- `precios_compra` con trigger `trg_update_precio_costo` (auto-update `productos.precio_costo`)
+- Bucket Storage `facturas` (privado, 10MB, jpeg/png/webp/pdf)
+- RLS completo via `has_personal_role` en todas las tablas nuevas
+
+**Fase 1 — Backend + Frontend:**
+- Edge Function `facturas-ocr` v1 ACTIVE — Google Cloud Vision API, OCR parsing argentino, matching 3 capas (barcode/alias/fuzzy)
+- Gateway `POST /facturas/:id/extraer` en `api-minimarket` v33 ACTIVE (con `--no-verify-jwt`)
+- Persistencia `precio_compra` en `POST /deposito/ingreso` (cierre definitivo D-007)
+- Pagina `Facturas.tsx` con upload, tabla, panel de items, extraccion OCR
+- Componente `FacturaUpload.tsx` con drag-drop y captura de camara
+- Hooks `useFacturas/useFacturaItems/useCreateFactura` (React Query)
+- Ruta `/facturas` habilitada para roles admin/deposito
+
+**Validaciones ejecutadas:**
+- Unit tests: 1640/1640 PASS (78 archivos)
+- Lint: PASS
+- Build: PASS (PWA)
+- Doc links: 89 archivos OK
+- Deno check: PASS
+- Comet smoke test: 11 secciones frontend GREEN
+
+**Pendiente operativo:**
+- `GCV_API_KEY` secret NO configurado en Supabase (pipeline OCR no funcional sin este secret)
+- Instrucciones para obtener key: Google Cloud Console > Cloud Vision API > Credentials > API Key
+
+**Edge Functions actualizadas (15 total):**
+- `facturas-ocr` v1 ACTIVE (nueva)
+- `api-minimarket` v33 ACTIVE (redesplegada con `--no-verify-jwt`)
+- `backfill-faltantes-recordatorios` v1 ACTIVE
+
+**Migraciones:** 49/49 sincronizadas (local = remoto)
+
+**Decisiones:** D-155 (Google Cloud Vision API como servicio OCR, ~$0.0015/factura)
+
+**Commit:** `0a1f53b` — 25 archivos, 6042 inserciones
+
+**Referencias:**
+- `docs/closure/MEGA_PLAN_2026-02-23_014735.md` (plan maestro)
+- `docs/closure/CONTEXT_PROMPT_ENGINEERING_COMET_DEPLOY_OCR_2026-02-23.md` (prompts Comet)
+- `docs/closure/BASELINE_LOG_2026-02-23_030112.md` (baseline pre-implementacion)
 
 ## Addendum Sesion 2026-02-22 — D-155 cierre final pre-merge
 - Cambios pendientes formalizados y commiteados:
@@ -338,22 +386,24 @@
   - `supabase functions list`
   - Nota: `docs/closure/BASELINE_LOG_*.md` fue removido en limpieza documental D-109 (2026-02-15). Para trazabilidad, usar historial git.
 
-### Snapshot de Functions
+### Snapshot de Functions (actualizado 2026-02-23)
 | Function | Version | Status |
 |---|---:|---|
-| alertas-stock | v18 | ACTIVE |
-| alertas-vencimientos | v17 | ACTIVE |
-| api-minimarket | v29 | ACTIVE |
-| api-proveedor | v20 | ACTIVE |
-| cron-dashboard | v17 | ACTIVE |
-| cron-health-monitor | v17 | ACTIVE |
-| cron-jobs-maxiconsumo | v19 | ACTIVE |
-| cron-notifications | v26 | ACTIVE |
-| cron-testing-suite | v18 | ACTIVE |
-| notificaciones-tareas | v20 | ACTIVE |
-| reportes-automaticos | v18 | ACTIVE |
-| reposicion-sugerida | v17 | ACTIVE |
-| scraper-maxiconsumo | v21 | ACTIVE |
+| alertas-stock | v20 | ACTIVE |
+| alertas-vencimientos | v19 | ACTIVE |
+| api-minimarket | v33 | ACTIVE |
+| api-proveedor | v22 | ACTIVE |
+| backfill-faltantes-recordatorios | v1 | ACTIVE |
+| cron-dashboard | v19 | ACTIVE |
+| cron-health-monitor | v19 | ACTIVE |
+| cron-jobs-maxiconsumo | v21 | ACTIVE |
+| cron-notifications | v28 | ACTIVE |
+| cron-testing-suite | v20 | ACTIVE |
+| facturas-ocr | v1 | ACTIVE |
+| notificaciones-tareas | v22 | ACTIVE |
+| reportes-automaticos | v20 | ACTIVE |
+| reposicion-sugerida | v19 | ACTIVE |
+| scraper-maxiconsumo | v23 | ACTIVE |
 
 ## 3) Resultado De Calidad (snapshot 2026-02-21)
 - Unit tests: 1615/1615 PASS (77 archivos).

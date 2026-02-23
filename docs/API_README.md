@@ -298,7 +298,7 @@ Si aparece la cifra historica de “52 endpoints”, tratarla como criterio norm
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
 
-Inventario verificado en repo (14 funciones excluyendo `_shared`; 12 independientes a este gateway):
+Inventario verificado en repo (15 funciones excluyendo `_shared`; 13 independientes a este gateway):
 
 | Function | Auth de entrada | Uso principal |
 |---|---|---|
@@ -310,6 +310,7 @@ Inventario verificado en repo (14 funciones excluyendo `_shared`; 12 independien
 | `cron-jobs-maxiconsumo` | `requireServiceRoleAuth` | Orquestación scraping/alertas/trends |
 | `cron-notifications` | `requireServiceRoleAuth` | Envío de notificaciones (email/slack/webhook) |
 | `cron-testing-suite` | `requireServiceRoleAuth` | Suite de tests operativos |
+| `facturas-ocr` | `requireServiceRoleAuth` | Extracción OCR de facturas (Google Cloud Vision API) |
 | `notificaciones-tareas` | `requireServiceRoleAuth` | Notificaciones de tareas |
 | `reportes-automaticos` | `requireServiceRoleAuth` | Reportes programados |
 | `reposicion-sugerida` | `requireServiceRoleAuth` | Sugerencias de reposición |
@@ -481,6 +482,30 @@ POST /reservas/{id}/cancelar       # Cancelar reserva
 POST /compras/recepcion            # Registrar recepción de OC
 ```
 
+### Facturas OCR (requiere rol `admin|deposito`)
+```bash
+POST /facturas/{id}/extraer        # Invocar extracción OCR sobre factura pendiente
+```
+
+**Notas `/facturas/{id}/extraer`:**
+- Gateway hacia Edge Function `facturas-ocr` (server-to-server via service_role).
+- Requiere que la factura exista en `facturas_ingesta` con `imagen_url` y estado `pendiente`.
+- La función descarga la imagen del bucket Storage, la envía a Google Cloud Vision API, parsea el texto, y ejecuta matching de productos en 3 capas (barcode/SKU → alias → fuzzy name).
+- Timeout: 35s (OCR puede demorar).
+- Respuesta exitosa:
+```json
+{
+  "success": true,
+  "data": {
+    "factura_id": "uuid",
+    "items_count": 5,
+    "estado": "extraida"
+  }
+}
+```
+- Requiere secret `GCV_API_KEY` configurado en Supabase.
+- La factura se crea previamente vía Supabase client SDK (`facturas_ingesta` INSERT directo con RLS).
+
 **Notas `/reservas` (hardening WS1):**
 - Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
 - La respuesta incluye campos top-level `idempotent` y `stock_disponible`.
@@ -515,6 +540,7 @@ GET /health                        # Healthcheck del gateway
 | Ofertas anti-mermas | ❌ | ✅ | ✅ | ✅ |
 | Bitácora (crear) | ❌ | ✅ | ✅ | ✅ |
 | Bitácora (listar) | ❌ | ❌ | ❌ | ✅ |
+| Facturas OCR | ❌ | ❌ | ✅ | ✅ |
 | Health check | ✅ | ✅ | ✅ | ✅ |
 
 ---
@@ -651,4 +677,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-02-19*
+*Última actualización: 2026-02-23*
