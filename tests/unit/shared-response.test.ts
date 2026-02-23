@@ -99,6 +99,23 @@ describe('ok()', () => {
 
                         expect(body.data).toBe('simple string');
                 });
+
+                it('should preserve JSON semantics when data is undefined', async () => {
+                        const response = ok(undefined);
+                        const body = await response.json();
+
+                        expect(body.success).toBe(true);
+                        expect('data' in body).toBe(false);
+                });
+        });
+
+        describe('Edge Cases', () => {
+                it('should throw for circular payloads in ok()', () => {
+                        const circular: Record<string, unknown> = {};
+                        circular.self = circular;
+
+                        expect(() => ok(circular)).toThrow();
+                });
         });
 });
 
@@ -175,6 +192,13 @@ describe('fail()', () => {
                         const body = await response.json();
 
                         expect(body.retryAfter).toBe(60);
+                });
+
+                it('should throw for circular details in fail()', () => {
+                        const circular: Record<string, unknown> = {};
+                        circular.self = circular;
+
+                        expect(() => fail('ERROR', 'Error', 400, circular)).toThrow();
                 });
         });
 

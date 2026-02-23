@@ -11,10 +11,36 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest';
 import {
         FixedWindowRateLimiter,
         AdaptiveRateLimiter,
+        buildRateLimitKey,
         buildRateLimitHeaders,
         withRateLimitHeaders,
         type RateLimitResult
 } from '../../supabase/functions/_shared/rate-limit';
+
+describe('buildRateLimitKey', () => {
+        it('should build user+ip key when both values are present', () => {
+                expect(buildRateLimitKey('user-1', '10.0.0.1')).toBe('user:user-1:ip:10.0.0.1');
+        });
+
+        it('should build user-only key when ip is unknown', () => {
+                expect(buildRateLimitKey('user-1', 'unknown')).toBe('user:user-1');
+        });
+
+        it('should build ip key when user is missing', () => {
+                expect(buildRateLimitKey(null, '10.0.0.1')).toBe('ip:10.0.0.1');
+                expect(buildRateLimitKey(undefined, null)).toBe('ip:unknown');
+        });
+
+        it('should avoid collisions across different user/ip tuples', () => {
+                const keyA = buildRateLimitKey('user-1', '10.0.0.1');
+                const keyB = buildRateLimitKey('user-1', '10.0.0.2');
+                const keyC = buildRateLimitKey('user-2', '10.0.0.1');
+
+                expect(keyA).not.toBe(keyB);
+                expect(keyA).not.toBe(keyC);
+                expect(keyB).not.toBe(keyC);
+        });
+});
 
 describe('buildRateLimitHeaders', () => {
         it('should build headers for allowed request', () => {
@@ -136,6 +162,15 @@ describe('FixedWindowRateLimiter', () => {
                         const result = limiter.check('user2');
                         expect(result.allowed).toBe(true);
                         expect(result.remaining).toBe(4);
+                });
+
+                it('should enforce max allowance under burst requests', () => {
+                        const results = Array.from({ length: 20 }, () => limiter.check('burst-user'));
+                        const allowedCount = results.filter((result) => result.allowed).length;
+                        const blockedCount = results.filter((result) => !result.allowed).length;
+
+                        expect(allowedCount).toBe(5);
+                        expect(blockedCount).toBe(15);
                 });
         });
 

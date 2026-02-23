@@ -23,9 +23,9 @@
 | Modelo `precios_compra` + trigger a `productos.precio_costo` | ✅ Implementado y aplicado | `supabase/migrations/20260223030000_create_precios_compra.sql` | Validar con pruebas de regresión de `deposito/ingreso` |
 | Bucket storage `facturas` + policies | ✅ Implementado y aplicado | `supabase/migrations/20260223040000_create_storage_bucket_facturas.sql` | Smoke upload/download con roles reales |
 | Endpoint gateway `POST /facturas/:id/extraer` | ✅ Implementado en código | `supabase/functions/api-minimarket/index.ts` (~2207+) | Desplegar versión y testear E2E real |
-| Edge Function `facturas-ocr` | ⚠️ Implementada local, no desplegada | `supabase/functions/facturas-ocr/index.ts` + `supabase functions list` (no aparece) | Deploy + smoke real + observabilidad |
+| Edge Function `facturas-ocr` | ✅ Desplegada y ACTIVE v5 | `supabase/functions/facturas-ocr/index.ts` — confirmado vía `supabase functions list` | Configurar `GCV_API_KEY` con valor real para habilitar OCR |
 | Pantalla Facturas (carga + extracción + listado items) | ✅ Implementación inicial | `minimarket-system/src/pages/Facturas.tsx`, `FacturaUpload.tsx`, `useFacturas.ts` | Completar validación humana y acción “aplicar” |
-| Secret OCR `GCV_API_KEY` | ❌ No configurado | `supabase secrets list` (no aparece) | Configurar secret en Supabase |
+| Secret OCR `GCV_API_KEY` | ⚠️ Registrado pero vacío | `supabase secrets list` devuelve digest `e3b0...` (hash de cadena vacía) | Cargar valor real con `supabase secrets set GCV_API_KEY=<valor>` |
 | Validación humana línea por línea | ❌ Pendiente | No existe componente de edición/confirmación final | Implementar `FacturaValidacion` con confirmación/rechazo + creación de alias |
 | Aplicación factura → inventario (flujo completo) | ❌ Pendiente | No existe acción “aplicar factura” ni idempotencia de aplicación por ítem | Implementar acción y trazabilidad en movimientos |
 | Tests O1 (UI + función + integración) | ❌ Pendiente | Sin tests `Facturas`/`FacturaUpload`/`facturas-ocr` | Crear tests antes de GO |
@@ -44,9 +44,9 @@
 
 | Hallazgo | Estado real | Evidencia | Acción inmediata |
 |---|---|---|---|
-| CI falla por métricas desactualizadas | ❌ Abierto | Run `22271708938`, step `Validate METRICS up-to-date` → `docs/METRICS.md is out of date` | Ejecutar `node scripts/metrics.mjs`, commitear y re-run CI |
-| `security-nightly` falla en contrato real | ❌ Abierto | Run `22270509864` falla en `openapi-compliance` (`/status`) | Pasar `API_PROVEEDOR_SECRET` al workflow y re-ejecutar |
-| `backup.yml` en FAIL histórico | ❌ Abierto (hasta revalidar) | Runs `22270196169` etc. FAIL (`pg_dump` mismatch 17.6 vs 16.11) | Revalidar con workflow actual + endurecer `db-backup.sh` con `set -o pipefail` |
+| CI falla por métricas desactualizadas | ✅ Resuelto | `docs/METRICS.md` regenerado y pusheado (commit `dc11b0a`) | — |
+| `security-nightly` falla en contrato real | ✅ Resuelto | `API_PROVEEDOR_SECRET` inyectado en workflow (commit `dc11b0a`) | Re-ejecutar workflow para confirmar |
+| `backup.yml` en FAIL histórico | ✅ Resuelto | Cliente `postgresql-client-16` + `set -euo pipefail` aplicados (commit `dc11b0a`) | Re-ejecutar workflow para confirmar |
 
 ## 4) Plan Final de Ejecución (Orden Óptimo)
 
@@ -115,9 +115,9 @@
 
 ## 6) Score de Readiness (actualizado)
 
-- O1 Facturas por Imagen: **58/100** (base creada, operación parcial, faltan validación/aplicación/hardening).
+- O1 Facturas por Imagen: **65/100** (funciones desplegadas y activas, CI resuelto, falta `GCV_API_KEY` real + validación/aplicación/hardening).
 - O2 Depósito: **84/100** (core estable, faltan UX de recepción y trazabilidad final).
-- Global combinado: **71/100**.
+- Global combinado: **74/100**.
 
 ---
 

@@ -15,6 +15,7 @@ describe('createLogger', () => {
                 warn: ReturnType<typeof vi.spyOn>;
                 error: ReturnType<typeof vi.spyOn>;
         };
+        const originalLogLevel = process.env.LOG_LEVEL;
 
         beforeEach(() => {
                 consoleSpy = {
@@ -27,6 +28,7 @@ describe('createLogger', () => {
 
         afterEach(() => {
                 vi.restoreAllMocks();
+                process.env.LOG_LEVEL = originalLogLevel;
         });
 
         describe('Logger factory', () => {
@@ -167,6 +169,52 @@ describe('createLogger', () => {
                         expect(JSON.parse(consoleSpy.info.mock.calls[0][0]).level).toBe('info');
                         expect(JSON.parse(consoleSpy.warn.mock.calls[0][0]).level).toBe('warn');
                         expect(JSON.parse(consoleSpy.error.mock.calls[0][0]).level).toBe('error');
+                });
+        });
+
+        describe('LOG_LEVEL filtering', () => {
+                it('should suppress debug/info when LOG_LEVEL is warn', () => {
+                        process.env.LOG_LEVEL = 'warn';
+                        const logger = createLogger('test');
+
+                        logger.debug('debug');
+                        logger.info('info');
+                        logger.warn('warn');
+                        logger.error('error');
+
+                        expect(consoleSpy.debug).not.toHaveBeenCalled();
+                        expect(consoleSpy.info).not.toHaveBeenCalled();
+                        expect(consoleSpy.warn).toHaveBeenCalledTimes(1);
+                        expect(consoleSpy.error).toHaveBeenCalledTimes(1);
+                });
+
+                it('should fallback to info when LOG_LEVEL is invalid', () => {
+                        process.env.LOG_LEVEL = 'invalid-level';
+                        const logger = createLogger('test');
+
+                        logger.debug('debug');
+                        logger.info('info');
+
+                        expect(consoleSpy.debug).not.toHaveBeenCalled();
+                        expect(consoleSpy.info).toHaveBeenCalledTimes(1);
+                });
+        });
+
+        describe('Special characters', () => {
+                it('should preserve special characters in message and metadata', () => {
+                        process.env.LOG_LEVEL = 'debug';
+                        const logger = createLogger('test');
+
+                        logger.info('line1\nline2', {
+                                path: '/api/v1/items?q=a%20b&limit=10',
+                                detail: 'quote:"value"',
+                        });
+
+                        const call = consoleSpy.info.mock.calls[0][0];
+                        const parsed = JSON.parse(call);
+                        expect(parsed.message).toBe('line1\nline2');
+                        expect(parsed.path).toBe('/api/v1/items?q=a%20b&limit=10');
+                        expect(parsed.detail).toBe('quote:"value"');
                 });
         });
 });
