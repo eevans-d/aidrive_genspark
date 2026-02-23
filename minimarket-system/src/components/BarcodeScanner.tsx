@@ -40,8 +40,10 @@ export default function BarcodeScanner({ onScan, isActive, onClose }: BarcodeSca
             onScan(code)
           }
           if (err && !(err instanceof NotFoundException)) {
-            // NotFoundException is normal when no barcode in frame
-            console.warn('Scan error:', err)
+            // Non-NotFound errors indicate camera/read failures: fallback to manual mode.
+            stopCamera()
+            setError('No se pudo leer el código con la cámara. Use ingreso manual.')
+            setManualMode(true)
           }
         }
       )
@@ -58,7 +60,7 @@ export default function BarcodeScanner({ onScan, isActive, onClose }: BarcodeSca
       }
       setManualMode(true)
     }
-  }, [onScan])
+  }, [onScan, stopCamera])
 
   useEffect(() => {
     if (isActive && !manualMode) {
