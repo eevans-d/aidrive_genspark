@@ -13,7 +13,7 @@
 # Recommended cron (daily at 03:00 UTC):
 #   0 3 * * * cd /path/to/repo && ./scripts/db-backup.sh ./backups 2>&1 >> ./backups/backup.log
 
-set -e
+set -euo pipefail
 
 # Load .env if present
 if [ -f .env ]; then
