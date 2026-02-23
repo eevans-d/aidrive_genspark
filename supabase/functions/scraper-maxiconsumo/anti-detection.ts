@@ -201,8 +201,8 @@ export function calculateExponentialBackoff(
  * Genera un ID de sesión único
  */
 export function generateSessionId(): string {
-  return Math.random().toString(36).substring(2, 15) + 
-         Math.random().toString(36).substring(2, 15);
+  // Include timestamp + UUID fragment to guarantee stable minimum length.
+  return `${Date.now().toString(36)}${crypto.randomUUID().replace(/-/g, '').slice(0, 16)}`;
 }
 
 /**
