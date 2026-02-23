@@ -23,12 +23,31 @@ const GCV_ENDPOINT = 'https://vision.googleapis.com/v1/images:annotate';
 // Types
 // ============================================================
 
+interface SupplierProfile {
+  precio_es_bulto: boolean;
+  iva_incluido: boolean;
+  iva_tasa: number;
+}
+
+const DEFAULT_SUPPLIER_PROFILE: SupplierProfile = {
+  precio_es_bulto: true,
+  iva_incluido: false,
+  iva_tasa: 0.21,
+};
+
 interface OcrLineItem {
   descripcion: string;
   cantidad: number;
   unidad: string;
   precio_unitario: number | null;
   subtotal: number | null;
+}
+
+interface EnhancedLineItem extends OcrLineItem {
+  unidades_por_bulto: number | null;
+  precio_unitario_costo: number | null;
+  validacion_subtotal: 'ok' | 'warning' | 'error' | null;
+  notas_calculo: string | null;
 }
 
 interface OcrResult {
@@ -147,6 +166,166 @@ function normalizeText(text: string): string {
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/[^a-z0-9\s]/g, '')
     .trim();
+}
+
+// ============================================================
+// Pack Size Parsing & Pricing Calculation
+// ============================================================
+
+/**
+ * Extract pack size (units per bulk) from product description.
+ * Handles patterns like:
+ *   "TALLARÍN DON VICENTE 20X500" → 20
+ *   "GALLETITAS 12X3X250" → 36 (12*3, AxBxC format)
+ *   "COCA COLA 500ML" → null (no pack info)
+ */
+function parsePackSize(description: string): number | null {
+  // First try AxBxC pattern (e.g., "12X3X250" → 12*3 = 36 units)
+  const multiMatch = description.match(/(\d+)\s*[xX]\s*(\d+)\s*[xX]\s*(\d+)/);
+  if (multiMatch) {
+    const a = parseInt(multiMatch[1], 10);
+    const b = parseInt(multiMatch[2], 10);
+    if (a >= 2 && a <= 200 && b >= 2 && b <= 200) {
+      return a * b;
+    }
+  }
+
+  // Standard NxM pattern (e.g., "20X500" → 20 units)
+  const match = description.match(/(\d+)\s*[xX]\s*(\d+)/);
+  if (match) {
+    const packCount = parseInt(match[1], 10);
+    const weight = parseInt(match[2], 10);
+
+    // Heuristic: pack count is usually smaller than weight (e.g., 20x500, not 500x20)
+    // Valid pack sizes: 2-500 units
+    if (packCount >= 2 && packCount <= 500) {
+      // Avoid false positives: if first number is much larger than second,
+      // it might be a weight format (e.g., "500x20" = 500g x 20)
+      if (packCount > weight && weight < 50) {
+        // Likely reversed: "500x20" means 20 packs of 500g → pack_count = packCount (unusual)
+        // Trust the format as-is since suppliers are consistent
+      }
+      return packCount;
+    }
+  }
+
+  return null;
+}
+
+/**
+ * Calculate unit cost from bulk price.
+ * Formula: (precio_bulto / unidades_por_bulto) * (1 + IVA)
+ */
+function calculateUnitCost(
+  precioBulto: number,
+  unidadesPorBulto: number,
+  profile: SupplierProfile,
+): number {
+  const precioUnitarioNeto = precioBulto / unidadesPorBulto;
+
+  if (profile.iva_incluido) {
+    // Price already includes IVA, no adjustment needed
+    return Math.round(precioUnitarioNeto * 10000) / 10000;
+  }
+
+  // Add IVA
+  return Math.round(precioUnitarioNeto * (1 + profile.iva_tasa) * 10000) / 10000;
+}
+
+/**
+ * Cross-validate: does cantidad * precio_unitario ≈ subtotal?
+ * Returns validation status based on deviation percentage.
+ */
+function crossValidateSubtotal(
+  cantidad: number,
+  precioUnitario: number | null,
+  subtotalInvoice: number | null,
+): { status: 'ok' | 'warning' | 'error' | null; deviation: number | null } {
+  if (subtotalInvoice === null || precioUnitario === null || subtotalInvoice === 0) {
+    return { status: null, deviation: null };
+  }
+
+  const expected = cantidad * precioUnitario;
+  const deviation = Math.abs(expected - subtotalInvoice) / subtotalInvoice;
+
+  if (deviation <= 0.005) return { status: 'ok', deviation };     // ≤ 0.5%
+  if (deviation <= 0.02) return { status: 'warning', deviation };  // 0.5% - 2%
+  return { status: 'error', deviation };                           // > 2%
+}
+
+/**
+ * Enrich an OCR line item with pack size, unit cost, and cross-validation.
+ */
+function enhanceLineItem(item: OcrLineItem, profile: SupplierProfile): EnhancedLineItem {
+  const packSize = parsePackSize(item.descripcion);
+  const unidadesPorBulto = packSize ?? 1;
+
+  let precioUnitarioCosto: number | null = null;
+  let notasCalculo: string | null = null;
+
+  if (item.precio_unitario !== null && profile.precio_es_bulto) {
+    precioUnitarioCosto = calculateUnitCost(item.precio_unitario, unidadesPorBulto, profile);
+
+    const parts: string[] = [];
+    if (packSize && packSize > 1) {
+      parts.push(`Pack ${packSize}u`);
+      parts.push(`$${item.precio_unitario}/${packSize} = $${(item.precio_unitario / packSize).toFixed(4)}/u neto`);
+    }
+    if (!profile.iva_incluido) {
+      parts.push(`+IVA ${(profile.iva_tasa * 100).toFixed(0)}%`);
+    }
+    parts.push(`= $${precioUnitarioCosto.toFixed(4)}/u final`);
+    notasCalculo = parts.join(' | ');
+  } else if (item.precio_unitario !== null && !profile.precio_es_bulto) {
+    // Price is already per unit, just add IVA if needed
+    precioUnitarioCosto = profile.iva_incluido
+      ? item.precio_unitario
+      : Math.round(item.precio_unitario * (1 + profile.iva_tasa) * 10000) / 10000;
+    notasCalculo = profile.iva_incluido
+      ? 'Precio unitario (IVA incluido)'
+      : `Precio unitario +IVA ${(profile.iva_tasa * 100).toFixed(0)}% = $${precioUnitarioCosto.toFixed(4)}/u`;
+  }
+
+  const validation = crossValidateSubtotal(item.cantidad, item.precio_unitario, item.subtotal);
+
+  return {
+    ...item,
+    unidades_por_bulto: packSize,
+    precio_unitario_costo: precioUnitarioCosto,
+    validacion_subtotal: validation.status,
+    notas_calculo: notasCalculo,
+  };
+}
+
+/**
+ * Fetch supplier profile from database.
+ * Returns default profile if none exists for this supplier.
+ */
+async function fetchSupplierProfile(
+  supabaseUrl: string,
+  headers: Record<string, string>,
+  proveedorId: string,
+): Promise<SupplierProfile> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/supplier_profiles?proveedor_id=eq.${proveedorId}&activo=eq.true&limit=1`,
+      { headers, signal: AbortSignal.timeout(3000) },
+    );
+    if (res.ok) {
+      const profiles = await res.json();
+      if (profiles.length > 0) {
+        const p = profiles[0];
+        return {
+          precio_es_bulto: p.precio_es_bulto ?? true,
+          iva_incluido: p.iva_incluido ?? false,
+          iva_tasa: p.iva_tasa != null ? Number(p.iva_tasa) / 100 : 0.21,
+        };
+      }
+    }
+  } catch {
+    // Non-blocking: use defaults
+  }
+  return DEFAULT_SUPPLIER_PROFILE;
 }
 
 // ============================================================
@@ -297,6 +476,10 @@ Deno.serve(async (req) => {
 
     logger.info('OCR_STARTED', { requestId, factura_id, imagen_url: factura.imagen_url });
 
+    // 6b. Fetch supplier profile for pricing rules
+    const supplierProfile = await fetchSupplierProfile(supabaseUrl, srHeaders, factura.proveedor_id);
+    logger.info('SUPPLIER_PROFILE_LOADED', { requestId, proveedor_id: factura.proveedor_id, profile: supplierProfile });
+
     // 7. Download image from storage
     const imageRes = await fetch(
       `${supabaseUrl}/storage/v1/object/facturas/${factura.imagen_url}`,
@@ -391,10 +574,11 @@ Deno.serve(async (req) => {
       },
     );
 
-    // 10. Create factura_ingesta_items with matching
+    // 10. Create factura_ingesta_items with matching and enhanced pricing
     let itemsCreated = 0;
     for (const item of ocrResult.items) {
       const match = await matchItem(item.descripcion, srHeaders, supabaseUrl);
+      const enhanced = enhanceLineItem(item, supplierProfile);
 
       const insertRes = await fetch(
         `${supabaseUrl}/rest/v1/facturas_ingesta_items`,
@@ -412,6 +596,10 @@ Deno.serve(async (req) => {
             subtotal: item.subtotal,
             estado_match: match.estado_match,
             confianza_match: match.confianza_match,
+            unidades_por_bulto: enhanced.unidades_por_bulto,
+            precio_unitario_costo: enhanced.precio_unitario_costo,
+            validacion_subtotal: enhanced.validacion_subtotal,
+            notas_calculo: enhanced.notas_calculo,
           }),
           signal: AbortSignal.timeout(5000),
         },

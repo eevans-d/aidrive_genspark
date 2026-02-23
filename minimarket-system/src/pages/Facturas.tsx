@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { FileText, Plus, Eye, Loader2, CheckCircle, AlertCircle, Clock, Package, Check, X, Save, Search } from 'lucide-react'
+import { FileText, Plus, Eye, Loader2, CheckCircle, AlertCircle, Clock, Package, Check, X, Save, Search, Info } from 'lucide-react'
 import { toast } from 'sonner'
 import { useFacturas, useFacturaItems, useCreateFactura, useValidarFacturaItem, useAplicarFactura } from '../hooks/queries'
 import { useProveedores } from '../hooks/queries'
@@ -35,6 +35,12 @@ const MATCH_COLORS: Record<string, string> = {
   confirmada: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-400',
   rechazada: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
   fuzzy_pendiente: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+}
+
+const VALIDATION_COLORS: Record<string, string> = {
+  ok: 'text-green-600 dark:text-green-400',
+  warning: 'text-amber-600 dark:text-amber-400',
+  error: 'text-red-600 dark:text-red-400',
 }
 
 export default function Facturas() {
@@ -387,6 +393,32 @@ export default function Facturas() {
                           </span>
                         </div>
                       </div>
+
+                      {/* Enhanced pricing row */}
+                      {(item.precio_unitario_costo != null || item.unidades_por_bulto != null) && (
+                        <div className="flex items-center gap-3 mt-1.5 text-xs">
+                          {item.unidades_por_bulto != null && item.unidades_por_bulto > 1 && (
+                            <span className="px-1.5 py-0.5 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded">
+                              Pack {item.unidades_por_bulto}u
+                            </span>
+                          )}
+                          {item.precio_unitario_costo != null && (
+                            <span className="font-mono text-emerald-700 dark:text-emerald-400 font-medium">
+                              Costo: ${Number(item.precio_unitario_costo).toFixed(4)}/u
+                            </span>
+                          )}
+                          {item.validacion_subtotal && (
+                            <span className={VALIDATION_COLORS[item.validacion_subtotal] || ''}>
+                              {item.validacion_subtotal === 'ok' ? '\u2713' : item.validacion_subtotal === 'warning' ? '\u26A0' : '\u2717'} subtotal
+                            </span>
+                          )}
+                          {item.notas_calculo && (
+                            <span className="text-gray-400 dark:text-gray-500 truncate max-w-[200px]" title={item.notas_calculo}>
+                              <Info className="w-3 h-3 inline mr-0.5" />{item.notas_calculo}
+                            </span>
+                          )}
+                        </div>
+                      )}
 
                       {/* Action buttons for unvalidated items */}
                       {!isFinalized && selectedFactura?.estado === 'extraida' && !isEditing && (

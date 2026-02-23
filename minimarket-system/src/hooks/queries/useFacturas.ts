@@ -33,6 +33,10 @@ export interface FacturaIngestaItem {
   subtotal: number | null
   estado_match: string
   confianza_match: number | null
+  unidades_por_bulto: number | null
+  precio_unitario_costo: number | null
+  validacion_subtotal: 'ok' | 'warning' | 'error' | null
+  notas_calculo: string | null
   created_at: string
   productos?: { nombre: string; sku: string | null } | null
 }
