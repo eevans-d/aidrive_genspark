@@ -1,7 +1,7 @@
 # Esquema de Base de Datos - Sistema Mini Market
 
-**Actualizado:** 2026-02-23 (49 migraciones, +5 tablas OCR/facturas)
-**Migraciones:** 49/49 sincronizadas (local = remoto)
+**Actualizado:** 2026-02-23 (51 migraciones, +6 tablas OCR/facturas, +1 supplier_profiles)
+**Migraciones:** 51/51 sincronizadas (local = remoto)
 **Fuente de verdad:** `supabase/migrations/*.sql` (este documento es derivado)
 
 ---
@@ -10,12 +10,12 @@
 
 | Metrica | Valor |
 |---------|-------|
-| Tablas | 43 |
+| Tablas | 44 |
 | Vistas no materializadas | 11 |
 | Vistas materializadas | 3 |
 | Funciones/Stored Procedures | 30+ |
 | Triggers | 4 |
-| Migraciones | 49 |
+| Migraciones | 51 |
 
 ---
 
@@ -33,7 +33,7 @@
 | Gestion: Personal | personal |
 | Proveedor/Scraper | cache_proveedor, configuracion_proveedor, estadisticas_scraping, comparacion_precios, alertas_cambios_precios |
 | Cron Jobs | cron_jobs_tracking, cron_jobs_execution_log, cron_jobs_alerts, cron_jobs_notifications, cron_jobs_metrics, cron_jobs_monitoring_history, cron_jobs_health_checks, cron_jobs_config, cron_jobs_notification_preferences, cron_jobs_locks |
-| OCR/Facturas | facturas_ingesta, facturas_ingesta_items, facturas_ingesta_eventos, producto_aliases, precios_compra |
+| OCR/Facturas | facturas_ingesta, facturas_ingesta_items, facturas_ingesta_eventos, producto_aliases, precios_compra, supplier_profiles |
 | Infraestructura | rate_limit_state, circuit_breaker_state |
 
 ---
@@ -987,13 +987,17 @@ Items/lineas individuales de cada factura.
 | alias_usado | text | NULL | | Alias que logro el match |
 | cantidad | numeric(12,3) | NOT NULL | 1 | |
 | unidad | text | NULL | 'u' | |
-| precio_unitario | numeric(12,2) | NULL | | |
+| precio_unitario | numeric(12,2) | NULL | | Precio factura (puede ser por bulto) |
 | subtotal | numeric(12,2) | NULL | | |
 | estado_match | text | NOT NULL | 'fuzzy_pendiente' | CHECK IN ('auto_match','alias_match','fuzzy_pendiente','confirmada','rechazada') |
 | confianza_match | numeric(5,2) | NULL | | |
+| unidades_por_bulto | integer | NULL | | Pack size extraido de descripcion (NxM parsing) |
+| precio_unitario_costo | numeric(12,4) | NULL | | Costo unitario calculado: (precio/pack) * (1+IVA) |
+| validacion_subtotal | text | NULL | | CHECK IN ('ok','warning','error') — cross-validation qty*price vs subtotal |
+| notas_calculo | text | NULL | | Explicacion transparente del calculo |
 | created_at | timestamptz | NULL | now() | |
 
-**Indices:** `idx_fi_items_factura(factura_id)`, `idx_fi_items_producto(producto_id)`, `idx_fi_items_estado(estado_match)`
+**Indices:** `idx_fi_items_factura(factura_id)`, `idx_fi_items_producto(producto_id)`, `idx_fi_items_estado(estado_match)`, `idx_fi_items_validacion(validacion_subtotal) WHERE != 'ok'`
 **RLS:** ENABLED. Policies: `fi_items_select_staff`, `fi_items_insert_staff`, `fi_items_update_staff` (admin, deposito), `fi_items_delete_admin` (admin).
 
 ---
@@ -1056,6 +1060,28 @@ Historial de precios de compra internos, vinculable a factura.
 **Indices:** `idx_pc_producto_fecha(producto_id, created_at DESC)`, `idx_pc_proveedor_producto(proveedor_id, producto_id)`, `idx_pc_factura_item(factura_ingesta_item_id) PARTIAL WHERE NOT NULL`
 **Trigger:** `trg_update_precio_costo` — AFTER INSERT ejecuta `fn_update_precio_costo()` que actualiza `productos.precio_costo` con el valor insertado.
 **RLS:** ENABLED. Policies: `pc_select_staff`, `pc_insert_staff` (admin, deposito), `pc_update_admin`, `pc_delete_admin` (admin).
+
+---
+
+### supplier_profiles
+
+Configuracion per-vendor para OCR y calculo de precios de factura.
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| proveedor_id | uuid | NOT NULL | | FK -> proveedores(id) ON DELETE CASCADE, UNIQUE |
+| precio_es_bulto | boolean | NOT NULL | true | true = precio factura es por bulto/caja |
+| iva_incluido | boolean | NOT NULL | false | true = precio ya incluye IVA |
+| iva_tasa | numeric(5,2) | NOT NULL | 21.00 | Tasa IVA como porcentaje |
+| pack_size_regex | text | NULL | '(\d+)\s*[xX]\s*\d+' | Regex para extraer pack size de descripcion |
+| notas | text | NULL | | Notas operativas |
+| activo | boolean | NOT NULL | true | |
+| created_at | timestamptz | NULL | now() | |
+| updated_at | timestamptz | NULL | now() | |
+
+**Indices:** `idx_supplier_profiles_proveedor(proveedor_id)`
+**RLS:** ENABLED. Policies: `supplier_profiles_select` (todos), `supplier_profiles_insert/update` (admin, deposito).
 
 ---
 

@@ -1,8 +1,40 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-23 (Mega Plan Completo — Fases 0+1+2+3)
-**Estado:** **GO — OPERATIVO** (pipeline OCR completo, secret GCV_API_KEY configurado)
+**Ultima actualizacion:** 2026-02-23 (Fase 4: Supplier Profiles + Enhanced Pricing)
+**Estado:** **GO — OPERATIVO** (pipeline OCR completo con pricing inteligente)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-23 — Fase 4: Supplier Profiles + Enhanced Pricing
+
+**Tabla `supplier_profiles` (nueva):**
+- Config per-vendor para OCR/pricing: `precio_es_bulto`, `iva_incluido`, `iva_tasa`, `pack_size_regex`
+- RLS habilitado (select: todos, insert/update: admin/deposito)
+- Defaults sensatos: bulk pricing, sin IVA incluido, tasa 21%
+
+**Columnas nuevas en `facturas_ingesta_items`:**
+- `unidades_por_bulto` (integer) — pack size extraido de la descripcion (NxM parsing)
+- `precio_unitario_costo` (numeric 12,4) — costo unitario calculado con IVA
+- `validacion_subtotal` (text) — resultado cross-validation: ok/warning/error
+- `notas_calculo` (text) — explicacion transparente del calculo
+
+**Edge Function `facturas-ocr` v2 (enhanced):**
+- `parsePackSize()` — NxM (ej: `20X500` → 20u) y AxBxC (ej: `12X3X250` → 36u)
+- `calculateUnitCost()` — `(precio_bulto / pack_size) * (1 + IVA)`
+- `crossValidateSubtotal()` — verifica qty*price vs subtotal (tolerancia 0.5%/2%)
+- `enhanceLineItem()` — orquesta parsing + calculo + validacion por item
+- `fetchSupplierProfile()` — carga perfil per-proveedor (o usa defaults)
+
+**Frontend Facturas.tsx (enhanced):**
+- Badge "Pack Xu" para items con pack size detectado
+- Columna "Costo: $X.XXXX/u" con precio unitario calculado
+- Indicador de validacion subtotal (check/warning/error)
+- Tooltip con notas de calculo transparentes
+
+**Migracion:** `20260223060000` — 51/51 sincronizadas
+**Tests:** 1640/1640 PASS (root) + 8/8 Facturas page
+**Build:** PASS (PWA, 29 entries)
+**Deploy:** facturas-ocr v2 ACTIVE
+**Commit:** `793c153`
 
 ## Addendum Sesion 2026-02-23 — Fase 3: Cierre Mega Plan (UI completa, KPIs, tests)
 
@@ -110,7 +142,7 @@ Implementacion completa del sistema de ingesta de facturas con OCR:
 - `api-minimarket` v34 ACTIVE (redesplegada con `--no-verify-jwt`)
 - `backfill-faltantes-recordatorios` v1 ACTIVE
 
-**Migraciones:** 50/50 sincronizadas (local = remoto)
+**Migraciones:** 51/51 sincronizadas (local = remoto)
 
 **Decisiones:** D-155 (Google Cloud Vision API como servicio OCR, ~$0.0015/factura)
 
@@ -468,7 +500,7 @@ Implementacion completa del sistema de ingesta de facturas con OCR:
 | cron-jobs-maxiconsumo | v21 | ACTIVE |
 | cron-notifications | v28 | ACTIVE |
 | cron-testing-suite | v20 | ACTIVE |
-| facturas-ocr | v1 | ACTIVE |
+| facturas-ocr | v2 | ACTIVE |
 | notificaciones-tareas | v22 | ACTIVE |
 | reportes-automaticos | v20 | ACTIVE |
 | reposicion-sugerida | v19 | ACTIVE |
