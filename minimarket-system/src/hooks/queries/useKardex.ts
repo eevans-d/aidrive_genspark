@@ -10,6 +10,8 @@ import { MovimientoDeposito } from '../../types/database';
 export interface KardexMovimiento extends MovimientoDeposito {
         producto_nombre?: string;
         proveedor_nombre?: string;
+        factura_numero?: string | null;
+        factura_proveedor?: string | null;
 }
 
 export interface KardexResult {
@@ -37,7 +39,7 @@ export async function fetchKardex(options: UseKardexOptions = {}): Promise<Karde
 
         let query = supabase
                 .from('movimientos_deposito')
-                .select('*, productos(nombre), proveedores(nombre)', { count: 'exact' })
+                .select('*, productos(nombre), proveedores(nombre), facturas_ingesta_items(factura_id, facturas_ingesta(numero, proveedores(nombre)))', { count: 'exact' })
                 .order('fecha_movimiento', { ascending: false })
                 .limit(limit);
 
@@ -59,6 +61,8 @@ export async function fetchKardex(options: UseKardexOptions = {}): Promise<Karde
                 ...item,
                 producto_nombre: item.productos?.nombre,
                 proveedor_nombre: item.proveedores?.nombre,
+                factura_numero: item.facturas_ingesta_items?.facturas_ingesta?.numero ?? null,
+                factura_proveedor: item.facturas_ingesta_items?.facturas_ingesta?.proveedores?.nombre ?? null,
         }));
 
         // Calcular resumen

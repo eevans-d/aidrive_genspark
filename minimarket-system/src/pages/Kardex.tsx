@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Download, Filter, Package } from 'lucide-react'
+import { Download, Filter, Package, FileText } from 'lucide-react'
 import { useKardex, KardexMovimiento } from '../hooks/queries'
 import { useQuery } from '@tanstack/react-query'
 import apiClient from '../lib/apiClient'
@@ -173,6 +173,7 @@ export default function Kardex() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Tipo</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Cantidad</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Lote</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Origen</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Motivo</th>
             </tr>
           </thead>
@@ -195,6 +196,14 @@ export default function Kardex() {
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.cantidad}</td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.lote ?? '-'}</td>
+                <td className="px-4 py-3 text-sm text-gray-700">
+                  {mov.factura_numero ? (
+                    <span className="inline-flex items-center gap-1 text-blue-600">
+                      <FileText className="w-3 h-3" />
+                      <span>Fact. {mov.factura_numero}{mov.factura_proveedor ? ` - ${mov.factura_proveedor}` : ''}</span>
+                    </span>
+                  ) : '-'}
+                </td>
                 <td className="px-4 py-3 text-sm text-gray-700">{mov.motivo ?? '-'}</td>
               </tr>
             ))}

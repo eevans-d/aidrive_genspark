@@ -84,6 +84,7 @@ export interface MovimientoDeposito {
   lote: string | null
   motivo: string | null
   observaciones: string | null
+  factura_ingesta_item_id: string | null
   created_at: string
 }
 

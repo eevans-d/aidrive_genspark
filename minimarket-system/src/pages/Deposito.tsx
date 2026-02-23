@@ -1,13 +1,14 @@
 import { useState, useRef, useEffect } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
-import { Plus, Minus, Search, Zap, RefreshCw } from 'lucide-react'
+import { Plus, Minus, Search, Zap, RefreshCw, ClipboardList, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
+import { supabase } from '../lib/supabase'
 
-type TabMode = 'rapido' | 'normal'
+type TabMode = 'rapido' | 'normal' | 'recepcion'
 
 export default function Deposito() {
   const queryClient = useQueryClient()
@@ -31,6 +32,10 @@ export default function Deposito() {
   const [qProveedorId, setQProveedorId] = useState('')
   const qSearchRef = useRef<HTMLInputElement>(null)
   const qCantidadRef = useRef<HTMLInputElement>(null)
+
+  // === Recepcion OC state ===
+  const [recCantidad, setRecCantidad] = useState('')
+  const [receivingId, setReceivingId] = useState<string | null>(null)
 
   // Query para productos
   const {
@@ -62,6 +67,55 @@ export default function Deposito() {
       return await apiClient.proveedores.dropdown()
     },
     staleTime: 1000 * 60 * 10,
+  })
+
+  // Query para ordenes de compra pendientes
+  const {
+    data: ordenesPendientes = [],
+    isLoading: isOrdenesLoading,
+    refetch: refetchOrdenes,
+  } = useQuery({
+    queryKey: ['ordenes-compra-pendientes'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('ordenes_compra')
+        .select('*, productos(nombre), proveedores(nombre)')
+        .in('estado', ['pendiente', 'parcial'])
+        .order('fecha_creacion', { ascending: false })
+        .limit(50)
+      if (error) throw error
+      return (data ?? []) as Array<{
+        id: string; producto_id: string; proveedor_id: string | null;
+        cantidad: number; cantidad_recibida: number | null; estado: string;
+        fecha_creacion: string; fecha_estimada: string | null;
+        productos?: { nombre: string } | null; proveedores?: { nombre: string } | null;
+      }>
+    },
+    staleTime: 1000 * 60 * 2,
+    enabled: activeTab === 'recepcion',
+  })
+
+  // === Recepcion mutation ===
+  const recepcionMutation = useMutation({
+    mutationFn: async (params: { ordenId: string; cantidad: number; productoNombre: string }) => {
+      return depositoApi.recepcionCompra({
+        orden_compra_id: params.ordenId,
+        cantidad: params.cantidad,
+        deposito: 'Principal',
+      })
+    },
+    onSuccess: (_data, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['stock'] })
+      queryClient.invalidateQueries({ queryKey: ['kardex'] })
+      queryClient.invalidateQueries({ queryKey: ['deposito'] })
+      queryClient.invalidateQueries({ queryKey: ['ordenes-compra-pendientes'] })
+      toast.success(`Recepcion registrada: ${variables.productoNombre} x ${variables.cantidad}`)
+      setReceivingId(null)
+      setRecCantidad('')
+    },
+    onError: (error: ApiError | Error) => {
+      toast.error(error instanceof ApiError ? error.message : 'Error al registrar recepcion')
+    }
   })
 
   // Auto-focus search input when switching to quick mode
@@ -283,6 +337,17 @@ export default function Deposito() {
           }`}
         >
           Movimiento Normal
+        </button>
+        <button
+          onClick={() => setActiveTab('recepcion')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
+            activeTab === 'recepcion'
+              ? 'bg-white text-purple-700 shadow-sm'
+              : 'text-gray-600 hover:text-gray-800'
+          }`}
+        >
+          <ClipboardList className="w-4 h-4" />
+          Recepcion OC
         </button>
       </div>
 
@@ -603,6 +668,108 @@ export default function Deposito() {
               {movimientoMutation.isPending ? 'Registrando...' : 'REGISTRAR MOVIMIENTO'}
             </button>
           </form>
+        </div>
+      )}
+
+      {/* === Recepcion OC Mode === */}
+      {activeTab === 'recepcion' && (
+        <div className="bg-white rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <ClipboardList className="w-5 h-5 text-purple-600" />
+              <h2 className="text-xl font-semibold">Recepcion de Ordenes de Compra</h2>
+            </div>
+            <button
+              onClick={() => refetchOrdenes()}
+              className="text-sm text-purple-600 hover:text-purple-800"
+            >
+              <RefreshCw className="w-4 h-4" />
+            </button>
+          </div>
+
+          {isOrdenesLoading ? (
+            <SkeletonList />
+          ) : ordenesPendientes.length === 0 ? (
+            <div className="text-center py-8">
+              <ClipboardList className="w-12 h-12 mx-auto text-gray-300 mb-3" />
+              <p className="text-gray-500">No hay ordenes de compra pendientes</p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {ordenesPendientes.map(oc => {
+                const pendiente = oc.cantidad - (oc.cantidad_recibida ?? 0)
+                const isReceiving = receivingId === oc.id
+
+                return (
+                  <div key={oc.id} className="border border-gray-200 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="font-medium text-gray-900">
+                          {oc.productos?.nombre ?? 'Producto desconocido'}
+                        </div>
+                        <div className="text-sm text-gray-500">
+                          {oc.proveedores?.nombre ?? 'Sin proveedor'} | Pedido: {oc.cantidad} | Recibido: {oc.cantidad_recibida ?? 0} | Pendiente: {pendiente}
+                        </div>
+                        <div className="text-xs text-gray-400 mt-0.5">
+                          {new Date(oc.fecha_creacion).toLocaleDateString('es-AR')}
+                          {oc.fecha_estimada && ` | Estimada: ${new Date(oc.fecha_estimada).toLocaleDateString('es-AR')}`}
+                        </div>
+                      </div>
+                      {!isReceiving && (
+                        <button
+                          onClick={() => { setReceivingId(oc.id); setRecCantidad(String(pendiente)) }}
+                          className="px-4 py-2 min-h-[44px] text-sm font-medium bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                        >
+                          Recibir
+                        </button>
+                      )}
+                    </div>
+
+                    {isReceiving && (
+                      <div className="mt-3 pt-3 border-t border-gray-100 flex items-end gap-3">
+                        <div className="flex-1">
+                          <label className="block text-sm font-medium text-gray-700 mb-1">Cantidad a recibir</label>
+                          <input
+                            type="number"
+                            value={recCantidad}
+                            onChange={e => setRecCantidad(e.target.value)}
+                            min="1"
+                            max={pendiente}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                            autoFocus
+                          />
+                        </div>
+                        <button
+                          onClick={() => {
+                            const qty = parseInt(recCantidad, 10)
+                            if (!Number.isFinite(qty) || qty <= 0) {
+                              toast.error('Cantidad invalida')
+                              return
+                            }
+                            recepcionMutation.mutate({
+                              ordenId: oc.id,
+                              cantidad: qty,
+                              productoNombre: oc.productos?.nombre ?? 'Producto',
+                            })
+                          }}
+                          disabled={recepcionMutation.isPending}
+                          className="px-4 py-2 min-h-[44px] text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 disabled:opacity-50 transition-colors"
+                        >
+                          {recepcionMutation.isPending ? <Loader2 className="w-4 h-4 animate-spin" /> : 'Confirmar'}
+                        </button>
+                        <button
+                          onClick={() => { setReceivingId(null); setRecCantidad('') }}
+                          className="px-3 py-2 min-h-[44px] text-sm text-gray-500 hover:text-gray-700"
+                        >
+                          Cancelar
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </div>
       )}
     </div>

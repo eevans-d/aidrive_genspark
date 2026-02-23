@@ -92,6 +92,47 @@ export default function Dashboard() {
     staleTime: 1000 * 60 * 2,
   })
 
+  // Factura KPIs
+  const facturaKpiQuery = useQuery({
+    queryKey: ['facturas', 'dashboard-kpi'],
+    queryFn: async () => {
+      const { data: items, error: iErr } = await supabase
+        .from('facturas_ingesta_items')
+        .select('estado_match')
+      if (iErr) throw iErr
+
+      const total = (items ?? []).length
+      const autoMatch = (items ?? []).filter(i => i.estado_match === 'auto_match').length
+      const aliasMatch = (items ?? []).filter(i => i.estado_match === 'alias_match').length
+      const confirmada = (items ?? []).filter(i => i.estado_match === 'confirmada').length
+      const rechazada = (items ?? []).filter(i => i.estado_match === 'rechazada').length
+      const pendiente = (items ?? []).filter(i => i.estado_match === 'fuzzy_pendiente').length
+
+      const { count: facturasTotal } = await supabase
+        .from('facturas_ingesta')
+        .select('*', { count: 'exact', head: true })
+      const { count: facturasAplicadas } = await supabase
+        .from('facturas_ingesta')
+        .select('*', { count: 'exact', head: true })
+        .eq('estado', 'aplicada')
+
+      const precisionAuto = total > 0 ? Math.round(((autoMatch + aliasMatch) / total) * 100) : 0
+
+      return {
+        total_items: total,
+        auto_match: autoMatch,
+        alias_match: aliasMatch,
+        confirmada,
+        rechazada,
+        pendiente,
+        precision_auto: precisionAuto,
+        facturas_total: facturasTotal ?? 0,
+        facturas_aplicadas: facturasAplicadas ?? 0,
+      }
+    },
+    staleTime: 1000 * 60 * 5,
+  })
+
   // Destructure con defaults seguros
   const {
     tareasPendientes = [],
@@ -435,6 +476,34 @@ export default function Dashboard() {
           </ResponsiveContainer>
         </div>
       </div>
+
+      {/* Factura KPIs */}
+      {facturaKpiQuery.data && facturaKpiQuery.data.total_items > 0 && (
+        <div className="bg-white dark:bg-gray-900 rounded-lg shadow p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">OCR Facturas — Metricas</h3>
+            <Link to="/facturas" className="text-xs text-blue-600 hover:text-blue-800">Ver facturas</Link>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            <div className="text-center">
+              <div className="text-2xl font-bold text-blue-600">{facturaKpiQuery.data.precision_auto}%</div>
+              <div className="text-xs text-gray-500">Precision auto-match</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600">{facturaKpiQuery.data.facturas_aplicadas}/{facturaKpiQuery.data.facturas_total}</div>
+              <div className="text-xs text-gray-500">Facturas aplicadas</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-emerald-600">{facturaKpiQuery.data.confirmada + facturaKpiQuery.data.auto_match + facturaKpiQuery.data.alias_match}</div>
+              <div className="text-xs text-gray-500">Items confirmados</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-yellow-600">{facturaKpiQuery.data.pendiente}</div>
+              <div className="text-xs text-gray-500">Items pendientes</div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Cuenta Corriente */}
       {ccEnabled && (
