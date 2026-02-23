@@ -485,6 +485,8 @@ POST /compras/recepcion            # Registrar recepción de OC
 ### Facturas OCR (requiere rol `admin|deposito`)
 ```bash
 POST /facturas/{id}/extraer        # Invocar extracción OCR sobre factura pendiente
+PUT  /facturas/items/{id}/validar  # Confirmar/rechazar item OCR
+POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 ```
 
 **Notas `/facturas/{id}/extraer`:**
@@ -505,6 +507,29 @@ POST /facturas/{id}/extraer        # Invocar extracción OCR sobre factura pendi
 ```
 - Requiere secret `GCV_API_KEY` configurado en Supabase.
 - La factura se crea previamente vía Supabase client SDK (`facturas_ingesta` INSERT directo con RLS).
+
+**Notas `/facturas/items/{id}/validar`:**
+- Body: `{ "estado_match": "confirmada"|"rechazada", "producto_id": "uuid", "guardar_alias": true, "alias_texto": "texto" }`
+- `producto_id` requerido si `estado_match` = `confirmada`.
+- `guardar_alias` + `alias_texto` opcionales: persisten en `producto_aliases` para futuro matching automatico.
+- Cuando todos los items de una factura estan confirmados/rechazados, la factura transiciona automaticamente a estado `validada`.
+
+**Notas `/facturas/{id}/aplicar`:**
+- Solo facturas en estado `validada`. Idempotente (unique index `factura_ingesta_item_id` en `movimientos_deposito`).
+- Crea movimientos de entrada via `sp_movimiento_inventario` para cada item confirmado.
+- Persiste `precios_compra` por item (trigger `trg_update_precio_costo` actualiza `productos.precio_costo`).
+- Respuesta:
+```json
+{
+  "factura_id": "uuid",
+  "items_aplicados": 3,
+  "items_ya_aplicados": 0,
+  "items_errores": 0,
+  "results": [{ "item_id": "uuid", "status": "applied", "movimiento_id": "uuid" }],
+  "errors": []
+}
+```
+- Status `207` si hay errores parciales, `200` si todo OK, `409` si ya fue aplicada.
 
 **Notas `/reservas` (hardening WS1):**
 - Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.

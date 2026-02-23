@@ -1,8 +1,35 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-23 (Mega Plan O1 — Fase 0 + Fase 1 completadas)
+**Ultima actualizacion:** 2026-02-23 (Fase 2 — Validar/Aplicar facturas + trazabilidad)
 **Estado:** **GO CON ACCIONES OPERATIVAS PENDIENTES** (pipeline OCR desplegado; falta secret GCV_API_KEY)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-23 — Fase 2: Validar/Aplicar Facturas + Trazabilidad
+
+Endpoints de validacion/aplicacion de items de factura con trazabilidad completa:
+
+**Backend (api-minimarket v34):**
+- `PUT /facturas/items/:id/validar` — confirma/rechaza items OCR, guardado de alias opcional, auto-transicion a estado `validada`
+- `POST /facturas/:id/aplicar` — aplica items confirmados a stock via `sp_movimiento_inventario`, idempotente (unique index), persiste `precios_compra`
+- Migracion `20260223050000`: FK `factura_ingesta_item_id` en `movimientos_deposito` + indices de trazabilidad/idempotencia
+
+**Frontend:**
+- Hook `useValidarFacturaItem` — mutation con invalidation de cache facturas + items
+- Hook `useAplicarFactura` — mutation con invalidation de facturas + kardex + stock
+- Interfaces `ValidarItemParams`, `AplicarFacturaResponse` en apiClient
+
+**Deploys ejecutados:**
+- `facturas-ocr` v1 ACTIVE (redesplegada)
+- `api-minimarket` v34 ACTIVE (redesplegada con `--no-verify-jwt`)
+- Migracion `20260223050000` aplicada (50/50 sincronizadas)
+
+**Validaciones:**
+- Unit tests: 1640/1640 PASS (78 archivos)
+- Build frontend: PASS (PWA)
+- Health check api-minimarket: 200 healthy
+- facturas-ocr: 401 (auth requerida, correcto)
+
+**Commit:** `900b4e9` — 4 archivos, +302 lineas
 
 ## Addendum Sesion 2026-02-23 — Mega Plan O1: Sistema OCR Facturas (Fase 0 + Fase 1)
 
@@ -38,14 +65,14 @@ Implementacion completa del sistema de ingesta de facturas con OCR:
 
 **Edge Functions actualizadas (15 total):**
 - `facturas-ocr` v1 ACTIVE (nueva)
-- `api-minimarket` v33 ACTIVE (redesplegada con `--no-verify-jwt`)
+- `api-minimarket` v34 ACTIVE (redesplegada con `--no-verify-jwt`)
 - `backfill-faltantes-recordatorios` v1 ACTIVE
 
-**Migraciones:** 49/49 sincronizadas (local = remoto)
+**Migraciones:** 50/50 sincronizadas (local = remoto)
 
 **Decisiones:** D-155 (Google Cloud Vision API como servicio OCR, ~$0.0015/factura)
 
-**Commit:** `0a1f53b` — 25 archivos, 6042 inserciones
+**Commits:** `0a1f53b` (Fase 0+1), `900b4e9` (Fase 2)
 
 **Referencias:**
 - `docs/closure/MEGA_PLAN_2026-02-23_014735.md` (plan maestro)

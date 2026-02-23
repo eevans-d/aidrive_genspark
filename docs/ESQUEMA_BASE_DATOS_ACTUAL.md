@@ -160,10 +160,11 @@ Historial de movimientos de inventario (kardex).
 | usuario_id | uuid | NULL | | |
 | proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
 | observaciones | text | NULL | | |
+| factura_ingesta_item_id | uuid | NULL | | FK -> facturas_ingesta_items(id) ON DELETE SET NULL |
 | fecha_movimiento | timestamptz | NULL | now() | |
 | created_at | timestamptz | NULL | now() | |
 
-**Indices:** `idx_movimientos_deposito_producto_id`, `idx_movimientos_deposito_fecha_movimiento(fecha_movimiento DESC)`, `idx_movimientos_deposito_tipo`
+**Indices:** `idx_movimientos_deposito_producto_id`, `idx_movimientos_deposito_fecha_movimiento(fecha_movimiento DESC)`, `idx_movimientos_deposito_tipo`, `idx_movimientos_factura_item(factura_ingesta_item_id) WHERE NOT NULL`, `uq_movimientos_factura_item_idempotent(factura_ingesta_item_id) UNIQUE WHERE NOT NULL`
 **RLS:** ENABLED. Policies: SELECT (todos), INSERT (admin, deposito).
 
 ---
