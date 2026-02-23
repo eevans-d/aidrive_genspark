@@ -62,6 +62,13 @@ export const queryKeys = {
   // Dashboard (agregaciones)
   dashboard: ['dashboard'] as const,
   dashboardStats: ['dashboard', 'stats'] as const,
+
+  // Facturas (OCR ingesta)
+  facturas: ['facturas'] as const,
+  facturaById: (id: string) =>
+    ['facturas', 'detail', id] as const,
+  facturaItems: (facturaId: string) =>
+    ['facturas', 'items', facturaId] as const,
 } as const;
 
 // Tipo inferido para autocompletado

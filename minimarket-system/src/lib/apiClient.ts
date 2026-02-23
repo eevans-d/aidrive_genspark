@@ -407,12 +407,46 @@ export interface MovimientoResponse {
         fecha_movimiento: string;
 }
 
+export interface IngresoParams {
+        producto_id: string;
+        cantidad: number;
+        proveedor_id?: string | null;
+        precio_compra?: number | null;
+        deposito?: string;
+}
+
+export interface RecepcionCompraParams {
+        orden_compra_id: string;
+        cantidad: number;
+        deposito?: string;
+}
+
 export const depositoApi = {
         /**
          * Register inventory movement
          */
         async movimiento(params: MovimientoParams): Promise<MovimientoResponse> {
                 return apiRequest<MovimientoResponse>('/deposito/movimiento', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        /**
+         * Register merchandise ingress (with optional precio_compra)
+         */
+        async ingreso(params: IngresoParams): Promise<MovimientoResponse> {
+                return apiRequest<MovimientoResponse>('/deposito/ingreso', {
+                        method: 'POST',
+                        body: JSON.stringify(params),
+                });
+        },
+
+        /**
+         * Register purchase order reception (atomic via SP)
+         */
+        async recepcionCompra(params: RecepcionCompraParams): Promise<MovimientoResponse> {
+                return apiRequest<MovimientoResponse>('/compras/recepcion', {
                         method: 'POST',
                         body: JSON.stringify(params),
                 });
@@ -914,6 +948,49 @@ export const searchApi = {
         },
 };
 
+// =============================================================================
+// FACTURAS INGESTA API (OCR Pipeline)
+// =============================================================================
+
+export interface FacturaIngestaResponse {
+        id: string;
+        proveedor_id: string;
+        tipo_comprobante: string;
+        numero: string | null;
+        fecha_factura: string | null;
+        total: number | null;
+        estado: 'pendiente' | 'extraida' | 'validada' | 'aplicada' | 'error' | 'rechazada';
+        imagen_url: string | null;
+        datos_extraidos: Record<string, unknown> | null;
+        score_confianza: number | null;
+        created_at: string;
+}
+
+export interface FacturaIngestaItemResponse {
+        id: string;
+        factura_id: string;
+        descripcion_original: string;
+        producto_id: string | null;
+        alias_usado: string | null;
+        cantidad: number;
+        unidad: string;
+        precio_unitario: number | null;
+        subtotal: number | null;
+        estado_match: 'auto_match' | 'alias_match' | 'fuzzy_pendiente' | 'confirmada' | 'rechazada';
+        confianza_match: number | null;
+}
+
+export const facturasApi = {
+        /**
+         * Invoke OCR extraction on a factura
+         */
+        async extraer(facturaId: string): Promise<{ factura_id: string; items_count: number; estado: string }> {
+                return apiRequest<{ factura_id: string; items_count: number; estado: string }>(`/facturas/${facturaId}/extraer`, {
+                        method: 'POST',
+                });
+        },
+};
+
 export default {
         tareas: tareasApi,
         deposito: depositoApi,
@@ -928,4 +1005,5 @@ export default {
         ofertas: ofertasApi,
         bitacora: bitacoraApi,
         search: searchApi,
+        facturas: facturasApi,
 };

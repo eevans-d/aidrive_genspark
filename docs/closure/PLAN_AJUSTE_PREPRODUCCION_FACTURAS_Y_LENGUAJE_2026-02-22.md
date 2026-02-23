@@ -142,15 +142,30 @@ Orden sugerido de ejecucion:
 2. Hacer piloto por proveedor con validacion humana obligatoria.
 3. Pasar a automatizacion mayor (OCR/factura) recien cuando la base de datos de alias ya sea estable.
 
-## 8) Levantamiento En Negocio (Hoy) - Datos Minimos A Capturar
+## 8) Plantilla Operativa Corta (Negocio) - Etapa Preproduccion
 
-1. Factura: proveedor, fecha, numero de comprobante, tipo (A/B/C/remito).
-2. Linea de factura: descripcion exacta impresa, cantidad, unidad, precio unitario, subtotal.
-3. Equivalencia interna: como le llaman en el local a ese producto (alias real de mostrador/deposito).
-4. Variante comercial: clasica/zero/light/sabor, tamano real (1L/1.5L/2.25L), pack/unidad.
-5. Codigo objetivo: SKU/codigo de barras si existe en la etiqueta del producto.
-6. Resultado de carga: mapeo correcto o incorrecto.
-7. Si fue incorrecto: tipo de error (producto, variante, unidad, precio, duplicado).
-8. Correccion aplicada: que nombre/alias quedo como valido.
-9. Tiempo total por factura: minutos desde carga hasta validacion.
-10. Observacion operativa: problema real detectado por vos o por el personal.
+### 8.1 Campos Manuales (los que si conviene cargar hoy)
+
+1. `producto_factura_texto`: descripcion exacta impresa en la linea.
+2. `alias_negocio`: como lo nombran ustedes en local/deposito.
+3. `variante_presentacion`: clasica/zero/light + tamano o pack (ej: 2.25L, x6).
+4. `cantidad`: cantidad de la linea.
+5. `unidad`: unidad/pack/caja/litro/kilo.
+6. `precio_unitario`: precio por unidad de la linea.
+7. `mapeo_ok`: si quedo bien mapeado (`si/no`).
+8. `error_tipo`: solo si fallo (`producto|variante|unidad|precio|duplicado`).
+9. `correccion_final`: alias o producto canonico correcto.
+10. `obs_operativa`: friccion real detectada (breve).
+
+### 8.2 Campos Autoextraidos Por Agente Desde Imagen (no cargarlos manualmente salvo falla)
+
+1. `proveedor`
+2. `factura_fecha`
+3. `factura_numero`
+4. `tipo_comprobante`
+5. `subtotal_linea` y/o `total_factura` (si la calidad de imagen lo permite)
+
+### 8.3 Regla De Fallback
+
+1. Si el agente no extrae con confianza alta `factura_fecha` o `factura_numero`, se completa manualmente solo ese dato.
+2. No frenar la operacion por campos secundarios: priorizar mapeo correcto de producto/variante/unidad.

@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, Monitor, Smartphone, MoreHorizontal, BookOpen, Moon, Sun, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, Monitor, Smartphone, MoreHorizontal, BookOpen, Moon, Sun, FileText, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
@@ -38,6 +38,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/cuaderno', icon: BookOpen, label: 'Cuaderno', allowedRoles: [] },
   { path: '/productos', icon: ShoppingCart, label: 'Productos', allowedRoles: ['admin', 'deposito', 'ventas'] },
   { path: '/proveedores', icon: Users, label: 'Proveedores', allowedRoles: ['admin', 'deposito'] },
+  { path: '/facturas', icon: FileText, label: 'Facturas', allowedRoles: ['admin', 'deposito'] },
   { path: '/ventas', icon: DollarSign, label: 'Ventas', allowedRoles: ['admin', 'ventas'] },
   { path: '/pocket', icon: Smartphone, label: 'Pocket', allowedRoles: ['admin', 'deposito'] },
 ]

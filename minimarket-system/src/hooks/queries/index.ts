@@ -45,3 +45,7 @@ export type { PedidosFilters, PedidosResult } from './usePedidos';
 export { useFaltantes, useRecentFaltantes, useFaltantesByProveedor, useCreateFaltante, useUpdateFaltante, useFaltantesCountByProveedor } from './useFaltantes';
 export type { FaltanteRow, FaltantesResult, CreateFaltanteParams, UseFaltantesOptions } from './useFaltantes';
 
+// Facturas (OCR ingesta)
+export { useFacturas, useFacturaItems, useCreateFactura } from './useFacturas';
+export type { FacturaIngesta, FacturaIngestaItem } from './useFacturas';
+

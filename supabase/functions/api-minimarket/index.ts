@@ -1640,12 +1640,23 @@ Deno.serve(async (req) => {
         p_proveedor_id: proveedorId,
       });
 
-      // D-007 (D-153 cierre): precio_compra se acepta en el request body pero NO se
-      // persiste — la tabla precios_proveedor es de scraping (Maxiconsumo) y no tiene
-      // columnas para precio de compra interno. Persistencia de precios de compra queda
-      // diferida hasta que se defina un modelo dedicado (ver DECISION_LOG D-007).
-      // precioCompraNumero y proveedorId ya fueron validados arriba y se usan en el
-      // movimiento de inventario (p_origen, p_proveedor_id).
+      // D-007 cierre: persistir precio de compra en tabla dedicada precios_compra
+      // (modelo creado en migración 20260223030000). El trigger trg_update_precio_costo
+      // actualiza productos.precio_costo automáticamente.
+      if (precioCompraNumero !== null) {
+        try {
+          await insertTable(supabaseUrl, 'precios_compra', requestHeaders(), {
+            producto_id,
+            proveedor_id: proveedorId,
+            precio_unitario: precioCompraNumero,
+            origen: 'recepcion',
+            created_by: user!.id,
+          });
+        } catch (e) {
+          // Non-blocking: log error but don't fail the ingreso
+          logger.warn('PRECIO_COMPRA_INSERT_FAILED', { requestId, producto_id, precio_compra: precioCompraNumero, error: String(e) });
+        }
+      }
 
       return respondOk(movimiento, 201, { message: 'Ingreso de mercaderia registrado exitosamente' });
     }
@@ -2190,6 +2201,48 @@ Deno.serve(async (req) => {
         status: 'healthy',
         timestamp: new Date().toISOString(),
       });
+    }
+
+    // ====================================================================
+    // FACTURAS OCR — POST /facturas/:id/extraer
+    // ====================================================================
+
+    if (path.match(/^\/facturas\/[a-f0-9-]+\/extraer$/) && method === 'POST') {
+      checkRole(['admin', 'deposito']);
+
+      const facturaId = path.split('/')[2];
+
+      if (!serviceRoleKey) {
+        return respondFail('CONFIG_ERROR', 'Service role key no disponible', 500);
+      }
+
+      // Invoke facturas-ocr Edge Function server-to-server
+      const ocrRes = await fetch(
+        `${supabaseUrl}/functions/v1/facturas-ocr`,
+        {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${serviceRoleKey}`,
+            'apikey': serviceRoleKey || '',
+            'Content-Type': 'application/json',
+            'x-request-id': requestId,
+          },
+          body: JSON.stringify({ factura_id: facturaId }),
+          signal: AbortSignal.timeout(35_000),
+        },
+      );
+
+      const ocrBody = await ocrRes.json();
+
+      if (!ocrRes.ok) {
+        return respondFail(
+          ocrBody?.error?.code || 'OCR_ERROR',
+          ocrBody?.error?.message || 'Error en extracción OCR',
+          ocrRes.status,
+        );
+      }
+
+      return respondOk(ocrBody.data || ocrBody, 200, { message: 'Extracción completada' });
     }
 
     // ====================================================================
