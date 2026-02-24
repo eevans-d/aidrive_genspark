@@ -1,8 +1,43 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-23 (Cierre final produccion: auditoria 12 fases)
-**Estado:** **GO — OPERATIVO** (pipeline OCR completo con pricing inteligente)
+**Ultima actualizacion:** 2026-02-24 (Continuidad GO-LIVE: opcion agresiva ejecutada)
+**Estado:** **GO CON CONDICION** (core operativo; OCR bloqueado por secret vacio)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-24 — Continuidad GO-LIVE: Dependency Governance + Hardening Final
+
+**Objetivo:** cerrar hardening final, gobernanza de dependencias y evidencia de readiness.
+
+**Cambios aplicados:**
+- `@supabase/supabase-js` fijado a version exacta `2.95.3` (sin `^`) en `package.json` y `minimarket-system/package.json` para determinismo.
+- CI guard creado: `scripts/check-supabase-js-alignment.mjs` (valida alineacion root/frontend/deno/import_map, falla si hay drift).
+- CI guard agresivo creado: `scripts/check-critical-deps-alignment.mjs` (supabase-js estricto + paridad major de tooling compartido).
+- CI fail-fast integrado: job `dependency-governance` en `.github/workflows/ci.yml` y dependencia explicita para `lint/test/typecheck/edge-functions-check`.
+- Tests de alineacion: `tests/unit/dependency-alignment.test.ts` (11 tests, presencia + alineacion + pinning + ejecucion checker critico).
+
+**Validaciones completas:**
+- Unit tests: `1722/1722 PASS` (`81/81` files, +11 tests / +1 file vs sesion anterior).
+- Component tests: `238/238 PASS` (`46/46` files).
+- Security tests: `11 PASS | 3 skipped`.
+- Coverage: `90.19% stmts`, `82.63% branches`, `91.16% funcs`, `91.29% lines`.
+- Build frontend: PASS.
+- TypeScript noEmit: PASS.
+- Deno check: `15/15 OK`.
+- Doc links: PASS (`89` archivos).
+- Metrics: PASS (up-to-date).
+- Alignment guard: PASS (4/4 sources at `2.95.3`).
+- Dependency governance guard: PASS (strict + major parity).
+
+**Hardening SQL:**
+- Migracion `20260224010000` confirmada sincronizada local/remoto (52/52 migraciones).
+- Migracion aplica `SET search_path = public, pg_temp` dinamicamente a todas las funciones `SECURITY DEFINER` en `public`.
+
+**Secret readiness OCR:**
+- `GCV_API_KEY` existe por nombre pero tiene valor vacio (digest = SHA-256 de string vacio).
+- **Bloqueo operativo:** OCR no funcional en produccion hasta que el owner configure el valor real.
+- Instruccion: `supabase secrets set GCV_API_KEY=<valor-real> --project-ref dqaygmjpzoqjjrywdsxi`
+
+**Estado operativo actualizado:** `GO CON CONDICION` (feature OCR bloqueada hasta configurar `GCV_API_KEY` real).
 
 ## Addendum Sesion 2026-02-24 — Resolucion de pendientes condicionales (post-cierre)
 
