@@ -1,8 +1,35 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-24 (Continuidad GO-LIVE: opcion agresiva ejecutada)
+**Ultima actualizacion:** 2026-02-24 (Verificacion independiente post opcion 2 agresiva)
 **Estado:** **GO CON CONDICION** (core operativo; OCR bloqueado por secret vacio)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
+
+## Addendum Sesion 2026-02-24 — Verificacion Independiente Post Opcion 2 Agresiva
+
+**Objetivo:** validacion independiente de todos los cambios y gates post opcion agresiva.
+
+**Drift detectado y corregido:**
+- `vitest` en `minimarket-system/package.json` estaba en `^4.0.17` vs root `^4.0.18`, causando mismatch con `@vitest/coverage-v8@4.0.18` que rompia instrumentacion de cobertura.
+- Fix: alineado a `^4.0.18` en frontend. Commit: `a0f8ddd`.
+- Coverage restaurado y verificado: `90.19% stmts`, `82.63% branches`, `91.16% funcs`, `91.29% lines`.
+
+**Validaciones re-ejecutadas (evidencia CLI real):**
+- Unit tests: `1722/1722 PASS` (`81/81` files) — vitest v4.0.18.
+- Component tests: `238/238 PASS` (`46/46` files) — vitest v4.0.18.
+- Security tests: `11 PASS | 3 skipped`.
+- Auxiliary (perf): `45 PASS | 4 skipped`.
+- Build frontend: PASS.
+- TypeScript noEmit: PASS (0 errores).
+- Doc links: PASS.
+- Metrics: PASS.
+- Dependency governance: PASS (supabase-js 2.95.3 alineado, vitest 4.0.18 alineado).
+- Secrets scan: 0 hardcoded secrets, 0 XSS vectors, 0 console.log, 0 wildcard CORS.
+- Migraciones: 52/52 sincronizadas local/remoto.
+- CI pipeline: dependency-governance blocking, security-tests blocking, MAX_CHUNK_KB=500.
+
+**OCR readiness:** `GCV_API_KEY` existe pero valor vacio (digest SHA-256 de empty string). NO operativo.
+
+**Decision:** **GO CON CONDICION** confirmado — identica a la sesion anterior, con drift corregido.
 
 ## Addendum Sesion 2026-02-24 — Continuidad GO-LIVE: Dependency Governance + Hardening Final
 
