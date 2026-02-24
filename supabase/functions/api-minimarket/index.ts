@@ -395,7 +395,7 @@ Deno.serve(async (req) => {
         return null;
       }
       // Import dynamically to avoid circular dependencies
-      const { createClient } = await import('jsr:@supabase/supabase-js@2');
+      const { createClient } = await import('@supabase/supabase-js');
       return createClient(supabaseUrlStr, serviceRoleKey);
     };
 

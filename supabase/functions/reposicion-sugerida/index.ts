@@ -30,7 +30,7 @@ import { getCorsHeaders, handleCors } from '../_shared/cors.ts'
 import { ok, fail } from '../_shared/response.ts'
 import { createLogger } from '../_shared/logger.ts'
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts'
-import { createClient } from 'jsr:@supabase/supabase-js@2'
+import { createClient } from '@supabase/supabase-js'
 
 const logger = createLogger('reposicion-sugerida');
 

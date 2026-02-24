@@ -25,7 +25,7 @@
  */
 
 import { createLogger } from './logger.ts'
-import type { SupabaseClient } from 'jsr:@supabase/supabase-js@2'
+import type { SupabaseClient } from '@supabase/supabase-js'
 
 const logger = createLogger('audit');
 

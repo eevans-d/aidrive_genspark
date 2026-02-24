@@ -16,7 +16,7 @@ Owner documental: QA + Desarrollo
 - Build frontend: PASS (`vite build` + PWA assets generados).
 - TypeCheck frontend: PASS (`npx tsc --noEmit`, 0 errores).
 - Deno check: `15/15 OK`.
-- Dependency alignment: `10/10 PASS` (CI guard + tests).
+- Dependency alignment: `11/11 PASS` (CI guard + tests).
 
 ## Objetivo
 Estandarizar como ejecutar, interpretar y mantener tests del proyecto sin ambiguedad.

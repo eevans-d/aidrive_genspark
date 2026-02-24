@@ -1,6 +1,6 @@
 # Open Issues (Canónico)
 
-**Última actualización:** 2026-02-22 (D-155 post-merge + activacion operativa)
+**Última actualización:** 2026-02-24 (verificacion independiente D-157)
 **Fuente principal:** `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 
 ## Pendientes Vigentes (2026-02-22)
@@ -154,9 +154,9 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 
 ## Notas operativas
 
-- Migraciones: `44` local, `44` remoto (sincronizado D-139).
-- Snapshot remoto referencia 2026-02-19 (histórico): 13 funciones activas.
-- FactPack repo 2026-02-22 (canónico local): 14 Edge Functions en código (incluye `backfill-faltantes-recordatorios`).
+- Migraciones: `52` local, `52` remoto (sincronizado D-156, verificado D-157).
+- Snapshot remoto referencia 2026-02-22 (D-155): 14/14 funciones activas. Repo local: 15 Edge Functions.
+- FactPack repo 2026-02-24 (canónico local): 15 Edge Functions en código (incluye `backfill-faltantes-recordatorios`).
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.
 - **CORS:** `ALLOWED_ORIGINS` en Supabase incluye dominios Cloudflare Pages + localhost. Tras cambios, redeploy `api-minimarket` con `--no-verify-jwt`.
@@ -165,7 +165,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 - Env audit names-only ejecutado 2026-02-16: `.env.example` sincronizado con variables usadas por código; secretos opcionales de canales (`WEBHOOK_URL`, `SLACK_WEBHOOK_URL`, `TWILIO_*`) se gestionan por entorno. Evidencia: `docs/closure/ENV_AUDIT_2026-02-16_045120.md`.
 - `cron-notifications`: soporte de envio real vía SendGrid cuando `NOTIFICATIONS_MODE=real` y `SENDGRID_API_KEY` es valida. Estado actual: smoke real + Email Activity `delivered` (ver `docs/closure/EVIDENCIA_SENDGRID_SMTP_2026-02-15.md`).
 - `api-minimarket` debe mantenerse con `verify_jwt=false`.
-- Deno check validado: 13/13 PASS con `/home/eevan/.deno/bin/deno` (PATH no exportado globalmente).
+- Deno check validado: 15/15 PASS (CI gate via `denoland/setup-deno@v2`). Localmente: deno no instalado globalmente.
 - Auditoria SRE (2026-02-17): 8 hallazgos (2 CRITICO, 4 ALTO, 2 MEDIO). **8/8 CERRADOS** (D-126, D-128, D-129, D-131). Ver: `docs/closure/REPORTE_AUDITORIA_SRE_DEFINITIVO_2026-02-17.md` y `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md`.
 - Hoja de ruta unica: `docs/closure/HOJA_RUTA_UNICA_CANONICA_2026-02-17.md`.
 - Hardening 5 pasos: cerrado (incluye `ErrorMessage` 14/14 en páginas principales; `NotFound.tsx` no aplica).
