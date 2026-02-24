@@ -1,6 +1,6 @@
 # Métricas de Código (Fuente única)
 
-**Generado:** 2026-02-23T13:52:41.302Z (UTC)
+**Generado:** 2026-02-24T03:39:53.389Z (UTC)
 **Script:** `scripts/metrics.mjs`
 
 ## Definiciones
@@ -18,7 +18,7 @@
 | Métrica | Total | Detalle |
 |---|---:|---|
 | Edge Functions | 15 | `supabase/functions` |
-| Migraciones SQL | 51 | `supabase/migrations` |
+| Migraciones SQL | 52 | `supabase/migrations` |
 | Shared modules (_shared) | 8 | `supabase/functions/_shared` |
 | Endpoints | 44 | api-minimarket: 35, api-proveedor: 9 |
 | Hooks (React Query) | 11 | `minimarket-system/src/hooks/queries` |

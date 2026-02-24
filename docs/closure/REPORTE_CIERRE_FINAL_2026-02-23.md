@@ -6,6 +6,27 @@
 
 ---
 
+## ACTUALIZACION 2026-02-24 — Pendientes Condicionales Resueltos
+
+- `deno check` completo: `15/15 OK` (evidencia: `/tmp/conditional-deno-check-final.txt`).
+- Hardening SQL de `SECURITY DEFINER`:
+  - migracion creada: `supabase/migrations/20260224010000_harden_security_definer_search_path_global.sql`
+  - migracion aplicada en remoto: `supabase db push` OK
+  - sincronizacion local/remoto confirmada (`supabase migration list --linked`).
+- `@supabase/supabase-js` alineado:
+  - `package.json`: `^2.95.3`
+  - `minimarket-system/package.json`: `^2.95.3`
+  - `supabase/functions/deno.json` e `supabase/functions/import_map.json`: `2.95.3`
+- Revalidacion posterior:
+  - Unit: `1711/1711 PASS`
+  - Components: `238/238 PASS`
+  - Security: `11 PASS | 3 skipped`
+  - Build + Typecheck: PASS
+
+**Estado operativo vigente (override de este reporte): GO**
+
+---
+
 ## 1. RESUMEN EJECUTIVO
 
 | Métrica | Valor | Criterio | Estado |

@@ -4,6 +4,26 @@
 **Estado:** **GO — OPERATIVO** (pipeline OCR completo con pricing inteligente)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 
+## Addendum Sesion 2026-02-24 — Resolucion de pendientes condicionales (post-cierre)
+
+Pendientes condicionales del cierre anterior resueltos con evidencia:
+- `deno check` Edge Functions: `15/15 OK` usando `npx deno check --no-lock`.
+- Hardening SQL aplicado: migracion `20260224010000_harden_security_definer_search_path_global.sql` creada y **aplicada en remoto** (`supabase db push`).
+- Migraciones local/remoto sincronizadas incluyendo `20260224010000`.
+- Alineacion `@supabase/supabase-js`:
+  - root: `^2.95.3`
+  - frontend: `^2.95.3` (lock resuelto en `2.97.0`)
+  - edge imports (`deno.json` + `import_map.json`): `2.95.3`
+
+Validaciones post-ajuste:
+- Unit tests: `1711/1711 PASS` (`80/80` files).
+- Component tests: `238/238 PASS` (`46/46` files).
+- Security tests: `11 PASS | 3 skipped`.
+- Build frontend: PASS.
+- TypeScript noEmit: PASS.
+
+**Estado operativo actualizado:** `GO` (sin condiciones abiertas de los tres pendientes críticos anteriores).
+
 ## Addendum Sesion 2026-02-23 — Cierre Final Produccion (Mega Prompt V2)
 
 **Ejecucion integral completada (fases 1-12) con evidencia CLI en `/tmp/phase*` y `/tmp/final-*`:**
