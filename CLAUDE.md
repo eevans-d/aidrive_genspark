@@ -59,14 +59,14 @@ SI NO existe → ROL: CODEX
 - **CODEX:** Planifica, audita, genera briefings. NO implementa codigo profundo.
 - **EXECUTOR:** Ejecuta tareas, implementa, registra evidencia. NO debate.
 
-### Guias Operativas Disponibles (22)
+### Guias Operativas Disponibles (23)
 
 Guias operativas definidas en `.agent/skills/*` (instrucciones para Claude):
 
 - APISync, BaselineOps, CodeCraft, CronFixOps, DebugHound, DependabotOps
 - DeployOps, DocuGuard, EnvAuditOps, ExtractionOps, MegaPlanner, MigrationOps
-- PerformanceWatch, ProductionGate, RealityCheck, SecretRotationOps, SecurityAudit
-- SendGridOps, SentryOps, SessionOps, TestMaster, UXFixOps
+- PerformanceWatch, ProductionGate, QualityGate, RealityCheck, SecretRotationOps
+- SecurityAudit, SendGridOps, SentryOps, SessionOps, TestMaster, UXFixOps
 
 ### Auto-Seleccion de Guia
 
@@ -83,6 +83,7 @@ Selecciona automaticamente segun palabras clave del usuario:
 | debug/error/bug/fix | DebugHound | -> TestMaster |
 | performance/rendimiento/lento | PerformanceWatch | -> DocuGuard |
 | openapi/swagger/api spec | APISync | -> DocuGuard |
+| cierre de proyecto/auditoria integral | QualityGate | -> DocuGuard |
 | seguridad/rls/vulnerabilidad | SecurityAudit | -> DocuGuard |
 
 ### Sistema de Workflows (guias de procedimiento)
@@ -95,6 +96,7 @@ Referencias canónicas:
 - Cambio de código: `.agent/workflows/code-change.md`
 - Recuperación de errores: `.agent/workflows/error-recovery.md`
 - Auditoría integral: `.agent/workflows/full-audit.md`
+- Cierre de proyecto: `.agent/workflows/closure-audit.md`
 - Cierre: `.agent/workflows/session-end.md`
 
 Regla obligatoria del agente:
