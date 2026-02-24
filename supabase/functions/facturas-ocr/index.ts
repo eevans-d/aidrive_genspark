@@ -22,6 +22,10 @@ import {
 } from './helpers.ts';
 import type { SupplierProfile, OcrResult, MatchResult } from './helpers.ts';
 
+const logger = createLogger('facturas-ocr');
+const GCV_ENDPOINT = 'https://vision.googleapis.com/v1/images:annotate';
+const FETCH_TIMEOUT_MS = 15_000;
+
 /**
  * Fetch supplier profile from database.
  * Returns default profile if none exists for this supplier.
