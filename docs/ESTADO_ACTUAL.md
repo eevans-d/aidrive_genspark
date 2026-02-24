@@ -1,7 +1,7 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-24 (Verificacion independiente post opcion 2 agresiva)
-**Estado:** **GO CON CONDICION** (core operativo; OCR bloqueado por secret vacio)
+**Ultima actualizacion:** 2026-02-24 (GCV_API_KEY configurado, OCR operativo)
+**Estado:** **GO** (core operativo; OCR habilitado)
 **Score:** 100.00% (11 PASS / 11 gates ejecutados en corrida D-140)
 
 ## Addendum Sesion 2026-02-24 — Verificacion Independiente Post Opcion 2 Agresiva
@@ -27,9 +27,9 @@
 - Migraciones: 52/52 sincronizadas local/remoto.
 - CI pipeline: dependency-governance blocking, security-tests blocking, MAX_CHUNK_KB=500.
 
-**OCR readiness:** `GCV_API_KEY` existe pero valor vacio (digest SHA-256 de empty string). NO operativo.
+**OCR readiness:** `GCV_API_KEY` configurado (digest `59cc5b98...`). `facturas-ocr` redeployada. OCR operativo.
 
-**Decision:** **GO CON CONDICION** confirmado — identica a la sesion anterior, con drift corregido.
+**Decision:** **GO** — condicion OCR cerrada.
 
 ## Addendum Sesion 2026-02-24 — Continuidad GO-LIVE: Dependency Governance + Hardening Final
 
@@ -60,11 +60,11 @@
 - Migracion aplica `SET search_path = public, pg_temp` dinamicamente a todas las funciones `SECURITY DEFINER` en `public`.
 
 **Secret readiness OCR:**
-- `GCV_API_KEY` existe por nombre pero tiene valor vacio (digest = SHA-256 de string vacio).
-- **Bloqueo operativo:** OCR no funcional en produccion hasta que el owner configure el valor real.
-- Instruccion: `supabase secrets set GCV_API_KEY=<valor-real> --project-ref dqaygmjpzoqjjrywdsxi`
+- `GCV_API_KEY` configurado con valor real (digest `59cc5b98...`, ya no vacio).
+- `facturas-ocr` redeployada (2026-02-24).
+- **OCR operativo en produccion.**
 
-**Estado operativo actualizado:** `GO CON CONDICION` (feature OCR bloqueada hasta configurar `GCV_API_KEY` real).
+**Estado operativo actualizado:** `GO` (OCR habilitado, condicion cerrada).
 
 ## Addendum Sesion 2026-02-24 — Resolucion de pendientes condicionales (post-cierre)
 
