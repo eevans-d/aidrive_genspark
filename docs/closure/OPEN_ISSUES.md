@@ -9,7 +9,7 @@
 |---|---|---|
 | ~~Cambios D-150..D-155 aún no integrados en `main` (rama actual ahead `0/7`)~~ | ✅ CERRADO (D-155) | PR #82 mergeado en `main` (commit `9aba817`, 2026-02-22T03:41:18Z). |
 | ~~`api-minimarket` remoto no incluye fix D-007 (remote `v30` 2026-02-19; fix local 2026-02-22)~~ | ✅ CERRADO (D-155) | Deployed v32 (2026-02-22T04:25:00Z) con `--no-verify-jwt`. Fix D-007 activo en produccion. |
-| ~~`backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto~~ | ✅ CERRADO (D-155) | Deployed v1 (2026-02-22T04:25:11Z). 14/14 Edge Functions activas en remoto. |
+| ~~`backfill-faltantes-recordatorios` existe en repo pero no está desplegada en remoto~~ | ✅ CERRADO (D-155) | Deployed v1 (2026-02-22T04:25:11Z). 15/15 Edge Functions activas en remoto (verificado D-157). |
 | ~~`security-nightly.yml` usa `vars.VITE_SUPABASE_URL` y `vars.VITE_SUPABASE_ANON_KEY` no configuradas en GitHub~~ | ✅ CERRADO (D-155) | Variables repo creadas: `VITE_SUPABASE_URL` (2026-02-22T03:40:21Z), `VITE_SUPABASE_ANON_KEY` (2026-02-22T03:43:41Z). |
 | ~~`backup.yml` requiere `SUPABASE_DB_URL` y el secret no está configurado en GitHub~~ | ✅ CERRADO (D-155) | Secret `SUPABASE_DB_URL` creado (2026-02-22T04:01:11Z). |
 | ~~`POST /deposito/ingreso` con `precio_compra` + `proveedor_id` intenta insertar columnas inexistentes en `precios_proveedor`~~ | ✅ CERRADO (D-153) | Insert desalineado eliminado. Precio de compra se acepta en request pero no se persiste hasta definir modelo dedicado. Fix: `supabase/functions/api-minimarket/index.ts:1643-1648`. |
@@ -155,7 +155,7 @@ Verificación (2026-02-16): `npx vitest run` -> 1165/1165 PASS. Auxiliary: 45 PA
 ## Notas operativas
 
 - Migraciones: `52` local, `52` remoto (sincronizado D-156, verificado D-157).
-- Snapshot remoto referencia 2026-02-22 (D-155): 14/14 funciones activas. Repo local: 15 Edge Functions.
+- Snapshot remoto referencia 2026-02-24 (D-157): 15/15 funciones activas. Repo local: 15 Edge Functions.
 - FactPack repo 2026-02-24 (canónico local): 15 Edge Functions en código (incluye `backfill-faltantes-recordatorios`).
 - Snapshot remoto referencia: historial git (baseline logs removidos en limpieza D-109).
 - **Frontend hosting:** Cloudflare Pages (proyecto `aidrive-genspark`). URLs: `https://aidrive-genspark.pages.dev` (prod), `https://preview.aidrive-genspark.pages.dev` (preview). Workflow: `.github/workflows/deploy-cloudflare-pages.yml`.

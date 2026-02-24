@@ -1,7 +1,7 @@
 # Esquema de Base de Datos - Sistema Mini Market
 
-**Actualizado:** 2026-02-23 (51 migraciones, +6 tablas OCR/facturas, +1 supplier_profiles)
-**Migraciones:** 51/51 sincronizadas (local = remoto)
+**Actualizado:** 2026-02-24 (52 migraciones, +6 tablas OCR/facturas, +1 supplier_profiles)
+**Migraciones:** 52/52 sincronizadas (local = remoto)
 **Fuente de verdad:** `supabase/migrations/*.sql` (este documento es derivado)
 
 ---

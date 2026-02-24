@@ -1,6 +1,6 @@
 # Métricas de Código (Fuente única)
 
-**Generado:** 2026-02-24T04:45:35.684Z (UTC)
+**Generado:** 2026-02-24T06:03:42.976Z (UTC)
 **Script:** `scripts/metrics.mjs`
 
 ## Definiciones

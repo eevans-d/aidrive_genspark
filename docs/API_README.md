@@ -242,8 +242,8 @@ Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 Este documento usa dos conteos válidos para evitar contradicciones:
 
 - **35 operaciones literales**: bloques `if (path === ... && method === ...)`.
-- **20 operaciones regex**: bloques `if (path.match(...) && method === ...)`.
-- **55 guards totales**: suma de operaciones literales + regex.
+- **23 operaciones regex**: bloques `if (path.match(...) && method === ...)`.
+- **58 guards totales**: suma de operaciones literales + regex.
 
 #### Inventario literal (35 operaciones)
 Rutas **exactas** en `supabase/functions/api-minimarket/index.ts` (bloques `if (path === ...)`):
@@ -288,12 +288,12 @@ Rutas **exactas** en `supabase/functions/api-minimarket/index.ts` (bloques `if (
 
 ### Criterio de conteo de endpoints (evita discrepancias)
 - **Inventario literal (35)**: incluye solo bloques `if (path === ... && method === ...)`.
-- **Inventario regex (20)**: incluye bloques `if (path.match(...) && method === ...)`.
-- **Inventario tecnico base (55)**: suma literal + regex.
+- **Inventario regex (23)**: incluye bloques `if (path.match(...) && method === ...)`.
+- **Inventario tecnico base (58)**: suma literal + regex.
 - **Consolidación de alias**: `/pedidos/items/{id}` y `/pedidos/items/{id}/preparado` se cuentan como una misma operación funcional.
 - **Excluye** Edge Functions independientes (`reposicion-sugerida`, `alertas-vencimientos`, `backfill-faltantes-recordatorios`, cron/scraper) y endpoints PostgREST directos a tablas.
 - `api-proveedor` tiene **9 endpoints** definidos en `schemas.ts` (ver sección al final).  
-Si aparece la cifra historica de “52 endpoints”, tratarla como criterio normalizado antiguo. Para auditoria tecnica actual usar `55` guards (`35` literales + `20` regex).
+Si aparece la cifra historica de "52 endpoints", tratarla como criterio normalizado antiguo. Para auditoria tecnica actual usar `58` guards (`35` literales + `23` regex).
 
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
