@@ -1,26 +1,19 @@
 # Briefing de Sesion
-**Fecha:** 2026-02-15T04:57:25+00:00
+**Fecha:** 2026-02-24T04:36:02+00:00
 **Generado por:** CODEX
-**Objetivo:** Establecer sistema de continuidad documentada entre sesiones y ventanas IA
+**Objetivo:** verificacion independiente post opcion 2 agresiva
 
-## Contexto
-El usuario solicita que toda planificacion y proceso quede documentado paso a paso,
-de manera que futuras sesiones (propias o de otros agentes IA) puedan retomar el trabajo
-de forma optima y eficiente.
-
-## Checklist Atomico
-- [ ] Archivar sesion anterior (2026-02-13, COMPLETADA).
-- [ ] Crear documento unico de continuidad (`docs/closure/CONTINUIDAD_SESIONES.md`).
-- [ ] Actualizar ESTADO_ACTUAL.md con estado de esta sesion.
-- [ ] Crear SESSION_REPORT con estado de avance.
-- [ ] Validar sistema de continuidad (lectura completa de artefactos).
+## Checklist Atomico (ejecutar en orden)
+- [ ] T1 - [Tarea con criterio de exito]
+- [ ] T2 - [Tarea con criterio de exito]
 
 ## Criterio de DONE
-- Documento `CONTINUIDAD_SESIONES.md` creado con toda la informacion necesaria para handoff.
-- ESTADO_ACTUAL actualizado con referencia al documento de continuidad.
-- SESSION_REPORT generado.
+- [ ] [Verificacion concreta]
 
 ## Restricciones
-- NO imprimir secretos/JWTs (solo nombres).
-- NO usar comandos destructivos de git.
-- Documentar TODO en filesystem (no solo en chat).
+- NO imprimir secretos/JWTs (solo nombres)
+- NO usar comandos destructivos (git reset --hard, git checkout -- <file>, force-push)
+- api-minimarket: verify_jwt=false (deploy con --no-verify-jwt)
+
+## Rollback (si impacto >= 2)
+- [Comandos de reversion]
