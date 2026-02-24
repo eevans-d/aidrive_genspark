@@ -34,6 +34,7 @@ scripts:
   generate_agents_yaml: ".agent/scripts/generate_agents_yaml.py"
   env_audit: ".agent/scripts/env_audit.py"
   dependabot_autopilot: ".agent/scripts/dependabot_autopilot.sh"
+  init_audit: "scripts/init-audit.sh"
   p0: ".agent/scripts/p0.sh"
   extract_reports: ".agent/scripts/extract_reports.py"
   test_unit: "npm run test:unit"
@@ -114,7 +115,7 @@ quality_metrics:
   test_files_total: 71
   error_message_pages: "9/13"
   skeleton_pages: "5/13"
-  skills_total: 22
+  skills_total: 23
 
 # === PROTOCOL ZERO V4.0: Sistema Agentico Dual ===
 
@@ -257,6 +258,9 @@ skill_orchestrator:
     ProductionGate:
       keywords: ["production gate", "go-live", "pre-produccion", "pre-producción", "ready for prod", "checklist produccion", "checklist producción", "go no-go", "readiness"]
       intent: "Ejecutar checklist unificado pre-produccion con 18 gates y score"
+    QualityGate:
+      keywords: ["cierre de proyecto", "closure audit", "auditoria integral", "quality gate completo", "sistema de cierre", "auditoria 9 fases", "calidad y cierre", "anomalias silenciosas", "auditoria exhaustiva de cierre"]
+      intent: "Auditoria integral de cierre con 9 fases secuenciales — detecta anomalias silenciosas de IA"
     CronFixOps:
       keywords: ["fix cron", "cron jobs", "arreglar cron", "verificar cron", "cron auth", "cron schedule", "pg_cron", "maintenance_cleanup"]
       intent: "Validar y corregir configuraciones de cron jobs (HC-1 + scheduling)"
@@ -332,6 +336,9 @@ skill_graph:
     CronFixOps:
       on_complete: [TestMaster, DocuGuard]
       description: "Despues de generar SQL de cron fix: verificar y documentar"
+    QualityGate:
+      on_complete: [DocuGuard]
+      description: "Despues de auditoria de cierre: sincronizar documentacion con hallazgos"
 
   dependencies:
     DeployOps:

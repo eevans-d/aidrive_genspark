@@ -1,0 +1,8 @@
+interface:
+  display_name: QualityGate
+  short_description: Sistema Integral de Calidad y Cierre — 9 fases de auditoria
+    exhaustiva. Detecta anomalias silenciosas de IA (fantasmas, esqueletos, huerfanos,
+    flujos rotos). Genera artefactos en .audit/ con veredicto binario.
+  default_prompt: Use the QualityGate skill for this repository. Follow SKILL.md
+    and respect guardrails. Execute all 9 phases sequentially (0-8) generating
+    artifacts in .audit/ directory. Emit binary verdict in FINAL_REPORT.md.

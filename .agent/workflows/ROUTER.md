@@ -47,6 +47,7 @@ El agente debe evaluar estos triggers en cada interacción.
 | Keyword usuario | Workflow |
 |----------------|----------|
 | auditoría, audit, revisar todo | `full-audit` |
+| cierre, closure, quality gate, 9 fases | `closure-audit` |
 | inicio, start, nueva sesión | `session-start` |
 | cierre, fin, terminar | `session-end` |
 | error, falla, no funciona | `error-recovery` |
@@ -87,3 +88,4 @@ Estos workflows siguen vigentes como rutas especializadas y no deben considerars
 - `audit-codebase`
 - `pre-release-audit`
 - `production-hardening`
+- `closure-audit`

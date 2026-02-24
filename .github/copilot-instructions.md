@@ -116,6 +116,30 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Credenciales | `docs/OBTENER_SECRETOS.md` (nombres, nunca valores) |
 | Métricas | `docs/METRICS.md` (generado por `scripts/metrics.mjs`) |
 
+## Sistema de Cierre y Calidad (QualityGate)
+
+Cuando el usuario solicite una auditoria de cierre, closure audit, o quality gate completo,
+operar segun el skill QualityGate (`.agent/skills/QualityGate/SKILL.md`):
+
+1. Verificar si existe `.audit/` y `.audit/.phase_marker`
+2. Determinar fase actual y continuar desde ahi (9 fases: 0-8)
+3. Analizar el codigo buscando anomalias silenciosas de IA:
+   - Funciones vacias o con solo TODO/FIXME (Fantasmas)
+   - Funciones que retornan valores por defecto sin logica (Esqueletos)
+   - Modulos no importados por ningun otro modulo (Huerfanos)
+   - Variables de entorno referenciadas sin definir (Env Fantasma)
+   - Bloques catch vacios o con solo console.log
+   - Secretos/JWTs hardcodeados
+   - Rutas apuntando a componentes inexistentes (Rutas Ciegas)
+4. Clasificar cada hallazgo: CRITICO | ALTO | MEDIO | BAJO
+5. Incluir archivo:linea y accion concreta en cada hallazgo
+6. Generar artefactos en `.audit/` por fase
+7. Al completar todas las fases, generar `.audit/FINAL_REPORT.md`
+8. Veredicto binario: APROBADO o REQUIERE ACCION
+
+Usar `AUDIT_CHECKLIST.md` para persistir estado entre sesiones.
+Plantilla en: `docs/closure/PLANTILLA_AUDIT_CHECKLIST.md`
+
 ## Estado Actual (Febrero 2026 - verificado D-142)
 
 ### Proyecto Supabase
