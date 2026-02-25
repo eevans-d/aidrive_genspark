@@ -1,57 +1,41 @@
 # Guia Para Agentes IA (Canonica)
 
-**Proyecto:** Mini Market System  
-**Ultima actualizacion:** 2026-02-21
+**Proyecto:** Mini Market System
+**Ultima actualizacion:** 2026-02-25
 
-## Estado Rapido
+## Estado rapido
 | Metrica | Valor |
 |---|---|
-| Estado global | **GO** (D-149 operativo + D-148 tecnico vigente; ver `docs/closure/OPEN_ISSUES.md`) |
-| Score operativo | 100% (11/11 gates de referencia operativa, D-140) |
-| Migraciones | 44/44 synced remoto |
-| Edge Functions activas | 14 |
-| Skills locales | 22 |
-| Workflows documentados | 12 |
-| Quality gates | PASS (`node scripts/validate-doc-links.mjs` -> `Doc link check OK (87 files)`) |
+| Veredicto | `GO INCONDICIONAL` |
+| Hallazgos abiertos | 0 (11/11 cerrados) |
+| Migraciones | 52/52 synced remoto |
+| Edge Functions activas | 15 |
+| Prompt canonico | 1 |
+| Docs markdown en `docs/` | depurado y consolidado |
 
-## Fuente de Verdad (orden de prioridad)
+## Fuente de verdad (orden de prioridad)
 1. `docs/ESTADO_ACTUAL.md`
 2. `docs/DECISION_LOG.md`
 3. `docs/closure/OPEN_ISSUES.md`
-4. `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
-5. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
-6. `docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md`
-7. `docs/closure/README_CANONICO.md`
-8. `docs/closure/CONTINUIDAD_SESIONES.md`
+4. `docs/METRICS.md`
+5. `docs/closure/README_CANONICO.md`
+6. `docs/closure/CONTINUIDAD_SESIONES.md`
+7. `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`
 
-## Guardrails No Negociables
+## Guardrails no negociables
 1. No imprimir secretos/JWTs (solo nombres).
-2. No usar comandos git destructivos.
-3. `api-minimarket` debe mantenerse con `verify_jwt=false` si se redeploya (`--no-verify-jwt`).
+2. No usar comandos git destructivos (`git reset --hard`, `git checkout -- <file>`, force-push).
+3. Si se redeploya `api-minimarket`, mantener `--no-verify-jwt`.
 4. No cerrar tareas sin evidencia en `docs/closure/` o `test-reports/`.
-5. Si una dependencia es externa (owner/proveedor), marcar `BLOCKED` y continuar con lo demas.
+5. Si un bloqueo depende de tercero/proveedor: marcar `BLOCKED` y continuar.
 
-## Flujo Recomendado De Sesion
-1. Baseline inicial:
-```bash
-.agent/scripts/p0.sh session-start "<objetivo>"
-```
-2. Extraccion/estado:
-```bash
-.agent/scripts/p0.sh extract --with-gates --with-supabase
-```
-3. Ejecucion del plan vigente:
-- usar `docs/closure/CONTEXT_PROMPT_EJECUTOR_MEGA_PLAN_2026-02-13.md`
-- para continuidad de avances paralelos Claude: usar `docs/closure/CONTEXT_PROMPT_ENGINEERING_CLAUDE_CODE_*`
-4. Cierre documental:
-```bash
-.agent/scripts/p0.sh session-end
-```
+## Flujo recomendado de sesion
+1. ` .agent/scripts/p0.sh session-start "<objetivo>"`
+2. ` .agent/scripts/p0.sh extract --with-gates --with-supabase`
+3. Ejecutar sobre el prompt canonico unico.
+4. ` .agent/scripts/p0.sh session-end`
 
-## Skills
-- Directorio: `.agent/skills/`
-- Conteo actual: 22 skills locales
-- Regla: usar el skill correspondiente al tipo de tarea; en cambios documentales aplicar `DocuGuard`.
-
-## Nota de Documentos Legacy
-`docs/HOJA_RUTA_MADRE_2026-01-31.md` [removido en D-109], `docs/mpc/*`, `docs/CHECKLIST_CIERRE.md`, `docs/IA_USAGE_GUIDE.md` y similares son artefactos historicos. No usarlos como fuente primaria para estado actual.
+## Politica documental unica
+- Mantener solo documentacion canonica activa + ultimo paquete de auditoria.
+- Evitar duplicados de prompts/reportes.
+- Registrar limpieza y cambios estructurales en `docs/DECISION_LOG.md`.

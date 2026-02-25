@@ -112,8 +112,12 @@ else
   echo "SUPABASE_URL apunta a un proyecto remoto. Se omite supabase start." >&2
 fi
 
-# Si API_PROVEEDOR_SECRET no esta configurado, usar valor por defecto para tests
-export API_PROVEEDOR_SECRET="${API_PROVEEDOR_SECRET:-test-secret-for-local-development-minimum-32-characters}"
+# Si API_PROVEEDOR_SECRET no esta configurado, abortar con mensaje claro
+if [ -z "${API_PROVEEDOR_SECRET:-}" ]; then
+  echo "ERROR: API_PROVEEDOR_SECRET no configurado. Defina la variable en .env.test o en el entorno." >&2
+  exit 1
+fi
+export API_PROVEEDOR_SECRET
 
 echo "Ejecutando smoke tests E2E con Vitest..."
 npx vitest run --config vitest.e2e.config.ts

@@ -15,10 +15,11 @@
 
 ## 0) CONTEXTO OPERATIVO ANCLA (A FECHA 2026-02-24)
 
-- Estado registrado en fuente primaria: `GO CON CONDICION`.
-- Condicion operativa principal: OCR depende de `GCV_API_KEY` con valor real en entorno remoto.
+- Estado registrado en fuente primaria: `GO INCONDICIONAL` (actualizado 2026-02-25 post-remediacion).
+- Hallazgos: 0 abiertos (11/11 cerrados). Dep audit prod: 0 vulnerabilities.
 - Guardrail permanente: `api-minimarket` debe permanecer con `verify_jwt=false` si se redeploya.
 - CI ya incorpora controles fail-fast de dependency governance.
+- OCR operativo: `GCV_API_KEY` configurado en entorno remoto.
 
 Regla de vigencia:
 - Este contexto ancla no se sobreescribe sin evidencia nueva en fuentes primarias.
@@ -44,12 +45,10 @@ Regla de vigencia:
 2. `docs/DECISION_LOG.md`
 3. `docs/closure/OPEN_ISSUES.md`
 4. `docs/AGENTS.md`
-5. `AGENTS.md`
-6. `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`
-7. `docs/closure/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
-8. `docs/closure/README_CANONICO.md`
-9. `docs/closure/CONTINUIDAD_SESIONES.md`
-10. `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` (contexto historico, no primario)
+5. `docs/METRICS.md`
+6. `docs/closure/README_CANONICO.md`
+7. `docs/closure/CONTINUIDAD_SESIONES.md`
+8. `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`
 
 Regla de conflicto:
 - Si hay contradiccion, prevalece la fuente con mayor prioridad.

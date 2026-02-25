@@ -1,6 +1,6 @@
 # Métricas de Código (Fuente única)
 
-**Generado:** 2026-02-24T06:03:42.976Z (UTC)
+**Generado:** 2026-02-25T03:41:21.360Z (UTC)
 **Script:** `scripts/metrics.mjs`
 
 ## Definiciones
@@ -23,7 +23,7 @@
 | Endpoints | 44 | api-minimarket: 35, api-proveedor: 9 |
 | Hooks (React Query) | 11 | `minimarket-system/src/hooks/queries` |
 | Páginas | 17 | `minimarket-system/src/pages` |
-| Test files | 138 | total en repo |
+| Test files | 140 | total en repo |
 
 ## Test files por carpeta
 
@@ -37,7 +37,7 @@
 | minimarket-system/src/hooks/queries | 9 |
 | minimarket-system/src/lib | 2 |
 | minimarket-system/src/lib/__tests__ | 2 |
-| minimarket-system/src/pages | 18 |
+| minimarket-system/src/pages | 19 |
 | tests/api-contracts | 1 |
 | tests/contract | 3 |
 | tests/e2e | 1 |

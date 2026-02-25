@@ -187,6 +187,9 @@ function buildContext(
         authHeader,
         readMode: readAuthMode
     });
+    // API_PROVEEDOR_SECRET is optional at context build time:
+    // - Read endpoints (D-017): work without it (use anon/service read mode)
+    // - Write endpoints (sincronizar): validated at handler level via validateApiSecret()
     const apiSecret = Deno.env.get('API_PROVEEDOR_SECRET');
 
     return {

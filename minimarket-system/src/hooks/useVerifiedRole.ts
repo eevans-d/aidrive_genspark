@@ -1,8 +1,13 @@
 /**
  * Hook para obtener el rol verificado del usuario desde la base de datos
- * 
- * SEGURIDAD: Este hook obtiene el rol desde la tabla `personal`, 
+ *
+ * SEGURIDAD: Este hook obtiene el rol desde la tabla `personal`,
  * NO desde `user_metadata` que es manipulable por el cliente.
+ *
+ * ARQUITECTURA: El frontend usa `personal.rol` (fuente canonica DB);
+ * el backend usa `app_metadata.role` (JWT context, mas rapido).
+ * Ambos aplican la misma normalizacion de aliases.
+ * La sincronizacion se garantiza via `scripts/supabase-admin-sync-role.mjs` (D-065).
  */
 
 import { useState, useEffect, useCallback } from 'react';

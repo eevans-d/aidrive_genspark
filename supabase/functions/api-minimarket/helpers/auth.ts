@@ -240,8 +240,11 @@ export async function fetchUserInfo(
 
     const userData = await response.json();
 
-    // Extract role from app_metadata ONLY (more secure).
-    // Normalize legacy aliases to keep FE/BE consistent.
+    // Extract role from app_metadata ONLY (more secure than user_metadata).
+    // ARQUITECTURA: El backend usa app_metadata.role (JWT context);
+    // el frontend usa personal.rol (DB query directa).
+    // Ambos aplican la misma normalizacion de aliases.
+    // Sincronizacion: scripts/supabase-admin-sync-role.mjs (D-065).
     const appRole = userData.app_metadata?.role;
     let role = typeof appRole === 'string' ? appRole.toLowerCase().trim() : null;
 

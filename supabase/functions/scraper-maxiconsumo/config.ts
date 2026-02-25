@@ -11,7 +11,7 @@ const logger = createLogger('scraper-maxiconsumo:config');
 function getEnvValue(key: string): string {
   try {
     // Prefer Deno.env pero hacer fallback a process.env en tests
-    // @ts-ignore Deno may not exist in some runtimes
+    // @ts-expect-error Deno global may not exist in Node/Vitest runtime
     const denoVal = typeof Deno !== 'undefined' && Deno?.env?.get ? Deno.env.get(key) : undefined;
     if (denoVal !== undefined) return denoVal;
   } catch {

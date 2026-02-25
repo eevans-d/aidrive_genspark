@@ -99,7 +99,7 @@
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.54.2",
     "react-resizable-panels": "^2.1.7",
-    "react-router-dom": "^6",
+    "react-router-dom": "^6.30.3",
     "recharts": "^2.12.4",
     "sonner": "^1.7.2",
     "tailwind-merge": "^2.6.0",
@@ -135,5 +135,14 @@
     "vite-plugin-source-identifier": "1.1.2",
     "vitest": "^4.0.18",
     "vitest-axe": "^0.1.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "filelist>minimatch": "5.1.7",
+      "glob>minimatch": "10.2.1",
+      "workbox-build>ajv": "8.18.0",
+      "@apideck/better-ajv-errors>ajv": "8.18.0",
+      "recharts>lodash": "4.17.23"
+    }
   }
 }
