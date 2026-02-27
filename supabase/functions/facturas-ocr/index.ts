@@ -57,6 +57,31 @@ async function fetchSupplierProfile(
   return DEFAULT_SUPPLIER_PROFILE;
 }
 
+/**
+ * Resolve proveedor name by CUIT from proveedores table.
+ * Returns { id, nombre } if a matching active proveedor exists, otherwise null.
+ * Non-blocking: errors are swallowed.
+ */
+async function resolveProveedorByCuit(
+  supabaseUrl: string,
+  headers: Record<string, string>,
+  cuit: string,
+): Promise<{ id: string; nombre: string } | null> {
+  try {
+    const res = await fetch(
+      `${supabaseUrl}/rest/v1/proveedores?cuit=eq.${encodeURIComponent(cuit)}&activo=eq.true&select=id,nombre&limit=1`,
+      { headers, signal: AbortSignal.timeout(3000) },
+    );
+    if (res.ok) {
+      const rows = await res.json();
+      if (rows.length > 0) return { id: rows[0].id, nombre: rows[0].nombre };
+    }
+  } catch {
+    // Non-blocking
+  }
+  return null;
+}
+
 // ============================================================
 // Product Matching
 // ============================================================
@@ -278,6 +303,23 @@ Deno.serve(async (req) => {
       return fail('CONFIG_ERROR', 'Servicio OCR no configurado (GCV_API_KEY faltante)', 503, corsHeaders, { requestId });
     }
 
+    // 8b. Resolve detected CUIT to proveedor name (non-blocking enrichment)
+    let proveedorNombre: string | null = null;
+    if (ocrResult.proveedor_detectado) {
+      const resolved = await resolveProveedorByCuit(supabaseUrl, srHeaders, ocrResult.proveedor_detectado);
+      if (resolved) {
+        proveedorNombre = resolved.nombre;
+        if (resolved.id !== factura.proveedor_id) {
+          logger.warn('CUIT_PROVEEDOR_MISMATCH', {
+            requestId,
+            cuit: ocrResult.proveedor_detectado,
+            detectado_id: resolved.id,
+            seleccionado_id: factura.proveedor_id,
+          });
+        }
+      }
+    }
+
     // 9. Update factura with extracted data
     await fetch(
       `${supabaseUrl}/rest/v1/facturas_ingesta?id=eq.${factura_id}`,
@@ -287,7 +329,8 @@ Deno.serve(async (req) => {
         body: JSON.stringify({
           datos_extraidos: {
             texto_completo: ocrResult.texto_completo,
-            proveedor_detectado: ocrResult.proveedor_detectado,
+            cuit_detectado: ocrResult.proveedor_detectado,
+            proveedor_nombre: proveedorNombre,
             items_raw: ocrResult.items,
           },
           numero: ocrResult.numero || factura.numero,
@@ -343,6 +386,8 @@ Deno.serve(async (req) => {
       items_detectados: ocrResult.items.length,
       items_creados: itemsCreated,
       confianza: ocrResult.confianza,
+      cuit_detectado: ocrResult.proveedor_detectado,
+      proveedor_nombre: proveedorNombre,
     });
 
     logger.info('OCR_EXTRACTION_COMPLETE', {

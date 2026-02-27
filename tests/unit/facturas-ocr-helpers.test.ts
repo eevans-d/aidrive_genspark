@@ -8,6 +8,7 @@ import {
   crossValidateSubtotal,
   enhanceLineItem,
   parseOcrText,
+  extractCuit,
   DEFAULT_SUPPLIER_PROFILE,
 } from '../../supabase/functions/facturas-ocr/helpers';
 import type { SupplierProfile, OcrLineItem } from '../../supabase/functions/facturas-ocr/helpers';
@@ -431,5 +432,60 @@ describe('parseOcrText', () => {
       const result = parseOcrText(text);
       expect(result.texto_completo).toBe(text);
     });
+  });
+
+  describe('CUIT detection via parseOcrText', () => {
+    it('populates proveedor_detectado when CUIT label is present', () => {
+      const text = 'FACTURA A\nCUIT: 30-12345678-9\nNro: 0001-00001\nTOTAL $ 100';
+      const result = parseOcrText(text);
+      expect(result.proveedor_detectado).toBe('30-12345678-9');
+    });
+
+    it('leaves proveedor_detectado null when no CUIT in text', () => {
+      const text = 'FACTURA A\nSin numero de CUIT\nTOTAL $ 100';
+      const result = parseOcrText(text);
+      expect(result.proveedor_detectado).toBeNull();
+    });
+  });
+});
+
+// ============================================================
+// extractCuit
+// ============================================================
+describe('extractCuit', () => {
+  it('parses labeled CUIT with dashes: "CUIT: 30-12345678-9"', () => {
+    expect(extractCuit('Empresa SA\nCUIT: 30-12345678-9\nDirección: Calle 123')).toBe('30-12345678-9');
+  });
+
+  it('parses labeled CUIT with dots: "C.U.I.T.: 30.12345678.9"', () => {
+    expect(extractCuit('C.U.I.T.: 30.12345678.9')).toBe('30-12345678-9');
+  });
+
+  it('parses "CUIT Nº 30-12345678-9"', () => {
+    expect(extractCuit('CUIT Nº 30-12345678-9')).toBe('30-12345678-9');
+  });
+
+  it('parses "CUIT# 20-98765432-1"', () => {
+    expect(extractCuit('CUIT# 20-98765432-1')).toBe('20-98765432-1');
+  });
+
+  it('parses labeled CUIT without separator: "CUIT 30 12345678 9"', () => {
+    expect(extractCuit('CUIT 30 12345678 9')).toBe('30-12345678-9');
+  });
+
+  it('parses unlabeled CUIT with dashes as fallback', () => {
+    expect(extractCuit('Emitido por 30-98765432-1 según normas AFIP')).toBe('30-98765432-1');
+  });
+
+  it('parses unlabeled CUIT with dots as fallback', () => {
+    expect(extractCuit('Responsable Inscripto 27.12345678.5')).toBe('27-12345678-5');
+  });
+
+  it('returns null when no CUIT present', () => {
+    expect(extractCuit('Factura sin número de CUIT')).toBeNull();
+  });
+
+  it('returns null for empty string', () => {
+    expect(extractCuit('')).toBeNull();
   });
 });

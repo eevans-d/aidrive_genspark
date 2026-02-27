@@ -179,6 +179,27 @@ export function enhanceLineItem(item: OcrLineItem, profile: SupplierProfile): En
   };
 }
 
+/**
+ * Extract Argentine CUIT from OCR text.
+ * Formats supported: 30-12345678-9, 30.12345678.9, 30 12345678 9
+ * Returns normalized CUIT as "XX-XXXXXXXX-X" or null if not found.
+ */
+export function extractCuit(text: string): string | null {
+  // Labeled patterns: "CUIT:", "C.U.I.T.:", "CUIT Nº", etc.
+  const labeled = text.match(/C\.?U\.?I\.?T\.?\s*[Nº°#:]?\s*(\d{2})[-.\s]?(\d{8})[-.\s]?(\d)/i);
+  if (labeled) {
+    return `${labeled[1]}-${labeled[2]}-${labeled[3]}`;
+  }
+
+  // Unlabeled: sequence matching XX-XXXXXXXX-X or XX.XXXXXXXX.X
+  const raw = text.match(/\b(\d{2})[-.](\d{8})[-.]([\d])\b/);
+  if (raw) {
+    return `${raw[1]}-${raw[2]}-${raw[3]}`;
+  }
+
+  return null;
+}
+
 export function parseOcrText(fullText: string): OcrResult {
   const lines = fullText.split('\n').map(l => l.trim()).filter(Boolean);
 
@@ -202,6 +223,9 @@ export function parseOcrText(fullText: string): OcrResult {
   if (totalMatch) {
     total = parseArgentineNumber(totalMatch[1]);
   }
+
+  // Extract CUIT of issuing supplier
+  const cuitDetectado = extractCuit(fullText);
 
   // Extract line items
   const items: OcrLineItem[] = [];
@@ -235,7 +259,7 @@ export function parseOcrText(fullText: string): OcrResult {
   else tipo_comprobante = 'factura';
 
   return {
-    proveedor_detectado: null,
+    proveedor_detectado: cuitDetectado,
     fecha,
     numero,
     tipo_comprobante,
