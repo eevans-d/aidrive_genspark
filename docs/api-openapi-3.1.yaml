@@ -1389,14 +1389,17 @@ paths:
       security:
         - BearerAuth: []
       description: |
-        Invoca la extracción OCR sobre una factura pendiente. Gateway hacia Edge Function `facturas-ocr`.
+        Invoca la extracción OCR de una factura. Gateway hacia Edge Function `facturas-ocr`.
 
         - Descarga imagen desde bucket Storage
         - Envía a Google Cloud Vision API
         - Parsea texto y ejecuta matching de productos (barcode/SKU → alias → fuzzy name)
-        - Crea items extraídos en estado pendiente de validación
+        - Crea items extraídos para validación posterior
 
-        Requiere: rol admin/deposito, factura en estado 'pendiente', `GCV_API_KEY` configurado.
+        Runtime actual:
+        - Requiere rol admin/deposito
+        - El gateway no valida hoy estado previo de factura (validación delegada a `facturas-ocr`)
+        - `GCV_API_KEY` requerido en entorno para extracción real
         Timeout: 35 segundos.
       parameters:
         - name: id
@@ -1426,29 +1429,15 @@ paths:
                           estado:
                             type: string
                             enum: [extraida]
-                          items:
-                            type: array
-                            items:
-                              type: object
-                              properties:
-                                id:
-                                  type: string
-                                  format: uuid
-                                texto_ocr:
-                                  type: string
-                                cantidad:
-                                  type: number
-                                precio_unitario:
-                                  type: number
-                                  nullable: true
-                                estado_match:
-                                  type: string
-                                  enum: [pendiente, confirmada, rechazada]
-                                producto_sugerido:
-                                  type: object
-                                  nullable: true
+                        required: [factura_id, items_count, estado]
         '404':
-          description: Factura no encontrada o no está en estado pendiente
+          description: Factura no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Conflicto de estado de factura (roadmap: cuando se implemente guarda estricta)
           content:
             application/json:
               schema:

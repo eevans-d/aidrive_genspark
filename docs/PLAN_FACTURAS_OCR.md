@@ -1,3 +1,6 @@
+> [DEPRECADO: 2026-02-27] Este documento queda como antecedente historico.
+> Plan activo y canonico: `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`.
+
 # Plan de Implementacion: Facturas de Proveedores / OCR
 
 **Fecha:** 2026-02-27

@@ -484,14 +484,15 @@ POST /compras/recepcion            # Registrar recepción de OC
 
 ### Facturas OCR (requiere rol `admin|deposito`)
 ```bash
-POST /facturas/{id}/extraer        # Invocar extracción OCR sobre factura pendiente
+POST /facturas/{id}/extraer        # Invocar extracción OCR de factura (estado controlado por lógica actual)
 PUT  /facturas/items/{id}/validar  # Confirmar/rechazar item OCR
 POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 ```
 
 **Notas `/facturas/{id}/extraer`:**
 - Gateway hacia Edge Function `facturas-ocr` (server-to-server via service_role).
-- Requiere que la factura exista en `facturas_ingesta` con `imagen_url` y estado `pendiente`.
+- Runtime actual: el gateway no fuerza estado previo de factura; delega validaciones operativas a la Edge Function.
+- La Edge Function valida existencia de factura e `imagen_url`; no aplica hoy bloqueo estricto por estado.
 - La función descarga la imagen del bucket Storage, la envía a Google Cloud Vision API, parsea el texto, y ejecuta matching de productos en 3 capas (barcode/SKU → alias → fuzzy name).
 - Timeout: 35s (OCR puede demorar).
 - Respuesta exitosa:
@@ -507,6 +508,7 @@ POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 ```
 - Requiere secret `GCV_API_KEY` configurado en Supabase.
 - La factura se crea previamente vía Supabase client SDK (`facturas_ingesta` INSERT directo con RLS).
+- Nota de roadmap: el plan canonico OCR define agregar doble guarda de estado y limpieza segura de reintentos.
 
 **Notas `/facturas/items/{id}/validar`:**
 - Body: `{ "estado_match": "confirmada"|"rechazada", "producto_id": "uuid", "guardar_alias": true, "alias_texto": "texto" }`
@@ -530,6 +532,7 @@ POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 }
 ```
 - Status `207` si hay errores parciales, `200` si todo OK, `409` si ya fue aplicada.
+- Runtime actual: no existe todavia guard de bloqueo por `score_confianza` minimo en este endpoint.
 
 **Notas `/reservas` (hardening WS1):**
 - Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.

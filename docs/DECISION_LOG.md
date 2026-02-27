@@ -1,6 +1,6 @@
 # DECISION LOG (Canonico)
 
-**Ultima actualizacion:** 2026-02-27 (re-chequeo cruzado Codex + Claude)
+**Ultima actualizacion:** 2026-02-27 (plan OCR definitivo + sincronizacion documental)
 
 ## Decisiones activas y vigentes
 
@@ -15,6 +15,8 @@
 | D-161 | Remediacion completa: 7 hallazgos cerrados (A-001..A-003, A-008..A-011). `react-router-dom` 6.30.3, `pnpm.overrides` para 5 deps transitivas, `@ts-expect-error`, test NotFound, validacion estricta E2E, documentacion arquitectural dual-source rol. Veredicto: `GO INCONDICIONAL`. | Vigente | 2026-02-25 | `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md` |
 | D-162 | Revalidacion 2026-02-26: `ProductionGate` 18/18 PASS (score 100). Se normaliza Gate 7 para excluir `node_modules` y fixtures/tests, y se versiona `PERF_BASELINE_*` para Gate 17. Se mantiene veredicto `GO INCONDICIONAL`. | Vigente | 2026-02-26 | `docs/PRODUCTION_GATE_REPORT.md`, `.agent/skills/ProductionGate/SKILL.md`, `docs/closure/PERF_BASELINE_2026-02-26_081540.md` |
 | D-163 | Re-chequeo cruzado 2026-02-27: Gate 7 confirmado sin matches en codigo productivo; baseline perf multi-endpoint autenticado sigue parcial por ausencia de `TEST_USER_ADMIN` y `TEST_PASSWORD` en `.env.test`. Se mantiene `GO INCONDICIONAL` y se deja mejora recomendada no bloqueante. | Vigente | 2026-02-27 | `docs/closure/OPEN_ISSUES.md`, `docs/ESTADO_ACTUAL.md`, `docs/closure/PERF_BASELINE_2026-02-26_081540.md`, `docs/closure/RECHECK_GO_2026-02-27.md` |
+| D-164 | Se define `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` como unico plan canonico para ejecucion OCR. `PLAN_FACTURAS_OCR.md` y `PLAN_MAESTRO_OCR_FACTURAS.md` quedan deprecados como antecedentes historicos. | Vigente | 2026-02-27 | `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`, `docs/PLAN_FACTURAS_OCR.md`, `docs/PLAN_MAESTRO_OCR_FACTURAS.md` |
+| D-165 | Se separa explicitamente el estado global (`GO INCONDICIONAL`) del estado del modulo OCR (backlog abierto priorizado) para evitar falsas conclusiones de cierre total. | Vigente | 2026-02-27 | `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md` |
 
 ## Regla de uso
 - Este log mantiene decisiones activas + hitos historicos minimos de trazabilidad.

@@ -1,6 +1,6 @@
 # README Canonico de Cierre
 
-**Ultima actualizacion:** 2026-02-25
+**Ultima actualizacion:** 2026-02-27
 
 ## Objetivo
 Mantener una unica fuente documental limpia, sin duplicados de prompts ni resultados historicos innecesarios.
@@ -12,6 +12,7 @@ Mantener una unica fuente documental limpia, sin duplicados de prompts ni result
 4. `docs/API_README.md`
 5. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
 6. `docs/METRICS.md`
+7. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo roadmap OCR)
 
 ## Prompt canonico unico
 - `docs/closure/CONTEXT_PROMPT_ENGINEERING_CODEX_SISTEMA_INTEGRAL_CIERRE_2026-02-24.md`
@@ -32,6 +33,6 @@ Mantener una unica fuente documental limpia, sin duplicados de prompts ni result
 ## Politica de retencion documental
 - Se conserva solo el ultimo paquete de auditoria vigente.
 - Se conserva un unico prompt canonico activo.
-- Artefactos historicos duplicados/obsoletos se eliminan del repo para reducir ruido.
+- Artefactos historicos duplicados/obsoletos se marcan `[DEPRECADO: YYYY-MM-DD]` para mantener trazabilidad sin ruido operativo.
 - Toda nueva depuracion documental debe registrarse en `docs/DECISION_LOG.md`.
-- Evidencia de esta depuracion: `docs/closure/DEPURACION_DOCUMENTAL_2026-02-25.md`.
+- Evidencia base de depuracion previa: `docs/closure/DEPURACION_DOCUMENTAL_2026-02-25.md`.
