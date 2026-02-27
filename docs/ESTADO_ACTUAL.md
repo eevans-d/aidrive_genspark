@@ -1,6 +1,6 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-27 (re-chequeo cruzado Codex + Claude)
+**Ultima actualizacion:** 2026-02-27 (feat: CUIT auto-detection en facturas-ocr)
 **Veredicto:** `GO INCONDICIONAL`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
@@ -15,11 +15,12 @@
 - Re-chequeo cruzado 2026-02-27: Gate 7 confirmado sin matches en codigo productivo; baseline perf multi-endpoint autenticado sigue **parcial** por ausencia de `TEST_USER_ADMIN` y `TEST_PASSWORD` en `.env.test` (no bloqueante para el criterio actual del Gate 17).
 - Evidencia del re-chequeo: `docs/closure/RECHECK_GO_2026-02-27.md`.
 - Metricas sincronizadas y verificadas con `node scripts/metrics.mjs --check`.
+- **2026-02-27 (nueva feature):** `extractCuit()` implementado en `facturas-ocr/helpers.ts`; `proveedor_detectado` ahora retorna el CUIT detectado en el texto OCR (antes siempre `null`). `resolveProveedorByCuit()` resuelve el CUIT contra `proveedores.cuit` y enriquece `datos_extraidos` con `cuit_detectado` + `proveedor_nombre`. Tests: 1722 → 1733.
 
 ## Estado tecnico validado (2026-02-26 re-verificacion independiente)
 
 - Production Gate: `18/18 PASS` | `Score 100.00/100` | `GO`
-- Unit: `1722/1722 PASS` (81 archivos)
+- Unit: `1733/1733 PASS` (81 archivos)
 - Integration: `68/68 PASS` (3 archivos)
 - E2E: `4/4 PASS` (smoke contra endpoint remoto real)
 - Auxiliary: `45 PASS | 4 SKIP` (performance + contracts)
