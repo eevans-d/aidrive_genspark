@@ -976,3 +976,6 @@ testing_reporte_*.md
 
 # Local ad-hoc artifact (not part of repo deliverables)
 product_catalog_final_updated (1).pdf
+
+# Temporary invoice/supplier images (user data, not repo content)
+proveedores_facturas_temp/

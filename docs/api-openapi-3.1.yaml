@@ -1328,6 +1328,288 @@ paths:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
 
+  /compras/recepcion:
+    post:
+      summary: Registrar recepción de orden de compra
+      tags: [Compras]
+      security:
+        - BearerAuth: []
+      description: |
+        Registra la recepción de una orden de compra. Requiere rol admin o deposito.
+
+        Crea un movimiento de entrada atómico en el inventario. Valida que la cantidad
+        no exceda lo pendiente de recepción (mediante stored procedure sp_movimiento_inventario).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [orden_compra_id, cantidad]
+              properties:
+                orden_compra_id:
+                  type: string
+                  format: uuid
+                cantidad:
+                  type: integer
+                  minimum: 1
+                deposito:
+                  type: string
+                  default: Principal
+      responses:
+        '201':
+          description: Recepción registrada exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validación fallida
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Orden de compra no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Cantidad supera lo pendiente de recepción
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /facturas/{id}/extraer:
+    post:
+      summary: Invocar extracción OCR de factura
+      tags: [Facturas]
+      security:
+        - BearerAuth: []
+      description: |
+        Invoca la extracción OCR sobre una factura pendiente. Gateway hacia Edge Function `facturas-ocr`.
+
+        - Descarga imagen desde bucket Storage
+        - Envía a Google Cloud Vision API
+        - Parsea texto y ejecuta matching de productos (barcode/SKU → alias → fuzzy name)
+        - Crea items extraídos en estado pendiente de validación
+
+        Requiere: rol admin/deposito, factura en estado 'pendiente', `GCV_API_KEY` configurado.
+        Timeout: 35 segundos.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Extracción completada exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          factura_id:
+                            type: string
+                            format: uuid
+                          items_count:
+                            type: integer
+                          estado:
+                            type: string
+                            enum: [extraida]
+                          items:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                id:
+                                  type: string
+                                  format: uuid
+                                texto_ocr:
+                                  type: string
+                                cantidad:
+                                  type: number
+                                precio_unitario:
+                                  type: number
+                                  nullable: true
+                                estado_match:
+                                  type: string
+                                  enum: [pendiente, confirmada, rechazada]
+                                producto_sugerido:
+                                  type: object
+                                  nullable: true
+        '404':
+          description: Factura no encontrada o no está en estado pendiente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '408':
+          description: Timeout en extracción OCR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '500':
+          description: Error de configuración o servicio OCR no disponible
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /facturas/items/{id}/validar:
+    put:
+      summary: Confirmar o rechazar item extraído de factura
+      tags: [Facturas]
+      security:
+        - BearerAuth: []
+      description: |
+        Valida un item extraído por OCR. Permite confirmar con producto_id o rechazar.
+
+        - Si `estado_match` = `confirmada`: requiere `producto_id` válido
+        - Si `estado_match` = `rechazada`: solo marca como rechazada
+        - Cuando TODOS los items están en estado final, factura transiciona a 'validada'
+
+        Requiere: rol admin/deposito
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [estado_match]
+              properties:
+                estado_match:
+                  type: string
+                  enum: [confirmada, rechazada]
+                producto_id:
+                  type: string
+                  format: uuid
+                  nullable: true
+                  description: Requerido si estado_match es 'confirmada'
+                guardar_alias:
+                  type: boolean
+                  default: false
+                alias_texto:
+                  type: string
+                  nullable: true
+                  maxLength: 255
+      responses:
+        '200':
+          description: Item actualizado exitosamente
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: Validación fallida (estado inválido o producto_id faltante)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Item no encontrado
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /facturas/{id}/aplicar:
+    post:
+      summary: Aplicar items confirmados a inventario
+      tags: [Facturas]
+      security:
+        - BearerAuth: []
+      description: |
+        Aplica los items confirmados de una factura al inventario.
+
+        **Precondiciones:** factura en estado 'validada', al menos un item confirmado.
+
+        **Operaciones:** crea movimientos entrada vía `sp_movimiento_inventario`,
+        persiste precios_compra, transiciona factura a 'aplicada'.
+
+        **Idempotente:** items ya aplicados se saltan (no error).
+        Respuesta 207 si hay errores parciales.
+
+        Requiere: rol admin/deposito
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Factura aplicada exitosamente
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponse'
+                  - type: object
+                    properties:
+                      data:
+                        type: object
+                        properties:
+                          factura_id:
+                            type: string
+                            format: uuid
+                          items_aplicados:
+                            type: integer
+                          items_ya_aplicados:
+                            type: integer
+                          items_errores:
+                            type: integer
+                          results:
+                            type: array
+                            items:
+                              type: object
+                          errors:
+                            type: array
+                            items:
+                              type: object
+        '207':
+          description: Aplicación parcial (algunos items con error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '400':
+          description: No hay items confirmados o factura en estado incorrecto
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '404':
+          description: Factura no encontrada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: Factura ya fue aplicada
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
   /health:
     get:
       summary: Health check del gateway

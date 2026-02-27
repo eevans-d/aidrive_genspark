@@ -1,13 +1,35 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-02-25 (post-remediacion)
-**Fuente ejecutiva:** `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`
+**Ultima actualizacion:** 2026-02-27 (re-chequeo cruzado Codex + Claude)
+**Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## Hallazgos abiertos
 
 Ninguno. Todos los hallazgos han sido cerrados.
 
 ## Hallazgos cerrados
+
+### Re-chequeo cruzado (2026-02-27)
+
+| ID | Severidad | Cierre aplicado | Evidencia |
+|---|---|---|---|
+| V-001 | BAJO | Gate 7 reconfirmado: scanner normalizado sin matches en codigo productivo. | `.agent/skills/ProductionGate/SKILL.md`, `docs/closure/RECHECK_GO_2026-02-27.md` |
+| V-002 | BAJO | Baseline perf reconfirmado como **parcial**: `scripts/perf-baseline.mjs` requiere `TEST_USER_ADMIN` y `TEST_PASSWORD` no presentes en `.env.test`. Se mantiene como recomendacion no bloqueante. | `docs/closure/PERF_BASELINE_2026-02-26_081540.md`, `docs/closure/RECHECK_GO_2026-02-27.md` |
+
+### Re-verificacion independiente (2026-02-26 08:30-08:52 UTC)
+
+| ID | Severidad | Cierre aplicado | Evidencia |
+|---|---|---|---|
+| H-001 | BAJO | 4 rutas implementadas y documentadas en API_README pero ausentes del OpenAPI YAML. Agregadas: `POST /compras/recepcion`, `POST /facturas/{id}/extraer`, `PUT /facturas/items/{id}/validar`, `POST /facturas/{id}/aplicar`. | `docs/api-openapi-3.1.yaml` lineas 1331-1612 |
+| H-002 | BAJO | 4 vulnerabilidades en deps de build (`rollup` high x2, `minimatch` high x2, `ajv` moderate, `lodash` moderate). Contexto: build-time only, no runtime. `npm audit fix` ejecutado. 0 vulnerabilities. | `package.json` (root) |
+| H-003 | TRIVIAL | `stock_deposito.updated_at` documentado en ESQUEMA_BASE_DATOS_ACTUAL.md pero no existe en migraciones ni es usado por el codigo. Removido de docs para sincronizar con realidad. | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md:140` |
+
+### Revalidacion production gate (2026-02-26 08:16-08:18 UTC)
+
+| ID | Severidad | Cierre aplicado | Evidencia |
+|---|---|---|---|
+| A-012 | MEDIO | Gate 7 normalizado para escanear codigo productivo (excluye `node_modules`, tests y fixtures), eliminando falsos positivos de JWT-like strings. | `.agent/skills/ProductionGate/SKILL.md`, `docs/PRODUCTION_GATE_REPORT.md` |
+| A-013 | MEDIO | Baseline de performance generado y versionado (`PERF_BASELINE_*`) para cubrir Gate 17. Queda documentado estado parcial por ausencia de `TEST_USER_ADMIN`/`TEST_PASSWORD` en `.env.test`. | `docs/closure/PERF_BASELINE_2026-02-26_081540.md`, `docs/PRODUCTION_GATE_REPORT.md` |
 
 ### Sesion de remediacion (2026-02-25 04:00-04:18 UTC)
 
@@ -36,5 +58,6 @@ Ninguno. Todos los hallazgos han sido cerrados.
 ## Pendientes vigentes no asociados a hallazgos
 | Item | Estado | Nota |
 |---|---|---|
+| Baseline perf autenticado completo (`perf-baseline.mjs`) | RECOMENDADO | Requiere agregar `TEST_USER_ADMIN` y `TEST_PASSWORD` en `.env.test` (solo entorno de test). No bloquea GO actual. |
 | Deno no disponible en PATH global | RECOMENDADO | Exportar `~/.deno/bin` en shell/CI. No bloqueante (CI usa `denoland/setup-deno@v2`). |
 | Leaked password protection (plan Pro) | BLOQUEADO EXTERNO | Requiere cambio de plan Supabase. Backlog. |

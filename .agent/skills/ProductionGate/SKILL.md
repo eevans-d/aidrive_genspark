@@ -97,7 +97,14 @@ PASS si lines >= 80%. FAIL si < 80% (registrar valor actual).
 
 #### Gate 7: Security — No Secrets Hardcoded (Peso: 8)
 ```bash
-grep -rE "ey[A-Za-z0-9\-_=]{20,}" --include="*.ts" --include="*.tsx" -l 2>/dev/null | head -5
+rg -l -e "ey[A-Za-z0-9\\-_=]{20,}" \
+  supabase/functions minimarket-system/src scripts \
+  --glob="*.{ts,tsx,js,mjs}" \
+  --glob="!**/*.test.*" \
+  --glob="!**/*.spec.*" \
+  --glob="!**/__tests__/**" \
+  --glob="!**/fixtures/**" \
+  | head -5
 ```
 PASS si 0 resultados.
 

@@ -137,7 +137,6 @@ Inventario actual por producto y ubicacion.
 | lote | text | NULL | | |
 | fecha_vencimiento | date | NULL | | |
 | created_at | timestamptz | NULL | now() | |
-| updated_at | timestamptz | NULL | now() | |
 
 **Indices:** `idx_stock_deposito_producto_id`, `idx_stock_deposito_ubicacion`, `idx_stock_deposito_producto_ubicacion(producto_id, ubicacion) UNIQUE`
 **RLS:** ENABLED. Policies: SELECT (todos).
