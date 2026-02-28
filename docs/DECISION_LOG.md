@@ -1,6 +1,6 @@
 # DECISION LOG (Canonico)
 
-**Ultima actualizacion:** 2026-02-28 (archivo de planes deprecados + referencias canonicas)
+**Ultima actualizacion:** 2026-02-28 (review post-Copilot + cross-check PLAN_FUSIONADO T1-T10)
 
 ## Decisiones activas y vigentes
 
@@ -18,6 +18,7 @@
 | D-164 | Se define `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` como unico plan canonico para ejecucion OCR. `PLAN_FACTURAS_OCR.md` y `PLAN_MAESTRO_OCR_FACTURAS.md` quedan deprecados como antecedentes historicos. | Vigente | 2026-02-27 | `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`, `docs/archive/planes-deprecados/PLAN_FACTURAS_OCR.md`, `docs/archive/planes-deprecados/PLAN_MAESTRO_OCR_FACTURAS.md` |
 | D-165 | Se separa explicitamente el estado global (`GO INCONDICIONAL`) del estado del modulo OCR (backlog abierto priorizado) para evitar falsas conclusiones de cierre total. | Vigente | 2026-02-27 | `docs/ESTADO_ACTUAL.md`, `docs/closure/OPEN_ISSUES.md` |
 | D-166 | Se archivan en `docs/archive/planes-deprecados/` las planificaciones deprecadas para mantener `docs/` enfocado en ejecucion activa y reducir ambiguedad operativa. | Vigente | 2026-02-28 | `README.md`, `AGENTS.md`, `docs/ESTADO_ACTUAL.md`, `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` |
+| D-167 | Cross-check PLAN_FUSIONADO T1-T10 contra codigo real: 0 completadas, 2 parciales (T3, T7), 8 no implementadas. GCV BLOCKED (timeout). Se corrigieron: CUITs en BD, timeout handling en edge function, deploy verificado. Scripts batch y seed operativos. | Vigente | 2026-02-28 | `docs/ESTADO_ACTUAL.md`, `docs/closure/REVIEW_POST_COPILOT_CONTINUACION_2026-02-28.md`, `docs/closure/OPEN_ISSUES.md` |
 
 ## Regla de uso
 - Este log mantiene decisiones activas + hitos historicos minimos de trazabilidad.

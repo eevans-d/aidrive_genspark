@@ -2,7 +2,7 @@
 
 **Auditor:** Claude Opus 4 (sesion de auditoria tecnica senior)
 **Timestamp inicio:** 2026-02-28 04:55:55 UTC
-**Timestamp cierre:** 2026-02-28 05:30 UTC
+**Timestamp cierre:** 2026-02-28 05:40 UTC
 **Commit base:** `928defb`
 
 ---
@@ -83,3 +83,37 @@ node scripts/ocr-procesar-nuevos.mjs --execute --proveedor=d634fd98-6446-4a0c-a6
 ```
 
 El script reutiliza las 21 facturas existentes (por `proveedor_id + numero BATCH-*`) e invoca OCR sin crear duplicados.
+
+---
+
+## Cross-check PLAN_FUSIONADO T1-T10
+
+Verificacion exhaustiva de cada tarea del plan canonico contra el codigo fuente real.
+
+| Tarea | Descripcion | Estado | Evidencia |
+|-------|-------------|--------|-----------|
+| T1 | Guardas de estado en `/extraer` | NO_IMPLEMENTADO | `api-minimarket/index.ts:2210` invoca OCR sin validar estado; `facturas-ocr/index.ts:233` no chequea `factura.estado` |
+| T2 | Reextraccion con limpieza previa | NO_IMPLEMENTADO | `facturas-ocr/index.ts:374` inserta items sin DELETE previo; re-extraer duplica items |
+| T3 | Lock optimista en `/aplicar` | PARCIAL | Check de estado en `:2353-2364` (pendiente→400, aplicada→409, no validada→400). Pero PATCH final en `:2443` es incondicional (sin CAS `estado=eq.validada`). Sin rollback. Idempotencia parcial por `factura_ingesta_item_id` (`:2385-2391`) |
+| T4 | Guard de confianza OCR | NO_IMPLEMENTADO | `api-minimarket/index.ts:2345-2469` sin referencia a `score_confianza` ni umbral |
+| T5 | Batch insert de items | NO_IMPLEMENTADO | Items insertados uno a uno en loop secuencial (`:374-405`). Sin batch POST ni fallback |
+| T6 | Cache in-memory alias/barcodes | NO_IMPLEMENTADO | `matchItem()` (`:97-168`) hace 1-3 HTTP requests por item. Sin preload, sin Map/Set, sin memoizacion |
+| T7 | Hardening `/aplicar` parcial | PARCIAL | Retorna 207 con `results` y `errors` (`:2468`). Solo marca `aplicada` si 0 errores (`:2443`). Pero movimientos exitosos NO se revierten si hay fallos parciales |
+| T8 | Sync OpenAPI/API_README | DRIFTED | Status codes difieren: spec timeout=408 vs runtime=504; spec GCV error=500 vs runtime=502; spec config=500 vs runtime=503 |
+| T9 | Warning CUIT mismatch en UI | NO_IMPLEMENTADO | `Facturas.tsx` no contiene referencia a `cuit_detectado`. Backend persiste dato (`:357`) y logea warning (`:337`) pero UI no lo consume |
+| T10 | Soporte PDF OCR | NO_IMPLEMENTADO | `TEXT_DETECTION` hardcoded en `:280`. Sin deteccion MIME, sin `DOCUMENT_TEXT_DETECTION` |
+
+### Resumen cuantitativo
+- **Completadas:** 0/10
+- **Parciales:** 2/10 (T3, T7)
+- **No implementadas:** 8/10
+- **Prerequisito externo:** GCV_API_KEY funcional (OCR-007 BLOCKED)
+
+### Orden de implementacion recomendado (post-GCV fix)
+1. **T1 + T2** (Fase 1 P0): guardas de estado + limpieza previa. Impacto de integridad mas alto.
+2. **T3** (completar): agregar CAS conditional PATCH + rollback.
+3. **T4**: guard de confianza (configurable por env).
+4. **T5 + T6** (Fase 2 P1): batch insert + cache. Impacto de performance.
+5. **T7** (completar): rollback de movimientos parciales.
+6. **T8** (Fase 3): sync documental.
+7. **T9 + T10**: UX y PDF.
