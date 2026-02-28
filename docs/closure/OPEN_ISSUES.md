@@ -7,11 +7,12 @@
 
 ## OCR-007 - GCV_API_KEY no responde (CRITICO - bloqueante para OCR)
 - Severidad: CRITICA
-- Impacto: ningun OCR puede ejecutarse hasta resolver permisos GCV.
-- Estado: BLOCKED
+- Impacto: ningun OCR puede ejecutarse hasta resolver billing GCP.
+- Estado: BLOCKED — causa raiz confirmada
+- Causa raiz: Free Trial expirado en proyecto GCP `gen-lang-client-0312126042` ("Nano banana pro"). Cuenta de facturacion `0156DA-EB3EB0-9C9339` cerrada/vencida. Cloud Vision API habilitada y key sin restricciones, pero billing inactivo bloquea todas las llamadas.
 - Evidencia original: `facturas_ingesta_eventos` evento `ocr_error` status 403 (2026-02-28 04:09 UTC)
-- Evidencia actualizada: `facturas_ingesta_eventos` evento `ocr_error` "GCV fetch failed: Signal timed out." (2026-02-28 05:19 UTC) — GCV ya no responde 403, directamente no responde (timeout 15s).
-- Accion requerida: owner debe verificar en Google Cloud Console que Cloud Vision API este habilitada, key sin restricciones bloqueantes, y billing activo. Posible deshabilitacion de API o suspension de billing.
+- Evidencia actualizada: timeout 15s (2026-02-28 05:19 UTC). Diagnostico GCP Console via Comet (2026-02-28 05:50 UTC).
+- Accion requerida: owner debe activar billing en `console.cloud.google.com/billing` → boton "Activar" → ingresar datos de pago → vincular al proyecto. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
 - Plan asociado: `docs/closure/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
 
 ## OCR-008 - Bug base64 en facturas-ocr (RESUELTO)
