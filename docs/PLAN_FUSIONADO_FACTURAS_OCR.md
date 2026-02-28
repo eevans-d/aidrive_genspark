@@ -199,6 +199,6 @@ Excluye:
 
 ## 11) Estado documental
 - Este archivo reemplaza como plan activo a:
-  - `docs/PLAN_FACTURAS_OCR.md`
-  - `docs/PLAN_MAESTRO_OCR_FACTURAS.md`
+  - `docs/archive/planes-deprecados/PLAN_FACTURAS_OCR.md`
+  - `docs/archive/planes-deprecados/PLAN_MAESTRO_OCR_FACTURAS.md`
 - Ambos quedan como antecedentes historicos marcados como deprecados.

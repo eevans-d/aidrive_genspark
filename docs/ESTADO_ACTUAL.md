@@ -1,6 +1,6 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-02-27 (sincronizacion documental absoluta + plan OCR definitivo)
+**Ultima actualizacion:** 2026-02-28 (limpieza de planes deprecados en archivo historico)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO BASICO, CON BACKLOG CRITICO PRIORIZADO`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
@@ -9,9 +9,9 @@
 - El sistema principal mantiene veredicto `GO INCONDICIONAL` (ProductionGate previo 18/18 PASS).
 - Se valido nuevamente la base tecnica de OCR contra codigo real y se consolido un plan unico:
   - `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (canonico).
-- Se marcaron como historicos/deprecados:
-  - `docs/PLAN_FACTURAS_OCR.md`
-  - `docs/PLAN_MAESTRO_OCR_FACTURAS.md`
+- Se movieron planes historicos/deprecados al archivo:
+  - `docs/archive/planes-deprecados/PLAN_FACTURAS_OCR.md`
+  - `docs/archive/planes-deprecados/PLAN_MAESTRO_OCR_FACTURAS.md`
 - La documentacion principal fue alineada para eliminar drift y evitar decisiones futuras basadas en supuestos obsoletos.
 
 ## 2) Estado tecnico verificado (sesion 2026-02-27)

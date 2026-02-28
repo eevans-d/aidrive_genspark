@@ -7,7 +7,7 @@
 **Fecha:** 2026-02-27
 **Estado:** Version final canónica para ejecucion posterior
 **Ultima revision intensiva (CODEX):** 2026-02-27
-**Relacion documental:** este documento se considera la version canónica final de planificacion OCR; `docs/PLAN_FACTURAS_OCR.md` queda como antecedente historico.
+**Relacion documental:** este documento se considera la version canónica final de planificacion OCR; `docs/archive/planes-deprecados/PLAN_FACTURAS_OCR.md` queda como antecedente historico.
 
 ## 0. Resultado de revision, verificacion y chequeo
 ### 0.1 Confirmaciones (estado REAL)

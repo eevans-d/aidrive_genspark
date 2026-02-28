@@ -9,7 +9,7 @@
 **Target:** Arquitectos, DevOps, Senior Engineers  
 
 > **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
-> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/CHECKLIST_CIERRE.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
+> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/archive/planes-deprecados/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/CHECKLIST_CIERRE.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
 
 ### Estado real (2026-01-25)
 - **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).

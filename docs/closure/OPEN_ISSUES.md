@@ -1,9 +1,31 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-02-27 (sincronizacion absoluta + plan OCR definitivo)
+**Ultima actualizacion:** 2026-02-28 (review post-Copilot continuacion)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
+
+## OCR-007 - GCV_API_KEY no responde (CRITICO - bloqueante para OCR)
+- Severidad: CRITICA
+- Impacto: ningun OCR puede ejecutarse hasta resolver permisos GCV.
+- Estado: BLOCKED
+- Evidencia original: `facturas_ingesta_eventos` evento `ocr_error` status 403 (2026-02-28 04:09 UTC)
+- Evidencia actualizada: `facturas_ingesta_eventos` evento `ocr_error` "GCV fetch failed: Signal timed out." (2026-02-28 05:19 UTC) — GCV ya no responde 403, directamente no responde (timeout 15s).
+- Accion requerida: owner debe verificar en Google Cloud Console que Cloud Vision API este habilitada, key sin restricciones bloqueantes, y billing activo. Posible deshabilitacion de API o suspension de billing.
+- Plan asociado: `docs/closure/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
+
+## OCR-008 - Bug base64 en facturas-ocr (RESUELTO)
+- Severidad: CRITICA
+- Impacto: stack overflow al procesar imagenes >1MB.
+- Estado: CERRADO (fix aplicado y desplegado 2026-02-28)
+- Evidencia: `supabase/functions/facturas-ocr/index.ts` — chunked base64 encoding; deploy verificado con `supabase functions list` (v10)
+- Deploy: verificado en produccion (funcion alcanza GCV timeout sin stack overflow)
+
+## OCR-009 - Tabla proveedores estaba vacia en produccion (RESUELTO)
+- Severidad: ALTA
+- Impacto: no se podia crear facturas_ingesta sin proveedor_id valido.
+- Estado: CERRADO (seed ejecutado 2026-02-28, 12 proveedores insertados)
+- Evidencia: `scripts/seed-proveedores.mjs --execute`
 
 ## OCR-001 - Falta guarda de estado en gateway para `POST /facturas/{id}/extraer`
 - Severidad: ALTA
@@ -46,7 +68,7 @@
 - Cierres historicos pre-OCR: ver `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`.
 
 ## BLOCKED
-- Ninguno.
+- OCR-007: GCV_API_KEY no responde (timeout 15s). Bloqueante para extraccion OCR de las 21 facturas cargadas. Error modo cambio de 403 rapido a timeout total.
 
 ## Nota de interpretacion
 El backlog OCR abierto no contradice el estado `GO INCONDICIONAL` del sistema general: significa que el modulo OCR tiene mejoras priorizadas para robustez y escalabilidad, no una caida operativa total del producto.

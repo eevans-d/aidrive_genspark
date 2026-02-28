@@ -41,6 +41,6 @@ Kickoff (push-button: session-start + extract + mega-plan template):
 ## Source Of Truth Docs
 
 - `docs/ESTADO_ACTUAL.md`
-- `docs/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
+- `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`
 - `docs/DECISION_LOG.md`
 - `docs/AGENTS.md` (full guide)

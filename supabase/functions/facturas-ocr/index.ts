@@ -67,9 +67,17 @@ async function resolveProveedorByCuit(
   headers: Record<string, string>,
   cuit: string,
 ): Promise<{ id: string; nombre: string } | null> {
+  const digits = cuit.replace(/\D/g, '');
+  const variants = new Set<string>([cuit]);
+  if (digits.length === 11) {
+    variants.add(digits);
+    variants.add(`${digits.slice(0, 2)}-${digits.slice(2, 10)}-${digits.slice(10)}`);
+  }
+  const orFilter = Array.from(variants).map(v => `cuit.eq.${encodeURIComponent(v)}`).join(',');
+
   try {
     const res = await fetch(
-      `${supabaseUrl}/rest/v1/proveedores?cuit=eq.${encodeURIComponent(cuit)}&activo=eq.true&select=id,nombre&limit=1`,
+      `${supabaseUrl}/rest/v1/proveedores?or=(${orFilter})&activo=eq.true&select=id,nombre&limit=1`,
       { headers, signal: AbortSignal.timeout(3000) },
     );
     if (res.ok) {
@@ -253,7 +261,14 @@ Deno.serve(async (req) => {
     }
 
     const imageBytes = await imageRes.arrayBuffer();
-    const base64Image = btoa(String.fromCharCode(...new Uint8Array(imageBytes)));
+    // Chunked base64 encoding to avoid stack overflow with large images
+    const uint8 = new Uint8Array(imageBytes);
+    let binary = '';
+    const CHUNK_SIZE = 8192;
+    for (let i = 0; i < uint8.length; i += CHUNK_SIZE) {
+      binary += String.fromCharCode(...uint8.subarray(i, Math.min(i + CHUNK_SIZE, uint8.length)));
+    }
+    const base64Image = btoa(binary);
 
     // 8. Call Google Cloud Vision API (or fallback)
     let ocrResult: OcrResult;
@@ -266,15 +281,24 @@ Deno.serve(async (req) => {
         }],
       };
 
-      const gcvRes = await fetch(
-        `${GCV_ENDPOINT}?key=${gcvApiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(gcvBody),
-          signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
-        },
-      );
+      let gcvRes: Response;
+      try {
+        gcvRes = await fetch(
+          `${GCV_ENDPOINT}?key=${gcvApiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(gcvBody),
+            signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+          },
+        );
+      } catch (gcvFetchErr) {
+        const errMsg = gcvFetchErr instanceof Error ? gcvFetchErr.message : String(gcvFetchErr);
+        logger.error('GCV_FETCH_FAILED', { requestId, error: errMsg });
+        await updateFacturaEstado(supabaseUrl, srHeaders, factura_id, 'error');
+        await registrarEvento(supabaseUrl, srHeaders, factura_id, 'ocr_error', { error: `GCV fetch failed: ${errMsg}`, requestId });
+        return fail('OCR_TIMEOUT', `Error de conexión con servicio OCR: ${errMsg}`, 504, corsHeaders, { requestId });
+      }
 
       if (!gcvRes.ok) {
         const errText = await gcvRes.text();

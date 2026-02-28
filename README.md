@@ -20,7 +20,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 
 ## Plan OCR activo
 - Canonico: `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`
-- Historicos/deprecados: `docs/PLAN_FACTURAS_OCR.md`, `docs/PLAN_MAESTRO_OCR_FACTURAS.md`
+- Historicos/deprecados: `docs/archive/planes-deprecados/PLAN_FACTURAS_OCR.md`, `docs/archive/planes-deprecados/PLAN_MAESTRO_OCR_FACTURAS.md`
 
 ## Inicio rapido
 ```bash
