@@ -47,6 +47,38 @@ export interface MatchResult {
   confianza_match: number;
 }
 
+export type OcrFeatureType = 'TEXT_DETECTION' | 'DOCUMENT_TEXT_DETECTION';
+
+export const VALID_FACTURA_OCR_EXTRAER_ESTADOS = new Set(['pendiente', 'error']);
+
+/**
+ * Validate if a factura estado can start OCR extraction.
+ * Allows retries from `error` with prior cleanup.
+ */
+export function canExtractFacturaOCR(estado: unknown): boolean {
+  return typeof estado === 'string' && VALID_FACTURA_OCR_EXTRAER_ESTADOS.has(estado);
+}
+
+/**
+ * Resolve OCR feature type according to content type and/or file extension.
+ * Returns null for unsupported types.
+ */
+export function resolveOcrFeatureType(
+  contentType: string | null | undefined,
+  filePath: string | null | undefined,
+): OcrFeatureType | null {
+  const normalizedContentType = (contentType || '').toLowerCase();
+  const normalizedPath = (filePath || '').toLowerCase();
+  const isPdf = normalizedContentType.includes('application/pdf') || normalizedPath.endsWith('.pdf');
+  if (isPdf) return 'DOCUMENT_TEXT_DETECTION';
+
+  const isImage = normalizedContentType.startsWith('image/')
+    || /\.(png|jpe?g|webp|bmp|gif|tiff?)$/.test(normalizedPath);
+  if (isImage) return 'TEXT_DETECTION';
+
+  return null;
+}
+
 // ============================================================
 // OCR Parsing Helpers
 // ============================================================

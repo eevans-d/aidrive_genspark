@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react'
 import { Link } from 'react-router-dom'
-import { AlertTriangle, TrendingUp, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X, BookOpen } from 'lucide-react'
+import { AlertTriangle, TrendingUp, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X, BookOpen, MessageSquare } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { useDashboardStats } from '../hooks/queries'
@@ -18,6 +18,7 @@ const HUB_ACTIONS = [
   { key: 'pedidos', path: '/pedidos', label: 'Pedidos', icon: ClipboardList, color: 'bg-purple-600 hover:bg-purple-700 text-white' },
   { key: 'clientes', path: '/clientes', label: 'Clientes', icon: Users, color: 'bg-orange-600 hover:bg-orange-700 text-white' },
   { key: 'fiado', path: '/clientes', label: 'Fiado', icon: DollarSign, color: 'bg-red-600 hover:bg-red-700 text-white' },
+  { key: 'asistente', path: '/asistente', label: 'Asistente', icon: MessageSquare, color: 'bg-indigo-600 hover:bg-indigo-700 text-white' },
 ]
 
 type ChipId = 'reponer' | 'riesgo' | 'resumen'

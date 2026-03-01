@@ -58,12 +58,12 @@ describe('_shared/internal-auth — requireServiceRoleAuth', () => {
     });
   });
 
-  describe('JWT role fallback', () => {
-    it('authorizes when JWT payload has role=service_role', () => {
+  describe('JWT role fallback (removed for security — S2 fix)', () => {
+    it('rejects JWT with role=service_role that does not match exact key (no unverified JWT trust)', () => {
       const token = fakeJwt({ role: 'service_role', sub: 'system' });
       const req = makeRequest({ authorization: `Bearer ${token}` });
       const result = requireServiceRoleAuth(req, SERVICE_KEY);
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
     });
 
     it('rejects when JWT has non-service_role role', () => {

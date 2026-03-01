@@ -22,7 +22,12 @@ info:
     ## Nota de cobertura
     Este spec documenta el gateway `api-minimarket`. Para ejemplos prácticos, notas operativas
     (CORS, idempotencia, errores esperados) y smoke tests, ver `docs/API_README.md`.
-    
+
+    ## Edge Functions adicionales (fuera de este spec)
+    - `api-assistant`: asistente IA conversacional (Sprint 1, read-only, admin-only). POST /message.
+    - `api-proveedor`: integracion con proveedor externo. Ver `docs/api-proveedor-openapi-3.1.yaml`.
+    - `facturas-ocr`: extraccion OCR de facturas (llamada server-to-server desde api-minimarket).
+
   contact:
     name: Soporte Mini Market
     email: soporte@minimarket.com
@@ -1398,7 +1403,11 @@ paths:
 
         Runtime actual:
         - Requiere rol admin/deposito
-        - El gateway no valida hoy estado previo de factura (validación delegada a `facturas-ocr`)
+        - El gateway valida estado `pendiente|error` antes de invocar OCR
+        - Si la factura no está en `pendiente|error`, responde `409 INVALID_STATE`
+        - En reintento (`estado=error`) limpia items previos y registra `ocr_reintento`
+        - Soporta imagenes y PDF (`TEXT_DETECTION` / `DOCUMENT_TEXT_DETECTION`)
+        - Inserción de items por batch con fallback individual (`items_failed`)
         - `GCV_API_KEY` requerido en entorno para extracción real
         Timeout: 35 segundos.
       parameters:
@@ -1426,10 +1435,32 @@ paths:
                             format: uuid
                           items_count:
                             type: integer
+                          items_failed_count:
+                            type: integer
+                          items_failed:
+                            type: array
+                            items:
+                              type: object
+                              properties:
+                                descripcion_original:
+                                  type: string
+                                error:
+                                  type: string
+                          insert_mode:
+                            type: string
+                            enum: [batch, fallback]
+                          items_previos_eliminados:
+                            type: integer
                           estado:
                             type: string
                             enum: [extraida]
                         required: [factura_id, items_count, estado]
+        '400':
+          description: Validación fallida (`VALIDATION_ERROR` o `UNSUPPORTED_FILE_TYPE`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '404':
           description: Factura no encontrada
           content:
@@ -1437,19 +1468,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Conflicto de estado de factura (roadmap: cuando se implemente guarda estricta)
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/ErrorResponse'
-        '408':
-          description: Timeout en extracción OCR
+          description: Conflicto de estado de factura (`INVALID_STATE`, por ejemplo no está en `pendiente|error`)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '500':
-          description: Error de configuración o servicio OCR no disponible
+          description: Error interno/DB/storage durante extracción OCR
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '502':
+          description: Error de servicio OCR aguas arriba (`OCR_ERROR`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '503':
+          description: Error de configuración OCR (`CONFIG_ERROR`)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '504':
+          description: Timeout en extracción OCR (`OCR_TIMEOUT`)
           content:
             application/json:
               schema:
@@ -1528,12 +1571,22 @@ paths:
       description: |
         Aplica los items confirmados de una factura al inventario.
 
-        **Precondiciones:** factura en estado 'validada', al menos un item confirmado.
+        **Precondiciones:** factura en estado `validada`, al menos un item confirmado,
+        y `score_confianza >= OCR_MIN_SCORE_APPLY` (fallback 0.70).
 
-        **Operaciones:** crea movimientos entrada vía `sp_movimiento_inventario`,
+        **Operaciones:** crea movimientos entrada via `sp_movimiento_inventario`,
         persiste precios_compra, transiciona factura a 'aplicada'.
 
+        **Concurrencia:** usa lock optimista (`PATCH ... WHERE id AND estado=validada`).
+        Si el lock afecta 0 filas, responde `409 CONFLICT`.
+
         **Idempotente:** items ya aplicados se saltan (no error).
+
+        **Hardening parcial (T7):** ante error en algun item, los movimientos de entrada
+        ya creados se compensan con movimientos `salida` inversos, se limpia el link
+        `factura_ingesta_item_id` para permitir reintento limpio, y el estado de la
+        factura revierte a `validada`. El evento `aplicacion_rollback` registra
+        `items_compensados` y `items_compensacion_fallida`.
         Respuesta 207 si hay errores parciales.
 
         Requiere: rol admin/deposito
@@ -1575,13 +1628,13 @@ paths:
                             items:
                               type: object
         '207':
-          description: Aplicación parcial (algunos items con error)
+          description: Aplicacion parcial — movimientos compensados, estado revertido a validada
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/SuccessResponse'
         '400':
-          description: No hay items confirmados o factura en estado incorrecto
+          description: Validación fallida (sin items confirmados o `OCR_CONFIDENCE_BELOW_THRESHOLD`)
           content:
             application/json:
               schema:
@@ -1593,7 +1646,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/ErrorResponse'
         '409':
-          description: Factura ya fue aplicada
+          description: Conflicto de estado (ya aplicada o lock optimista perdido)
           content:
             application/json:
               schema:

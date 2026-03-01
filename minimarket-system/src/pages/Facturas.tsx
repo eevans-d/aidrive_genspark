@@ -43,12 +43,24 @@ const VALIDATION_COLORS: Record<string, string> = {
   error: 'text-red-600 dark:text-red-400',
 }
 
+function normalizeCuitValue(value: string | null | undefined): string | null {
+  if (!value || typeof value !== 'string') return null
+  const digits = value.replace(/\D/g, '')
+  return digits.length === 11 ? digits : null
+}
+
+function getDetectedCuit(datosExtraidos: Record<string, unknown> | null | undefined): string | null {
+  if (!datosExtraidos || typeof datosExtraidos !== 'object') return null
+  const raw = datosExtraidos.cuit_detectado
+  return typeof raw === 'string' && raw.trim().length > 0 ? raw.trim() : null
+}
+
 export default function Facturas() {
   const [showUpload, setShowUpload] = useState(false)
   const [selectedProveedor, setSelectedProveedor] = useState('')
   const [selectedFacturaId, setSelectedFacturaId] = useState<string | null>(null)
-  const [extracting, setExtracting] = useState<string | null>(null)
-  const [applying, setApplying] = useState<string | null>(null)
+  const [extracting, setExtracting] = useState<Set<string>>(new Set())
+  const [applying, setApplying] = useState<Set<string>>(new Set())
   const [validatingItem, setValidatingItem] = useState<string | null>(null)
   const [editingItem, setEditingItem] = useState<string | null>(null)
   const [editProductoId, setEditProductoId] = useState('')
@@ -74,6 +86,15 @@ export default function Facturas() {
   )
 
   const selectedFactura = facturas?.find(f => f.id === selectedFacturaId)
+  const detectedCuit = getDetectedCuit(selectedFactura?.datos_extraidos)
+  const proveedorCuit = selectedFactura?.proveedores?.cuit ?? null
+  const detectedCuitNormalized = normalizeCuitValue(detectedCuit)
+  const proveedorCuitNormalized = normalizeCuitValue(proveedorCuit)
+  const hasCuitMismatch = Boolean(
+    detectedCuitNormalized
+    && proveedorCuitNormalized
+    && detectedCuitNormalized !== proveedorCuitNormalized,
+  )
 
   const handleUploaded = useCallback(async (imagenUrl: string) => {
     if (!selectedProveedor) {
@@ -94,15 +115,25 @@ export default function Facturas() {
   }, [selectedProveedor, createFactura])
 
   const handleExtraer = useCallback(async (facturaId: string) => {
-    setExtracting(facturaId)
+    setExtracting(prev => new Set(prev).add(facturaId))
     try {
       const result = await facturasApi.extraer(facturaId)
-      toast.success(`Extraccion completada: ${result.items_count} items detectados`)
+      const parts = [`Extraccion completada: ${result.items_count} items detectados`]
+      if ((result.items_failed_count ?? 0) > 0) {
+        parts.push(`${result.items_failed_count} no insertados`)
+      }
+      if ((result.items_previos_eliminados ?? 0) > 0) {
+        parts.push(`limpieza previa: ${result.items_previos_eliminados}`)
+      }
+      if (result.insert_mode === 'fallback') {
+        parts.push('modo fallback')
+      }
+      toast.success(parts.join(' | '))
       refetch()
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al extraer datos')
     } finally {
-      setExtracting(null)
+      setExtracting(prev => { const next = new Set(prev); next.delete(facturaId); return next })
     }
   }, [refetch])
 
@@ -153,7 +184,7 @@ export default function Facturas() {
   }, [validarItem, refetchItems])
 
   const handleAplicar = useCallback(async (facturaId: string) => {
-    setApplying(facturaId)
+    setApplying(prev => new Set(prev).add(facturaId))
     try {
       const result = await aplicarFactura.mutateAsync(facturaId)
       toast.success(`Factura aplicada: ${result.items_aplicados} items ingresados al deposito`)
@@ -161,7 +192,7 @@ export default function Facturas() {
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error al aplicar factura')
     } finally {
-      setApplying(null)
+      setApplying(prev => { const next = new Set(prev); next.delete(facturaId); return next })
     }
   }, [aplicarFactura, refetch])
 
@@ -304,18 +335,18 @@ export default function Facturas() {
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-2">
-                          {f.estado === 'pendiente' && (
+                          {(f.estado === 'pendiente' || f.estado === 'error') && (
                             <button
                               onClick={() => handleExtraer(f.id)}
-                              disabled={extracting === f.id}
+                              disabled={extracting.has(f.id)}
                               className="flex items-center gap-1 px-3 py-2 min-h-[44px] text-xs font-medium bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
                             >
-                              {extracting === f.id ? (
+                              {extracting.has(f.id) ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Eye className="w-3 h-3" />
                               )}
-                              Extraer
+                              {f.estado === 'error' ? 'Reintentar OCR' : 'Extraer'}
                             </button>
                           )}
                           {(f.estado === 'extraida' || f.estado === 'validada' || f.estado === 'aplicada') && (
@@ -330,10 +361,10 @@ export default function Facturas() {
                           {f.estado === 'validada' && (
                             <button
                               onClick={() => handleAplicar(f.id)}
-                              disabled={applying === f.id}
+                              disabled={applying.has(f.id)}
                               className="flex items-center gap-1 px-3 py-2 min-h-[44px] text-xs font-medium bg-emerald-600 text-white rounded hover:bg-emerald-700 disabled:opacity-50 transition-colors"
                             >
-                              {applying === f.id ? (
+                              {applying.has(f.id) ? (
                                 <Loader2 className="w-3 h-3 animate-spin" />
                               ) : (
                                 <Package className="w-3 h-3" />
@@ -363,6 +394,23 @@ export default function Facturas() {
                   </span>
                 )}
               </div>
+
+              {hasCuitMismatch && (
+                <div className="mb-3 rounded-md border border-amber-300 bg-amber-50 px-3 py-2 text-xs text-amber-900 dark:border-amber-700 dark:bg-amber-900/20 dark:text-amber-200">
+                  <div className="flex items-start gap-2">
+                    <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="space-y-0.5">
+                      <p className="font-medium">
+                        CUIT detectado por OCR no coincide con el proveedor seleccionado.
+                      </p>
+                      <p>
+                        Detectado: <span className="font-mono">{detectedCuit || 'N/D'}</span> |
+                        Proveedor: <span className="font-mono">{proveedorCuit || 'N/D'}</span>
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               <div className="space-y-2">
                 {facturaItems.map(item => {
                   const isEditing = editingItem === item.id

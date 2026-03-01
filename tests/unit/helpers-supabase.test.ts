@@ -11,6 +11,7 @@ import {
   queryTableWithCount,
   insertTable,
   updateTable,
+  updateTableByFilters,
   callFunction,
   fetchWithParams,
 } from '../../supabase/functions/api-minimarket/helpers/supabase';
@@ -197,6 +198,63 @@ describe('updateTable', () => {
     );
 
     await expect(updateTable(BASE_URL, 'products', '1', HEADERS, {})).rejects.toThrow();
+  });
+});
+
+describe('updateTableByFilters', () => {
+  beforeEach(() => vi.restoreAllMocks());
+
+  it('updates rows using multiple filters', async () => {
+    const fetchSpy = vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify([{ id: '1', estado: 'aplicada' }]), { status: 200 }),
+    );
+
+    const result = await updateTableByFilters(
+      BASE_URL,
+      'facturas_ingesta',
+      HEADERS,
+      { id: '1', estado: 'validada' },
+      { estado: 'aplicada' },
+    );
+
+    expect(result).toEqual([{ id: '1', estado: 'aplicada' }]);
+    const url = fetchSpy.mock.calls[0][0] as string;
+    expect(url).toContain('facturas_ingesta?');
+    expect(url).toContain('id=eq.1');
+    expect(url).toContain('estado=eq.validada');
+    expect((fetchSpy.mock.calls[0][1] as RequestInit).method).toBe('PATCH');
+  });
+
+  it('returns empty array when no rows matched filters', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response(JSON.stringify([]), { status: 200 }),
+    );
+
+    const result = await updateTableByFilters(
+      BASE_URL,
+      'facturas_ingesta',
+      HEADERS,
+      { id: 'no-match', estado: 'validada' },
+      { estado: 'aplicada' },
+    );
+
+    expect(result).toEqual([]);
+  });
+
+  it('throws on non-ok response', async () => {
+    vi.spyOn(globalThis, 'fetch').mockResolvedValue(
+      new Response('Error', { status: 500 }),
+    );
+
+    await expect(
+      updateTableByFilters(
+        BASE_URL,
+        'facturas_ingesta',
+        HEADERS,
+        { id: '1', estado: 'validada' },
+        { estado: 'aplicada' },
+      ),
+    ).rejects.toThrow();
   });
 });
 

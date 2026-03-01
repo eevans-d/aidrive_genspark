@@ -23,6 +23,11 @@ import {
 	parseISODate,
 	isValidMovimientoTipo,
 	VALID_MOVIMIENTO_TIPOS,
+	canExtractFacturaOCR,
+	VALID_FACTURA_OCR_EXTRAER_ESTADOS,
+	resolveOcrMinScoreApply,
+	hasSufficientOcrConfidence,
+	DEFAULT_OCR_MIN_SCORE_APPLY,
 	VALID_PEDIDO_ESTADOS,
 	VALID_PEDIDO_ESTADOS_PAGO,
 	VALID_TAREA_PRIORIDADES,
@@ -228,6 +233,67 @@ describe('isValidMovimientoTipo', () => {
 describe('VALID_MOVIMIENTO_TIPOS', () => {
         it('should have exactly 4 types', () => {
                 expect(VALID_MOVIMIENTO_TIPOS.size).toBe(4);
+        });
+});
+
+describe('canExtractFacturaOCR', () => {
+        it('should allow pendiente and error estados', () => {
+                expect(canExtractFacturaOCR('pendiente')).toBe(true);
+                expect(canExtractFacturaOCR('error')).toBe(true);
+                expect(canExtractFacturaOCR('extraida')).toBe(false);
+                expect(canExtractFacturaOCR('validada')).toBe(false);
+                expect(canExtractFacturaOCR('aplicada')).toBe(false);
+        });
+
+        it('should reject invalid and non-string values', () => {
+                expect(canExtractFacturaOCR('')).toBe(false);
+                expect(canExtractFacturaOCR(null)).toBe(false);
+                expect(canExtractFacturaOCR(undefined)).toBe(false);
+                expect(canExtractFacturaOCR(123)).toBe(false);
+        });
+});
+
+describe('VALID_FACTURA_OCR_EXTRAER_ESTADOS', () => {
+        it('should include pendiente and error', () => {
+                expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('pendiente')).toBe(true);
+                expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('error')).toBe(true);
+                expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.size).toBe(2);
+        });
+});
+
+describe('resolveOcrMinScoreApply', () => {
+        it('should parse valid threshold values in range [0,1]', () => {
+                expect(resolveOcrMinScoreApply('0.8')).toBe(0.8);
+                expect(resolveOcrMinScoreApply(0.65)).toBe(0.65);
+                expect(resolveOcrMinScoreApply('0')).toBe(0);
+                expect(resolveOcrMinScoreApply('1')).toBe(1);
+        });
+
+        it('should fallback to default for invalid values', () => {
+                expect(resolveOcrMinScoreApply(undefined)).toBe(DEFAULT_OCR_MIN_SCORE_APPLY);
+                expect(resolveOcrMinScoreApply(null)).toBe(DEFAULT_OCR_MIN_SCORE_APPLY);
+                expect(resolveOcrMinScoreApply('abc')).toBe(DEFAULT_OCR_MIN_SCORE_APPLY);
+                expect(resolveOcrMinScoreApply('-1')).toBe(DEFAULT_OCR_MIN_SCORE_APPLY);
+                expect(resolveOcrMinScoreApply('1.5')).toBe(DEFAULT_OCR_MIN_SCORE_APPLY);
+        });
+});
+
+describe('hasSufficientOcrConfidence', () => {
+        it('should return false when confidence is below threshold', () => {
+                expect(hasSufficientOcrConfidence(0.69, 0.7)).toBe(false);
+                expect(hasSufficientOcrConfidence('0.1', 0.7)).toBe(false);
+        });
+
+        it('should return true when confidence is equal/above threshold', () => {
+                expect(hasSufficientOcrConfidence(0.7, 0.7)).toBe(true);
+                expect(hasSufficientOcrConfidence(0.91, 0.7)).toBe(true);
+                expect(hasSufficientOcrConfidence('0.75', 0.7)).toBe(true);
+        });
+
+        it('should return false for invalid confidence values', () => {
+                expect(hasSufficientOcrConfidence(undefined, 0.7)).toBe(false);
+                expect(hasSufficientOcrConfidence(null, 0.7)).toBe(false);
+                expect(hasSufficientOcrConfidence('nope', 0.7)).toBe(false);
         });
 });
 

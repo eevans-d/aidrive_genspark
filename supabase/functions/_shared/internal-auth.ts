@@ -38,17 +38,7 @@ export function requireServiceRoleAuth(
   const expectedBearer = `Bearer ${serviceRoleKey}`;
 
   // Primary mode: exact match against the project service role key (or configured internal token).
-  let authorized = authHeader === expectedBearer || apiKeyHeader === serviceRoleKey;
-
-  // Fallback: if the platform already verified the JWT (verify_jwt=true), accept any JWT whose role is service_role.
-  // This prevents brittle coupling to a specific key string while still requiring a privileged token.
-  if (!authorized && authHeader?.startsWith('Bearer ')) {
-    const token = authHeader.slice('Bearer '.length).trim();
-    const payload = decodeJwtPayload(token);
-    if (payload && payload['role'] === 'service_role') {
-      authorized = true;
-    }
-  }
+  const authorized = authHeader === expectedBearer || apiKeyHeader === serviceRoleKey;
 
   if (authorized) {
     return { authorized: true };

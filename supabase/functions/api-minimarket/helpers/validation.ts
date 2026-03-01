@@ -79,6 +79,43 @@ export const VALID_PEDIDO_ESTADOS = new Set(['pendiente', 'preparando', 'listo',
 export const VALID_PEDIDO_ESTADOS_PAGO = new Set(['pendiente', 'parcial', 'pagado']);
 
 /**
+ * Valid estados de factura para permitir extraccion OCR desde gateway.
+ */
+export const VALID_FACTURA_OCR_EXTRAER_ESTADOS = new Set(['pendiente', 'error']);
+
+/**
+ * Validate that factura estado is eligible for OCR extraction.
+ */
+export function canExtractFacturaOCR(estado: unknown): boolean {
+  return typeof estado === 'string' && VALID_FACTURA_OCR_EXTRAER_ESTADOS.has(estado);
+}
+
+/**
+ * Default OCR confidence threshold to allow stock application.
+ */
+export const DEFAULT_OCR_MIN_SCORE_APPLY = 0.7;
+
+/**
+ * Resolve OCR confidence threshold from env/config input.
+ * Accepts numeric values in [0, 1]. Falls back to DEFAULT_OCR_MIN_SCORE_APPLY.
+ */
+export function resolveOcrMinScoreApply(raw: unknown): number {
+  const value = typeof raw === 'string' || typeof raw === 'number' ? Number(raw) : NaN;
+  if (Number.isFinite(value) && value >= 0 && value <= 1) {
+    return value;
+  }
+  return DEFAULT_OCR_MIN_SCORE_APPLY;
+}
+
+/**
+ * Check whether a factura OCR confidence score meets the required threshold.
+ */
+export function hasSufficientOcrConfidence(score: unknown, minScore: number): boolean {
+  const value = typeof score === 'string' || typeof score === 'number' ? Number(score) : NaN;
+  return Number.isFinite(value) && value >= minScore;
+}
+
+/**
  * Valid tarea prioridades (unified superset).
  */
 export const VALID_TAREA_PRIORIDADES = new Set(['baja', 'normal', 'media', 'alta', 'urgente']);

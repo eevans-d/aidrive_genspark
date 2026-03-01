@@ -10,6 +10,9 @@ import {
   parseOcrText,
   extractCuit,
   DEFAULT_SUPPLIER_PROFILE,
+  canExtractFacturaOCR,
+  VALID_FACTURA_OCR_EXTRAER_ESTADOS,
+  resolveOcrFeatureType,
 } from '../../supabase/functions/facturas-ocr/helpers';
 import type { SupplierProfile, OcrLineItem } from '../../supabase/functions/facturas-ocr/helpers';
 
@@ -487,5 +490,52 @@ describe('extractCuit', () => {
 
   it('returns null for empty string', () => {
     expect(extractCuit('')).toBeNull();
+  });
+});
+
+// ============================================================
+// OCR runtime helpers
+// ============================================================
+describe('canExtractFacturaOCR', () => {
+  it('allows pendiente and error estados', () => {
+    expect(canExtractFacturaOCR('pendiente')).toBe(true);
+    expect(canExtractFacturaOCR('error')).toBe(true);
+  });
+
+  it('rejects unsupported estados', () => {
+    expect(canExtractFacturaOCR('extraida')).toBe(false);
+    expect(canExtractFacturaOCR('validada')).toBe(false);
+    expect(canExtractFacturaOCR('aplicada')).toBe(false);
+  });
+
+  it('rejects non-string values', () => {
+    expect(canExtractFacturaOCR(null)).toBe(false);
+    expect(canExtractFacturaOCR(undefined)).toBe(false);
+    expect(canExtractFacturaOCR(123)).toBe(false);
+  });
+});
+
+describe('VALID_FACTURA_OCR_EXTRAER_ESTADOS', () => {
+  it('contains exactly pending and error', () => {
+    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('pendiente')).toBe(true);
+    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('error')).toBe(true);
+    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.size).toBe(2);
+  });
+});
+
+describe('resolveOcrFeatureType', () => {
+  it('resolves PDF to DOCUMENT_TEXT_DETECTION', () => {
+    expect(resolveOcrFeatureType('application/pdf', 'factura.pdf')).toBe('DOCUMENT_TEXT_DETECTION');
+    expect(resolveOcrFeatureType('application/octet-stream', 'factura.PDF')).toBe('DOCUMENT_TEXT_DETECTION');
+  });
+
+  it('resolves images to TEXT_DETECTION', () => {
+    expect(resolveOcrFeatureType('image/png', 'factura.png')).toBe('TEXT_DETECTION');
+    expect(resolveOcrFeatureType('', 'factura.jpeg')).toBe('TEXT_DETECTION');
+  });
+
+  it('returns null for unsupported file types', () => {
+    expect(resolveOcrFeatureType('text/plain', 'factura.txt')).toBeNull();
+    expect(resolveOcrFeatureType(null, 'factura.sin_extension')).toBeNull();
   });
 });

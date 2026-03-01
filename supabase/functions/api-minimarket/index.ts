@@ -45,6 +45,10 @@ import {
   isValidCodigo,
   isValidISODateString,
   VALID_TAREA_PRIORIDADES,
+  canExtractFacturaOCR,
+  VALID_FACTURA_OCR_EXTRAER_ESTADOS,
+  resolveOcrMinScoreApply,
+  hasSufficientOcrConfidence,
 } from './helpers/validation.ts';
 import { parsePagination } from './helpers/pagination.ts';
 import {
@@ -52,6 +56,7 @@ import {
   queryTableWithCount,
   insertTable,
   updateTable,
+  updateTableByFilters,
   callFunction,
   fetchWithParams,
 } from './helpers/supabase.ts';
@@ -139,8 +144,12 @@ function normalizePathname(pathname: string): string {
 }
 
 function generateRequestId(req: Request): string {
+  const clientId = req.headers.get('x-request-id');
+  // Sanitize: max 128 chars, alphanumeric + dashes only
+  if (clientId && /^[a-zA-Z0-9_-]{1,128}$/.test(clientId)) {
+    return clientId;
+  }
   return (
-    req.headers.get('x-request-id') ||
     crypto.randomUUID?.() ||
     `${Date.now()}-${Math.random().toString(36).slice(2)}`
   );
@@ -2211,6 +2220,26 @@ Deno.serve(async (req) => {
       checkRole(['admin', 'deposito']);
 
       const facturaId = path.split('/')[2];
+      if (!isUuid(facturaId)) {
+        return respondFail('VALIDATION_ERROR', 'factura_id invalido', 400);
+      }
+
+      const facturas = await queryTable(supabaseUrl, 'facturas_ingesta', requestHeaders(), { id: facturaId });
+      const factura = (facturas as Record<string, unknown>[])[0];
+      if (!factura) {
+        return respondFail('NOT_FOUND', 'Factura no encontrada', 404);
+      }
+
+      const estadoActual = typeof factura.estado === 'string' ? factura.estado : '';
+      if (!canExtractFacturaOCR(estadoActual)) {
+        const estadosPermitidos = Array.from(VALID_FACTURA_OCR_EXTRAER_ESTADOS);
+        return respondFail(
+          'INVALID_STATE',
+          `No se puede extraer OCR para una factura en estado '${estadoActual || 'desconocido'}'`,
+          409,
+          { details: { estado_actual: estadoActual || null, estados_permitidos: estadosPermitidos } },
+        );
+      }
 
       if (!serviceRoleKey) {
         return respondFail('CONFIG_ERROR', 'Service role key no disponible', 500);
@@ -2350,7 +2379,7 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'factura_id invalido', 400);
       }
 
-      // Fetch factura
+      // Fetch factura (pre-check; optimistic lock is acquired below)
       const facturas = await queryTable(supabaseUrl, 'facturas_ingesta', requestHeaders(), { id: facturaId });
       const factura = (facturas as Record<string, unknown>[])[0];
       if (!factura) {
@@ -2361,6 +2390,24 @@ Deno.serve(async (req) => {
       }
       if (factura.estado !== 'validada') {
         return respondFail('VALIDATION_ERROR', 'Factura debe estar validada antes de aplicar', 400);
+      }
+
+      const minScoreApply = resolveOcrMinScoreApply(Deno.env.get('OCR_MIN_SCORE_APPLY'));
+      const scoreConfianza = typeof factura.score_confianza === 'number' || typeof factura.score_confianza === 'string'
+        ? Number(factura.score_confianza)
+        : null;
+      if (!hasSufficientOcrConfidence(scoreConfianza, minScoreApply)) {
+        return respondFail(
+          'OCR_CONFIDENCE_BELOW_THRESHOLD',
+          `Confianza OCR insuficiente para aplicar (minimo requerido: ${minScoreApply})`,
+          400,
+          {
+            details: {
+              score_confianza: scoreConfianza !== null && Number.isFinite(scoreConfianza) ? scoreConfianza : null,
+              min_score_apply: minScoreApply,
+            },
+          },
+        );
       }
 
       // Fetch confirmed items
@@ -2375,6 +2422,20 @@ Deno.serve(async (req) => {
       if (confirmedItems.length === 0) {
         return respondFail('VALIDATION_ERROR', 'No hay items confirmados para aplicar', 400);
       }
+
+      // Optimistic lock: transition validada -> aplicada atomically.
+      // If no row is affected, another request changed the state first.
+      const lockRows = await updateTableByFilters(
+        supabaseUrl,
+        'facturas_ingesta',
+        requestHeaders(),
+        { id: facturaId, estado: 'validada' },
+        { estado: 'aplicada' },
+      );
+      if (lockRows.length === 0) {
+        return respondFail('CONFLICT', 'Factura ya fue procesada por otra solicitud', 409);
+      }
+      const facturaLocked = (lockRows as Record<string, unknown>[])[0] || factura;
 
       const results: Record<string, unknown>[] = [];
       const errors: Record<string, unknown>[] = [];
@@ -2392,14 +2453,19 @@ Deno.serve(async (req) => {
           }
 
           // Create inventory movement
+          const parsedCantidad = Number(item.cantidad);
+          if (!parsedCantidad || parsedCantidad <= 0 || !Number.isFinite(parsedCantidad)) {
+            errors.push({ item_id: item.id, error: `Cantidad invalida: ${item.cantidad}` });
+            continue;
+          }
           const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
             p_producto_id: String(item.producto_id),
             p_tipo: 'entrada',
-            p_cantidad: Number(item.cantidad),
-            p_origen: `Factura:${factura.numero || facturaId}`,
+            p_cantidad: parsedCantidad,
+            p_origen: `Factura:${facturaLocked.numero || facturaId}`,
             p_destino: 'Principal',
             p_usuario: user!.id,
-            p_proveedor_id: factura.proveedor_id || null,
+            p_proveedor_id: facturaLocked.proveedor_id || null,
           });
 
           // Link movement to factura item (update factura_ingesta_item_id)
@@ -2411,8 +2477,11 @@ Deno.serve(async (req) => {
                 requestHeaders(),
                 { factura_ingesta_item_id: String(item.id) },
               );
-            } catch (e) {
-              logger.warn('MOVIMIENTO_LINK_FAILED', { requestId, item_id: item.id, error: String(e) });
+            } catch (linkErr) {
+              // Link failure breaks idempotency — treat as error to trigger compensation
+              logger.error('MOVIMIENTO_LINK_FAILED', { requestId, item_id: item.id, error: String(linkErr) });
+              errors.push({ item_id: item.id, error: `Link failed: ${String(linkErr)}` });
+              continue;
             }
           }
 
@@ -2421,7 +2490,7 @@ Deno.serve(async (req) => {
             try {
               await insertTable(supabaseUrl, 'precios_compra', requestHeaders(), {
                 producto_id: String(item.producto_id),
-                proveedor_id: factura.proveedor_id || null,
+                proveedor_id: facturaLocked.proveedor_id || null,
                 precio_unitario: Number(item.precio_unitario),
                 factura_ingesta_item_id: String(item.id),
                 origen: 'factura',
@@ -2439,33 +2508,104 @@ Deno.serve(async (req) => {
         }
       }
 
-      // Update factura estado to 'aplicada'
       if (errors.length === 0) {
-        await updateTable(supabaseUrl, 'facturas_ingesta', facturaId, requestHeaders(), {
-          estado: 'aplicada',
-        });
-        // Register audit event
-        await insertTable(supabaseUrl, 'facturas_ingesta_eventos', requestHeaders(), {
-          factura_id: facturaId,
-          evento: 'aplicada',
-          datos: {
-            aplicada_por: user!.id,
-            request_id: requestId,
-            items_aplicados: results.length,
-            items_errores: errors.length,
-          },
-          usuario_id: user!.id,
-        });
+        // Register audit event (non-critical: must not fail the already-committed apply)
+        try {
+          await insertTable(supabaseUrl, 'facturas_ingesta_eventos', requestHeaders(), {
+            factura_id: facturaId,
+            evento: 'aplicada',
+            datos: {
+              aplicada_por: user!.id,
+              request_id: requestId,
+              items_aplicados: results.filter(r => r.status === 'applied').length,
+              items_errores: errors.length,
+            },
+            usuario_id: user!.id,
+          });
+        } catch (auditErr) {
+          logger.error('FACTURA_APPLY_AUDIT_EVENT_FAILED', { requestId, facturaId, error: String(auditErr) });
+        }
+      } else {
+        // ================================================================
+        // T7 HARDENING: Compensate successfully applied items before rollback
+        // ================================================================
+        const compensated: Record<string, unknown>[] = [];
+        const compensationErrors: Record<string, unknown>[] = [];
+
+        const appliedResults = results.filter(r => r.status === 'applied');
+        for (const applied of appliedResults) {
+          const item = confirmedItems.find(i => i.id === applied.item_id);
+          if (!item) continue;
+
+          try {
+            // 1. Create compensating salida movement to reverse stock change
+            await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
+              p_producto_id: String(item.producto_id),
+              p_tipo: 'salida',
+              p_cantidad: Number(item.cantidad),
+              p_origen: `Compensacion:Factura:${facturaLocked.numero || facturaId}`,
+              p_destino: 'Principal',
+              p_usuario: user!.id,
+              p_observaciones: `Rollback parcial request_id=${requestId}`,
+            });
+
+            // 2. Clear factura_ingesta_item_id link so idempotency allows clean retry
+            if (applied.movimiento_id) {
+              await updateTable(
+                supabaseUrl, 'movimientos_deposito',
+                String(applied.movimiento_id),
+                requestHeaders(),
+                { factura_ingesta_item_id: null },
+              );
+            }
+
+            compensated.push({ item_id: applied.item_id, movimiento_id: applied.movimiento_id });
+          } catch (compErr) {
+            compensationErrors.push({ item_id: applied.item_id, error: String(compErr) });
+            logger.error('FACTURA_APPLY_COMPENSATION_FAILED', {
+              requestId, facturaId, item_id: applied.item_id, error: String(compErr),
+            });
+          }
+        }
+
+        // Rollback optimistic lock so invoice can be retried after fixing failures.
+        try {
+          await updateTableByFilters(
+            supabaseUrl,
+            'facturas_ingesta',
+            requestHeaders(),
+            { id: facturaId, estado: 'aplicada' },
+            { estado: 'validada' },
+          );
+          await insertTable(supabaseUrl, 'facturas_ingesta_eventos', requestHeaders(), {
+            factura_id: facturaId,
+            evento: 'aplicacion_rollback',
+            datos: {
+              request_id: requestId,
+              motivo: 'errores_parciales',
+              items_aplicados: appliedResults.length,
+              items_compensados: compensated.length,
+              items_compensacion_fallida: compensationErrors.length,
+              items_errores: errors.length,
+            },
+            usuario_id: user!.id,
+          });
+        } catch (rollbackError) {
+          logger.error('FACTURA_APPLY_ROLLBACK_FAILED', { requestId, facturaId, error: String(rollbackError) });
+        }
       }
+
+      const appliedCount = results.filter(r => r.status === 'applied').length;
+      const alreadyAppliedCount = results.filter(r => r.status === 'already_applied').length;
 
       return respondOk({
         factura_id: facturaId,
-        items_aplicados: results.filter(r => r.status === 'applied').length,
-        items_ya_aplicados: results.filter(r => r.status === 'already_applied').length,
+        items_aplicados: appliedCount,
+        items_ya_aplicados: alreadyAppliedCount,
         items_errores: errors.length,
         results,
         errors,
-      }, errors.length > 0 ? 207 : 200, { message: errors.length > 0 ? 'Aplicacion parcial' : 'Factura aplicada exitosamente' });
+      }, errors.length > 0 ? 207 : 200, { message: errors.length > 0 ? 'Aplicacion parcial — movimientos compensados, estado revertido a validada' : 'Factura aplicada exitosamente' });
     }
 
     // ====================================================================
@@ -2504,12 +2644,11 @@ Deno.serve(async (req) => {
 
     return fail(
       appError.code,
-      appError.message,
+      appError.status >= 500 ? 'Error interno del servidor' : appError.message,
       appError.status,
       responseHeaders,
       {
         requestId,
-        details: appError.details,
       },
     );
   }

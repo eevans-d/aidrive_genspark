@@ -27,6 +27,7 @@ const Pedidos = lazy(() => import('./pages/Pedidos'))
 const Pocket = lazy(() => import('./pages/Pocket'))
 const Pos = lazy(() => import('./pages/Pos'))
 const Clientes = lazy(() => import('./pages/Clientes'))
+const Asistente = lazy(() => import('./pages/Asistente'))
 const NotFound = lazy(() => import('./pages/NotFound'))
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
@@ -221,6 +222,16 @@ export function AppRoutes() {
             <ProtectedRoute>
               <Layout>
                 <Clientes />
+              </Layout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/asistente"
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Asistente />
               </Layout>
             </ProtectedRoute>
           }

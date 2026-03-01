@@ -298,12 +298,13 @@ Si aparece la cifra historica de "52 endpoints", tratarla como criterio normaliz
 ### Edge Functions independientes (no pertenecen a `api-minimarket`)
 Base (producción): `https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/<function>`
 
-Inventario verificado en repo (15 funciones excluyendo `_shared`; 13 independientes a este gateway):
+Inventario verificado en repo (16 funciones excluyendo `_shared`; 14 independientes a este gateway):
 
 | Function | Auth de entrada | Uso principal |
 |---|---|---|
 | `alertas-stock` | `requireServiceRoleAuth` | Alertas de stock bajo |
 | `alertas-vencimientos` | `requireServiceRoleAuth` | Alertas de vencimientos |
+| `api-assistant` | JWT usuario (validación interna via Auth API) | Asistente IA operativo (Sprint 1: solo lectura) |
 | `backfill-faltantes-recordatorios` | `requireServiceRoleAuth` | Backfill diario idempotente de recordatorios para faltantes críticos |
 | `cron-dashboard` | `requireServiceRoleAuth` | Métricas/estado de cron jobs |
 | `cron-health-monitor` | `requireServiceRoleAuth` | Health checks de cron |
@@ -392,7 +393,7 @@ PUT /tareas/{id}/completar         # Completar tarea
 PUT /tareas/{id}/cancelar          # Cancelar tarea
 ```
 
-### Pedidos (requiere autenticación) ✨ NUEVO
+### Pedidos (requiere autenticación)
 ```bash
 GET /pedidos                       # Listar pedidos (filtros: ?estado, ?estado_pago, ?fecha_desde, ?fecha_hasta)
 POST /pedidos                      # Crear pedido
@@ -424,7 +425,7 @@ PUT /pedidos/items/{id}            # Marcar item como preparado/no preparado
 **Estados de Pedido:** `pendiente` → `preparando` → `listo` → `entregado` | `cancelado`  
 **Estados de Pago:** `pendiente` | `parcial` | `pagado` (calculado automáticamente según monto_pagado vs monto_total)
 
-### Búsqueda Global (requiere autenticación) ✨ NUEVO
+### Búsqueda Global (requiere autenticación)
 ```bash
 GET /search?q=texto&limit=10        # Busca en productos/proveedores/tareas/pedidos/clientes
 ```
@@ -433,14 +434,14 @@ GET /search?q=texto&limit=10        # Busca en productos/proveedores/tareas/pedi
 - `q` es requerido (mínimo 2 caracteres).
 - `limit` es opcional (1–20). El límite real por entidad está capado para evitar payloads grandes.
 
-### Insights (Arbitraje / Comprar Ahora) ✨ NUEVO
+### Insights (Arbitraje / Comprar Ahora)
 ```bash
 GET /insights/arbitraje             # Riesgo de pérdida / margen bajo (por reposición proveedor)
 GET /insights/compras               # “Comprar ahora”: stock bajo + caída de costo >= 10%
 GET /insights/producto/{id}         # Payload unificado por producto (POS/Pocket)
 ```
 
-### Clientes + Cuentas Corrientes (requiere rol `admin|ventas`) ✨ NUEVO
+### Clientes + Cuentas Corrientes (requiere rol `admin|ventas`)
 ```bash
 GET /clientes                       # Listar clientes (filtro: ?q, paginación: ?limit&offset)
 POST /clientes                      # Crear cliente
@@ -451,7 +452,7 @@ GET /cuentas-corrientes/saldos      # Saldos por cliente (filtros: ?q, ?solo_deu
 POST /cuentas-corrientes/pagos      # Registrar pago (monto > 0) -> retorna saldo actualizado
 ```
 
-### POS / Ventas (requiere rol `admin|ventas`) ✨ NUEVO
+### POS / Ventas (requiere rol `admin|ventas`)
 ```bash
 POST /ventas                        # Crear venta POS (idempotente)
 GET /ventas                         # Listado de ventas (paginación: ?limit&offset)
@@ -462,14 +463,14 @@ GET /ventas/{id}                    # Detalle de venta + items
 - `POST /ventas` requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
 - Error esperado: `409 LOSS_RISK_CONFIRM_REQUIRED` si el producto está en riesgo de pérdida y falta `confirmar_riesgo=true`.
 
-### Ofertas (Anti-mermas) ✨ NUEVO
+### Ofertas (Anti-mermas)
 ```bash
 GET /ofertas/sugeridas              # Stock con vencimiento <= 7 días (sugiere 30% OFF)
 POST /ofertas/aplicar               # Aplica oferta por stock_id (default 30%)
 POST /ofertas/{id}/desactivar       # Desactiva oferta
 ```
 
-### Bitácora de Turno ✨ NUEVO
+### Bitácora de Turno
 ```bash
 POST /bitacora                      # Crear nota (antes de logout)
 GET /bitacora                       # Listar notas (solo admin)
@@ -484,16 +485,21 @@ POST /compras/recepcion            # Registrar recepción de OC
 
 ### Facturas OCR (requiere rol `admin|deposito`)
 ```bash
-POST /facturas/{id}/extraer        # Invocar extracción OCR de factura (estado controlado por lógica actual)
+POST /facturas/{id}/extraer        # Invocar extracción OCR (estado pendiente|error)
 PUT  /facturas/items/{id}/validar  # Confirmar/rechazar item OCR
 POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 ```
 
 **Notas `/facturas/{id}/extraer`:**
 - Gateway hacia Edge Function `facturas-ocr` (server-to-server via service_role).
-- Runtime actual: el gateway no fuerza estado previo de factura; delega validaciones operativas a la Edge Function.
-- La Edge Function valida existencia de factura e `imagen_url`; no aplica hoy bloqueo estricto por estado.
-- La función descarga la imagen del bucket Storage, la envía a Google Cloud Vision API, parsea el texto, y ejecuta matching de productos en 3 capas (barcode/SKU → alias → fuzzy name).
+- El gateway valida `factura_id` y exige estado `pendiente|error` antes de invocar OCR.
+- Si la factura no esta en `pendiente|error`, retorna `409 INVALID_STATE`.
+- La Edge Function revalida estado permitido, existencia de factura e `imagen_url`.
+- Si la factura estaba en `error`, se ejecuta limpieza previa de `facturas_ingesta_items` y se registra evento `ocr_reintento`.
+- Soporta imagenes y PDF: usa `TEXT_DETECTION` para imagen y `DOCUMENT_TEXT_DETECTION` para PDF.
+- Si el archivo no es soportado, retorna `400 UNSUPPORTED_FILE_TYPE`.
+- Matching con cache in-memory por request (barcode/SKU -> alias -> fuzzy) para evitar consultas repetidas por item.
+- Inserta items con `batch insert`; si falla, usa fallback individual y reporta `items_failed`.
 - Timeout: 35s (OCR puede demorar).
 - Respuesta exitosa:
 ```json
@@ -502,13 +508,16 @@ POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
   "data": {
     "factura_id": "uuid",
     "items_count": 5,
+    "items_failed_count": 0,
+    "items_failed": [],
+    "insert_mode": "batch",
+    "items_previos_eliminados": 0,
     "estado": "extraida"
   }
 }
 ```
 - Requiere secret `GCV_API_KEY` configurado en Supabase.
 - La factura se crea previamente vía Supabase client SDK (`facturas_ingesta` INSERT directo con RLS).
-- Nota de roadmap: el plan canonico OCR define agregar doble guarda de estado y limpieza segura de reintentos.
 
 **Notas `/facturas/items/{id}/validar`:**
 - Body: `{ "estado_match": "confirmada"|"rechazada", "producto_id": "uuid", "guardar_alias": true, "alias_texto": "texto" }`
@@ -518,8 +527,11 @@ POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
 
 **Notas `/facturas/{id}/aplicar`:**
 - Solo facturas en estado `validada`. Idempotente (unique index `factura_ingesta_item_id` en `movimientos_deposito`).
+- Lock optimista: transicion `validada -> aplicada` por PATCH condicionado (`id + estado`); si afecta 0 filas retorna `409 CONFLICT`.
+- Guard de confianza OCR: bloquea con `400 OCR_CONFIDENCE_BELOW_THRESHOLD` cuando `score_confianza < OCR_MIN_SCORE_APPLY` (fallback `0.70`).
 - Crea movimientos de entrada via `sp_movimiento_inventario` para cada item confirmado.
 - Persiste `precios_compra` por item (trigger `trg_update_precio_costo` actualiza `productos.precio_costo`).
+- **Hardening parcial (T7):** ante error en algun item, los movimientos ya creados se compensan con movimientos `salida` inversos, se limpia el link de idempotencia (`factura_ingesta_item_id = null`) para permitir reintento limpio, y el estado de la factura revierte a `validada`. El evento `aplicacion_rollback` en `facturas_ingesta_eventos` registra `items_compensados` y `items_compensacion_fallida`.
 - Respuesta:
 ```json
 {
@@ -531,8 +543,7 @@ POST /facturas/{id}/aplicar        # Aplicar items confirmados a stock
   "errors": []
 }
 ```
-- Status `207` si hay errores parciales, `200` si todo OK, `409` si ya fue aplicada.
-- Runtime actual: no existe todavia guard de bloqueo por `score_confianza` minimo en este endpoint.
+- Status `207` si hay errores parciales (movimientos compensados, estado revertido a `validada`), `200` si todo OK, `409` si ya fue aplicada o una solicitud concurrente gano el lock.
 
 **Notas `/reservas` (hardening WS1):**
 - Requiere header `Idempotency-Key` (obligatorio) para prevenir duplicados en reintentos.
@@ -569,6 +580,7 @@ GET /health                        # Healthcheck del gateway
 | Bitácora (crear) | ❌ | ✅ | ✅ | ✅ |
 | Bitácora (listar) | ❌ | ❌ | ❌ | ✅ |
 | Facturas OCR | ❌ | ❌ | ✅ | ✅ |
+| Asistente IA (api-assistant) | ❌ | ❌ | ❌ | ✅ |
 | Health check | ✅ | ✅ | ✅ | ✅ |
 
 ---
@@ -705,4 +717,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-02-23*
+*Última actualización: 2026-03-01*

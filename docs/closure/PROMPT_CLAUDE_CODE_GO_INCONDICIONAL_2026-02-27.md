@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-03-01] Reemplazado por `docs/closure/CONTEXT_PROMPT_CLAUDE_CODE_OCR_NUEVOS_2026-03-01.md` para continuidad OCR y por `docs/PRODUCTION_GATE_REPORT.md` para estado GO/NO-GO actual.
+
 # PROMPT ENGINEERING — CLAUDE CODE (GO INCONDICIONAL)
 
 ## Rol y objetivo

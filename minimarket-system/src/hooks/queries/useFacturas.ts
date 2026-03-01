@@ -18,7 +18,7 @@ export interface FacturaIngesta {
   created_by: string | null
   created_at: string
   updated_at: string
-  proveedores?: { nombre: string } | null
+  proveedores?: { nombre: string; cuit: string | null } | null
 }
 
 export interface FacturaIngestaItem {
@@ -44,7 +44,7 @@ export interface FacturaIngestaItem {
 async function fetchFacturas(): Promise<FacturaIngesta[]> {
   const { data, error } = await supabase
     .from('facturas_ingesta')
-    .select('*, proveedores(nombre)')
+    .select('*, proveedores(nombre, cuit)')
     .order('created_at', { ascending: false })
     .limit(50)
 

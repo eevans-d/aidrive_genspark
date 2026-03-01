@@ -16,6 +16,12 @@
     "test:performance": "vitest run --config vitest.auxiliary.config.ts tests/performance",
     "test:security": "vitest run --config vitest.auxiliary.config.ts tests/security",
     "test:contracts": "vitest run --config vitest.auxiliary.config.ts tests/api-contracts",
+    "docs:closure-archive-historical": "node scripts/archive-closure-historical.mjs",
+    "docs:closure-archive-index": "node scripts/generate-closure-archive-index.mjs",
+    "docs:closure-policy-check": "node scripts/check-closure-root-policy.mjs",
+    "docs:refresh-autogen-index": "node scripts/update-latest-autogen-reports.mjs",
+    "docs:closure-hygiene": "node scripts/generate-closure-hygiene-report.mjs",
+    "docs:closure-maintenance": "npm run docs:closure-archive-historical && npm run docs:closure-archive-index && npm run docs:refresh-autogen-index && npm run docs:closure-hygiene && npm run docs:closure-policy-check",
     "test:all": "npm run test && npm run test:auxiliary",
     "deploy:cloudflare:pages": "bash scripts/deploy-cloudflare-pages.sh",
     "prepare": "husky"

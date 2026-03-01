@@ -29,23 +29,30 @@ vi.mock('../lib/supabase', () => {
     {
       id: 'f-1', proveedor_id: 'prov-1', tipo_comprobante: 'factura', numero: '0001-00001234',
       fecha_factura: '2026-02-20', total: 15000, estado: 'extraida', imagen_url: '/test.jpg',
-      datos_extraidos: null, score_confianza: null, request_id: null, created_by: null,
+      datos_extraidos: { cuit_detectado: '30-12345678-9' }, score_confianza: null, request_id: null, created_by: null,
       created_at: '2026-02-20T10:00:00Z', updated_at: '2026-02-20T10:00:00Z',
-      proveedores: { nombre: 'MaxiConsumo' },
+      proveedores: { nombre: 'MaxiConsumo', cuit: '30-87654321-0' },
     },
     {
       id: 'f-2', proveedor_id: 'prov-1', tipo_comprobante: 'factura', numero: '0001-00001235',
       fecha_factura: '2026-02-21', total: 5000, estado: 'validada', imagen_url: '/test2.jpg',
       datos_extraidos: null, score_confianza: null, request_id: null, created_by: null,
       created_at: '2026-02-21T10:00:00Z', updated_at: '2026-02-21T10:00:00Z',
-      proveedores: { nombre: 'MaxiConsumo' },
+      proveedores: { nombre: 'MaxiConsumo', cuit: '30-87654321-0' },
     },
     {
       id: 'f-3', proveedor_id: 'prov-2', tipo_comprobante: 'factura', numero: null,
       fecha_factura: null, total: null, estado: 'pendiente', imagen_url: '/test3.jpg',
       datos_extraidos: null, score_confianza: null, request_id: null, created_by: null,
       created_at: '2026-02-22T10:00:00Z', updated_at: '2026-02-22T10:00:00Z',
-      proveedores: { nombre: 'Distribuidora Norte' },
+      proveedores: { nombre: 'Distribuidora Norte', cuit: '20-11223344-5' },
+    },
+    {
+      id: 'f-4', proveedor_id: 'prov-2', tipo_comprobante: 'factura', numero: null,
+      fecha_factura: null, total: null, estado: 'error', imagen_url: '/test4.jpg',
+      datos_extraidos: null, score_confianza: null, request_id: null, created_by: null,
+      created_at: '2026-02-22T11:00:00Z', updated_at: '2026-02-22T11:00:00Z',
+      proveedores: { nombre: 'Distribuidora Norte', cuit: '20-11223344-5' },
     },
   ]
 
@@ -183,5 +190,19 @@ describe('Facturas page', () => {
     // Smoke test: component renders without crashing with various estados
     renderWithQC(<Facturas />)
     expect(await screen.findByText('Facturas de Compra')).toBeInTheDocument()
+  })
+
+  it('shows retry button for factura in error state', async () => {
+    renderWithQC(<Facturas />)
+    expect(await screen.findByText('Reintentar OCR')).toBeInTheDocument()
+  })
+
+  it('shows CUIT mismatch warning in selected factura detail', async () => {
+    renderWithQC(<Facturas />)
+    const verItemsButtons = await screen.findAllByText('Ver Items')
+    expect(verItemsButtons.length).toBeGreaterThan(0)
+    fireEvent.click(verItemsButtons[0]!)
+    expect(await screen.findByText(/CUIT detectado por OCR no coincide/i)).toBeInTheDocument()
+    expect(screen.getByText(/Detectado:/i)).toBeInTheDocument()
   })
 })

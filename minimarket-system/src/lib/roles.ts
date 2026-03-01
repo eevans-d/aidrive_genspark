@@ -36,6 +36,7 @@ export const ROUTE_CONFIG: Record<string, UserRole[]> = {
         '/clientes': ['admin', 'ventas'],
         '/ventas': ['admin', 'ventas'],
         '/facturas': ['admin', 'deposito'],
+        '/asistente': ['admin'],
 };
 
 /**

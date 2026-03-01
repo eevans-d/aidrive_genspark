@@ -84,6 +84,7 @@ Selecciona automaticamente segun palabras clave del usuario:
 | performance/rendimiento/lento | PerformanceWatch | -> DocuGuard |
 | openapi/swagger/api spec | APISync | -> DocuGuard |
 | seguridad/rls/vulnerabilidad | SecurityAudit | -> DocuGuard |
+| asistente/assistant/chat ia | CodeCraft | -> TestMaster -> DocuGuard |
 
 ### Sistema de Workflows (guias de procedimiento)
 

@@ -1,6 +1,6 @@
 import { ReactNode, useMemo, useState, useEffect, useCallback } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, Monitor, Smartphone, MoreHorizontal, BookOpen, Moon, Sun, FileText, LucideIcon } from 'lucide-react'
+import { Home, Package, Warehouse, CheckSquare, ShoppingCart, Users, LogOut, User as UserIcon, ClipboardList, BarChart3, Search, Bell, DollarSign, Monitor, Smartphone, MoreHorizontal, BookOpen, Moon, Sun, FileText, MessageSquare, LucideIcon } from 'lucide-react'
 import { useAuth } from '../hooks/useAuth'
 import { useUserRole } from '../hooks/useUserRole'
 import { UserRole } from '../lib/roles'
@@ -41,6 +41,7 @@ const NAV_ITEMS: NavItem[] = [
   { path: '/facturas', icon: FileText, label: 'Facturas', allowedRoles: ['admin', 'deposito'] },
   { path: '/ventas', icon: DollarSign, label: 'Ventas', allowedRoles: ['admin', 'ventas'] },
   { path: '/pocket', icon: Smartphone, label: 'Pocket', allowedRoles: ['admin', 'deposito'] },
+  { path: '/asistente', icon: MessageSquare, label: 'Asistente', allowedRoles: ['admin'] },
 ]
 
 const MOBILE_NAV_LIMIT = 4

@@ -1,8 +1,8 @@
 # MISIÓN: INVENTARIO COMPLETO DE RECURSOS DEL PROYECTO
 
-- Fecha (UTC): `2026-02-25 03:12:09`
+- Fecha (UTC): `2026-02-28 12:07:04`
 - Repo: `.`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-25_031038.md`
+- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-28_120548.md`
 
 ## 1. RECURSOS DEL PROYECTO
 
@@ -12,12 +12,12 @@
 
 | Size | Path |
 |---:|---|
-| 716K | `.agent` |
-| 2.5M | `docs` |
+| 740K | `.agent` |
+| 788K | `docs` |
 | 1.5M | `supabase` |
 | 1.1M | `tests` |
-| 208K | `scripts` |
-| 434M | `minimarket-system` |
+| 232K | `scripts` |
+| 447M | `minimarket-system` |
 
 - Assets detectados (best-effort): `0` (top 20 por tamaño)
 ### B. Configuraciones
@@ -80,7 +80,7 @@
 
 ## Used In Code But Missing In .env.example
 
-- `GCV_API_KEY`
+- `OCR_MIN_SCORE_APPLY`
 
 ## Present In .env.example But Not Used In Code
 
@@ -95,6 +95,7 @@
 - `ENVIRONMENT`
 - `INTERNAL_ORIGINS_ALLOWLIST`
 - `LOG_LEVEL`
+- `OCR_MIN_SCORE_APPLY`
 - `REQUIRE_ORIGIN`
 - `SCRAPER_READ_MODE`
 - `SLACK_WEBHOOK_URL`

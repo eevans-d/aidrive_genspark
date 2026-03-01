@@ -1,3 +1,5 @@
+> [DEPRECADO: 2026-03-01] Usar `docs/closure/CONTEXT_PROMPT_CLAUDE_CODE_OCR_NUEVOS_2026-03-01.md` para continuidad activa.
+
 # CONTEXT PROMPT ENGINEERING — CLAUDE CODE (OCR NUEVOS + CONTINUIDAD)
 ## Proyecto: `aidrive_genspark`
 ## Fecha de referencia: 2026-02-28
@@ -36,11 +38,15 @@ No respondas con teoría: ejecuta y deja evidencia reproducible.
    - `docs/archive/planes-deprecados/HOJA_RUTA_ACTUALIZADA_2026-02-08.md`
 3. Lote nuevo detectado:
    - Ruta: `proveedores_facturas_temp/nuevos`
-   - Imágenes útiles: 22 `.jpg`
+   - Imágenes útiles: 22 `.jpg` (21 canónicas + 1 duplicada exacta)
    - Sidecars `:Zone.Identifier`: presentes (ignorar)
    - Duplicado exacto detectado: `20260227_211205.jpg` y `20260227_211205 (1).jpg`
 4. Gaps OCR abiertos y priorizados:
-   - `docs/closure/OPEN_ISSUES.md` (OCR-001..OCR-006)
+   - `docs/closure/OPEN_ISSUES.md` (OCR-002..OCR-006 abiertos; OCR-001 cerrado)
+5. Estado operativo del lote (re-check 2026-02-28 11:39 UTC):
+   - `proveedores`: 12
+   - `facturas_ingesta`: 21 total (`20 pendiente`, `1 error`, `0 extraida/aplicada`)
+   - Ultimo intento OCR: `504 OCR_TIMEOUT` (GCV timeout)
 
 ---
 
@@ -90,7 +96,7 @@ find proveedores_facturas_temp/nuevos -maxdepth 1 -type f | sort
 3. Detectar duplicados por hash y marcar “canonical/duplicate” (NO borrar originales).
 
 4. Generar manifiesto:
-- `docs/closure/OCR_NUEVOS_MANIFEST_2026-02-28.md`
+- `docs/closure/archive/historical/OCR_NUEVOS_MANIFEST_2026-02-28.md`
 
 Formato mínimo por fila:
 - `archivo`
@@ -138,7 +144,7 @@ Pipeline por imagen `ready`:
    - errores si aplica
 
 Guardar artefacto:
-- `docs/closure/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
+- `docs/closure/archive/historical/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
 
 ---
 
@@ -171,7 +177,7 @@ Generar:
 5. Comandos para reanudar exactamente desde el estado final.
 
 Guardar en:
-- `docs/closure/OCR_NUEVOS_HANDOFF_2026-02-28.md`
+- `docs/closure/archive/historical/OCR_NUEVOS_HANDOFF_2026-02-28.md`
 
 ---
 

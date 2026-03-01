@@ -1,10 +1,10 @@
 # MISIÓN: ANÁLISIS TÉCNICO INTEGRAL DEL PROYECTO
 
-- Fecha (UTC): `2026-02-25 03:12:08`
+- Fecha (UTC): `2026-02-28 12:07:03`
 - Repo: `.`
 - Branch: `main`
-- Commit: `ec0f9da5ceae3e05290d9d5509d4a926f5d04c7d`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-25_031038.md`
+- Commit: `f0a9c7350d36092632cc13e4fbbf43a6cae9b450`
+- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-28_120548.md`
 
 ## 1. ARQUITECTURA Y ESTRUCTURA DEL PROYECTO
 
@@ -24,8 +24,8 @@ We recommend updating regularly for new features and bug fixes: https://supabase
 
 - Edge Functions en repo: 15
   - `alertas-stock`, `alertas-vencimientos`, `api-minimarket`, `api-proveedor`, `backfill-faltantes-recordatorios`, `cron-dashboard`, `cron-health-monitor`, `cron-jobs-maxiconsumo`, `cron-notifications`, `cron-testing-suite`, `facturas-ocr`, `notificaciones-tareas`, `reportes-automaticos`, `reposicion-sugerida`, `scraper-maxiconsumo`
-- OpenAPI paths (api-minimarket spec): 45 (muestra hasta 45):
-  - `/categorias`, `/categorias/{id}`, `/productos`, `/productos/{id}`, `/proveedores`, `/proveedores/{id}`, `/precios/aplicar`, `/precios/producto/{id}`, `/precios/redondear`, `/precios/margen-sugerido/{id}`, `/reportes/efectividad-tareas`, `/stock`, `/stock/minimo`, `/stock/producto/{id}`, `/deposito/movimiento`, `/deposito/movimientos`, `/deposito/ingreso`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`, `/reservas`, `/reservas/{id}/cancelar`, `/tareas`, `/tareas/{id}/completar`, `/tareas/{id}/cancelar` ...
+- OpenAPI paths (api-minimarket spec): 49 (muestra hasta 49):
+  - `/categorias`, `/categorias/{id}`, `/productos`, `/productos/{id}`, `/proveedores`, `/proveedores/{id}`, `/precios/aplicar`, `/precios/producto/{id}`, `/precios/redondear`, `/precios/margen-sugerido/{id}`, `/reportes/efectividad-tareas`, `/stock`, `/stock/minimo`, `/stock/producto/{id}`, `/deposito/movimiento`, `/deposito/movimientos`, `/deposito/ingreso`, `/compras/recepcion`, `/facturas/{id}/extraer`, `/facturas/items/{id}/validar`, `/facturas/{id}/aplicar`, `/health`, `/productos/dropdown`, `/proveedores/dropdown`, `/reservas` ...
 - OpenAPI paths (api-proveedor spec): 9
 
 ## 2. ESTADO ACTUAL DEL CÓDIGO
@@ -35,13 +35,8 @@ We recommend updating regularly for new features and bug fixes: https://supabase
 - TODO/FIXME/HACK (preview):
 
 ```text
-docs/AUDIT_SKILLS_REPORT_2026-02-12.md:180:| Sistema como TODO es COHERENTE | ✅ |
-docs/SECRET_ROTATION_PLAN.md:104:- `SUPABASE_ANON_KEY` / `SUPABASE_SERVICE_ROLE_KEY`: son JWTs firmados por Supabase. Para rotarlos, hay que usar Dashboard > Settings > API > Regenerate. **Esto invalida TODOS los clientes y TODAS las funciones.** Solo hacerlo en caso de compromiso confirmado.
-docs/VERIFICACION_AUDITORIA_FORENSE_2026-02-15.md:725:## SECCIÓN G — NOTAS METODOLÓGICAS DE ESTA VERIFICACIÓN
-docs/audit/EVIDENCIA_SP-A.md:92:Scan de `TODO|FIXME|HACK|XXX|PENDIENTE` en TypeScript: **ZERO markers encontrados**. Código limpio.
-docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md:190:### 3.1 HALLAZGOS CRÍTICOS ORIGINALES — TODOS RESUELTOS ✅
-docs/AUDITORIA_FORENSE_DEFINITIVA_2026-02-15.md:640:## 11. NOTAS METODOLÓGICAS
-docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de produccion con veredicto formal** — (1) FASE 0: baseline `97af2aa`, 2026-02-18T04:44:59Z. (2) FASE 1: `.env.test` NOT_FOUND, health endpoints OK (both healthy, circuitBreaker closed). (3) FASE 2: 10 gates ejecutados — 8 PASS (unit 1248/1248, coverage 88.52%/80.00%/92.32%/89.88%, security 11 PASS, contracts 17 PASS, lint PASS, build PASS, components 175/175, doc-links OK), 2 BLOCKED_ENV (integration, e2e). (4) FASE 3: no requerida (0 FAIL). (5) FASE 4: deteccion pro-activa — hallazgo moderado `deploy.sh` backup permissions sin `chmod`; `backups/` no en `.gitignore`; zero `console.log`/secrets/TODO en prod code. (6) Score: 90%. Veredicto: **GO_CONDICIONAL**. | Completada | 2026-02-18 | Evidencia: `docs/closure/EVIDENCIA_CIERRE_FINAL_GATES_2026-02-17.md` (actualizado D-136), `docs/closure/VALIDACION_POST_REMEDIACION_2026-02-17.md` (actualizado D-136). |
+docs/api-openapi-3.1.yaml:1507:        - Cuando TODOS los items están en estado final, factura transiciona a 'validada'
+docs/PRODUCTION_GATE_REPORT.md:67:| TODO/FIXME en codigo | 0 |
 ```
 
 - Archivos más grandes por líneas (aprox):
@@ -49,14 +44,15 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 | Lines | File |
 |---:|---|
 | 2894 | `minimarket-system/src/types/database.types.ts` |
-| 2516 | `supabase/functions/api-minimarket/index.ts` |
+| 2593 | `supabase/functions/api-minimarket/index.ts` |
 | 1922 | `minimarket-system/src/database.types.ts` |
 | 1448 | `supabase/functions/cron-notifications/index.ts` |
 | 1428 | `supabase/functions/cron-testing-suite/index.ts` |
 | 1307 | `supabase/functions/cron-dashboard/index.ts` |
-| 1035 | `minimarket-system/src/lib/apiClient.ts` |
+| 1045 | `minimarket-system/src/lib/apiClient.ts` |
 | 970 | `supabase/functions/cron-health-monitor/index.ts` |
 | 812 | `tests/unit/apiClient-branches.test.ts` |
+| 804 | `supabase/functions/facturas-ocr/index.ts` |
 | 777 | `minimarket-system/src/pages/Deposito.tsx` |
 | 736 | `tests/contract/database.integration.test.ts` |
 | 729 | `minimarket-system/src/pages/Pedidos.tsx` |
@@ -67,7 +63,6 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 | 635 | `minimarket-system/src/pages/Dashboard.tsx` |
 | 602 | `minimarket-system/src/pages/Productos.tsx` |
 | 602 | `tests/unit/strategic-high-value.test.ts` |
-| 599 | `minimarket-system/src/pages/Pocket.tsx` |
 
 ### B. Patrones prohibidos (seguridad/higiene)
 
@@ -85,12 +80,12 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 - Unit test files: `81`
 - Integration test files: `0`
 - E2E test files: `1`
-- Frontend component test files: `39`
+- Frontend component test files: `40`
 
 ### B. Ejecución de tests / gates
 
-- Quality gates: ✅ PASS
-- Log: `test-reports/quality-gates_20260225-031050.log`
+- Quality gates: ❌ FAIL (exit 2)
+- Log: `test-reports/quality-gates_20260228-120558.log`
 
 ## 5. CONFIGURACIÓN Y ENTORNO
 
@@ -110,7 +105,7 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 
 ## Used In Code But Missing In .env.example
 
-- `GCV_API_KEY`
+- `OCR_MIN_SCORE_APPLY`
 
 ## Present In .env.example But Not Used In Code
 
@@ -125,6 +120,7 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 - `ENVIRONMENT`
 - `INTERNAL_ORIGINS_ALLOWLIST`
 - `LOG_LEVEL`
+- `OCR_MIN_SCORE_APPLY`
 - `REQUIRE_ORIGIN`
 - `SCRAPER_READ_MODE`
 - `SLACK_WEBHOOK_URL`
@@ -157,4 +153,5 @@ docs/DECISION_LOG.md:150:| D-136 | **Cierre final consolidado — corrida de pro
 
 ## 🔥 Issues críticos que bloquean producción (autodetect)
 
+- ❌ Quality gates fallan (ver `test-reports/quality-gates_20260228-120558.log`)
 - ⚠️ JWT-like strings detectados solo en tests (probable fixture). Revisar para evitar leaks accidentales.

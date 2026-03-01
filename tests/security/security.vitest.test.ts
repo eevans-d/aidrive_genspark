@@ -75,7 +75,7 @@ describe('Security contracts (real helpers)', () => {
       }
     });
 
-    it('acepta JWT con claim role=service_role (fallback) si no coincide exactamente con la key', () => {
+    it('rechaza JWT con claim role=service_role que no coincide con key exacta (S2 fix: sin trust de JWT no verificado)', () => {
       const jwt = makeUnsignedJwt({ role: 'service_role' });
       const req = new Request('https://example.test/functions/v1/cron-notifications/channels', {
         method: 'GET',
@@ -85,7 +85,7 @@ describe('Security contracts (real helpers)', () => {
       });
 
       const result = requireServiceRoleAuth(req, 'srv-test-key', {}, 'req-role-fallback');
-      expect(result.authorized).toBe(true);
+      expect(result.authorized).toBe(false);
     });
 
     it('rechaza JWT con role distinto de service_role en fallback', () => {

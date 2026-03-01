@@ -1,41 +1,36 @@
 # RealityCheck Report
-**Fecha:** 2026-02-26 (UTC) | **Scope:** full | **Depth:** standard | **Focus:** all | **Score UX:** 8.8/10
+**Fecha:** 2026-03-01 (UTC) | **Scope:** full | **Depth:** standard | **Focus:** all | **Score UX:** 9.1/10
 
 ## Estado de ejecucion
-- Modalidad: analisis estatico de codigo + gates ejecutados (sin navegacion browser runtime).
-- Criterio anti-loop aplicado: hay >15 paginas, se priorizaron Login, Dashboard y flujos de venta/compra/deposito.
+- Modalidad: analisis estatico + gates ejecutados en esta sesion (sin navegacion browser runtime).
+- Priorizacion anti-loop aplicada: login, dashboard, ventas/POS, deposito, pedidos, facturas.
 
 ## Clasificacion de Estado
 | Elemento | Estado | Evidencia |
 |----------|--------|-----------|
-| Login y persistencia de sesion | REAL | `minimarket-system/src/pages/Login.tsx`, `minimarket-system/src/contexts/AuthContext.tsx` |
-| Routing protegido y control por rol | REAL | `minimarket-system/src/App.tsx`, `minimarket-system/src/lib/roles.ts`, `minimarket-system/src/hooks/useVerifiedRole.ts` |
-| Flujo POS (venta, validaciones, feedback) | REAL | `minimarket-system/src/pages/Pos.tsx` |
-| Flujo Deposito (ingreso/salida/ajuste, validaciones) | REAL | `minimarket-system/src/pages/Deposito.tsx` |
-| Flujo Productos (alta + actualizacion de precio) | REAL | `minimarket-system/src/pages/Productos.tsx` |
-| Flujo Pedidos (crear/estado/pago/preparacion) | REAL | `minimarket-system/src/pages/Pedidos.tsx`, `supabase/functions/api-minimarket/index.ts` |
-| Estados UX (loading/error/empty) en modulos core | REAL | `Dashboard.tsx`, `Pedidos.tsx`, `Deposito.tsx`, `Productos.tsx`, `Ventas.tsx`, `Tareas.tsx` |
-| HC-2 deploy seguro (`_shared` filtrado + `--no-verify-jwt`) | REAL | `deploy.sh` |
-| HC-1 cron con Authorization | REAL | `supabase/cron_jobs/deploy_all_cron_jobs.sql`, `docs/PRODUCTION_GATE_REPORT.md` Gate 10 |
-| HC-3 mutaciones sin feedback | REAL | `docs/PRODUCTION_GATE_REPORT.md` Gate 11 (0 casos) |
-| Baseline de performance formal `PERF_BASELINE_*` | REAL | `docs/closure/PERF_BASELINE_2026-02-26_081540.md` (estado parcial documentado) |
-| Escaneo Gate 7 excluyendo `node_modules` y fixtures/tests | REAL | `.agent/skills/ProductionGate/SKILL.md` + `docs/PRODUCTION_GATE_REPORT.md` |
+| Login, sesion y rutas protegidas | REAL | `minimarket-system/src/pages/Login.tsx`, `minimarket-system/src/App.tsx`, `minimarket-system/src/hooks/useVerifiedRole.ts` |
+| Estados de carga/error/vacio en modulos core | REAL | `Dashboard.tsx`, `Ventas.tsx`, `Pedidos.tsx`, `Deposito.tsx`, `Productos.tsx`, `Tareas.tsx`, `Facturas.tsx` |
+| Feedback UX en mutaciones (toast/ErrorMessage) | REAL | `Pos.tsx`, `Facturas.tsx`, `Deposito.tsx`, `Productos.tsx`, `Pedidos.tsx`, `Clientes.tsx` |
+| Flujo OCR (extraer/validar/aplicar) alineado entre backend + docs | REAL | `api-minimarket/index.ts`, `docs/API_README.md`, `docs/api-openapi-3.1.yaml` |
+| Asistente IA Sprint 1 (read-only, admin only) | REAL | `Asistente.tsx`, `api-assistant/index.ts`, `api-assistant/parser.ts`, `api-assistant/auth.ts`, 77 tests PASS |
+| HC-1 cron con Authorization | REAL | `supabase/cron_jobs/deploy_all_cron_jobs.sql` (`net.http_post=7`, `Authorization=7`) |
+| HC-2 deploy seguro (`_shared` + `--no-verify-jwt`) | REAL | `deploy.sh` |
+| HC-3 mutaciones sin feedback | REAL | `console.error` sin feedback en `pages` = `0` |
+| OCR lote `nuevos` end-to-end productivo | PARCIAL | Bloqueado por OCR-007 (`GCV_API_KEY` timeout/billing externo) |
 
 ## Blockers (P0)
-- [ ] Ninguno detectado en flujos UX core (login, navegacion protegida, ventas, deposito, pedidos).
+- [ ] No se detectan blockers UX internos en flujos core.
 
 ## Fricciones (P1)
-- [ ] Baseline de performance completo multi-endpoint autenticado requiere provisionar `TEST_USER_ADMIN` y `TEST_PASSWORD` en `.env.test`.
+- [ ] OCR real sigue condicionado por dependencia externa de GCP (billing/API key), no por deuda tecnica local.
 
 ## Validacion tecnica backend
-- Endpoints en `api-minimarket` detectados y extensos (incluye categorias, productos, proveedores, precios, stock, tareas, deposito, pedidos, clientes, ventas, ofertas, bitacora, facturas y health).
-- Referencias frontend a cliente API/fetch presentes en paginas productivas (`Dashboard`, `Deposito`, `Facturas`, `Pedidos`, `Clientes`, `Productos`, `Tareas`, `Proveedores`, `Ventas`, `Stock`, etc.).
+- Endpoints de `api-minimarket` verificados, incluyendo rutas OCR de facturas.
+- Edge Function `api-assistant` verificada con 77 unit tests (parser + hardening de rol) y 5 intent handlers.
+- Suite ejecutada en esta sesion: `unit 1853/1853`, `integration 68/68`, `component 242/242`, `e2e 4/4`, `build/lint PASS`, `coverage 90.02/82.71/91.13/91.11`.
+- Health remoto: `GET /health` responde `HTTP 200` con `success:true`.
 
-## Production killers
-- `console.log` en `supabase/functions/*`: no se detectaron coincidencias.
-- `throw new Error(` en backend: existen ocurrencias puntuales, se recomienda seguimiento por contexto (no se evidencia ruptura operativa directa en gates).
-
-## Conclusiones RealityCheck
-- El sistema luce operable para usuario final en los flujos core priorizados.
-- No se observan blockers UX P0 abiertos.
-- Brechas de gobernanza pre-prod cerradas para criterio de gate (`PERF_BASELINE_*` versionado y Gate 7 normalizado).
+## Conclusiones
+- Sistema operable para pre-entrega en flujos centrales.
+- Sin regresiones UX P0 detectadas por analisis actual.
+- El unico bloqueo de continuidad OCR es externo al codigo del repo.

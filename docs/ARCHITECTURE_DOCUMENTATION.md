@@ -1,15 +1,30 @@
-> [DEPRECADO: 2026-02-13] Documento historico. No usar como fuente primaria. Fuente vigente: `docs/ESTADO_ACTUAL.md`, `docs/closure/ACTA_EJECUTIVA_FINAL_2026-02-13.md`, `docs/closure/OPEN_ISSUES.md`.
+> [DEPRECADO: 2026-02-13] Este documento contiene descripciones arquitectonicas aspiracionales/genericas de Sprint 6. NO refleja el estado actual del sistema. No usar como fuente primaria.
+>
+> **Fuentes vigentes para arquitectura real:**
+> - Estado actual del sistema: `docs/ESTADO_ACTUAL.md`
+> - Endpoints y contratos API: `docs/API_README.md`
+> - OpenAPI spec: `docs/api-openapi-3.1.yaml`
+> - Schema BD real: `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+> - Issues abiertos: `docs/closure/OPEN_ISSUES.md`
+> - Decisiones: `docs/DECISION_LOG.md`
+>
+> **Estado real del sistema (resumen, 2026-03-01):**
+> - 16 Edge Functions en repo (`api-minimarket`, `api-proveedor`, `api-assistant`, `facturas-ocr`, `scraper-maxiconsumo`, 11 cron/auxiliares).
+> - 15 funciones ACTIVE en produccion (api-assistant pendiente de deploy).
+> - 18 paginas frontend (React/Vite/TS), 18 rutas, 52 migraciones SQL.
+> - Tests: 1850 unit, 68 integration, 242 component, 17 contract — ALL PASS.
+> - Sprint 1 Asistente IA implementado (read-only, admin only).
+> - Veredicto: GO INCONDICIONAL.
 
 # ARCHITECTURE DOCUMENTATION - SISTEMA MINI MARKET SPRINT 6
-## Documentación Técnica de Arquitectura Nivel Empresa
+## Documentación Técnica de Arquitectura Nivel Empresa (HISTORICA)
 
-**Versión:** 2.1.0  
-**Fecha:** 2026-01-25  
-**Estado:** ACTUALIZADO (incluye auditoría 2026-01-23)  
-**Target:** Arquitectos, DevOps, Senior Engineers  
+**Versión:** 2.1.0
+**Fecha:** 2026-01-25
+**Estado:** DEPRECADO — ver banner arriba para fuentes vigentes
+**Target:** Arquitectos, DevOps, Senior Engineers
 
-> **Nota:** este documento describe una arquitectura objetivo y contiene secciones aspiracionales.  
-> Para el estado real y plan vigente, ver `docs/ESTADO_ACTUAL.md`, `docs/archive/planes-deprecados/HOJA_RUTA_ACTUALIZADA_2026-02-08.md` y `docs/CHECKLIST_CIERRE.md` (histórico: `docs/HOJA_RUTA_MADRE_2026-01-31.md`).
+> **Nota:** el contenido debajo de esta linea es historico y aspiracional. Para el estado real consultar `docs/ESTADO_ACTUAL.md`.
 
 ### Estado real (2026-01-25)
 - **Gateway principal:** `supabase/functions/api-minimarket` con helpers modularizados (`helpers/auth.ts`, `helpers/validation.ts`, `helpers/pagination.ts`, `helpers/supabase.ts`).

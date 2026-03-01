@@ -47,8 +47,8 @@ Regla de vigencia:
 4. `docs/AGENTS.md`
 5. `docs/METRICS.md`
 6. `docs/closure/README_CANONICO.md`
-7. `docs/closure/CONTINUIDAD_SESIONES.md`
-8. `docs/closure/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`
+7. `docs/closure/archive/historical/CONTINUIDAD_SESIONES.md`
+8. `docs/closure/archive/historical/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`
 
 Regla de conflicto:
 - Si hay contradiccion, prevalece la fuente con mayor prioridad.

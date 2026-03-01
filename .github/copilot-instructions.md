@@ -111,7 +111,7 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
-| Continuidad | `docs/closure/CONTINUIDAD_SESIONES.md` |
+| Continuidad | `docs/closure/README_CANONICO.md` |
 | Obra objetivo | `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` |
 | Credenciales | `docs/OBTENER_SECRETOS.md` (nombres, nunca valores) |
 | Métricas | `docs/METRICS.md` (generado por `scripts/metrics.mjs`) |

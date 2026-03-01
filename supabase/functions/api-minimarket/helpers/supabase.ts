@@ -192,6 +192,40 @@ export async function updateTable<T = Record<string, unknown>>(
 }
 
 /**
+ * Update table via PostgREST using arbitrary eq filters.
+ * Useful for optimistic-lock updates (PATCH ... WHERE id=... AND estado=...).
+ */
+export async function updateTableByFilters<T = Record<string, unknown>>(
+  supabaseUrl: string,
+  table: string,
+  headers: Record<string, string>,
+  filters: Record<string, unknown>,
+  data: unknown,
+  timeout = DEFAULT_TIMEOUT,
+): Promise<T[]> {
+  const params = new URLSearchParams();
+  Object.entries(filters).forEach(([key, value]) => {
+    if (value !== undefined && value !== null) {
+      params.append(key, `eq.${String(value)}`);
+    }
+  });
+
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}?${params.toString()}`, {
+    method: 'PATCH',
+    headers: { ...headers, Prefer: 'return=representation' },
+    body: JSON.stringify(data),
+  },
+    timeout
+  );
+
+  if (!response.ok) {
+    throw await fromFetchResponse(response, `Error actualizando ${table}`);
+  }
+
+  return await response.json();
+}
+
+/**
  * Call PL/pgSQL function via PostgREST RPC.
  */
 export async function callFunction<T = unknown>(

@@ -126,7 +126,13 @@ Verificar patrones criticos descubiertos en auditoria forense:
 
 1. **HC-1 — Cron jobs sin Authorization header:**
    ```bash
-   grep -A5 "net.http_post" supabase/migrations/ --include="*.sql" -r | grep -v "Authorization"
+   for f in supabase/migrations/*.sql; do
+     awk 'BEGIN{inb=0;has=0}
+          /^[[:space:]]*--/ {next}
+          /net\.http_post\(/ {inb=1;has=0;start=NR}
+          inb && /Authorization/ {has=1}
+          inb && /\);/ {if(!has) printf "%s:%d missing Authorization in net.http_post block\n", FILENAME, start; inb=0}' "$f"
+   done
    ```
    Si hay cron jobs sin header `Authorization` -> **CRITICAL**.
 

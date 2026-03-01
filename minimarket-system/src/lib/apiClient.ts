@@ -996,9 +996,19 @@ export interface AplicarFacturaResponse {
         errors: Array<{ item_id: string; error: string }>;
 }
 
+export interface ExtraerFacturaResponse {
+        factura_id: string;
+        items_count: number;
+        estado: string;
+        items_failed_count?: number;
+        items_failed?: Array<{ descripcion_original: string; error: string }>;
+        insert_mode?: 'batch' | 'fallback';
+        items_previos_eliminados?: number;
+}
+
 export const facturasApi = {
-        async extraer(facturaId: string): Promise<{ factura_id: string; items_count: number; estado: string }> {
-                return apiRequest<{ factura_id: string; items_count: number; estado: string }>(`/facturas/${facturaId}/extraer`, {
+        async extraer(facturaId: string): Promise<ExtraerFacturaResponse> {
+                return apiRequest<ExtraerFacturaResponse>(`/facturas/${facturaId}/extraer`, {
                         method: 'POST',
                 });
         },
