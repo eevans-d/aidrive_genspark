@@ -70,6 +70,22 @@ export const INTENT_RULES: IntentRule[] = [
       /ingesta\s*(de\s*)?factura/i,
     ],
   },
+  // Non-data intents — placed last so specific queries always match first
+  {
+    intent: 'saludo',
+    patterns: [
+      /^(hola|buenas?|buen\s*d[ií]a|buenas?\s*(tardes?|noches?)|hey|qu[eé]\s*tal)/i,
+    ],
+  },
+  {
+    intent: 'ayuda',
+    patterns: [
+      /^(ayuda|help)$/i,
+      /qu[eé]\s*(puedo|pod[eé]s|sab[eé]s)\s*(hacer|preguntar|consultar)/i,
+      /c[oó]mo\s*(te\s*)?(uso|funciona)/i,
+      /qu[eé]\s*(hac[eé]s|sab[eé]s)\s*\??$/i,
+    ],
+  },
 ];
 
 export const SUGGESTIONS = [
@@ -78,6 +94,7 @@ export const SUGGESTIONS = [
   'cuentas corrientes',
   'ventas del dia',
   'facturas OCR',
+  'ayuda',
 ];
 
 export function parseIntent(message: string): ParsedIntent {

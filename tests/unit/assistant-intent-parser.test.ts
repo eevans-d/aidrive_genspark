@@ -136,13 +136,58 @@ describe('Assistant Intent Parser', () => {
   });
 
   // -----------------------------------------------------------------------
+  // Intent: saludo
+  // -----------------------------------------------------------------------
+  describe('saludo', () => {
+    const cases = [
+      'hola',
+      'buenas',
+      'buen dia',
+      'buen día',
+      'buenas tardes',
+      'buenas noches',
+      'hey',
+      'qué tal',
+    ];
+
+    it.each(cases)('detects intent for: "%s"', (msg) => {
+      const result = parseIntent(msg);
+      expect(result.intent).toBe('saludo');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+
+    it('prioritizes data intent over greeting for "hola, stock bajo"', () => {
+      const result = parseIntent('hola, stock bajo');
+      expect(result.intent).toBe('consultar_stock_bajo');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Intent: ayuda
+  // -----------------------------------------------------------------------
+  describe('ayuda', () => {
+    const cases = [
+      'ayuda',
+      'help',
+      'que puedo hacer',
+      'qué puedo consultar',
+      'como te uso',
+      'cómo funciona',
+      'que hacés?',
+    ];
+
+    it.each(cases)('detects intent for: "%s"', (msg) => {
+      const result = parseIntent(msg);
+      expect(result.intent).toBe('ayuda');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // No intent (clarify)
   // -----------------------------------------------------------------------
   describe('unrecognized messages (mode: clarify)', () => {
     const cases = [
-      'hola',
-      'ayuda',
-      'que puedo hacer',
       'abcdef',
       'los precios estan cargados?',
       'quiero cerrar caja',
@@ -207,24 +252,31 @@ describe('Assistant Intent Parser', () => {
   // Structure validation
   // -----------------------------------------------------------------------
   describe('parser structure', () => {
-    it('has exactly 5 intent rules', () => {
-      expect(INTENT_RULES).toHaveLength(5);
+    it('has exactly 7 intent rules', () => {
+      expect(INTENT_RULES).toHaveLength(7);
     });
 
-    it('has 5 suggestions', () => {
-      expect(SUGGESTIONS).toHaveLength(5);
+    it('has 6 suggestions', () => {
+      expect(SUGGESTIONS).toHaveLength(6);
     });
 
-    it('all intents have at least 4 patterns', () => {
-      for (const rule of INTENT_RULES) {
+    it('data intents have at least 4 patterns', () => {
+      const dataRules = INTENT_RULES.filter(r => r.intent.startsWith('consultar_'));
+      for (const rule of dataRules) {
         expect(rule.patterns.length).toBeGreaterThanOrEqual(4);
       }
     });
 
-    it('each intent name starts with consultar_', () => {
-      for (const rule of INTENT_RULES) {
+    it('all data intents start with consultar_', () => {
+      const dataRules = INTENT_RULES.filter(r => !['saludo', 'ayuda'].includes(r.intent));
+      for (const rule of dataRules) {
         expect(rule.intent).toMatch(/^consultar_/);
       }
+    });
+
+    it('saludo and ayuda intents are at the end', () => {
+      const lastTwo = INTENT_RULES.slice(-2).map(r => r.intent);
+      expect(lastTwo).toEqual(['saludo', 'ayuda']);
     });
   });
 });

@@ -1,9 +1,9 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 1 Asistente IA read-only implementado)
+**Ultima actualizacion:** 2026-03-01 (Sprint 1.1 Asistente IA — UX improvements)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
-**Estado del Asistente IA:** `SPRINT 1 COMPLETADO — solo lectura, admin only`
+**Estado del Asistente IA:** `SPRINT 1 + 1.1 COMPLETADO — solo lectura, admin only, navegacion accionable`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
@@ -17,7 +17,7 @@
 
 ## 2) Estado tecnico verificado (sesion 2026-03-01)
 - ProductionGate re-ejecutado en esta sesion: **18/18 PASS** (score 100, 03:26 UTC).
-- Tests unitarios completos: **1853/1853 PASS** (84 archivos, incluye parser + seguridad de rol del asistente).
+- Tests unitarios completos: **1867/1867 PASS** (84 archivos, incluye parser + seguridad de rol del asistente).
 - Tests de integracion: **68/68 PASS** (3 archivos).
 - Tests de componentes frontend: **242/242 PASS** (47 archivos).
 - Tests de contratos API: **17/17 PASS** (1 archivo).
@@ -85,21 +85,24 @@
 ## 6) Nota operativa
 El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog OCR tecnico esta 10/10 tareas completadas. GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. No hay deuda tecnica interna pendiente.
 
-## 6b) Asistente IA — Sprint 1 (read-only)
+## 6b) Asistente IA — Sprint 1 + 1.1 (read-only)
 
 ### Implementado
-- Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 5 intent handlers.
-- Intent parser separado en `parser.ts` con 5 intents read-only:
-  - `consultar_stock_bajo` → `GET /stock/minimo` (via api-minimarket)
-  - `consultar_pedidos_pendientes` → `GET /pedidos?estado=pendiente` (via api-minimarket)
-  - `consultar_resumen_cc` → `GET /cuentas-corrientes/resumen` (via api-minimarket)
-  - `consultar_ventas_dia` → `GET /ventas?fecha_desde=...&fecha_hasta=...` (via api-minimarket)
-  - `consultar_estado_ocr_facturas` → PostgREST directo `facturas_ingesta` (no hay GET gateway)
-- Frontend: pagina `Asistente.tsx` con chat conversacional, quick-prompts, sugerencias inline.
+- Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 7 intent handlers.
+- Intent parser separado en `parser.ts` con 7 intents:
+  - `consultar_stock_bajo` → `GET /stock/minimo` (via api-minimarket) + nav `/stock`
+  - `consultar_pedidos_pendientes` → `GET /pedidos?estado=pendiente` (via api-minimarket) + nav `/pedidos`
+  - `consultar_resumen_cc` → `GET /cuentas-corrientes/resumen` (via api-minimarket) + nav `/clientes`
+  - `consultar_ventas_dia` → `GET /ventas?fecha_desde=...&fecha_hasta=...` (via api-minimarket) + nav `/ventas`
+  - `consultar_estado_ocr_facturas` → PostgREST directo `facturas_ingesta` (no hay GET gateway) + nav `/facturas`
+  - `saludo` → respuesta de bienvenida (sin fetch)
+  - `ayuda` → lista de capacidades (sin fetch)
+- Frontend: pagina `Asistente.tsx` con chat conversacional, quick-prompts, sugerencias inline, deep-links accionables.
 - Ruta `/asistente` protegida, acceso solo `admin` (deny-by-default en `roles.ts`).
 - Nav item en sidebar y Dashboard CTA.
 - API client `assistantApi.ts` con `sendMessage()`.
-- 77 unit tests del asistente (74 parser + 3 de seguridad de rol).
+- 91 unit tests del asistente (88 parser + 3 de seguridad de rol).
+- UX improvements (Sprint 1.1): etiquetas amigables, sin jerga tecnica, fix timezone ventas, navigation deep-links.
 
 ### No implementado (Sprint 2)
 - Acciones mutantes (confirmar compras, aplicar facturas, etc.).

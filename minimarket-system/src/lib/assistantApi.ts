@@ -21,6 +21,7 @@ export interface AssistantMessage {
   confidence?: number;
   data?: unknown;
   suggestions?: string[];
+  navigation?: Array<{ label: string; path: string }>;
   timestamp: string;
 }
 
@@ -32,6 +33,7 @@ export interface AssistantResponseData {
   data: unknown;
   request_id: string;
   suggestions?: string[];
+  navigation?: Array<{ label: string; path: string }>;
 }
 
 interface AssistantApiResponse {

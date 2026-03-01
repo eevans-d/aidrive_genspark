@@ -1,7 +1,7 @@
 # PLAN ASISTENTE IA EN DASHBOARD (V2 - EJECUTABLE)
 
 **Fecha:** 2026-03-01
-**Estado:** Sprint 1 COMPLETADO — Sprint 2 pendiente
+**Estado:** Sprint 1 COMPLETADO + UX MVP mejorado — Sprint 2 pendiente
 **Objetivo:** habilitar un asistente conversacional para usuario no tecnico (principalmente perfil admin), que consulte y ejecute acciones del sistema con seguridad.
 
 ## 1) Estado actual de implementacion
@@ -15,7 +15,7 @@
 - Permiso admin en `roles.ts`: `minimarket-system/src/lib/roles.ts:39`
 - Nav item en sidebar: `minimarket-system/src/components/Layout.tsx:44`
 - CTA en Dashboard: `minimarket-system/src/pages/Dashboard.tsx:21`
-- 74 unit tests para parser: `tests/unit/assistant-intent-parser.test.ts`
+- 77 unit tests del asistente (parser + hardening de rol): `tests/unit/assistant-intent-parser.test.ts`, `tests/unit/assistant-auth-role.test.ts`
 
 **Pendiente:** deploy de `api-assistant` a Supabase (`supabase functions deploy api-assistant --use-api`, mantener `verify_jwt=true` por D-086).
 
@@ -148,9 +148,20 @@ Response:
   "data": [
     { "id": "uuid", "numero_pedido": 1234 }
   ],
-  "request_id": "..."
+  "request_id": "...",
+  "navigation": [
+    { "label": "Ver Pedidos", "path": "/pedidos" }
+  ]
 }
 ```
+
+Campos opcionales nuevos (Sprint 1.1):
+- `navigation`: array de deep-links accionables (`label` + `path`) para que el frontend renderice botones de navegacion directa.
+- `suggestions`: array de sugerencias de texto para el siguiente mensaje (ya existia, ahora incluye "ayuda").
+
+Intents adicionales (Sprint 1.1):
+- `saludo` — responde a saludos ("hola", "buenas", etc.) con mensaje de bienvenida.
+- `ayuda` — responde a "ayuda", "que puedo hacer", etc. con lista de capacidades.
 
 ## 5.2 Sprint 2 (pendiente) — `POST /confirm`
 
@@ -192,16 +203,23 @@ Response:
 ## Sprint 1 — MVP consulta — COMPLETADO (2026-03-01)
 
 Entregables (todos implementados):
-1. Ruta `/asistente` + UI basica con chat conversacional. ✅
-2. `api-assistant` edge function con auth JWT interno. ✅
-3. 5 intents read-only funcionando (parser rule-based). ✅
-4. 74 unit tests para parser + edge cases. ✅
-5. Quick-prompts + sugerencias inline en UI. ✅
+1. Ruta `/asistente` + UI basica con chat conversacional. OK
+2. `api-assistant` edge function con auth JWT interno. OK
+3. 5 intents read-only funcionando (parser rule-based). OK
+4. 77 unit tests del asistente (parser + seguridad de rol). OK
+5. Quick-prompts + sugerencias inline en UI. OK
+
+Sprint 1.1 — UX improvements (2026-03-01):
+6. 2 intents adicionales: `saludo` (greeting) + `ayuda` (help). OK
+7. Navigation deep-links en respuestas (tarjetas accionables a /stock, /pedidos, etc.). OK
+8. Etiquetas amigables en UI (sin jerga tecnica "Sprint 1", "Intent:"). OK
+9. Fix timezone: ventas del dia usa timezone del cliente (no UTC del servidor). OK
+10. 91 unit tests del asistente (88 parser + 3 auth). OK
 
 Definition of Done (verificado):
-- 0 escrituras habilitadas. ✅
-- 95% de prompts del set de prueba con intent correcto. ✅ (74/74 tests PASS)
-- Build y lint limpios. ✅
+- 0 escrituras habilitadas. OK
+- 95% de prompts del set de prueba con intent correcto. OK (91/91 tests PASS)
+- Build y lint limpios. OK
 
 Evidencia: `tests/unit/assistant-intent-parser.test.ts`, `supabase/functions/api-assistant/`, `minimarket-system/src/pages/Asistente.tsx`
 

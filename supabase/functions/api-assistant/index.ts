@@ -31,6 +31,11 @@ interface AssistantRequest {
   };
 }
 
+interface NavigationHint {
+  label: string;
+  path: string;
+}
+
 interface AssistantResponse {
   intent: string | null;
   confidence: number;
@@ -39,6 +44,7 @@ interface AssistantResponse {
   data: unknown;
   request_id: string;
   suggestions?: string[];
+  navigation?: NavigationHint[];
 }
 
 // ---------------------------------------------------------------------------
@@ -101,7 +107,8 @@ type IntentHandler = (
   headers: Record<string, string>,
   params: Record<string, string>,
   requestId: string,
-) => Promise<{ answer: string; data: unknown }>;
+  context?: { timezone?: string },
+) => Promise<{ answer: string; data: unknown; navigation?: NavigationHint[] }>;
 
 function buildGatewayHeaders(
   authHeader: string,
@@ -168,7 +175,7 @@ const handleStockBajo: IntentHandler = async (supabaseUrl, headers) => {
   const count = items.length;
 
   if (count === 0) {
-    return { answer: 'No hay productos con stock bajo minimo. Todo esta en niveles normales.', data: items };
+    return { answer: 'No hay productos con stock bajo. Todo esta en niveles normales.', data: items };
   }
 
   const top5 = items.slice(0, 5)
@@ -176,8 +183,9 @@ const handleStockBajo: IntentHandler = async (supabaseUrl, headers) => {
     .join('\n');
 
   return {
-    answer: `Hay ${count} producto${count !== 1 ? 's' : ''} con stock bajo minimo.\n\nPrimeros ${Math.min(5, count)}:\n${top5}${count > 5 ? `\n\n...y ${count - 5} mas.` : ''}`,
+    answer: `Hay ${count} producto${count !== 1 ? 's' : ''} con stock bajo.\n\nPrimeros ${Math.min(5, count)}:\n${top5}${count > 5 ? `\n\n...y ${count - 5} mas.` : ''}`,
     data: items,
+    navigation: [{ label: 'Ver Stock', path: '/stock' }],
   };
 };
 
@@ -197,6 +205,7 @@ const handlePedidosPendientes: IntentHandler = async (supabaseUrl, headers) => {
   return {
     answer: `Hay ${count} pedido${count !== 1 ? 's' : ''} pendiente${count !== 1 ? 's' : ''}.\n\nUltimos:\n${top5}${count > 5 ? `\n\n...y ${count - 5} mas.` : ''}`,
     data: pedidos,
+    navigation: [{ label: 'Ver Pedidos', path: '/pedidos' }],
   };
 };
 
@@ -208,13 +217,26 @@ const handleResumenCC: IntentHandler = async (supabaseUrl, headers) => {
   return {
     answer: `Resumen de cuentas corrientes:\n- Dinero en la calle: $${dinero.toLocaleString('es-AR')}\n- Clientes con deuda: ${clientes}`,
     data,
+    navigation: [{ label: 'Ver Clientes', path: '/clientes' }],
   };
 };
 
-const handleVentasDia: IntentHandler = async (supabaseUrl, headers) => {
-  const now = new Date();
-  const fechaDesde = now.toISOString().split('T')[0] + 'T00:00:00';
-  const fechaHasta = now.toISOString().split('T')[0] + 'T23:59:59';
+const handleVentasDia: IntentHandler = async (supabaseUrl, headers, _params, _requestId, context) => {
+  // Use client timezone to compute "today" (server runs in UTC)
+  const tz = context?.timezone || 'America/Argentina/Buenos_Aires';
+  let today: string;
+  try {
+    today = new Intl.DateTimeFormat('en-CA', {
+      timeZone: tz,
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).format(new Date());
+  } catch {
+    today = new Date().toISOString().split('T')[0];
+  }
+  const fechaDesde = today + 'T00:00:00';
+  const fechaHasta = today + 'T23:59:59';
 
   const data = await fetchGateway(
     supabaseUrl,
@@ -232,6 +254,7 @@ const handleVentasDia: IntentHandler = async (supabaseUrl, headers) => {
   return {
     answer: `Ventas del dia:\n- ${count} venta${count !== 1 ? 's' : ''}\n- Total facturado: $${totalMonto.toLocaleString('es-AR')}`,
     data: { count, total: totalMonto, ventas: ventas.slice(0, 10) },
+    navigation: [{ label: 'Ver Ventas', path: '/ventas' }],
   };
 };
 
@@ -258,8 +281,19 @@ const handleEstadoOCRFacturas: IntentHandler = async (supabaseUrl, headers) => {
   return {
     answer: `Hay ${total} factura${total !== 1 ? 's' : ''} en el sistema:\n${resumenEstados}`,
     data: { total, por_estado: byEstado },
+    navigation: [{ label: 'Ver Facturas', path: '/facturas' }],
   };
 };
+
+const handleSaludo: IntentHandler = async () => ({
+  answer: 'Hola! Soy el asistente operativo del minimarket. Puedo ayudarte con consultas rapidas sobre el negocio.\n\nPreguntame sobre stock bajo, pedidos pendientes, cuentas corrientes, ventas del dia o facturas.',
+  data: null,
+});
+
+const handleAyuda: IntentHandler = async () => ({
+  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nEscribi tu consulta como la dirias normalmente.',
+  data: null,
+});
 
 const INTENT_HANDLERS: Record<string, IntentHandler> = {
   consultar_stock_bajo: handleStockBajo,
@@ -267,6 +301,8 @@ const INTENT_HANDLERS: Record<string, IntentHandler> = {
   consultar_resumen_cc: handleResumenCC,
   consultar_ventas_dia: handleVentasDia,
   consultar_estado_ocr_facturas: handleEstadoOCRFacturas,
+  saludo: handleSaludo,
+  ayuda: handleAyuda,
 };
 
 // ---------------------------------------------------------------------------
@@ -366,7 +402,9 @@ Deno.serve(async (req: Request) => {
   const gatewayHeaders = buildGatewayHeaders(authHeader!, anonKey, requestId);
 
   try {
-    const result = await handler(supabaseUrl, gatewayHeaders, parsed.params, requestId);
+    const result = await handler(supabaseUrl, gatewayHeaders, parsed.params, requestId, {
+      timezone: body.context?.timezone,
+    });
 
     const response: AssistantResponse = {
       intent: parsed.intent,
@@ -375,6 +413,7 @@ Deno.serve(async (req: Request) => {
       answer: result.answer,
       data: result.data,
       request_id: requestId,
+      ...(result.navigation ? { navigation: result.navigation } : {}),
     };
 
     return ok(response, 200, responseHeaders, { requestId });

@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, AlertCircle, Lightbulb } from 'lucide-react'
+import { Send, Bot, User, Loader2, AlertCircle, Lightbulb, ArrowRight } from 'lucide-react'
 import { assistantApi, type AssistantMessage, type AssistantResponseData } from '../lib/assistantApi'
-import { useLocation } from 'react-router-dom'
+import { useLocation, Link } from 'react-router-dom'
 
 const QUICK_PROMPTS = [
   { label: 'Stock bajo', prompt: 'Que productos tienen stock bajo?' },
@@ -9,13 +9,24 @@ const QUICK_PROMPTS = [
   { label: 'Cuentas corrientes', prompt: 'Cuanto me deben?' },
   { label: 'Ventas del dia', prompt: 'Como fueron las ventas hoy?' },
   { label: 'Facturas OCR', prompt: 'Estado de las facturas?' },
+  { label: 'Ayuda', prompt: 'ayuda' },
 ]
+
+const INTENT_LABELS: Record<string, string> = {
+  consultar_stock_bajo: 'Stock bajo',
+  consultar_pedidos_pendientes: 'Pedidos',
+  consultar_resumen_cc: 'Cuentas corrientes',
+  consultar_ventas_dia: 'Ventas del dia',
+  consultar_estado_ocr_facturas: 'Facturas',
+  saludo: 'Saludo',
+  ayuda: 'Ayuda',
+}
 
 export default function Asistente() {
   const [messages, setMessages] = useState<AssistantMessage[]>([
     {
       role: 'assistant',
-      content: 'Hola! Soy el asistente operativo. Puedo consultar stock bajo, pedidos pendientes, cuentas corrientes, ventas del dia y estado de facturas OCR.\n\nEscribi tu consulta o usa los accesos rapidos.',
+      content: 'Hola! Soy el asistente operativo. Puedo consultar informacion del negocio: stock, pedidos, cuentas corrientes, ventas y facturas.\n\nEscribi tu consulta o usa los accesos rapidos de abajo.',
       timestamp: new Date().toISOString(),
     },
   ])
@@ -66,6 +77,7 @@ export default function Asistente() {
         confidence: response.confidence,
         data: response.data,
         suggestions: response.suggestions,
+        navigation: response.navigation,
         timestamp: new Date().toISOString(),
       }
       setMessages(prev => [...prev, assistantMsg])
@@ -96,7 +108,7 @@ export default function Asistente() {
       <div className="flex items-center justify-between mb-4">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Asistente Operativo</h1>
-          <p className="text-sm text-gray-500 dark:text-gray-400">Consultas de solo lectura — Sprint 1</p>
+          <p className="text-sm text-gray-500 dark:text-gray-400">Consultas rapidas sobre el negocio</p>
         </div>
         <div className="flex items-center gap-2">
           <Bot className="w-8 h-8 text-blue-600 dark:text-blue-400" />
@@ -138,9 +150,22 @@ export default function Asistente() {
             >
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               {msg.intent && (
-                <div className="mt-2 flex items-center gap-2 text-xs opacity-60">
-                  <span>Intent: {msg.intent}</span>
-                  <span>({Math.round((msg.confidence ?? 0) * 100)}%)</span>
+                <div className="mt-2 text-xs opacity-60">
+                  <span>{INTENT_LABELS[msg.intent] || msg.intent}</span>
+                </div>
+              )}
+              {msg.navigation && msg.navigation.length > 0 && (
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {msg.navigation.map((nav) => (
+                    <Link
+                      key={nav.path}
+                      to={nav.path}
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                    >
+                      {nav.label}
+                      <ArrowRight className="w-3 h-3" />
+                    </Link>
+                  ))}
                 </div>
               )}
               {msg.suggestions && msg.suggestions.length > 0 && (

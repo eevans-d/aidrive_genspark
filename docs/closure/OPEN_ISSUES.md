@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 1 Asistente IA implementado + auditoria de produccion profunda)
+**Ultima actualizacion:** 2026-03-01 (Sprint 1.1 Asistente IA — UX improvements + auditoria)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -80,4 +80,4 @@
 - Estado actual de lote OCR en BD: `20 pendiente`, `1 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Sprint 1 del Asistente IA esta implementado y testeado (D-178), pendiente solo de deploy a produccion (DEPLOY-001). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV), DEPLOY-001 (deploy api-assistant) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Asistente IA Sprint 1 + Sprint 1.1 (UX improvements) esta implementado y testeado (D-178, D-179), pendiente solo de deploy a produccion (DEPLOY-001). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV), DEPLOY-001 (deploy api-assistant) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.
