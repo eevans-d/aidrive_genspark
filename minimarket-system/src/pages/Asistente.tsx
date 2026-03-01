@@ -33,6 +33,7 @@ export default function Asistente() {
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
@@ -55,6 +56,7 @@ export default function Asistente() {
 
     setInput('')
     setError(null)
+    setLastFailedMessage(null)
 
     const userMsg: AssistantMessage = {
       role: 'user',
@@ -84,6 +86,7 @@ export default function Asistente() {
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error al conectar con el asistente'
       setError(msg)
+      setLastFailedMessage(text)
       const errorMsg: AssistantMessage = {
         role: 'assistant',
         content: `Error: ${msg}`,
@@ -196,8 +199,9 @@ export default function Asistente() {
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
               <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-4 py-3">
+            <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+              <span className="text-sm text-gray-500 dark:text-gray-400">Consultando...</span>
             </div>
           </div>
         )}
@@ -209,8 +213,17 @@ export default function Asistente() {
       {error && (
         <div className="mt-2 flex items-center gap-2 text-sm text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
-          <span>{error}</span>
-          <button onClick={() => setError(null)} className="ml-auto text-red-400 hover:text-red-600">
+          <span className="flex-1">{error}</span>
+          {lastFailedMessage && (
+            <button
+              onClick={() => { setError(null); handleSend(lastFailedMessage); }}
+              disabled={loading}
+              className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/40 text-red-700 dark:text-red-300 rounded hover:bg-red-200 dark:hover:bg-red-800/50 transition-colors disabled:opacity-50"
+            >
+              Reintentar
+            </button>
+          )}
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
             &times;
           </button>
         </div>

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseIntent, INTENT_RULES, SUGGESTIONS } from '../../supabase/functions/api-assistant/parser';
+import { parseIntent, INTENT_RULES, SUGGESTIONS, findRelevantSuggestions } from '../../supabase/functions/api-assistant/parser';
 
 describe('Assistant Intent Parser', () => {
   // -----------------------------------------------------------------------
@@ -277,6 +277,48 @@ describe('Assistant Intent Parser', () => {
     it('saludo and ayuda intents are at the end', () => {
       const lastTwo = INTENT_RULES.slice(-2).map(r => r.intent);
       expect(lastTwo).toEqual(['saludo', 'ayuda']);
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // findRelevantSuggestions
+  // -----------------------------------------------------------------------
+  describe('findRelevantSuggestions', () => {
+    it('returns factura suggestion for factura keywords', () => {
+      const result = findRelevantSuggestions('las facturas del proveedor');
+      expect(result).toContain('estado de las facturas');
+    });
+
+    it('returns stock suggestion for stock keywords', () => {
+      const result = findRelevantSuggestions('algo de los productos?');
+      expect(result).toContain('stock bajo');
+    });
+
+    it('returns pedidos suggestion for pedido keywords', () => {
+      const result = findRelevantSuggestions('como van las ordenes');
+      expect(result).toContain('pedidos pendientes');
+    });
+
+    it('returns ventas suggestion for venta keywords', () => {
+      const result = findRelevantSuggestions('cuanto se vendió ayer');
+      expect(result).toContain('ventas del dia');
+    });
+
+    it('returns cuentas corrientes suggestion for deuda keywords', () => {
+      const result = findRelevantSuggestions('clientes que deben');
+      expect(result).toContain('cuentas corrientes');
+    });
+
+    it('returns multiple suggestions when multiple keywords match', () => {
+      const result = findRelevantSuggestions('productos y facturas');
+      expect(result).toContain('estado de las facturas');
+      expect(result).toContain('stock bajo');
+    });
+
+    it('returns full list (minus ayuda) when no keywords match', () => {
+      const result = findRelevantSuggestions('xyz random text');
+      expect(result.length).toBe(5);
+      expect(result).not.toContain('ayuda');
     });
   });
 });

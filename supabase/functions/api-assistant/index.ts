@@ -16,7 +16,7 @@ import {
   handleCors,
   createCorsErrorResponse,
 } from '../_shared/cors.ts';
-import { parseIntent, SUGGESTIONS } from './parser.ts';
+import { parseIntent, SUGGESTIONS, findRelevantSuggestions } from './parser.ts';
 import { extractTrustedRole } from './auth.ts';
 
 // ---------------------------------------------------------------------------
@@ -379,16 +379,23 @@ Deno.serve(async (req: Request) => {
   // Parse intent
   const parsed = parseIntent(message);
 
-  // No intent recognized
+  // No intent recognized — provide contextual suggestions
   if (!parsed.intent) {
+    const contextualSuggestions = findRelevantSuggestions(message);
+    const isContextual = contextualSuggestions.length < SUGGESTIONS.length;
+
+    const answer = isContextual
+      ? `No encontre una consulta exacta, pero quizas quisiste decir:\n${contextualSuggestions.map(s => `- ${s}`).join('\n')}\n\nToca una sugerencia o reformula tu consulta.`
+      : 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR\n\nEscribi "ayuda" para ver ejemplos.';
+
     const response: AssistantResponse = {
       intent: null,
       confidence: 0,
       mode: 'clarify',
-      answer: 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR',
+      answer,
       data: null,
       request_id: requestId,
-      suggestions: SUGGESTIONS,
+      suggestions: contextualSuggestions,
     };
     return ok(response, 200, responseHeaders, { requestId });
   }

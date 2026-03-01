@@ -115,3 +115,21 @@ export function parseIntent(message: string): ParsedIntent {
 
   return { intent: null, confidence: 0, params: {} };
 }
+
+/**
+ * When no intent is matched, detect keywords in the message and return
+ * the most relevant suggestions instead of the full static list.
+ */
+export function findRelevantSuggestions(message: string): string[] {
+  const normalized = message.toLowerCase();
+  const relevant: string[] = [];
+
+  if (/factura|ocr|ingesta/.test(normalized)) relevant.push('estado de las facturas');
+  if (/stock|producto|reponer|falt[ea]/.test(normalized)) relevant.push('stock bajo');
+  if (/pedido|orden|compra|entreg/.test(normalized)) relevant.push('pedidos pendientes');
+  if (/venta|vendi[oó]|facturac|recaud/.test(normalized)) relevant.push('ventas del dia');
+  if (/deuda|fiado|saldo|cuenta|corriente|cliente/.test(normalized)) relevant.push('cuentas corrientes');
+
+  // Fallback: if nothing keyword-matched, return full list (without 'ayuda')
+  return relevant.length > 0 ? relevant : SUGGESTIONS.filter(s => s !== 'ayuda');
+}
