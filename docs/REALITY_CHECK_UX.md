@@ -1,36 +1,39 @@
 # RealityCheck Report
-**Fecha:** 2026-03-01 (UTC) | **Scope:** full | **Depth:** standard | **Focus:** all | **Score UX:** 9.1/10
+**Fecha:** 2026-03-01 (UTC) | **Scope:** full (foco asistente IA + flujos core) | **Depth:** standard | **Focus:** all | **Score UX:** 9.3/10
 
 ## Estado de ejecucion
-- Modalidad: analisis estatico + gates ejecutados en esta sesion (sin navegacion browser runtime).
-- Priorizacion anti-loop aplicada: login, dashboard, ventas/POS, deposito, pedidos, facturas.
+- Modalidad: analisis estatico de codigo + quality gates ejecutados en esta sesion.
+- Priorizacion anti-loop aplicada: login, dashboard, pedidos/ventas, facturas OCR y asistente IA.
 
 ## Clasificacion de Estado
 | Elemento | Estado | Evidencia |
 |----------|--------|-----------|
-| Login, sesion y rutas protegidas | REAL | `minimarket-system/src/pages/Login.tsx`, `minimarket-system/src/App.tsx`, `minimarket-system/src/hooks/useVerifiedRole.ts` |
-| Estados de carga/error/vacio en modulos core | REAL | `Dashboard.tsx`, `Ventas.tsx`, `Pedidos.tsx`, `Deposito.tsx`, `Productos.tsx`, `Tareas.tsx`, `Facturas.tsx` |
-| Feedback UX en mutaciones (toast/ErrorMessage) | REAL | `Pos.tsx`, `Facturas.tsx`, `Deposito.tsx`, `Productos.tsx`, `Pedidos.tsx`, `Clientes.tsx` |
-| Flujo OCR (extraer/validar/aplicar) alineado entre backend + docs | REAL | `api-minimarket/index.ts`, `docs/API_README.md`, `docs/api-openapi-3.1.yaml` |
-| Asistente IA Sprint 1 (read-only, admin only) | REAL | `Asistente.tsx`, `api-assistant/index.ts`, `api-assistant/parser.ts`, `api-assistant/auth.ts`, 77 tests PASS |
-| HC-1 cron con Authorization | REAL | `supabase/cron_jobs/deploy_all_cron_jobs.sql` (`net.http_post=7`, `Authorization=7`) |
+| Login/sesion/rutas protegidas | REAL | `minimarket-system/src/pages/Login.tsx`, `minimarket-system/src/App.tsx`, `minimarket-system/src/hooks/useVerifiedRole.ts` |
+| Feedback UX de mutaciones (toast/ErrorMessage) | REAL | `minimarket-system/src/pages/Pos.tsx`, `Deposito.tsx`, `Facturas.tsx`, `Pedidos.tsx`, `Clientes.tsx` |
+| Asistente IA read-only admin-only | REAL | `supabase/functions/api-assistant/index.ts`, `supabase/functions/api-assistant/auth.ts`, `minimarket-system/src/lib/roles.ts` |
+| Asistente IA UX Sprint 1.2 (fallback contextual, retry, loading) | REAL | `supabase/functions/api-assistant/parser.ts`, `minimarket-system/src/pages/Asistente.tsx` |
+| Asistente IA UX Sprint 1.3 (persistencia local + nuevo chat) | REAL | `minimarket-system/src/pages/Asistente.tsx` |
+| Coverage UI del asistente (loading/retry/persistencia) | REAL | `minimarket-system/src/pages/Asistente.test.tsx` |
+| HC-1 cron con Authorization | REAL | `supabase/cron_jobs/deploy_all_cron_jobs.sql` (todos los bloques `net.http_post` incluyen header Authorization) |
 | HC-2 deploy seguro (`_shared` + `--no-verify-jwt`) | REAL | `deploy.sh` |
-| HC-3 mutaciones sin feedback | REAL | `console.error` sin feedback en `pages` = `0` |
-| OCR lote `nuevos` end-to-end productivo | PARCIAL | Bloqueado por OCR-007 (`GCV_API_KEY` timeout/billing externo) |
+| HC-3 mutaciones sin feedback al usuario | REAL | `console.error` sin `toast/ErrorMessage` en `src/pages` = 0 hallazgos |
+| OCR end-to-end productivo con GCV real | PARCIAL | Dependencia externa abierta (`OCR-007`: timeout/billing GCP) |
 
 ## Blockers (P0)
-- [ ] No se detectan blockers UX internos en flujos core.
+- [ ] No se detectan blockers internos de UX/flujo en codigo.
 
 ## Fricciones (P1)
-- [ ] OCR real sigue condicionado por dependencia externa de GCP (billing/API key), no por deuda tecnica local.
+- [ ] OCR productivo real aun depende de habilitacion externa de GCP (no deuda interna de repo).
 
-## Validacion tecnica backend
-- Endpoints de `api-minimarket` verificados, incluyendo rutas OCR de facturas.
-- Edge Function `api-assistant` verificada con 77 unit tests (parser + hardening de rol) y 5 intent handlers.
-- Suite ejecutada en esta sesion: `unit 1853/1853`, `integration 68/68`, `component 242/242`, `e2e 4/4`, `build/lint PASS`, `coverage 90.02/82.71/91.13/91.11`.
-- Health remoto: `GET /health` responde `HTTP 200` con `success:true`.
+## Validacion tecnica backend/frontend
+- `npm run test:unit` -> **1874/1874 PASS** (84 archivos).
+- `npm run test:integration` -> **68/68 PASS** (3 archivos).
+- `npm run test:e2e` -> **4/4 PASS** (1 archivo).
+- `pnpm -C minimarket-system test:components src/pages/Asistente.test.tsx` -> **3/3 PASS**.
+- `pnpm -C minimarket-system lint` -> PASS.
+- `pnpm -C minimarket-system build` -> PASS.
 
 ## Conclusiones
-- Sistema operable para pre-entrega en flujos centrales.
-- Sin regresiones UX P0 detectadas por analisis actual.
-- El unico bloqueo de continuidad OCR es externo al codigo del repo.
+- Las mejoras recientes del asistente IA estan efectivas y verificadas con evidencia objetiva (tests + build).
+- Se agrego continuidad UX para usuario no tecnico (persistencia de chat + reinicio inmediato).
+- No se detectaron regresiones funcionales durante la revalidacion.

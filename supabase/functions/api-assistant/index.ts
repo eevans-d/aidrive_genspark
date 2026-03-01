@@ -1,12 +1,15 @@
 /**
- * api-assistant — Edge Function for AI Assistant (Sprint 1: read-only)
+ * api-assistant — Edge Function for AI Assistant (Sprint 1 + Sprint 2)
  *
- * Receives natural language messages, parses intent via rule-based parser,
+ * Sprint 1: Receives natural language messages, parses intent via rule-based parser,
  * proxies read-only queries to api-minimarket (or PostgREST), and returns
  * structured answers in natural language.
  *
+ * Sprint 2: Detects write intents (crear_tarea, registrar_pago_cc), returns a
+ * confirmation plan (mode: "plan") with a single-use confirm_token. The user
+ * must POST /confirm with the token to execute the action.
+ *
  * Auth: expects user JWT and validates identity/role via Supabase Auth API.
- * No write operations in Sprint 1.
  */
 
 import { ok, fail } from '../_shared/response.ts';
@@ -16,8 +19,9 @@ import {
   handleCors,
   createCorsErrorResponse,
 } from '../_shared/cors.ts';
-import { parseIntent, SUGGESTIONS, findRelevantSuggestions } from './parser.ts';
+import { parseIntent, SUGGESTIONS, findRelevantSuggestions, WRITE_INTENTS } from './parser.ts';
 import { extractTrustedRole } from './auth.ts';
+import { createConfirmToken, consumeConfirmToken, type ActionPlan } from './confirm-store.ts';
 
 // ---------------------------------------------------------------------------
 // Types
@@ -31,6 +35,10 @@ interface AssistantRequest {
   };
 }
 
+interface ConfirmRequest {
+  confirm_token: string;
+}
+
 interface NavigationHint {
   label: string;
   path: string;
@@ -39,12 +47,20 @@ interface NavigationHint {
 interface AssistantResponse {
   intent: string | null;
   confidence: number;
-  mode: 'answer' | 'clarify';
+  mode: 'answer' | 'clarify' | 'plan';
   answer: string;
   data: unknown;
   request_id: string;
   suggestions?: string[];
   navigation?: NavigationHint[];
+  confirm_token?: string;
+  action_plan?: {
+    intent: string;
+    label: string;
+    payload: Record<string, unknown>;
+    summary: string;
+    risk: string;
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -291,7 +307,7 @@ const handleSaludo: IntentHandler = async () => ({
 });
 
 const handleAyuda: IntentHandler = async () => ({
-  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nEscribi tu consulta como la dirias normalmente.',
+  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nTambien puedo ejecutar acciones:\n- "Crear tarea comprar harina" — crear una tarea pendiente\n- "Registrar pago de 5000 de Juan Perez" — registrar un pago de cliente\n\nEscribi tu consulta como la dirias normalmente.',
   data: null,
 });
 
@@ -303,6 +319,226 @@ const INTENT_HANDLERS: Record<string, IntentHandler> = {
   consultar_estado_ocr_facturas: handleEstadoOCRFacturas,
   saludo: handleSaludo,
   ayuda: handleAyuda,
+};
+
+// ---------------------------------------------------------------------------
+// Sprint 2 — Plan builders for write intents
+// ---------------------------------------------------------------------------
+
+const INTENT_LABELS: Record<string, string> = {
+  crear_tarea: 'Crear tarea',
+  registrar_pago_cc: 'Registrar pago',
+};
+
+interface PlanResult {
+  plan: ActionPlan;
+  answer: string;
+  needsDisambiguation?: { field: string; message: string };
+}
+
+async function buildCrearTareaPlan(
+  params: Record<string, string>,
+): Promise<PlanResult> {
+  const titulo = params.titulo;
+  if (!titulo || titulo.length < 3) {
+    return {
+      plan: { intent: 'crear_tarea', label: 'Crear tarea', payload: {}, summary: '', risk: 'bajo' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'titulo',
+        message: 'No pude detectar el titulo de la tarea. Escribi algo como: "Crear tarea comprar harina"',
+      },
+    };
+  }
+
+  const prioridad = params.prioridad || 'normal';
+  const payload = { titulo, prioridad };
+
+  return {
+    plan: {
+      intent: 'crear_tarea',
+      label: 'Crear tarea',
+      payload,
+      summary: `Crear tarea "${titulo}" con prioridad ${prioridad}`,
+      risk: 'bajo',
+    },
+    answer: `Voy a crear esta tarea:\n\n- Titulo: ${titulo}\n- Prioridad: ${prioridad}\n\n¿Confirmas?`,
+  };
+}
+
+async function buildRegistrarPagoCCPlan(
+  params: Record<string, string>,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<PlanResult> {
+  const monto = params.monto;
+  const clienteNombre = params.cliente_nombre;
+
+  if (!monto || isNaN(Number(monto)) || Number(monto) <= 0) {
+    return {
+      plan: { intent: 'registrar_pago_cc', label: 'Registrar pago', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'monto',
+        message: 'No pude detectar el monto del pago. Escribi algo como: "Registrar pago de 5000 de Juan Perez"',
+      },
+    };
+  }
+
+  if (!clienteNombre || clienteNombre.length < 2) {
+    return {
+      plan: { intent: 'registrar_pago_cc', label: 'Registrar pago', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'cliente_nombre',
+        message: `Detecte un pago de $${Number(monto).toLocaleString('es-AR')}, pero no el nombre del cliente. Escribi algo como: "Registrar pago de ${monto} de Juan Perez"`,
+      },
+    };
+  }
+
+  // Search for client by name via gateway
+  let clientes: Array<Record<string, unknown>> = [];
+  try {
+    const data = await fetchGateway(supabaseUrl, `/clientes?q=${encodeURIComponent(clienteNombre)}&limit=5`, headers);
+    clientes = Array.isArray(data) ? data : [];
+  } catch {
+    // If gateway fails, still allow plan but mark for review
+  }
+
+  if (clientes.length === 0) {
+    return {
+      plan: { intent: 'registrar_pago_cc', label: 'Registrar pago', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'cliente_nombre',
+        message: `No encontre un cliente con el nombre "${clienteNombre}". Verifica el nombre o usa uno mas especifico.`,
+      },
+    };
+  }
+
+  if (clientes.length > 1) {
+    // Check for exact match first
+    const exact = clientes.find(
+      (c) => String(c.nombre || '').toLowerCase() === clienteNombre.toLowerCase(),
+    );
+    if (!exact) {
+      const names = clientes.map((c) => `- ${c.nombre}`).join('\n');
+      return {
+        plan: { intent: 'registrar_pago_cc', label: 'Registrar pago', payload: {}, summary: '', risk: 'medio' },
+        answer: '',
+        needsDisambiguation: {
+          field: 'cliente_nombre',
+          message: `Encontre varios clientes similares:\n${names}\n\nEscribi el nombre completo del cliente que buscas.`,
+        },
+      };
+    }
+    clientes = [exact];
+  }
+
+  const cliente = clientes[0];
+  const clienteId = String(cliente.id);
+  const clienteNombreFinal = String(cliente.nombre);
+  const saldoActual = Number(cliente.saldo_cc ?? 0);
+
+  const payload = {
+    cliente_id: clienteId,
+    cliente_nombre: clienteNombreFinal,
+    monto: Number(monto),
+    descripcion: `Pago registrado via Asistente IA`,
+  };
+
+  return {
+    plan: {
+      intent: 'registrar_pago_cc',
+      label: 'Registrar pago',
+      payload,
+      summary: `Registrar pago de $${Number(monto).toLocaleString('es-AR')} para ${clienteNombreFinal} (saldo actual: $${saldoActual.toLocaleString('es-AR')})`,
+      risk: 'medio',
+    },
+    answer: `Voy a registrar este pago:\n\n- Cliente: ${clienteNombreFinal}\n- Monto: $${Number(monto).toLocaleString('es-AR')}\n- Saldo actual: $${saldoActual.toLocaleString('es-AR')}\n\n¿Confirmas?`,
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 2 — Action executors (called after confirm)
+// ---------------------------------------------------------------------------
+
+async function executeCrearTarea(
+  plan: ActionPlan,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<{ answer: string; data: unknown }> {
+  const url = `${supabaseUrl}/functions/v1/api-minimarket/tareas`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        titulo: plan.payload.titulo,
+        prioridad: plan.payload.prioridad || 'normal',
+      }),
+      signal: controller.signal,
+    });
+
+    const json = await res.json();
+    if (!res.ok || json.success === false) {
+      throw new Error(json.error?.message || `Gateway returned ${res.status}`);
+    }
+
+    const tarea = json.data;
+    return {
+      answer: `Tarea creada exitosamente:\n- Titulo: ${tarea?.titulo || plan.payload.titulo}\n- ID: ${tarea?.id || 'N/A'}`,
+      data: tarea,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function executeRegistrarPagoCC(
+  plan: ActionPlan,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<{ answer: string; data: unknown }> {
+  const url = `${supabaseUrl}/functions/v1/api-minimarket/cuentas-corrientes/pagos`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      body: JSON.stringify({
+        cliente_id: plan.payload.cliente_id,
+        monto: plan.payload.monto,
+        descripcion: plan.payload.descripcion || 'Pago via Asistente IA',
+      }),
+      signal: controller.signal,
+    });
+
+    const json = await res.json();
+    if (!res.ok || json.success === false) {
+      throw new Error(json.error?.message || `Gateway returned ${res.status}`);
+    }
+
+    return {
+      answer: `Pago registrado exitosamente:\n- Cliente: ${plan.payload.cliente_nombre}\n- Monto: $${Number(plan.payload.monto).toLocaleString('es-AR')}`,
+      data: json.data,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+const ACTION_EXECUTORS: Record<
+  string,
+  (plan: ActionPlan, supabaseUrl: string, headers: Record<string, string>) => Promise<{ answer: string; data: unknown }>
+> = {
+  crear_tarea: executeCrearTarea,
+  registrar_pago_cc: executeRegistrarPagoCC,
 };
 
 // ---------------------------------------------------------------------------
@@ -341,10 +577,10 @@ Deno.serve(async (req: Request) => {
 
   // Health check
   if (path === '/health' && method === 'GET') {
-    return ok({ status: 'ok', version: '1.0.0-sprint1' }, 200, responseHeaders, { requestId });
+    return ok({ status: 'ok', version: '2.0.0-sprint2' }, 200, responseHeaders, { requestId });
   }
 
-  if (path !== '/message' || method !== 'POST') {
+  if (method !== 'POST' || (path !== '/message' && path !== '/confirm')) {
     return fail('NOT_FOUND', `Route ${method} ${path} not found`, 404, responseHeaders, { requestId });
   }
 
@@ -356,10 +592,66 @@ Deno.serve(async (req: Request) => {
     return fail('UNAUTHORIZED', authError || 'Unauthorized', 401, responseHeaders, { requestId });
   }
 
-  // Role check — Sprint 1: admin only
+  // Role check — admin only
   if (user.role !== 'admin') {
     return fail('FORBIDDEN', 'El asistente esta disponible solo para administradores', 403, responseHeaders, { requestId });
   }
+
+  // =========================================================================
+  // POST /confirm — execute a previously planned action
+  // =========================================================================
+  if (path === '/confirm') {
+    let confirmBody: ConfirmRequest;
+    try {
+      confirmBody = await req.json();
+    } catch {
+      return fail('BAD_REQUEST', 'Invalid JSON body', 400, responseHeaders, { requestId });
+    }
+
+    if (!confirmBody.confirm_token || typeof confirmBody.confirm_token !== 'string') {
+      return fail('BAD_REQUEST', 'confirm_token es requerido', 400, responseHeaders, { requestId });
+    }
+
+    const result = consumeConfirmToken(confirmBody.confirm_token, user.id);
+    if (!result.ok) {
+      const messages: Record<string, string> = {
+        NOT_FOUND: 'Token de confirmacion invalido o ya utilizado',
+        EXPIRED: 'El token de confirmacion ha expirado. Volve a pedir la accion.',
+        USER_MISMATCH: 'El token no corresponde a tu usuario',
+      };
+      return fail('CONFIRM_FAILED', messages[result.reason], 400, responseHeaders, { requestId });
+    }
+
+    const executor = ACTION_EXECUTORS[result.plan.intent];
+    if (!executor) {
+      return fail('INTERNAL_ERROR', 'Executor not found for intent', 500, responseHeaders, { requestId });
+    }
+
+    const gatewayHeaders = buildGatewayHeaders(authHeader!, anonKey, requestId);
+
+    try {
+      const execResult = await executor(result.plan, supabaseUrl, gatewayHeaders);
+      return ok(
+        {
+          executed: true,
+          operation: result.plan.intent,
+          answer: execResult.answer,
+          result: execResult.data,
+          request_id: requestId,
+        },
+        200,
+        responseHeaders,
+        { requestId },
+      );
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error ejecutando accion';
+      return fail('EXECUTION_ERROR', `No se pudo ejecutar la accion: ${msg}`, 502, responseHeaders, { requestId });
+    }
+  }
+
+  // =========================================================================
+  // POST /message — parse intent and respond
+  // =========================================================================
 
   // Parse body
   let body: AssistantRequest;
@@ -386,7 +678,7 @@ Deno.serve(async (req: Request) => {
 
     const answer = isContextual
       ? `No encontre una consulta exacta, pero quizas quisiste decir:\n${contextualSuggestions.map(s => `- ${s}`).join('\n')}\n\nToca una sugerencia o reformula tu consulta.`
-      : 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR\n\nEscribi "ayuda" para ver ejemplos.';
+      : 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR\n- Crear tarea\n- Registrar pago de cliente\n\nEscribi "ayuda" para ver ejemplos.';
 
     const response: AssistantResponse = {
       intent: null,
@@ -400,7 +692,59 @@ Deno.serve(async (req: Request) => {
     return ok(response, 200, responseHeaders, { requestId });
   }
 
-  // Execute intent handler
+  // ----- Sprint 2: Write intents → plan mode -----
+  if (WRITE_INTENTS.has(parsed.intent)) {
+    const gatewayHeaders = buildGatewayHeaders(authHeader!, anonKey, requestId);
+
+    let planResult: PlanResult;
+    try {
+      if (parsed.intent === 'crear_tarea') {
+        planResult = await buildCrearTareaPlan(parsed.params);
+      } else {
+        planResult = await buildRegistrarPagoCCPlan(parsed.params, supabaseUrl, gatewayHeaders);
+      }
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error preparando accion';
+      return fail('PLAN_ERROR', msg, 502, responseHeaders, { requestId });
+    }
+
+    // Disambiguation needed
+    if (planResult.needsDisambiguation) {
+      const response: AssistantResponse = {
+        intent: parsed.intent,
+        confidence: parsed.confidence,
+        mode: 'clarify',
+        answer: planResult.needsDisambiguation.message,
+        data: null,
+        request_id: requestId,
+        suggestions: [],
+      };
+      return ok(response, 200, responseHeaders, { requestId });
+    }
+
+    // Generate confirm token
+    const token = createConfirmToken(user.id, planResult.plan);
+
+    const response: AssistantResponse = {
+      intent: parsed.intent,
+      confidence: parsed.confidence,
+      mode: 'plan',
+      answer: planResult.answer,
+      data: null,
+      request_id: requestId,
+      confirm_token: token,
+      action_plan: {
+        intent: planResult.plan.intent,
+        label: planResult.plan.label,
+        payload: planResult.plan.payload,
+        summary: planResult.plan.summary,
+        risk: planResult.plan.risk,
+      },
+    };
+    return ok(response, 200, responseHeaders, { requestId });
+  }
+
+  // ----- Read-only intents -----
   const handler = INTENT_HANDLERS[parsed.intent];
   if (!handler) {
     return fail('INTERNAL_ERROR', 'Intent handler not found', 500, responseHeaders, { requestId });

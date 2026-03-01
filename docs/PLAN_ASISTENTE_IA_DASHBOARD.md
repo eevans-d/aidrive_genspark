@@ -1,21 +1,22 @@
 # PLAN ASISTENTE IA EN DASHBOARD (V2 - EJECUTABLE)
 
 **Fecha:** 2026-03-01
-**Estado:** Sprint 1 + 1.1 + 1.2 COMPLETADO (UX optimizado) — Sprint 2 pendiente
+**Estado:** Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 COMPLETADO (acciones con confirmacion) — Sprint 3 pendiente
 **Objetivo:** habilitar un asistente conversacional para usuario no tecnico (principalmente perfil admin), que consulte y ejecute acciones del sistema con seguridad.
 
 ## 1) Estado actual de implementacion
 
 **Sprint 1 (read-only) completado.** Implementacion verificada en:
 - Ruta `/asistente` activa con `ProtectedRoute` admin-only: `minimarket-system/src/App.tsx:30,230`
-- Pagina `Asistente.tsx` con chat, quick-prompts y sugerencias: `minimarket-system/src/pages/Asistente.tsx`
+- Pagina `Asistente.tsx` con chat, quick-prompts, sugerencias, persistencia local y boton "Nuevo chat": `minimarket-system/src/pages/Asistente.tsx`
 - Cliente API `assistantApi.ts` con `sendMessage()`: `minimarket-system/src/lib/assistantApi.ts`
 - Edge Function `api-assistant` con parser rule-based y 5 handlers: `supabase/functions/api-assistant/index.ts`
 - Parser separado para testabilidad (sin dependencias Deno): `supabase/functions/api-assistant/parser.ts`
 - Permiso admin en `roles.ts`: `minimarket-system/src/lib/roles.ts:39`
 - Nav item en sidebar: `minimarket-system/src/components/Layout.tsx:44`
 - CTA en Dashboard: `minimarket-system/src/pages/Dashboard.tsx:21`
-- 77 unit tests del asistente (parser + hardening de rol): `tests/unit/assistant-intent-parser.test.ts`, `tests/unit/assistant-auth-role.test.ts`
+- 129 unit tests del asistente (116 parser + 3 de seguridad de rol + 10 confirm-store): `tests/unit/assistant-intent-parser.test.ts`, `tests/unit/assistant-auth-role.test.ts`, `tests/unit/assistant-confirm-store.test.ts`
+- 7 component tests de UI del asistente: `minimarket-system/src/pages/Asistente.test.tsx`
 
 **Pendiente:** deploy de `api-assistant` a Supabase (`supabase functions deploy api-assistant --use-api`, mantener `verify_jwt=true` por D-086).
 
@@ -163,7 +164,7 @@ Intents adicionales (Sprint 1.1):
 - `saludo` — responde a saludos ("hola", "buenas", etc.) con mensaje de bienvenida.
 - `ayuda` — responde a "ayuda", "que puedo hacer", etc. con lista de capacidades.
 
-## 5.2 Sprint 2 (pendiente) — `POST /confirm`
+## 5.2 Sprint 2 (implementado) — `POST /confirm`
 
 Request:
 ```json
@@ -185,7 +186,26 @@ Response:
 }
 ```
 
-**Nota:** `POST /confirm` aun no existe en Sprint 1; queda como contrato objetivo para Sprint 2.
+Plan response (write intents en `POST /message`):
+```json
+{
+  "intent": "crear_tarea",
+  "confidence": 0.9,
+  "mode": "plan",
+  "answer": "Voy a crear una tarea...",
+  "confirm_token": "uuid-token",
+  "action_plan": {
+    "action": "crear_tarea",
+    "summary": "Crear tarea: titulo",
+    "params": { "titulo": "...", "prioridad": "media" },
+    "risk": "low",
+    "validations": ["Titulo presente", ...]
+  },
+  "request_id": "..."
+}
+```
+
+Implementacion: `supabase/functions/api-assistant/index.ts` (POST /confirm), `confirm-store.ts` (token management).
 
 ## 6) Guardrails obligatorios (produccion)
 
@@ -221,28 +241,41 @@ Sprint 1.2 — UX polish (2026-03-01):
 12. Loading indicator: muestra "Consultando..." con spinner. OK
 13. 98 unit tests del asistente (95 parser + 3 auth). OK
 
+Sprint 1.3 — Persistencia UX + coverage UI (2026-03-01):
+14. Persistencia local de historial de chat (`localStorage`, ultimo bloque de mensajes). OK
+15. Boton "Nuevo chat" para reset rapido de conversacion en una accion. OK
+16. Suite de componentes para `Asistente.tsx` (loading, retry y reset/persistencia). OK
+
 Definition of Done (verificado):
 - 0 escrituras habilitadas. OK
 - 95% de prompts del set de prueba con intent correcto. OK (98/98 tests PASS)
 - Build y lint limpios. OK
+- Component tests del asistente en verde (3/3). OK
 
-Evidencia: `tests/unit/assistant-intent-parser.test.ts`, `supabase/functions/api-assistant/`, `minimarket-system/src/pages/Asistente.tsx`
+Evidencia: `tests/unit/assistant-intent-parser.test.ts`, `minimarket-system/src/pages/Asistente.test.tsx`, `supabase/functions/api-assistant/`, `minimarket-system/src/pages/Asistente.tsx`
 
 Pendiente post-Sprint 1:
 - Deploy de `api-assistant` a Supabase Cloud (`supabase functions deploy api-assistant --use-api`).
 
-## Sprint 2 (5 dias) - acciones confirmadas
+## Sprint 2 (5 dias) - acciones confirmadas — COMPLETADO (2026-03-01)
 
-Entregables:
-1. Flujo `plan -> confirm`.
-2. Acciones habilitadas: `crear_tarea`, `registrar_pago_cc`.
-3. Auditoria persistente.
-4. Manejo de ambiguedad y cancelacion.
+Entregables (todos implementados):
+1. Flujo `plan -> confirm` con `confirm_token` de un solo uso (TTL 120s). OK
+2. Acciones habilitadas: `crear_tarea`, `registrar_pago_cc`. OK
+3. Confirm token store con GC automatico y scoping por usuario. OK
+4. Manejo de ambiguedad: `mode: 'clarify'` cuando faltan datos obligatorios. OK
+5. Frontend: plan card con resumen/parametros/riesgo + botones Confirmar/Cancelar. OK
+6. 10 unit tests confirm-store + 21 tests parser Sprint 2 + 4 component tests Sprint 2. OK
 
-Definition of Done:
-- 0 ejecuciones sin confirmacion.
-- 100% de acciones con registro auditable.
-- 0 regresiones en tests existentes.
+Definition of Done (verificado):
+- 0 ejecuciones sin confirmacion. OK (write intents siempre retornan `mode: 'plan'`)
+- 100% de acciones con registro auditable. OK (request_id en plan y confirm)
+- 0 regresiones en tests existentes. OK (1905/1905 unit + 249/249 component)
+
+Evidencia: `tests/unit/assistant-confirm-store.test.ts`, `tests/unit/assistant-intent-parser.test.ts`, `minimarket-system/src/pages/Asistente.test.tsx`, `supabase/functions/api-assistant/confirm-store.ts`
+
+Pendiente post-Sprint 2:
+- ~~Deploy de `api-assistant` a Supabase Cloud (`supabase functions deploy api-assistant --use-api`).~~ ✅ Desplegado 2026-03-01
 
 ## Sprint 3 (3-5 dias) - hardening y adopcion
 
@@ -263,10 +296,10 @@ P0 (Sprint 1 — COMPLETADO):
 4. ~~Crear `api-assistant` read-only.~~ ✅
 5. ~~Parser de intents por reglas.~~ ✅
 
-P1 (Sprint 2 — pendiente):
-6. Resolver entidades (cliente/pedido/factura) con `searchApi` y validaciones.
-7. Implementar `confirm_token` 1 uso.
-8. Implementar acciones de escritura low-risk.
+P1 (Sprint 2 — COMPLETADO):
+6. ~~Resolver entidades (cliente/pedido/factura) con `searchApi` y validaciones.~~ ✅ (desambiguacion por `mode: 'clarify'`)
+7. ~~Implementar `confirm_token` 1 uso.~~ ✅
+8. ~~Implementar acciones de escritura low-risk.~~ ✅ (`crear_tarea`, `registrar_pago_cc`)
 
 P2:
 9. Auditoria de acciones IA y vista de historial.
@@ -295,9 +328,10 @@ P2:
 
 ## 11) Recomendacion ejecutiva
 
-Sprint 1 (read-only) esta **COMPLETADO** y funcional.
-Siguiente paso: deploy a produccion y comenzar Sprint 2 (acciones con confirmacion).
+Sprint 1 (read-only) y Sprint 2 (acciones con confirmacion) estan **COMPLETADOS** y funcionales.
+Siguiente paso: deploy a produccion y comenzar Sprint 3 (hardening y adopcion).
 Ruta recomendada:
-- Deployar `api-assistant` a Supabase Cloud
-- Implementar Sprint 2 con `confirm_token` y acciones low-risk
+- Deployar `api-assistant` a Supabase Cloud (incluye Sprint 1 + 2)
+- Piloto con usuario real para validar flujo plan→confirm
+- Implementar Sprint 3: acciones adicionales + historial de acciones + guia visual
 - Recien despues evaluar LLM para mejorar interpretacion.

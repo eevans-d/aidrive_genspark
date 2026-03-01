@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 1.1 Asistente IA — UX improvements + auditoria)
+**Ultima actualizacion:** 2026-03-01 (Sprint 2 Asistente IA — acciones con confirmacion)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -66,18 +66,19 @@
 - OCR-006 cerrado: soporte PDF habilitado (`DOCUMENT_TEXT_DETECTION`) con validación explícita de tipo de archivo.
 - OCR-010 cerrado: UI `Facturas` muestra warning visible cuando `cuit_detectado` no coincide con `proveedor.cuit`.
 
-## DEPLOY-001 - Edge Function api-assistant pendiente de deploy (ABIERTO)
+## DEPLOY-001 - Edge Function api-assistant pendiente de deploy (CERRADO)
 - Severidad: MEDIA
-- Impacto: Asistente IA no disponible en produccion hasta ejecutar deploy.
-- Estado: ABIERTO — codigo completo, deploy pendiente
-- Accion requerida: `supabase functions deploy api-assistant --use-api`
-- Nota: por politica D-086, solo `api-minimarket` usa `verify_jwt=false`; `api-assistant` debe mantener `verify_jwt=true` y ademas valida rol internamente via Auth API.
-- Evidencia: `supabase/functions/api-assistant/index.ts`, `supabase/functions/api-assistant/parser.ts`
-- Referencia: D-178 en `docs/DECISION_LOG.md`
+- Impacto: Asistente IA ahora disponible en produccion.
+- Estado: CERRADO (2026-03-01) — deploy ejecutado con Sprint 1 + 2
+- Codigo incluye: Sprint 1 (7 intents read-only) + Sprint 2 (2 intents write con confirm_token, POST /confirm, plan cards)
+- Deploy: `supabase functions deploy api-assistant --use-api` ejecutado exitosamente en proyecto `dqaygmjpzoqjjrywdsxi`
+- Nota: `api-assistant` mantiene `verify_jwt=true` por politica D-086 y valida rol internamente via Auth API.
+- Evidencia: `supabase/functions/api-assistant/index.ts`, `supabase/functions/api-assistant/parser.ts`, `supabase/functions/api-assistant/confirm-store.ts`
+- Referencia: D-178, D-182 en `docs/DECISION_LOG.md`
 
 ## BLOCKED
 - OCR-007: GCV_API_KEY no responde (timeout 15s). Bloqueante para extraccion OCR de las 21 facturas cargadas.
 - Estado actual de lote OCR en BD: `20 pendiente`, `1 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Asistente IA Sprint 1 + Sprint 1.1 (UX improvements) esta implementado y testeado (D-178, D-179), pendiente solo de deploy a produccion (DEPLOY-001). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV), DEPLOY-001 (deploy api-assistant) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Asistente IA Sprint 1 + Sprint 1.1/1.2/1.3 (UX improvements) + Sprint 2 (acciones con confirmacion) esta implementado, testeado y desplegado en produccion (D-178→D-182, DEPLOY-001 cerrado). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.

@@ -7,7 +7,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { parseIntent, INTENT_RULES, SUGGESTIONS, findRelevantSuggestions } from '../../supabase/functions/api-assistant/parser';
+import { parseIntent, INTENT_RULES, SUGGESTIONS, findRelevantSuggestions, WRITE_INTENTS } from '../../supabase/functions/api-assistant/parser';
 
 describe('Assistant Intent Parser', () => {
   // -----------------------------------------------------------------------
@@ -252,12 +252,12 @@ describe('Assistant Intent Parser', () => {
   // Structure validation
   // -----------------------------------------------------------------------
   describe('parser structure', () => {
-    it('has exactly 7 intent rules', () => {
-      expect(INTENT_RULES).toHaveLength(7);
+    it('has exactly 9 intent rules (7 read + 2 write)', () => {
+      expect(INTENT_RULES).toHaveLength(9);
     });
 
-    it('has 6 suggestions', () => {
-      expect(SUGGESTIONS).toHaveLength(6);
+    it('has 8 suggestions', () => {
+      expect(SUGGESTIONS).toHaveLength(8);
     });
 
     it('data intents have at least 4 patterns', () => {
@@ -267,8 +267,10 @@ describe('Assistant Intent Parser', () => {
       }
     });
 
-    it('all data intents start with consultar_', () => {
-      const dataRules = INTENT_RULES.filter(r => !['saludo', 'ayuda'].includes(r.intent));
+    it('read-only data intents start with consultar_', () => {
+      const dataRules = INTENT_RULES.filter(r =>
+        !['saludo', 'ayuda', 'crear_tarea', 'registrar_pago_cc'].includes(r.intent),
+      );
       for (const rule of dataRules) {
         expect(rule.intent).toMatch(/^consultar_/);
       }
@@ -317,8 +319,101 @@ describe('Assistant Intent Parser', () => {
 
     it('returns full list (minus ayuda) when no keywords match', () => {
       const result = findRelevantSuggestions('xyz random text');
-      expect(result.length).toBe(5);
+      expect(result.length).toBe(7);
       expect(result).not.toContain('ayuda');
+    });
+
+    it('returns crear tarea suggestion for tarea keywords', () => {
+      const result = findRelevantSuggestions('tengo algo pendiente para anotar');
+      expect(result).toContain('crear tarea');
+    });
+
+    it('returns registrar pago suggestion for pago keywords', () => {
+      const result = findRelevantSuggestions('me hicieron un cobro');
+      expect(result).toContain('registrar pago');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Sprint 2: Write intents
+  // -----------------------------------------------------------------------
+  describe('WRITE_INTENTS', () => {
+    it('contains crear_tarea and registrar_pago_cc', () => {
+      expect(WRITE_INTENTS.has('crear_tarea')).toBe(true);
+      expect(WRITE_INTENTS.has('registrar_pago_cc')).toBe(true);
+    });
+
+    it('does not contain read-only intents', () => {
+      expect(WRITE_INTENTS.has('consultar_stock_bajo')).toBe(false);
+      expect(WRITE_INTENTS.has('saludo')).toBe(false);
+    });
+  });
+
+  describe('crear_tarea intent', () => {
+    const cases = [
+      'crear tarea comprar harina',
+      'crea una tarea para revisar precios',
+      'nueva tarea limpiar deposito',
+      'agrega tarea llamar proveedor',
+      'anota tarea pedir mercaderia',
+      'tarea: llamar al electricista',
+    ];
+
+    cases.forEach((input) => {
+      it(`matches "${input}"`, () => {
+        const result = parseIntent(input);
+        expect(result.intent).toBe('crear_tarea');
+        expect(result.confidence).toBeGreaterThanOrEqual(0.8);
+      });
+    });
+
+    it('extracts titulo from "crear tarea comprar harina"', () => {
+      const result = parseIntent('crear tarea comprar harina');
+      expect(result.params.titulo).toBe('comprar harina');
+    });
+
+    it('extracts titulo from "tarea: llamar al electricista"', () => {
+      const result = parseIntent('tarea: llamar al electricista');
+      expect(result.params.titulo).toBe('llamar al electricista');
+    });
+
+    it('extracts prioridad when mentioned', () => {
+      const result = parseIntent('crear tarea urgente revisar stock prioridad urgente');
+      expect(result.intent).toBe('crear_tarea');
+      expect(result.params.prioridad).toBe('urgente');
+    });
+  });
+
+  describe('registrar_pago_cc intent', () => {
+    const cases = [
+      'registrar pago de 5000 de Juan Perez',
+      'registra un pago de $3000',
+      'cobra un pago del cliente',
+      'pago 5000 de Maria',
+      'recibi un pago de 10000',
+    ];
+
+    cases.forEach((input) => {
+      it(`matches "${input}"`, () => {
+        const result = parseIntent(input);
+        expect(result.intent).toBe('registrar_pago_cc');
+        expect(result.confidence).toBeGreaterThanOrEqual(0.8);
+      });
+    });
+
+    it('extracts monto from "registrar pago de 5000 de Juan Perez"', () => {
+      const result = parseIntent('registrar pago de 5000 de Juan Perez');
+      expect(result.params.monto).toBe('5000');
+    });
+
+    it('extracts monto from "registra pago $3000"', () => {
+      const result = parseIntent('registra pago $3000');
+      expect(result.params.monto).toBe('3000');
+    });
+
+    it('extracts cliente_nombre when present', () => {
+      const result = parseIntent('registrar pago de 5000 de Juan Perez por');
+      expect(result.params.cliente_nombre?.toLowerCase()).toBe('juan perez');
     });
   });
 });

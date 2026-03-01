@@ -70,6 +70,63 @@ export const INTENT_RULES: IntentRule[] = [
       /ingesta\s*(de\s*)?factura/i,
     ],
   },
+  // Sprint 2 — write intents (plan -> confirm)
+  {
+    intent: 'crear_tarea',
+    patterns: [
+      /cre[aá]r?\s*(una?\s*)?tarea/i,
+      /nueva?\s*tarea/i,
+      /agreg[aá]r?\s*(una?\s*)?tarea/i,
+      /anot[aá]r?\s*(una?\s*)?tarea/i,
+      /tarea\s*:\s*.+/i,
+    ],
+    extractParams: (msg: string) => {
+      const params: Record<string, string> = {};
+      // Try "tarea: <titulo>" or "crear tarea <titulo>"
+      const colonMatch = msg.match(/tarea\s*:\s*(.+)/i);
+      if (colonMatch) {
+        params.titulo = colonMatch[1].trim();
+        return params;
+      }
+      const afterCreate = msg.match(/(?:cre[aá]r?|nueva?|agreg[aá]r?|anot[aá]r?)\s*(?:una?\s*)?tarea\s+(.+)/i);
+      if (afterCreate) {
+        params.titulo = afterCreate[1].trim();
+      }
+      // Priority extraction
+      const prioMatch = msg.match(/prioridad\s*(urgente|alta|baja|normal)/i);
+      if (prioMatch) {
+        const raw = prioMatch[1].toLowerCase();
+        params.prioridad = raw === 'alta' ? 'urgente' : raw;
+        // Remove priority from titulo if embedded
+        params.titulo = (params.titulo || '').replace(/\s*prioridad\s*(urgente|alta|baja|normal)/i, '').trim();
+      }
+      return params;
+    },
+  },
+  {
+    intent: 'registrar_pago_cc',
+    patterns: [
+      /registr[aá]r?\s*(un\s*)?pago/i,
+      /pago\s*(de|del?\s+cliente|cc|cuenta)/i,
+      /cobr[aá]r?\s*(un\s*)?pago/i,
+      /pag[oó]\s+\d/i,
+      /recib[ií]r?\s*(un\s*)?pago/i,
+    ],
+    extractParams: (msg: string) => {
+      const params: Record<string, string> = {};
+      // Amount: "$5000", "5000 pesos", "de 5000"
+      const montoMatch = msg.match(/\$?\s*(\d[\d.,]*)\s*(?:pesos)?/);
+      if (montoMatch) {
+        params.monto = montoMatch[1].replace(/\./g, '').replace(',', '.');
+      }
+      // Client name: "de <name>" / "cliente <name>"
+      const nameMatch = msg.match(/(?:de|del?\s*cliente|cliente)\s+([A-ZÁÉÍÓÚÑa-záéíóúñ][\wÁÉÍÓÚÑáéíóúñ\s]{2,40}?)(?:\s*(?:por|de|\$|\d|$))/i);
+      if (nameMatch) {
+        params.cliente_nombre = nameMatch[1].trim();
+      }
+      return params;
+    },
+  },
   // Non-data intents — placed last so specific queries always match first
   {
     intent: 'saludo',
@@ -94,8 +151,12 @@ export const SUGGESTIONS = [
   'cuentas corrientes',
   'ventas del dia',
   'facturas OCR',
+  'crear tarea',
+  'registrar pago',
   'ayuda',
 ];
+
+export const WRITE_INTENTS = new Set(['crear_tarea', 'registrar_pago_cc']);
 
 export function parseIntent(message: string): ParsedIntent {
   const normalized = message.trim().toLowerCase();
@@ -129,6 +190,8 @@ export function findRelevantSuggestions(message: string): string[] {
   if (/pedido|orden|compra|entreg/.test(normalized)) relevant.push('pedidos pendientes');
   if (/venta|vendi[oó]|facturac|recaud/.test(normalized)) relevant.push('ventas del dia');
   if (/deuda|fiado|saldo|cuenta|corriente|cliente/.test(normalized)) relevant.push('cuentas corrientes');
+  if (/tarea|pendiente|anotá|anotar|hacer/.test(normalized)) relevant.push('crear tarea');
+  if (/pago|cobr[aá]|recib[ií]/.test(normalized)) relevant.push('registrar pago');
 
   // Fallback: if nothing keyword-matched, return full list (without 'ayuda')
   return relevant.length > 0 ? relevant : SUGGESTIONS.filter(s => s !== 'ayuda');

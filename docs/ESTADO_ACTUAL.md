@@ -1,9 +1,9 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 1.2 Asistente IA — contextual suggestions + UX polish)
+**Ultima actualizacion:** 2026-03-01 (Sprint 2 Asistente IA — acciones con confirmacion plan→confirm)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
-**Estado del Asistente IA:** `SPRINT 1.2 COMPLETADO — solo lectura, admin only, UX optimizado`
+**Estado del Asistente IA:** `SPRINT 2 COMPLETADO — plan→confirm con confirm_token, crear_tarea + registrar_pago_cc`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
@@ -17,9 +17,10 @@
 
 ## 2) Estado tecnico verificado (sesion 2026-03-01)
 - ProductionGate re-ejecutado en esta sesion: **18/18 PASS** (score 100, 03:26 UTC).
-- Tests unitarios completos: **1874/1874 PASS** (84 archivos, incluye parser + seguridad de rol del asistente).
+- Tests unitarios completos: **1905/1905 PASS** (85 archivos, incluye parser + seguridad de rol + confirm-store del asistente).
 - Tests de integracion: **68/68 PASS** (3 archivos).
-- Tests de componentes frontend: **242/242 PASS** (47 archivos).
+- Tests de componentes frontend: **249/249 PASS** (48 archivos).
+- Test de componente dirigido del asistente: **7/7 PASS** (`minimarket-system/src/pages/Asistente.test.tsx`).
 - Tests de contratos API: **17/17 PASS** (1 archivo).
 - Migraciones SQL en repo: **52**.
 - Edge Functions en repo: **16** (excluye `_shared`; nueva: `api-assistant`).
@@ -28,7 +29,7 @@
 - Freshness de este documento: **vigente (0 dias)**.
 - `.env.example` sincronizado con runtime OCR: agregado `OCR_MIN_SCORE_APPLY` (default sugerido `0.70`).
 - Deploy `facturas-ocr`: **v10 en produccion** (base64 chunked + CUIT variants + timeout handling).
-- Estado remoto `supabase functions list`: **15 funciones ACTIVE** (16 en repo; `api-assistant` pendiente de deploy — ver DEPLOY-001 en `docs/closure/OPEN_ISSUES.md`).
+- Estado remoto `supabase functions list`: **16 funciones ACTIVE** (16 en repo; `api-assistant` desplegada con Sprint 1 + 2 — ver DEPLOY-001 cerrado en `docs/closure/OPEN_ISSUES.md`).
 
 ## 3) OCR de facturas: estado real
 
@@ -85,11 +86,11 @@
 ## 6) Nota operativa
 El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog OCR tecnico esta 10/10 tareas completadas. GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. No hay deuda tecnica interna pendiente.
 
-## 6b) Asistente IA — Sprint 1 + 1.1 (read-only)
+## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 (read + write con confirmacion)
 
-### Implementado
-- Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 7 intent handlers.
-- Intent parser separado en `parser.ts` con 7 intents:
+### Implementado (Sprint 1 → 1.3)
+- Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 7 intent handlers read-only.
+- Intent parser separado en `parser.ts` con 7 intents read-only:
   - `consultar_stock_bajo` → `GET /stock/minimo` (via api-minimarket) + nav `/stock`
   - `consultar_pedidos_pendientes` → `GET /pedidos?estado=pendiente` (via api-minimarket) + nav `/pedidos`
   - `consultar_resumen_cc` → `GET /cuentas-corrientes/resumen` (via api-minimarket) + nav `/clientes`
@@ -98,18 +99,36 @@ El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog O
   - `saludo` → respuesta de bienvenida (sin fetch)
   - `ayuda` → lista de capacidades (sin fetch)
 - Frontend: pagina `Asistente.tsx` con chat conversacional, quick-prompts, sugerencias inline, deep-links accionables.
+- Persistencia local de conversaciones (`localStorage`) + reset rapido con boton `Nuevo chat`.
 - Ruta `/asistente` protegida, acceso solo `admin` (deny-by-default en `roles.ts`).
 - Nav item en sidebar y Dashboard CTA.
 - API client `assistantApi.ts` con `sendMessage()`.
-- 98 unit tests del asistente (95 parser + 3 de seguridad de rol).
 - UX improvements (Sprint 1.1): etiquetas amigables, sin jerga tecnica, fix timezone ventas, navigation deep-links.
 - UX improvements (Sprint 1.2): contextual fallback suggestions, retry button on errors, loading indicator con texto.
+- UX improvements (Sprint 1.3): persistencia de historial y accion explicita de reinicio de chat para usuarios no tecnicos.
 
-### No implementado (Sprint 2)
-- Acciones mutantes (confirmar compras, aplicar facturas, etc.).
-- `confirm_token` y flujo de confirmacion.
+### Implementado (Sprint 2 — acciones con confirmacion)
+- 2 intents de escritura adicionales en parser: `crear_tarea` y `registrar_pago_cc`, con extraccion de parametros (titulo/prioridad, monto/cliente_nombre).
+- Set `WRITE_INTENTS` para clasificacion automatica de intents mutantes.
+- Flujo plan→confirm: intents de escritura retornan `mode: 'plan'` con `confirm_token` y `action_plan` (resumen, parametros, riesgo, validaciones) en vez de ejecutar directamente.
+- Confirm token store (`confirm-store.ts`): tokens de un solo uso con TTL de 120s, scoped por usuario, GC automatico, max 200 tokens globales.
+- Endpoint `POST /confirm`: consume token, valida userId, ejecuta accion via api-minimarket gateway y retorna resultado.
+- Ejecutores de accion: `executeCrearTarea()` → `POST /tareas`, `executeRegistrarPagoCC()` → `POST /cuentas-corrientes/pagos`.
+- Manejo de ambiguedad: si faltan datos obligatorios (titulo para tarea, monto para pago) se retorna `mode: 'clarify'` pidiendo desambiguacion.
+- Frontend: plan card con borde amber, resumen visual de accion/parametros/riesgo, botones Confirmar (verde) y Cancelar (gris), estado `confirming` con spinner.
+- API client actualizado: `confirmAction(confirmToken)` para POST /confirm, tipos extendidos con `mode`, `confirm_token`, `action_plan`.
+- Quick prompts ampliados: "Crear tarea" y "Registrar pago" como acciones directas.
+- 116 unit tests del parser (95 Sprint 1 + 21 Sprint 2 incluyendo write intents y extraccion de params).
+- 10 unit tests del confirm-store (creacion, single-use, user mismatch, TTL, GC, concurrencia).
+- 3 unit tests de seguridad de rol.
+- 7 component tests del asistente (3 Sprint 1 + 4 Sprint 2: plan card, confirm, cancel, write quick-prompts).
+- Health version bumped a `2.0.0-sprint2`.
+
+### No implementado (Sprint 3)
+- Acciones adicionales (`actualizar_estado_pedido`, `aplicar_factura`).
+- Auditoria persistente de acciones IA (historial en BD).
 - Expansion de roles (deposito, ventas).
-- Historial/persistencia de conversaciones.
+- Guia visual para usuario no tecnico.
 
 ## 7) Auditoria de produccion profunda (D-177)
 

@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { Send, Bot, User, Loader2, AlertCircle, Lightbulb, ArrowRight } from 'lucide-react'
+import { Send, Bot, User, Loader2, AlertCircle, Lightbulb, ArrowRight, CheckCircle, XCircle, ShieldAlert } from 'lucide-react'
 import { assistantApi, type AssistantMessage, type AssistantResponseData } from '../lib/assistantApi'
 import { useLocation, Link } from 'react-router-dom'
 
@@ -9,6 +9,8 @@ const QUICK_PROMPTS = [
   { label: 'Cuentas corrientes', prompt: 'Cuanto me deben?' },
   { label: 'Ventas del dia', prompt: 'Como fueron las ventas hoy?' },
   { label: 'Facturas OCR', prompt: 'Estado de las facturas?' },
+  { label: 'Crear tarea', prompt: 'Crear tarea ' },
+  { label: 'Registrar pago', prompt: 'Registrar pago de ' },
   { label: 'Ayuda', prompt: 'ayuda' },
 ]
 
@@ -18,20 +20,58 @@ const INTENT_LABELS: Record<string, string> = {
   consultar_resumen_cc: 'Cuentas corrientes',
   consultar_ventas_dia: 'Ventas del dia',
   consultar_estado_ocr_facturas: 'Facturas',
+  crear_tarea: 'Crear tarea',
+  registrar_pago_cc: 'Registrar pago',
   saludo: 'Saludo',
   ayuda: 'Ayuda',
 }
 
+const RISK_COLORS: Record<string, string> = {
+  bajo: 'text-green-600 dark:text-green-400',
+  medio: 'text-yellow-600 dark:text-yellow-400',
+  alto: 'text-red-600 dark:text-red-400',
+}
+
+const CHAT_STORAGE_KEY = 'assistant_chat_history_v1'
+const MAX_STORED_MESSAGES = 80
+
+function createWelcomeMessage(): AssistantMessage {
+  return {
+    role: 'assistant',
+    content: 'Hola! Soy el asistente operativo. Puedo consultar informacion del negocio: stock, pedidos, cuentas corrientes, ventas y facturas.\n\nEscribi tu consulta o usa los accesos rapidos de abajo.',
+    timestamp: new Date().toISOString(),
+  }
+}
+
+function loadStoredMessages(): AssistantMessage[] | null {
+  if (typeof window === 'undefined') return null
+
+  try {
+    const raw = window.localStorage.getItem(CHAT_STORAGE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed) || parsed.length === 0) return null
+
+    const sanitized = parsed
+      .filter((msg) =>
+        msg &&
+        (msg.role === 'assistant' || msg.role === 'user') &&
+        typeof msg.content === 'string' &&
+        typeof msg.timestamp === 'string',
+      )
+      .slice(-MAX_STORED_MESSAGES)
+
+    return sanitized.length > 0 ? sanitized : null
+  } catch {
+    return null
+  }
+}
+
 export default function Asistente() {
-  const [messages, setMessages] = useState<AssistantMessage[]>([
-    {
-      role: 'assistant',
-      content: 'Hola! Soy el asistente operativo. Puedo consultar informacion del negocio: stock, pedidos, cuentas corrientes, ventas y facturas.\n\nEscribi tu consulta o usa los accesos rapidos de abajo.',
-      timestamp: new Date().toISOString(),
-    },
-  ])
+  const [messages, setMessages] = useState<AssistantMessage[]>(() => loadStoredMessages() || [createWelcomeMessage()])
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
+  const [confirming, setConfirming] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [lastFailedMessage, setLastFailedMessage] = useState<string | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
@@ -49,6 +89,15 @@ export default function Asistente() {
   useEffect(() => {
     inputRef.current?.focus()
   }, [])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
+    try {
+      window.localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(messages.slice(-MAX_STORED_MESSAGES)))
+    } catch {
+      // Best effort only, never block chat flow.
+    }
+  }, [messages])
 
   const handleSend = useCallback(async (messageText?: string) => {
     const text = (messageText || input).trim()
@@ -77,9 +126,12 @@ export default function Asistente() {
         content: response.answer,
         intent: response.intent,
         confidence: response.confidence,
+        mode: response.mode,
         data: response.data,
         suggestions: response.suggestions,
         navigation: response.navigation,
+        confirm_token: response.confirm_token,
+        action_plan: response.action_plan,
         timestamp: new Date().toISOString(),
       }
       setMessages(prev => [...prev, assistantMsg])
@@ -99,6 +151,72 @@ export default function Asistente() {
     }
   }, [input, loading, location.pathname])
 
+  const handleResetChat = useCallback(() => {
+    setMessages([createWelcomeMessage()])
+    setInput('')
+    setError(null)
+    setLastFailedMessage(null)
+    if (typeof window !== 'undefined') {
+      try {
+        window.localStorage.removeItem(CHAT_STORAGE_KEY)
+      } catch {
+        // Ignore persistence cleanup errors.
+      }
+    }
+    inputRef.current?.focus()
+  }, [])
+
+  const handleConfirm = useCallback(async (confirmToken: string) => {
+    if (confirming) return
+    setConfirming(true)
+    setError(null)
+
+    try {
+      const result = await assistantApi.confirmAction(confirmToken)
+      const successMsg: AssistantMessage = {
+        role: 'assistant',
+        content: result.answer,
+        intent: result.operation,
+        mode: 'answer',
+        data: result.result,
+        timestamp: new Date().toISOString(),
+      }
+      // Remove confirm_token from the plan message to prevent double-confirm
+      setMessages(prev => [
+        ...prev.map(m => m.confirm_token === confirmToken ? { ...m, confirm_token: undefined } : m),
+        successMsg,
+      ])
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : 'Error al confirmar accion'
+      setError(msg)
+      const errorMsg: AssistantMessage = {
+        role: 'assistant',
+        content: `Error al confirmar: ${msg}`,
+        timestamp: new Date().toISOString(),
+      }
+      setMessages(prev => [
+        ...prev.map(m => m.confirm_token === confirmToken ? { ...m, confirm_token: undefined } : m),
+        errorMsg,
+      ])
+    } finally {
+      setConfirming(false)
+      inputRef.current?.focus()
+    }
+  }, [confirming])
+
+  const handleCancelPlan = useCallback((confirmToken: string) => {
+    // Remove confirm_token to disable the confirm button and add cancelled message
+    const cancelMsg: AssistantMessage = {
+      role: 'assistant',
+      content: 'Accion cancelada. Podes hacerla de vuelta cuando quieras.',
+      timestamp: new Date().toISOString(),
+    }
+    setMessages(prev => [
+      ...prev.map(m => m.confirm_token === confirmToken ? { ...m, confirm_token: undefined } : m),
+      cancelMsg,
+    ])
+  }, [])
+
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault()
@@ -114,6 +232,14 @@ export default function Asistente() {
           <p className="text-sm text-gray-500 dark:text-gray-400">Consultas rapidas sobre el negocio</p>
         </div>
         <div className="flex items-center gap-2">
+          <button
+            type="button"
+            onClick={handleResetChat}
+            disabled={loading}
+            className="px-3 py-1.5 text-xs font-medium bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg text-gray-700 dark:text-gray-300 hover:border-blue-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors disabled:opacity-50"
+          >
+            Nuevo chat
+          </button>
           <Bot className="w-8 h-8 text-blue-600 dark:text-blue-400" />
         </div>
       </div>
@@ -146,15 +272,52 @@ export default function Asistente() {
               className={`max-w-[80%] rounded-lg px-4 py-3 ${
                 msg.role === 'user'
                   ? 'bg-blue-600 text-white'
-                  : msg.content.startsWith('Error:')
+                  : msg.content.startsWith('Error')
                     ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
-                    : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
+                    : msg.mode === 'plan'
+                      ? 'bg-amber-50 dark:bg-amber-950/30 text-gray-800 dark:text-gray-200 border-2 border-amber-300 dark:border-amber-700'
+                      : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
               }`}
             >
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
               {msg.intent && (
                 <div className="mt-2 text-xs opacity-60">
                   <span>{INTENT_LABELS[msg.intent] || msg.intent}</span>
+                </div>
+              )}
+              {/* Plan confirmation card */}
+              {msg.mode === 'plan' && msg.action_plan && (
+                <div className="mt-3 p-3 bg-white dark:bg-gray-900 rounded-lg border border-amber-200 dark:border-amber-800">
+                  <div className="flex items-center gap-2 mb-2">
+                    <ShieldAlert className="w-4 h-4 text-amber-600 dark:text-amber-400" />
+                    <span className="text-xs font-semibold text-amber-700 dark:text-amber-300">Accion a confirmar</span>
+                    <span className={`text-xs font-medium ${RISK_COLORS[msg.action_plan.risk] || 'text-gray-500'}`}>
+                      Riesgo: {msg.action_plan.risk}
+                    </span>
+                  </div>
+                  <p className="text-sm font-medium mb-3">{msg.action_plan.summary}</p>
+                  {msg.confirm_token ? (
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleConfirm(msg.confirm_token!)}
+                        disabled={confirming || loading}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        {confirming ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+                        {confirming ? 'Confirmando...' : 'Confirmar'}
+                      </button>
+                      <button
+                        onClick={() => handleCancelPlan(msg.confirm_token!)}
+                        disabled={confirming || loading}
+                        className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <XCircle className="w-4 h-4" />
+                        Cancelar
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="text-xs text-gray-500 dark:text-gray-400 italic">Accion ya procesada</p>
+                  )}
                 </div>
               )}
               {msg.navigation && msg.navigation.length > 0 && (
@@ -194,14 +357,14 @@ export default function Asistente() {
           </div>
         ))}
 
-        {loading && (
+        {(loading || confirming) && (
           <div className="flex gap-3 justify-start">
             <div className="flex-shrink-0 w-8 h-8 rounded-full bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
               <Bot className="w-4 h-4 text-blue-600 dark:text-blue-400" />
             </div>
             <div className="bg-gray-50 dark:bg-gray-800 border border-gray-100 dark:border-gray-700 rounded-lg px-4 py-3 flex items-center gap-2">
               <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
-              <span className="text-sm text-gray-500 dark:text-gray-400">Consultando...</span>
+              <span className="text-sm text-gray-500 dark:text-gray-400">{confirming ? 'Ejecutando accion...' : 'Consultando...'}</span>
             </div>
           </div>
         )}

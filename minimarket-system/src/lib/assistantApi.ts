@@ -1,5 +1,5 @@
 /**
- * API Client for the AI Assistant (Sprint 1: read-only)
+ * API Client for the AI Assistant (Sprint 1 + Sprint 2)
  *
  * Communicates with the api-assistant edge function.
  * Follows the same auth pattern as apiClient.ts.
@@ -19,26 +19,61 @@ export interface AssistantMessage {
   content: string;
   intent?: string | null;
   confidence?: number;
+  mode?: 'answer' | 'clarify' | 'plan';
   data?: unknown;
   suggestions?: string[];
   navigation?: Array<{ label: string; path: string }>;
+  confirm_token?: string;
+  action_plan?: {
+    intent: string;
+    label: string;
+    payload: Record<string, unknown>;
+    summary: string;
+    risk: string;
+  };
   timestamp: string;
 }
 
 export interface AssistantResponseData {
   intent: string | null;
   confidence: number;
-  mode: 'answer' | 'clarify';
+  mode: 'answer' | 'clarify' | 'plan';
   answer: string;
   data: unknown;
   request_id: string;
   suggestions?: string[];
   navigation?: Array<{ label: string; path: string }>;
+  confirm_token?: string;
+  action_plan?: {
+    intent: string;
+    label: string;
+    payload: Record<string, unknown>;
+    summary: string;
+    risk: string;
+  };
+}
+
+export interface ConfirmResponseData {
+  executed: boolean;
+  operation: string;
+  answer: string;
+  result: unknown;
+  request_id: string;
 }
 
 interface AssistantApiResponse {
   success: boolean;
   data?: AssistantResponseData;
+  error?: {
+    code: string;
+    message: string;
+  };
+  requestId?: string;
+}
+
+interface ConfirmApiResponse {
+  success: boolean;
+  data?: ConfirmResponseData;
   error?: {
     code: string;
     message: string;
@@ -101,4 +136,53 @@ export async function sendMessage(
   }
 }
 
-export const assistantApi = { sendMessage };
+export async function confirmAction(
+  confirmToken: string,
+): Promise<ConfirmResponseData> {
+  const token = await getAuthToken();
+
+  if (!token) {
+    throw new ApiError('AUTH_REQUIRED', 'Authentication required', 401);
+  }
+
+  const requestId = crypto.randomUUID();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), DEFAULT_TIMEOUT_MS);
+
+  try {
+    const response = await fetch(`${ASSISTANT_BASE_URL}/confirm`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+        'x-request-id': requestId,
+      },
+      body: JSON.stringify({ confirm_token: confirmToken }),
+      signal: controller.signal,
+    });
+
+    const json: ConfirmApiResponse = await response.json();
+
+    if (!response.ok || !json.success) {
+      throw new ApiError(
+        json.error?.code || 'CONFIRM_ERROR',
+        json.error?.message || 'Error al confirmar accion',
+        response.status,
+        undefined,
+        json.requestId || requestId,
+      );
+    }
+
+    return json.data!;
+  } catch (error) {
+    if (error instanceof ApiError) throw error;
+    if (error instanceof Error && error.name === 'AbortError') {
+      throw new TimeoutError(DEFAULT_TIMEOUT_MS, '/assistant/confirm', requestId);
+    }
+    throw error;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+export const assistantApi = { sendMessage, confirmAction };
