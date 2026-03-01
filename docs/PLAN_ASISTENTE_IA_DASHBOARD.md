@@ -1,7 +1,7 @@
 # PLAN ASISTENTE IA EN DASHBOARD (V2 - EJECUTABLE)
 
 **Fecha:** 2026-03-01
-**Estado:** Sprint 1 COMPLETADO + UX MVP mejorado — Sprint 2 pendiente
+**Estado:** Sprint 1 + 1.1 + 1.2 COMPLETADO (UX optimizado) — Sprint 2 pendiente
 **Objetivo:** habilitar un asistente conversacional para usuario no tecnico (principalmente perfil admin), que consulte y ejecute acciones del sistema con seguridad.
 
 ## 1) Estado actual de implementacion
@@ -214,11 +214,16 @@ Sprint 1.1 — UX improvements (2026-03-01):
 7. Navigation deep-links en respuestas (tarjetas accionables a /stock, /pedidos, etc.). OK
 8. Etiquetas amigables en UI (sin jerga tecnica "Sprint 1", "Intent:"). OK
 9. Fix timezone: ventas del dia usa timezone del cliente (no UTC del servidor). OK
-10. 91 unit tests del asistente (88 parser + 3 auth). OK
+
+Sprint 1.2 — UX polish (2026-03-01):
+10. Contextual fallback: cuando no coincide ningun intent, detecta keywords y sugiere las consultas mas relevantes. OK
+11. Retry button en errores: boton "Reintentar" re-envia el mensaje fallido. OK
+12. Loading indicator: muestra "Consultando..." con spinner. OK
+13. 98 unit tests del asistente (95 parser + 3 auth). OK
 
 Definition of Done (verificado):
 - 0 escrituras habilitadas. OK
-- 95% de prompts del set de prueba con intent correcto. OK (91/91 tests PASS)
+- 95% de prompts del set de prueba con intent correcto. OK (98/98 tests PASS)
 - Build y lint limpios. OK
 
 Evidencia: `tests/unit/assistant-intent-parser.test.ts`, `supabase/functions/api-assistant/`, `minimarket-system/src/pages/Asistente.tsx`

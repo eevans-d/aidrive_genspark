@@ -1,9 +1,9 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 1.1 Asistente IA — UX improvements)
+**Ultima actualizacion:** 2026-03-01 (Sprint 1.2 Asistente IA — contextual suggestions + UX polish)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
-**Estado del Asistente IA:** `SPRINT 1 + 1.1 COMPLETADO — solo lectura, admin only, navegacion accionable`
+**Estado del Asistente IA:** `SPRINT 1.2 COMPLETADO — solo lectura, admin only, UX optimizado`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
@@ -17,7 +17,7 @@
 
 ## 2) Estado tecnico verificado (sesion 2026-03-01)
 - ProductionGate re-ejecutado en esta sesion: **18/18 PASS** (score 100, 03:26 UTC).
-- Tests unitarios completos: **1867/1867 PASS** (84 archivos, incluye parser + seguridad de rol del asistente).
+- Tests unitarios completos: **1874/1874 PASS** (84 archivos, incluye parser + seguridad de rol del asistente).
 - Tests de integracion: **68/68 PASS** (3 archivos).
 - Tests de componentes frontend: **242/242 PASS** (47 archivos).
 - Tests de contratos API: **17/17 PASS** (1 archivo).
@@ -101,8 +101,9 @@ El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog O
 - Ruta `/asistente` protegida, acceso solo `admin` (deny-by-default en `roles.ts`).
 - Nav item en sidebar y Dashboard CTA.
 - API client `assistantApi.ts` con `sendMessage()`.
-- 91 unit tests del asistente (88 parser + 3 de seguridad de rol).
+- 98 unit tests del asistente (95 parser + 3 de seguridad de rol).
 - UX improvements (Sprint 1.1): etiquetas amigables, sin jerga tecnica, fix timezone ventas, navigation deep-links.
+- UX improvements (Sprint 1.2): contextual fallback suggestions, retry button on errors, loading indicator con texto.
 
 ### No implementado (Sprint 2)
 - Acciones mutantes (confirmar compras, aplicar facturas, etc.).
