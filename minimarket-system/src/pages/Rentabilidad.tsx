@@ -224,7 +224,7 @@ export default function Rentabilidad() {
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Top 10 por Margen</h3>
           {topByMargin.length > 0 ? (
             <ResponsiveContainer width="100%" height={260}>
-              <BarChart data={topByMargin} layout="vertical" margin={{ left: 80 }}>
+              <BarChart data={topByMargin} layout="vertical" margin={{ left: 80 }} aria-label="Gráfico: Top 10 productos por margen">
                 <XAxis type="number" tick={{ fontSize: 11 }} stroke="#9ca3af" unit="%" />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} stroke="#9ca3af" width={80} />
                 <Tooltip formatter={(val: number) => `${val}%`} />
@@ -246,7 +246,7 @@ export default function Rentabilidad() {
         <div className="bg-white dark:bg-gray-900 rounded-xl shadow p-6">
           <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-4">Distribución de Márgenes</h3>
           <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={marginBands} barSize={40}>
+            <BarChart data={marginBands} barSize={40} aria-label="Gráfico: Distribución de márgenes por banda">
               <XAxis dataKey="name" tick={{ fontSize: 11 }} stroke="#9ca3af" />
               <YAxis allowDecimals={false} tick={{ fontSize: 11 }} stroke="#9ca3af" />
               <Tooltip />

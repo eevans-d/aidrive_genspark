@@ -19,9 +19,19 @@ import {
   handleCors,
   createCorsErrorResponse,
 } from '../_shared/cors.ts';
+import {
+  FixedWindowRateLimiter,
+  buildRateLimitKey,
+  withRateLimitHeaders,
+} from '../_shared/rate-limit.ts';
 import { parseIntent, SUGGESTIONS, findRelevantSuggestions, WRITE_INTENTS } from './parser.ts';
 import { extractTrustedRole } from './auth.ts';
 import { createConfirmToken, consumeConfirmToken, type ActionPlan } from './confirm-store.ts';
+
+// ---------------------------------------------------------------------------
+// Rate limiter — 30 requests per minute per user (in-memory, per-isolate)
+// ---------------------------------------------------------------------------
+const rateLimiter = new FixedWindowRateLimiter(30, 60_000);
 
 // ---------------------------------------------------------------------------
 // Types
@@ -550,6 +560,16 @@ Deno.serve(async (req: Request) => {
   const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
   const allowedOrigins = parseAllowedOrigins(Deno.env.get('ALLOWED_ORIGINS'));
 
+  // Env validation — fail fast if critical vars are missing
+  if (!supabaseUrl || !anonKey) {
+    return fail(
+      'CONFIG_ERROR',
+      'Server misconfigured: missing SUPABASE_URL or SUPABASE_ANON_KEY',
+      500,
+      { 'Content-Type': 'application/json' },
+    );
+  }
+
   // Request ID
   const incomingRequestId = req.headers.get('x-request-id') || '';
   const requestId = (incomingRequestId && /^[\w-]{1,128}$/.test(incomingRequestId))
@@ -595,6 +615,23 @@ Deno.serve(async (req: Request) => {
   // Role check — admin only
   if (user.role !== 'admin') {
     return fail('FORBIDDEN', 'El asistente esta disponible solo para administradores', 403, responseHeaders, { requestId });
+  }
+
+  // Rate limiting — per user
+  const clientIp = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown';
+  const rlKey = buildRateLimitKey(user.id, clientIp);
+  const rlResult = rateLimiter.check(rlKey);
+  const headersWithRL = withRateLimitHeaders(responseHeaders, rlResult, rateLimiter.getLimit());
+  Object.assign(responseHeaders, headersWithRL);
+
+  if (!rlResult.allowed) {
+    return fail(
+      'RATE_LIMITED',
+      'Demasiadas solicitudes. Intenta de nuevo en unos segundos.',
+      429,
+      responseHeaders,
+      { requestId },
+    );
   }
 
   // =========================================================================

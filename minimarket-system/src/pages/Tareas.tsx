@@ -5,7 +5,7 @@ import { useTareas, TareaPendiente, type TareasResult } from '../hooks/queries'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { tareasApi, ApiError } from '../lib/apiClient'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonList, SkeletonText } from '../components/Skeleton'
 
 function computeTareasMetrics(tareas: TareaPendiente[]) {
@@ -249,6 +249,7 @@ export default function Tareas() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />
@@ -474,10 +475,10 @@ export default function Tareas() {
 
       {/* Cancel reason dialog (MED-13) */}
       {cancelDialogId && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" role="dialog" aria-modal="true" aria-labelledby="cancel-dialog-title">
           <div className="bg-white rounded-2xl w-full max-w-md shadow-xl">
             <div className="px-6 py-4 border-b flex justify-between items-center">
-              <h3 className="text-lg font-bold">Cancelar Tarea</h3>
+              <h3 id="cancel-dialog-title" className="text-lg font-bold">Cancelar Tarea</h3>
               <button
                 onClick={() => { setCancelDialogId(null); setCancelRazon('') }}
                 className="text-gray-500 hover:text-gray-700 text-2xl"

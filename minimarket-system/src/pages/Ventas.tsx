@@ -144,11 +144,12 @@ export default function Ventas() {
       {/* Filtros de fecha */}
       <div className="bg-white rounded-lg shadow p-4">
         <div className="flex flex-wrap items-end gap-4">
-          <div className="flex gap-2">
+          <div className="flex gap-2" role="group" aria-label="Rango de fecha">
             {(['hoy', 'semana', 'mes', 'custom'] as RangoPreset[]).map((p) => (
               <button
                 key={p}
                 onClick={() => { setPreset(p); setPage(1) }}
+                aria-pressed={preset === p}
                 className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
                   preset === p
                     ? 'bg-blue-600 text-white'
@@ -232,7 +233,7 @@ export default function Ventas() {
       {/* Tabla de ventas */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200" aria-label="Listado de ventas">
             <thead className="bg-gray-50">
               <tr>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Fecha/Hora</th>

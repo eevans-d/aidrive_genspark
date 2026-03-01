@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react'
 import { Package, AlertTriangle, Download } from 'lucide-react'
 import { useStock, StockConProducto } from '../hooks/queries'
 import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
+import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonTable, SkeletonText } from '../components/Skeleton'
 
 type FiltroStock = 'todos' | 'bajo' | 'critico'
@@ -96,6 +96,7 @@ export default function Stock() {
         <ErrorMessage
           message={parseErrorMessage(error)}
           type={detectErrorType(error)}
+          requestId={extractRequestId(error)}
           onRetry={() => refetch()}
           isRetrying={isFetching}
         />
@@ -111,9 +112,10 @@ export default function Stock() {
           <p className="text-gray-500">Exporta el stock filtrado en CSV.</p>
         </div>
 
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2" role="group" aria-label="Filtros de stock">
           <button
             onClick={() => setFiltro('todos')}
+            aria-pressed={filtro === 'todos'}
             className={`px-4 py-2 rounded-lg ${filtro === 'todos' ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700'
               }`}
           >
@@ -121,6 +123,7 @@ export default function Stock() {
           </button>
           <button
             onClick={() => setFiltro('bajo')}
+            aria-pressed={filtro === 'bajo'}
             className={`px-4 py-2 rounded-lg ${filtro === 'bajo' ? 'bg-orange-600 text-white' : 'bg-gray-200 text-gray-700'
               }`}
           >
@@ -128,6 +131,7 @@ export default function Stock() {
           </button>
           <button
             onClick={() => setFiltro('critico')}
+            aria-pressed={filtro === 'critico'}
             className={`px-4 py-2 rounded-lg ${filtro === 'critico' ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-700'
               }`}
           >
@@ -145,7 +149,7 @@ export default function Stock() {
       </div>
 
       <div className="bg-white rounded-lg shadow overflow-hidden">
-        <table className="min-w-full divide-y divide-gray-200">
+        <table className="min-w-full divide-y divide-gray-200" aria-label="Control de stock de productos">
           <thead className="bg-gray-50">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">

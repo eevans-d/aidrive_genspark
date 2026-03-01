@@ -316,9 +316,12 @@ export default function Deposito() {
       )}
 
       {/* Tab Toggle */}
-      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit">
+      <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit" role="tablist" aria-label="Modo de depósito">
         <button
           onClick={() => setActiveTab('rapido')}
+          role="tab"
+          aria-selected={activeTab === 'rapido'}
+          aria-controls="panel-rapido"
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'rapido'
               ? 'bg-white text-green-700 shadow-sm'
@@ -330,6 +333,9 @@ export default function Deposito() {
         </button>
         <button
           onClick={() => setActiveTab('normal')}
+          role="tab"
+          aria-selected={activeTab === 'normal'}
+          aria-controls="panel-normal"
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'normal'
               ? 'bg-white text-blue-700 shadow-sm'
@@ -340,6 +346,9 @@ export default function Deposito() {
         </button>
         <button
           onClick={() => setActiveTab('recepcion')}
+          role="tab"
+          aria-selected={activeTab === 'recepcion'}
+          aria-controls="panel-recepcion"
           className={`flex items-center gap-2 px-4 py-2 rounded-md text-sm font-medium transition-colors ${
             activeTab === 'recepcion'
               ? 'bg-white text-purple-700 shadow-sm'

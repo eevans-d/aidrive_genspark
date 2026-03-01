@@ -11,7 +11,7 @@ minimarket-system/     # Frontend React 18 + Vite 6 + TS 5.9 (SPA/PWA)
 ├── src/components/           # Componentes compartidos
 └── src/types/database.ts     # Tipos TS
 
-supabase/functions/    # Edge Functions (Deno v2) - 13 activas
+supabase/functions/    # Edge Functions (Deno v2) - 16 activas
 ├── _shared/           # Utilidades compartidas
 │   ├── cors.ts        # Headers CORS unificados
 │   ├── response.ts    # Respuestas ok/fail estándar
@@ -40,14 +40,14 @@ supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
 supabase/migrations/   # 44 migraciones SQL versionadas
 supabase/config.toml   # Configuracion Supabase local
 
-tests/unit/            # Tests unitarios (Vitest) - 76 archivos
+tests/unit/            # Tests unitarios (Vitest) - 85 archivos
 tests/contract/        # Tests de contratos - 3 archivos
 tests/api-contracts/   # Tests OpenAPI - 1 archivo
 tests/e2e/             # Smoke tests - 1 archivo
 tests/security/        # Tests de seguridad - 1 archivo
 tests/performance/     # Tests de rendimiento - 1 archivo
 minimarket-system/e2e/ # Tests Playwright E2E - 4 archivos
-minimarket-system/src/ # Tests de componentes frontend - 30 archivos
+minimarket-system/src/ # Tests de componentes frontend - 48 archivos
 
 .github/workflows/     # CI/CD
 ├── ci.yml             # Pipeline: lint → test → build → typecheck → edge-check → security
@@ -66,7 +66,7 @@ pnpm build     # Build
 pnpm lint      # Linter
 
 # Tests (desde raíz)
-npx vitest run              # Unit tests (1561 tests, 76 archivos)
+npx vitest run              # Unit tests (1905 tests, 85 archivos)
 npx vitest run tests/unit/  # Solo unit tests
 npx vitest run --coverage   # Con coverage (mínimo 80%)
 
@@ -116,20 +116,20 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Credenciales | `docs/OBTENER_SECRETOS.md` (nombres, nunca valores) |
 | Métricas | `docs/METRICS.md` (generado por `scripts/metrics.mjs`) |
 
-## Estado Actual (Febrero 2026 - verificado D-142)
+## Estado Actual (Marzo 2026 - verificado D-182)
 
 ### Proyecto Supabase
 - **Nombre:** minimarket-system
 - **Ref:** dqaygmjpzoqjjrywdsxi
 - **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
-- **Edge Functions:** 13 desplegadas y funcionando (api-minimarket v29, api-proveedor v20, scraper-maxiconsumo v21)
+- **Edge Functions:** 16 desplegadas y funcionando (api-minimarket v29, api-proveedor v20, scraper-maxiconsumo v21)
 - **Migraciones:** 44 versionadas (44/44 synced)
 - **Frontend:** Cloudflare Pages — https://aidrive-genspark.pages.dev
 
 ### Testing
 - Framework: **Vitest** (unit/integration) + **Playwright** (E2E)
-- Unit tests: 1561 passing (76 archivos)
-- Frontend component tests: 175 passing (30 archivos)
+- Unit tests: 1905 passing (85 archivos)
+- Frontend component tests: 249 passing (48 archivos)
 - E2E tests: 4 passing
 - Integration tests: 68 passing
 - Coverage: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines

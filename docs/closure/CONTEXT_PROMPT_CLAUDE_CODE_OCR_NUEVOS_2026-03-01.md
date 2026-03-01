@@ -28,6 +28,8 @@ No teorices: ejecuta, valida y documenta.
 - Backlog OCR: 9/10 completadas, 1/10 parcial (T7).
 - Bloqueante externo: OCR-007 (GCV timeout/billing).
 - Lote nuevo en `proveedores_facturas_temp/nuevos`.
+- Handoff sesión OCR: `docs/closure/OCR_NUEVOS_HANDOFF_2026-03-01.md` (21/21 pendiente, 5 supplier profiles, 4 grupos temporales).
+- Scripts listos: `scripts/ocr-procesar-nuevos.mjs`, `scripts/ocr-reasignar-proveedor.mjs`, `scripts/seed-supplier-profiles.mjs`.
 
 ## Plan de ejecucion
 ### Fase 0 — Baseline
