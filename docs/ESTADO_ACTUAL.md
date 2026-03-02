@@ -1,6 +1,6 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-02 (Sprint 2 hardening — desambiguacion estricta en pagos)
+**Ultima actualizacion:** 2026-03-02 (sync estado facturas_ingesta 21/21 pendiente)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
 **Estado del Asistente IA:** `SPRINT 2 COMPLETADO — plan→confirm con confirm_token, crear_tarea + registrar_pago_cc`
@@ -45,7 +45,7 @@
 - Chunked base64 encoding para imagenes grandes (fix de stack overflow).
 - Error handling especifico para GCV timeout (504 `OCR_TIMEOUT`).
 - Scripts batch: `scripts/ocr-procesar-nuevos.mjs` y `scripts/seed-proveedores.mjs`.
-- 12 proveedores seeded, 21 facturas cargadas (**20 `pendiente`**, **1 `error`** por timeout GCV en reintento puntual).
+- 12 proveedores seeded, 21 facturas cargadas (**21 `pendiente`**, **0 `error`** — errores reseteados a pendiente en sesión 2026-03-01).
 
 ### Cross-check PLAN_FUSIONADO T1-T10
 

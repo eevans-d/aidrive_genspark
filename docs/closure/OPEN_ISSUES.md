@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-02 (Sprint 2 hardening — desambiguacion de pagos)
+**Ultima actualizacion:** 2026-03-02 (sync estado lote OCR 21/21 pendiente)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -79,7 +79,7 @@
 
 ## BLOCKED
 - OCR-007: GCV_API_KEY no responde (timeout 15s). Bloqueante para extraccion OCR de las 21 facturas cargadas.
-- Estado actual de lote OCR en BD: `20 pendiente`, `1 error`, `0 extraida`, `0 validada`, `0 aplicada`.
+- Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
 El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Asistente IA Sprint 1 + Sprint 1.1/1.2/1.3 (UX improvements) + Sprint 2 (acciones con confirmacion) esta implementado, testeado y desplegado en produccion (D-178→D-182, DEPLOY-001 cerrado). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.
