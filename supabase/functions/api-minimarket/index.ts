@@ -1380,6 +1380,16 @@ Deno.serve(async (req) => {
         return respondFail('VALIDATION_ERROR', 'ID de tarea inválido', 400);
       }
 
+      // State machine guard: only 'pendiente' tasks can be completed
+      const tareas = await queryTable(supabaseUrl, 'tareas_pendientes', requestHeaders(), { id: tareaId });
+      const tarea = (tareas as Record<string, unknown>[])[0];
+      if (!tarea) {
+        return respondFail('NOT_FOUND', 'Tarea no encontrada', 404);
+      }
+      if (tarea.estado !== 'pendiente') {
+        return respondFail('CONFLICT', `No se puede completar una tarea en estado '${tarea.estado}'`, 409);
+      }
+
       const updateData = {
         estado: 'completada',
         fecha_completada: new Date().toISOString(),
@@ -1414,6 +1424,16 @@ Deno.serve(async (req) => {
       const tareaId = path.split('/')[2];
       if (!isUuid(tareaId)) {
         return respondFail('VALIDATION_ERROR', 'ID de tarea inválido', 400);
+      }
+
+      // State machine guard: only 'pendiente' tasks can be cancelled
+      const tareas = await queryTable(supabaseUrl, 'tareas_pendientes', requestHeaders(), { id: tareaId });
+      const tarea = (tareas as Record<string, unknown>[])[0];
+      if (!tarea) {
+        return respondFail('NOT_FOUND', 'Tarea no encontrada', 404);
+      }
+      if (tarea.estado !== 'pendiente') {
+        return respondFail('CONFLICT', `No se puede cancelar una tarea en estado '${tarea.estado}'`, 409);
       }
 
       const bodyResult = await parseJsonBody<{ razon?: string }>();
@@ -1525,6 +1545,9 @@ Deno.serve(async (req) => {
       const observacionesValue =
         typeof observaciones === 'string' && observaciones.trim() ? observaciones.trim() : null;
 
+      // Idempotency support (optional)
+      const idempotencyKey = req.headers.get('idempotency-key') || null;
+
       // Llamar a sp_movimiento_inventario
       const result = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
         p_producto_id: producto_id,
@@ -1535,6 +1558,7 @@ Deno.serve(async (req) => {
         p_usuario: user!.id,
         p_proveedor_id: proveedorId,
         p_observaciones: observacionesValue,
+        p_idempotency_key: idempotencyKey,
       });
 
       // Audit log for stock adjustments (ajuste) and large movements
@@ -1638,6 +1662,9 @@ Deno.serve(async (req) => {
 
       const depositoValue = typeof deposito === 'string' && deposito.trim() ? deposito.trim() : 'Principal';
 
+      // Idempotency support (optional)
+      const idempotencyKey = req.headers.get('idempotency-key') || null;
+
       // Registrar movimiento de ingreso
       const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
         p_producto_id: producto_id,
@@ -1647,6 +1674,7 @@ Deno.serve(async (req) => {
         p_destino: depositoValue,
         p_usuario: user!.id,
         p_proveedor_id: proveedorId,
+        p_idempotency_key: idempotencyKey,
       });
 
       // D-007 cierre: persistir precio de compra en tabla dedicada precios_compra
@@ -1751,6 +1779,9 @@ Deno.serve(async (req) => {
       }
 
       try {
+        // Idempotency support (optional)
+        const idempotencyKey = req.headers.get('idempotency-key') || null;
+
         const movimiento = await callFunction(supabaseUrl, 'sp_movimiento_inventario', requestHeaders(), {
           p_producto_id: orden.producto_id,
           p_tipo: 'entrada',
@@ -1759,6 +1790,7 @@ Deno.serve(async (req) => {
           p_destino: depositoValue,
           p_usuario: user!.id,
           p_orden_compra_id: orden_compra_id,
+          p_idempotency_key: idempotencyKey,
         });
 
         return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
@@ -1851,6 +1883,12 @@ Deno.serve(async (req) => {
 	        estado,
 	        user!.id
 	      );
+	      if (res.status >= 200 && res.status < 300) {
+	        await logAudit('PEDIDO_ESTADO_CAMBIADO', 'pedido', id, {
+	          nuevo_estado: estado,
+	          usuario: user?.email,
+	        });
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }
@@ -1879,6 +1917,12 @@ Deno.serve(async (req) => {
 	        id,
 	        monto_pagado
 	      );
+	      if (res.status >= 200 && res.status < 300) {
+	        await logAudit('PEDIDO_PAGO_REGISTRADO', 'pedido', id, {
+	          monto_pagado,
+	          usuario: user?.email,
+	        });
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }
@@ -2061,6 +2105,13 @@ Deno.serve(async (req) => {
 	        requestId,
 	        bodyResult as Record<string, unknown>,
 	      );
+	      if (res.status >= 200 && res.status < 300) {
+	        const body = bodyResult as Record<string, unknown>;
+	        await logAudit('CC_PAGO_REGISTRADO', 'cuenta_corriente', String(body.cliente_id || ''), {
+	          monto: body.monto,
+	          descripcion: body.descripcion || null,
+	        });
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }
@@ -2083,6 +2134,17 @@ Deno.serve(async (req) => {
         respondOk,
         respondFail,
         logger,
+      }).then(async (res) => {
+        if (res.status >= 200 && res.status < 300) {
+          const body = bodyResult as Record<string, unknown>;
+          await logAudit('VENTA_CREADA', 'venta', requestId, {
+            metodo_pago: body.metodo_pago,
+            cliente_id: body.cliente_id || null,
+            items_count: Array.isArray(body.items) ? body.items.length : 0,
+            ip: clientIp,
+          });
+        }
+        return res;
       });
     }
 

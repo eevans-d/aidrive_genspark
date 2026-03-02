@@ -154,11 +154,17 @@ describe('apiClient branch coverage', () => {
       await expect(productosApi.dropdown()).rejects.toBeInstanceOf(ApiError);
     });
 
-    it('re-throws non-ApiError non-AbortError as-is', async () => {
+    it('converts TypeError to ApiError with NETWORK_ERROR code', async () => {
       fetchSpy.mockRejectedValueOnce(new TypeError('Failed to fetch'));
 
-      const { productosApi } = await import('../../minimarket-system/src/lib/apiClient');
-      await expect(productosApi.dropdown()).rejects.toThrow('Failed to fetch');
+      const { productosApi, ApiError } = await import('../../minimarket-system/src/lib/apiClient');
+      try {
+        await productosApi.dropdown();
+        expect.unreachable('should have thrown');
+      } catch (err) {
+        expect(err).toBeInstanceOf(ApiError);
+        expect((err as InstanceType<typeof ApiError>).code).toBe('NETWORK_ERROR');
+      }
     });
 
     it('uses client requestId when server does not provide x-request-id', async () => {

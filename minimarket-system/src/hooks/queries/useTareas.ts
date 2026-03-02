@@ -30,7 +30,8 @@ async function fetchTareas(options: UseTareasOptions = {}): Promise<TareasResult
                 .from('tareas_pendientes')
                 .select('*', { count: 'exact' })
                 .order('prioridad', { ascending: false })
-                .order('created_at', { ascending: false });
+                .order('created_at', { ascending: false })
+                .limit(200);
 
         if (estado !== 'todos') {
                 query = query.eq('estado', estado);

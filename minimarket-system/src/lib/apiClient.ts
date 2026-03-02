@@ -9,6 +9,13 @@ import { authEvents } from './authEvents';
 const API_BASE_URL = import.meta.env.VITE_API_GATEWAY_URL || '/api-minimarket';
 const USE_MOCKS = import.meta.env.VITE_USE_MOCKS === 'true' || import.meta.env.VITE_USE_MOCKS === '1';
 
+if (USE_MOCKS && import.meta.env.PROD) {
+        throw new Error(
+                'VITE_USE_MOCKS no puede estar habilitado en producción. ' +
+                'Elimina VITE_USE_MOCKS de las variables de entorno de producción.'
+        );
+}
+
 /** Default request timeout in milliseconds (30 seconds) */
 const DEFAULT_TIMEOUT_MS = 30_000;
 
@@ -161,7 +168,23 @@ async function apiRequest<T>(
                         }
                         throw new TimeoutError(timeoutMs, endpoint, requestId);
                 }
-                throw error;
+                // Convert network errors (TypeError: Failed to fetch, etc.) to ApiError
+                if (error instanceof TypeError) {
+                        throw new ApiError(
+                                'NETWORK_ERROR',
+                                'Error de conexión. Verificá tu conexión a internet e intentá de nuevo.',
+                                0,
+                                undefined,
+                                requestId
+                        );
+                }
+                throw new ApiError(
+                        'UNKNOWN_ERROR',
+                        'Ocurrió un error inesperado. Intentá de nuevo.',
+                        0,
+                        undefined,
+                        requestId
+                );
         } finally {
                 // Cleanup
                 if (timeoutId !== undefined) {
@@ -405,6 +428,7 @@ export interface MovimientoResponse {
         tipo_movimiento: string;
         cantidad: number;
         fecha_movimiento: string;
+        idempotent?: boolean;
 }
 
 export interface IngresoParams {
@@ -425,9 +449,10 @@ export const depositoApi = {
         /**
          * Register inventory movement
          */
-        async movimiento(params: MovimientoParams): Promise<MovimientoResponse> {
+        async movimiento(params: MovimientoParams, idempotencyKey?: string): Promise<MovimientoResponse> {
                 return apiRequest<MovimientoResponse>('/deposito/movimiento', {
                         method: 'POST',
+                        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
                         body: JSON.stringify(params),
                 });
         },
@@ -435,9 +460,10 @@ export const depositoApi = {
         /**
          * Register merchandise ingress (with optional precio_compra)
          */
-        async ingreso(params: IngresoParams): Promise<MovimientoResponse> {
+        async ingreso(params: IngresoParams, idempotencyKey?: string): Promise<MovimientoResponse> {
                 return apiRequest<MovimientoResponse>('/deposito/ingreso', {
                         method: 'POST',
+                        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
                         body: JSON.stringify(params),
                 });
         },
@@ -445,9 +471,10 @@ export const depositoApi = {
         /**
          * Register purchase order reception (atomic via SP)
          */
-        async recepcionCompra(params: RecepcionCompraParams): Promise<MovimientoResponse> {
+        async recepcionCompra(params: RecepcionCompraParams, idempotencyKey?: string): Promise<MovimientoResponse> {
                 return apiRequest<MovimientoResponse>('/compras/recepcion', {
                         method: 'POST',
+                        headers: idempotencyKey ? { 'Idempotency-Key': idempotencyKey } : undefined,
                         body: JSON.stringify(params),
                 });
         },

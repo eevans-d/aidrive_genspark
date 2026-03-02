@@ -36,7 +36,8 @@ async function fetchRentabilidad(): Promise<RentabilidadResult> {
                 .eq('activo', true)
                 .not('precio_actual', 'is', null)
                 .not('precio_costo', 'is', null)
-                .order('margen_ganancia', { ascending: false });
+                .order('margen_ganancia', { ascending: false })
+                .limit(500);
 
         if (error) throw error;
 

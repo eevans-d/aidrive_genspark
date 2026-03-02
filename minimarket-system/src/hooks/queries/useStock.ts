@@ -29,7 +29,8 @@ async function fetchStock(): Promise<StockResult> {
         const { data, count, error } = await supabase
                 .from('stock_deposito')
                 .select('*, productos(nombre, categoria)', { count: 'exact' })
-                .order('cantidad_actual', { ascending: true });
+                .order('cantidad_actual', { ascending: true })
+                .limit(500);
 
         if (error) throw error;
 

@@ -7,6 +7,13 @@ const useMocks =
   import.meta.env.VITE_USE_MOCKS === 'true' ||
   import.meta.env.VITE_USE_MOCKS === '1'
 
+if (useMocks && import.meta.env.PROD) {
+  throw new Error(
+    'VITE_USE_MOCKS no puede estar habilitado en producción. ' +
+    'Elimina VITE_USE_MOCKS de las variables de entorno de producción.'
+  )
+}
+
 if (!useMocks && (!supabaseUrl || !supabaseAnonKey)) {
   throw new Error(
     'Faltan variables de entorno VITE_SUPABASE_URL y/o VITE_SUPABASE_ANON_KEY. ' +

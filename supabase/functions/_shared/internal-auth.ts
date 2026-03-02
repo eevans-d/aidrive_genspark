@@ -24,8 +24,28 @@ function decodeJwtPayload(token: string): Record<string, unknown> | null {
 }
 
 /**
+ * Timing-safe string comparison to prevent timing attacks on secret tokens.
+ */
+function timingSafeEqual(a: string, b: string): boolean {
+  if (a.length !== b.length) {
+    // Do extra work to keep time roughly constant
+    let dummy = 0;
+    for (let i = 0; i < a.length; i++) {
+      dummy |= a.charCodeAt(i) ^ (b.charCodeAt(i % b.length) || 0);
+    }
+    return false;
+  }
+  let result = 0;
+  for (let i = 0; i < a.length; i++) {
+    result |= a.charCodeAt(i) ^ b.charCodeAt(i);
+  }
+  return result === 0;
+}
+
+/**
  * Restricts internal cron endpoints to service-role callers.
  * Accepts either Authorization Bearer token or apikey header.
+ * Uses timing-safe comparison to prevent timing attacks.
  */
 export function requireServiceRoleAuth(
   req: Request,
@@ -33,12 +53,11 @@ export function requireServiceRoleAuth(
   headers: HeadersLike = {},
   requestId?: string,
 ): AuthResult {
-  const authHeader = req.headers.get('authorization');
-  const apiKeyHeader = req.headers.get('apikey');
+  const authHeader = req.headers.get('authorization') ?? '';
+  const apiKeyHeader = req.headers.get('apikey') ?? '';
   const expectedBearer = `Bearer ${serviceRoleKey}`;
 
-  // Primary mode: exact match against the project service role key (or configured internal token).
-  const authorized = authHeader === expectedBearer || apiKeyHeader === serviceRoleKey;
+  const authorized = timingSafeEqual(authHeader, expectedBearer) || timingSafeEqual(apiKeyHeader, serviceRoleKey);
 
   if (authorized) {
     return { authorized: true };

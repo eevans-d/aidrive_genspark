@@ -42,6 +42,32 @@ export default function Pos() {
   const inputRef = useRef<HTMLInputElement>(null)
   const isProcessingScan = useRef(false)
 
+  // Cross-tab protection: detect if POS is already open in another tab
+  const [otherTabActive, setOtherTabActive] = useState(false)
+  const tabId = useRef(crypto.randomUUID())
+
+  useEffect(() => {
+    if (typeof BroadcastChannel === 'undefined') return
+    const channel = new BroadcastChannel('pos-lock')
+    // Announce this tab
+    channel.postMessage({ type: 'pos-ping', tabId: tabId.current })
+    const onMessage = (e: MessageEvent) => {
+      if (e.data?.type === 'pos-ping' && e.data.tabId !== tabId.current) {
+        setOtherTabActive(true)
+        // Reply so the other tab knows we exist
+        channel.postMessage({ type: 'pos-pong', tabId: tabId.current })
+      }
+      if (e.data?.type === 'pos-pong' && e.data.tabId !== tabId.current) {
+        setOtherTabActive(true)
+      }
+    }
+    channel.addEventListener('message', onMessage)
+    return () => {
+      channel.removeEventListener('message', onMessage)
+      channel.close()
+    }
+  }, [])
+
   const [scanValue, setScanValue] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [metodoPago, setMetodoPago] = useState<CreateVentaParams['metodo_pago']>('efectivo')
@@ -188,8 +214,7 @@ export default function Pos() {
         precio_actual: typeof pick.precio_actual === 'number' ? pick.precio_actual : null,
       })
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Error buscando producto'
-      toast.error(msg)
+      toast.error(parseErrorMessage(err))
     }
   }, [addToCart, productoIndex])
 
@@ -226,7 +251,7 @@ export default function Pos() {
           return
         }
       }
-      const msg = err instanceof Error ? err.message : 'Error al procesar venta'
+      const msg = err instanceof ApiError ? err.message : parseErrorMessage(err)
       toast.error(msg)
     },
   })
@@ -346,6 +371,14 @@ export default function Pos() {
   return (
     <div className="min-h-screen bg-gray-50">
       <Toaster position="top-right" richColors />
+
+      {/* Cross-tab warning */}
+      {otherTabActive && (
+        <div className="bg-amber-100 border-b border-amber-300 px-4 py-2 text-amber-900 text-sm flex items-center gap-2">
+          <AlertTriangle className="w-4 h-4 shrink-0" />
+          POS abierto en otra pestaña. Operar en ambas puede causar inconsistencias.
+        </div>
+      )}
 
       {/* Top bar */}
       <div className="sticky top-0 z-10 bg-white border-b">
