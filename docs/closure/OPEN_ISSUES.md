@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 2 Asistente IA — acciones con confirmacion)
+**Ultima actualizacion:** 2026-03-02 (Sprint 2 hardening — desambiguacion de pagos)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -55,6 +55,7 @@
 
 ## Hallazgos cerrados (resumen)
 - **Auditoria de produccion D-177 (2026-03-01):** 11 fixes implementados cubriendo CRITICO (RL-01 error leakage, F2+D3 estado transition ordering) + HIGH (S2 auth bypass, F1+S1 GCV safety, M1 image limits, ES-03/PW-02/TC-01 aplicar robustness) + MEDIUM (MISC-02 request-id sanitization, F3 JSON parse, UI-01 double-submit).
+- **D-183 (2026-03-02):** hardening de `registrar_pago_cc` en asistente IA: ya no selecciona cliente implicito cuando hay candidatos duplicados; fuerza desambiguacion antes de permitir confirmacion. `api-assistant` redeployada (v2).
 - Revalidacion pre-entrega 2026-03-01: `ProductionGate` 18/18 PASS (score 100), `RealityCheck` sin blockers UX P0, `DocuGuard` PASS (ver reporte de cierre 2026-03-01).
 - Revalidacion global de sistema y gates: ver `docs/PRODUCTION_GATE_REPORT.md`.
 - Cierres historicos pre-OCR: ver `docs/closure/archive/historical/INFORME_REMEDIACION_FINAL_2026-02-25_041847.md`.

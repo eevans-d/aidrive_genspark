@@ -1,6 +1,6 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-01 (Sprint 2 Asistente IA — acciones con confirmacion plan→confirm)
+**Ultima actualizacion:** 2026-03-02 (Sprint 2 hardening — desambiguacion estricta en pagos)
 **Veredicto general del sistema:** `GO INCONDICIONAL`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
 **Estado del Asistente IA:** `SPRINT 2 COMPLETADO — plan→confirm con confirm_token, crear_tarea + registrar_pago_cc`
@@ -15,7 +15,7 @@
 - Se archivaron **38** documentos historicos en `docs/closure/archive/historical/`, con referencias reescritas automaticamente y policy-check de raiz para evitar regresiones.
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
-## 2) Estado tecnico verificado (sesion 2026-03-01)
+## 2) Estado tecnico verificado (sesion 2026-03-02)
 - ProductionGate re-ejecutado en esta sesion: **18/18 PASS** (score 100, 03:26 UTC).
 - Tests unitarios completos: **1905/1905 PASS** (85 archivos, incluye parser + seguridad de rol + confirm-store del asistente).
 - Tests de integracion: **68/68 PASS** (3 archivos).
@@ -29,7 +29,7 @@
 - Freshness de este documento: **vigente (0 dias)**.
 - `.env.example` sincronizado con runtime OCR: agregado `OCR_MIN_SCORE_APPLY` (default sugerido `0.70`).
 - Deploy `facturas-ocr`: **v10 en produccion** (base64 chunked + CUIT variants + timeout handling).
-- Estado remoto `supabase functions list`: **16 funciones ACTIVE** (16 en repo; `api-assistant` desplegada con Sprint 1 + 2 — ver DEPLOY-001 cerrado en `docs/closure/OPEN_ISSUES.md`).
+- Estado remoto `supabase functions list`: **16 funciones ACTIVE** (16 en repo; `api-assistant` v2 desplegada 2026-03-02 03:35 UTC con hardening D-183).
 
 ## 3) OCR de facturas: estado real
 
@@ -114,7 +114,7 @@ El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog O
 - Confirm token store (`confirm-store.ts`): tokens de un solo uso con TTL de 120s, scoped por usuario, GC automatico, max 200 tokens globales.
 - Endpoint `POST /confirm`: consume token, valida userId, ejecuta accion via api-minimarket gateway y retorna resultado.
 - Ejecutores de accion: `executeCrearTarea()` → `POST /tareas`, `executeRegistrarPagoCC()` → `POST /cuentas-corrientes/pagos`.
-- Manejo de ambiguedad: si faltan datos obligatorios (titulo para tarea, monto para pago) se retorna `mode: 'clarify'` pidiendo desambiguacion.
+- Manejo de ambiguedad: si faltan datos obligatorios o hay multiples candidatos de cliente (incluyendo nombres exactos duplicados), se retorna `mode: 'clarify'` pidiendo desambiguacion explicita.
 - Frontend: plan card con borde amber, resumen visual de accion/parametros/riesgo, botones Confirmar (verde) y Cancelar (gris), estado `confirming` con spinner.
 - API client actualizado: `confirmAction(confirmToken)` para POST /confirm, tipos extendidos con `mode`, `confirm_token`, `action_plan`.
 - Quick prompts ampliados: "Crear tarea" y "Registrar pago" como acciones directas.

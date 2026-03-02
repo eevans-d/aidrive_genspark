@@ -18,7 +18,7 @@
 - 129 unit tests del asistente (116 parser + 3 de seguridad de rol + 10 confirm-store): `tests/unit/assistant-intent-parser.test.ts`, `tests/unit/assistant-auth-role.test.ts`, `tests/unit/assistant-confirm-store.test.ts`
 - 7 component tests de UI del asistente: `minimarket-system/src/pages/Asistente.test.tsx`
 
-**Pendiente:** deploy de `api-assistant` a Supabase (`supabase functions deploy api-assistant --use-api`, mantener `verify_jwt=true` por D-086).
+**Deploy:** `api-assistant` ya desplegada en Supabase (`verify_jwt=true`, politica D-086).
 
 ## 2) Diseño real (sin humo)
 
@@ -52,7 +52,7 @@ Artefactos Sprint 1 (implementados):
 - `minimarket-system/src/pages/Asistente.tsx` — pagina chat completa
 - `minimarket-system/src/lib/assistantApi.ts` — cliente API con auth JWT
 
-Artefactos Sprint 2 (pendientes):
+Artefactos Sprint 2 (implementados en esta fase):
 - `minimarket-system/src/components/assistant/AssistantPanel.tsx`
 - `minimarket-system/src/components/assistant/ActionCard.tsx`
 - `minimarket-system/src/components/assistant/ConfirmationModal.tsx`
@@ -72,7 +72,7 @@ Responsabilidades:
 2. Parsear intencion.
 3. Ejecutar consultas read-only via endpoints existentes (`api-minimarket`) y PostgREST cuando aplique.
 4. Devolver respuesta estructurada por `POST /message`.
-5. Rechazar cualquier operacion mutante en Sprint 1.
+5. Para intents mutantes, devolver plan con confirmacion explicita y ejecutar solo via `POST /confirm`.
 6. Registrar `request_id` para trazabilidad.
 
 ## 3.3 Modo de inteligencia (estrategia pragmatica)
@@ -195,11 +195,11 @@ Plan response (write intents en `POST /message`):
   "answer": "Voy a crear una tarea...",
   "confirm_token": "uuid-token",
   "action_plan": {
-    "action": "crear_tarea",
-    "summary": "Crear tarea: titulo",
-    "params": { "titulo": "...", "prioridad": "media" },
-    "risk": "low",
-    "validations": ["Titulo presente", ...]
+    "intent": "crear_tarea",
+    "label": "Crear tarea",
+    "payload": { "titulo": "...", "prioridad": "normal" },
+    "summary": "Crear tarea \"...\" con prioridad normal",
+    "risk": "bajo"
   },
   "request_id": "..."
 }
@@ -255,7 +255,7 @@ Definition of Done (verificado):
 Evidencia: `tests/unit/assistant-intent-parser.test.ts`, `minimarket-system/src/pages/Asistente.test.tsx`, `supabase/functions/api-assistant/`, `minimarket-system/src/pages/Asistente.tsx`
 
 Pendiente post-Sprint 1:
-- Deploy de `api-assistant` a Supabase Cloud (`supabase functions deploy api-assistant --use-api`).
+- ~~Deploy de `api-assistant` a Supabase Cloud (`supabase functions deploy api-assistant --use-api`).~~ ✅ Desplegado 2026-03-01
 
 ## Sprint 2 (5 dias) - acciones confirmadas — COMPLETADO (2026-03-01)
 
@@ -269,7 +269,7 @@ Entregables (todos implementados):
 
 Definition of Done (verificado):
 - 0 ejecuciones sin confirmacion. OK (write intents siempre retornan `mode: 'plan'`)
-- 100% de acciones con registro auditable. OK (request_id en plan y confirm)
+- Trazabilidad de ejecucion por `request_id` en plan y confirm. OK
 - 0 regresiones en tests existentes. OK (1905/1905 unit + 249/249 component)
 
 Evidencia: `tests/unit/assistant-confirm-store.test.ts`, `tests/unit/assistant-intent-parser.test.ts`, `minimarket-system/src/pages/Asistente.test.tsx`, `supabase/functions/api-assistant/confirm-store.ts`
@@ -329,9 +329,9 @@ P2:
 ## 11) Recomendacion ejecutiva
 
 Sprint 1 (read-only) y Sprint 2 (acciones con confirmacion) estan **COMPLETADOS** y funcionales.
-Siguiente paso: deploy a produccion y comenzar Sprint 3 (hardening y adopcion).
+Siguiente paso: comenzar Sprint 3 (hardening y adopcion).
 Ruta recomendada:
-- Deployar `api-assistant` a Supabase Cloud (incluye Sprint 1 + 2)
+- Mantener monitoreo de `api-assistant` desplegada (errores, rate-limit, feedback de uso)
 - Piloto con usuario real para validar flujo plan→confirm
 - Implementar Sprint 3: acciones adicionales + historial de acciones + guia visual
 - Recien despues evaluar LLM para mejorar interpretacion.

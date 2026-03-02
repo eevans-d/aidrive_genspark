@@ -427,22 +427,23 @@ async function buildRegistrarPagoCCPlan(
   }
 
   if (clientes.length > 1) {
-    // Check for exact match first
-    const exact = clientes.find(
+    // Check for exact matches. If there is more than one exact candidate,
+    // force disambiguation to avoid applying payment to the wrong client.
+    const exactMatches = clientes.filter(
       (c) => String(c.nombre || '').toLowerCase() === clienteNombre.toLowerCase(),
     );
-    if (!exact) {
+    if (exactMatches.length !== 1) {
       const names = clientes.map((c) => `- ${c.nombre}`).join('\n');
       return {
         plan: { intent: 'registrar_pago_cc', label: 'Registrar pago', payload: {}, summary: '', risk: 'medio' },
         answer: '',
         needsDisambiguation: {
           field: 'cliente_nombre',
-          message: `Encontre varios clientes similares:\n${names}\n\nEscribi el nombre completo del cliente que buscas.`,
+          message: `Encontre varios clientes similares:\n${names}\n\nEscribi el nombre completo del cliente o agrega un dato extra (telefono/email).`,
         },
       };
     }
-    clientes = [exact];
+    clientes = [exactMatches[0]];
   }
 
   const cliente = clientes[0];
