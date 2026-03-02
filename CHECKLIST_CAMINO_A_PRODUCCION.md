@@ -6,41 +6,32 @@
 
 ---
 
-## FASE 1: Aplicar migraciones SQL (BLOQUEANTE)
+## FASE 1: Aplicar migraciones SQL (BLOQUEANTE) — COMPLETADA 2026-03-02
 
-Las 3 migraciones estan en el repo pero NO aplicadas a la BD remota.
+Las 3 migraciones aplicadas exitosamente via `supabase db push`. Sin violaciones de datos.
 
-```bash
-supabase db push
-```
+- [x] `20260302010000_add_idempotency_movimientos_deposito.sql` — columna + indice UNIQUE + SP actualizado
+- [x] `20260302020000_fk_cascade_to_restrict.sql` — 2 FK criticas cambiadas a RESTRICT
+- [x] `20260302030000_add_check_constraints_and_rls_cache.sql` — 3 CHECK + RLS cache_proveedor
 
-Migraciones pendientes:
-- [ ] `20260302010000_add_idempotency_movimientos_deposito.sql` — columna + indice UNIQUE + SP actualizado
-- [ ] `20260302020000_fk_cascade_to_restrict.sql` — 2 FK criticas cambiadas a RESTRICT
-- [ ] `20260302030000_add_check_constraints_and_rls_cache.sql` — 3 CHECK + RLS cache_proveedor
-
-**IMPORTANTE:** Verificar que no haya datos existentes que violen los nuevos CHECK constraints antes de aplicar:
-```sql
--- Verificar antes de migrar
-SELECT id, nombre, precio_costo FROM productos WHERE precio_costo < 0;
-SELECT id, stock_minimo, stock_maximo FROM stock_deposito WHERE stock_maximo < stock_minimo;
-SELECT id, monto_pagado, monto_total FROM pedidos WHERE monto_pagado > monto_total;
-```
+Verificacion: `supabase db push --dry-run` confirma "Remote database is up to date".
 
 ---
 
-## FASE 2: Deploy Edge Functions actualizadas
+## FASE 2: Deploy Edge Functions actualizadas — COMPLETADA 2026-03-02
 
-- [ ] `supabase functions deploy api-minimarket` — contiene: idempotencia deposito, state machine tareas, audit trail financiero
-- [ ] Verificar con `supabase functions list` que esten ACTIVE
+- [x] `supabase functions deploy api-minimarket` (v39→v40) — idempotencia deposito, state machine tareas, audit trail financiero
+- [x] Redeploy 13 funciones que usan `_shared/internal-auth.ts` (timing-safe comparison fix)
+- [x] Verificar con `supabase functions list` que 16/16 estan ACTIVE
 - [ ] Smoke test manual: POST /deposito/movimiento con `Idempotency-Key` header → debe retornar `idempotent: false` la primera vez, `idempotent: true` la segunda
 
 ---
 
-## FASE 3: Deploy Frontend (Cloudflare Pages)
+## FASE 3: Deploy Frontend (Cloudflare Pages) — BUILD LISTO 2026-03-02
 
-- [ ] `pnpm build` en `minimarket-system/`
-- [ ] Deploy a Cloudflare Pages (verifica que `_headers` se copia al `dist/`)
+- [x] `pnpm build:pages` en `minimarket-system/` — 1905/1905 tests PASS, build OK
+- [x] `_headers` + `_redirects` copiados a `dist/` automaticamente por el script `build:pages`
+- [ ] Deploy a Cloudflare Pages (manual o CI/CD) — usar `dist/` como output directory
 - [ ] Verificar headers en produccion: `curl -I https://[tu-dominio]` → debe mostrar CSP + HSTS
 - [ ] Verificar POS cross-tab: abrir en 2 pestañas → debe mostrar banner amber de advertencia
 
