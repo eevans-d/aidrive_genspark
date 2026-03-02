@@ -1,35 +1,23 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-02 (sync estado facturas_ingesta 21/21 pendiente)
-**Veredicto general del sistema:** `GO INCONDICIONAL`
+**Ultima actualizacion:** 2026-03-02 (auditoria cruzada Claude Code + Codex — Tier 1 + Tier 2 ejecutados)
+**Veredicto general del sistema:** `LISTO CON CONDICIONES → EN REMEDIACION (Tier 1 DONE, Tier 2 DONE parcial)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
 **Estado del Asistente IA:** `SPRINT 2 COMPLETADO — plan→confirm con confirm_token, crear_tarea + registrar_pago_cc`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
-- El sistema principal mantiene veredicto `GO INCONDICIONAL` (ProductionGate previo 18/18 PASS).
-- **Auditoria de produccion profunda completada:** analisis de ingenieria inversa simulando escenarios reales de produccion detecto **50+ hallazgos** (1 CRITICO seguridad, 2 CRITICOS integridad datos, 8 HIGH, 19 MEDIUM, 7 LOW).
-- Se implementaron **11 fixes** cubriendo todos los CRITICOS y la mayoria de HIGH: sanitizacion de errores, auth bypass removal, reorden de transiciones de estado, limites de tamaño, JSON parse safety, double-submit UI fix.
-- Todas las tareas T1-T10 del PLAN_FUSIONADO estan COMPLETADAS + hardening adicional de produccion aplicado.
-- Se ejecuto higiene documental de `docs/closure` con clasificacion activa/historica/deprecada y prompts obsoletos marcados.
-- Se archivaron **38** documentos historicos en `docs/closure/archive/historical/`, con referencias reescritas automaticamente y policy-check de raiz para evitar regresiones.
+- **Auditoria cruzada completada (2026-03-02):** dos agentes independientes (Claude Code 6.7/10, Codex 7.2/10) auditaron el sistema completo. Veredicto consensuado: `LISTO CON CONDICIONES` — 6 items criticos + 12 items importantes + 14 mejoras backlog.
+- **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
+- **Tier 2 (6/12 hardening) — PARCIAL:** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4 operaciones), cross-tab POS.
+- **3 migraciones SQL pendientes de aplicar:** `20260302010000` (idempotency), `20260302020000` (FK restrict), `20260302030000` (CHECK+RLS). Requieren `supabase db push`.
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
 ## 2) Estado tecnico verificado (sesion 2026-03-02)
-- ProductionGate re-ejecutado en esta sesion: **18/18 PASS** (score 100, 03:26 UTC).
-- Tests unitarios completos: **1905/1905 PASS** (85 archivos, incluye parser + seguridad de rol + confirm-store del asistente).
-- Tests de integracion: **68/68 PASS** (3 archivos).
-- Tests de componentes frontend: **249/249 PASS** (48 archivos).
-- Test de componente dirigido del asistente: **7/7 PASS** (`minimarket-system/src/pages/Asistente.test.tsx`).
-- Tests de contratos API: **17/17 PASS** (1 archivo).
-- Migraciones SQL en repo: **52**.
-- Edge Functions en repo: **16** (excluye `_shared`; nueva: `api-assistant`).
-- Skills en `.agent/skills`: **22**.
-- Enlaces internos en `docs/`: **0 rotos** (verificado con `validate-doc-links.mjs`).
-- Freshness de este documento: **vigente (0 dias)**.
-- `.env.example` sincronizado con runtime OCR: agregado `OCR_MIN_SCORE_APPLY` (default sugerido `0.70`).
-- Deploy `facturas-ocr`: **v10 en produccion** (base64 chunked + CUIT variants + timeout handling).
-- Estado remoto `supabase functions list`: **16 funciones ACTIVE** (16 en repo; `api-assistant` v2 desplegada 2026-03-02 03:35 UTC con hardening D-183).
+- Tests unitarios completos: **1905/1905 PASS** (85 archivos, post Tier 1 + Tier 2).
+- Build produccion: **OK** (30 chunks PWA, 0 errores).
+- Lint: **0 errores**.
+- Migraciones SQL en repo: **55** (3 nuevas pendientes de aplicar).
 
 ## 3) OCR de facturas: estado real
 

@@ -1,11 +1,12 @@
 # DECISION LOG (Canonico)
 
-**Ultima actualizacion:** 2026-03-02 (Sprint 2 hardening — desambiguacion estricta de pagos)
+**Ultima actualizacion:** 2026-03-02 (auditoria cruzada + ejecucion Tier 1 + Tier 2 parcial)
 
 ## Decisiones activas y vigentes
 
 | ID | Decision | Estado | Fecha | Evidencia |
 |---|---|---|---|---|
+| D-184 | **Auditoria cruzada Claude Code + Codex + ejecucion Tier 1/2:** dos agentes auditaron independientemente; veredicto consensuado `LISTO CON CONDICIONES` (CC 6.7/10, Codex 7.2/10). Se ejecutaron 6 fixes Tier 1 criticos (guard anti-mocks, network errors, query limits, CSP+HSTS, idempotencia deposito, FK RESTRICT) + 6 fixes Tier 2 (RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero 4 ops, cross-tab POS). 3 migraciones SQL creadas pendientes de `supabase db push`. Tests 1905/1905 PASS, build OK, lint 0. | Vigente | 2026-03-02 | `CLAUDECODE_FASES.AUDITORIA_DEFINITIVA_2026-03-02.md`, `supabase/migrations/2026030201*`, `supabase/migrations/2026030202*`, `supabase/migrations/2026030203*`, `docs/ESTADO_ACTUAL.md` |
 | D-086 | Politica `verify_jwt`: solo `api-minimarket` puede operar con `verify_jwt=false`; resto de funciones `verify_jwt=true`. | Vigente | 2026-02-12 | `docs/closure/OPEN_ISSUES.md` |
 | D-155 | OCR de facturas estandarizado en Google Cloud Vision; secret requerido: `GCV_API_KEY`. | Vigente | 2026-02-23 | `docs/ESTADO_ACTUAL.md`, `.env.example:25` |
 | D-156 | Dependency governance fail-fast en CI para alineacion critica de dependencias. | Vigente | 2026-02-24 | `scripts/check-supabase-js-alignment.mjs`, `scripts/check-critical-deps-alignment.mjs` |
