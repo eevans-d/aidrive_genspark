@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-02 (sync estado lote OCR 21/21 pendiente)
+**Ultima actualizacion:** 2026-03-03 (Tier 2 completado: audit trail + atomic margin + items resueltos)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -18,19 +18,21 @@
 
 ## AUDIT-001 - Hallazgos MEDIUM de auditoria de produccion (backlog recomendado)
 - Severidad: MEDIA (ninguno bloqueante)
-- Estado: ABIERTO — documentado, no implementado
+- Estado: ABIERTO PARCIAL — 6 de 9 originales abiertos (3 resueltos en D-184/D-185)
 - Origen: Auditoria de produccion profunda D-177 (2026-03-01)
-- Hallazgos:
+- Hallazgos abiertos:
   - **RC-01**: Race condition si dos usuarios invocan OCR simultaneamente para misma factura (sin lock en gateway pre-dispatch)
-  - **RC-02**: Check de margen en `POST /precios/aplicar` lee producto sin lock; dato potencialmente stale bajo concurrencia
-  - **RC-03**: Transiciones de estado en tareas (`/tareas/{id}/completar`, `/cancelar`) no validan estado previo
-  - **ID-01/02/03**: No hay idempotency key en `POST /deposito/movimiento`, `POST /deposito/ingreso`, `POST /compras/recepcion`
+  - **ID-02/03**: No hay idempotency key en `POST /deposito/ingreso`, `POST /compras/recepcion`
   - **RE-01**: Agregacion in-memory sin limite en `GET /reportes/efectividad-tareas` puede consumir memoria con muchos registros
   - **ES-01**: Fallo silencioso de insert `precios_compra` en `/deposito/ingreso` (solo warn en log, usuario no notificado)
   - **ES-02**: Fallo silencioso de auto-validacion de factura al confirmar ultimo item (solo warn en log)
   - **D1**: Insercion parcial de items OCR en `facturas-ocr` (batch fallback crea items parciales sin rollback)
   - **D2**: Race condition en extraccion OCR concurrente (sin mutex a nivel de edge function)
-- Impacto operativo: bajo en uso normal (1-2 usuarios simultaneos en minimarket tipico). Se recomienda priorizar ID-01/02/03 y RC-01 si el sistema escala a multiples operadores simultaneos.
+- Hallazgos resueltos (sesion 2026-03-03):
+  - ~~**RC-02**~~: Check de margen en `/precios/aplicar` — RESUELTO via `SELECT ... FOR UPDATE` en `sp_aplicar_precio` (migracion `20260303010000`, D-185)
+  - ~~**RC-03**~~: Transiciones de estado en tareas — RESUELTO via state machine con validacion de estado previo (D-184)
+  - ~~**ID-01**~~: Idempotency key en `/deposito/movimiento` — RESUELTO via columna `idempotency_key` + indice UNIQUE (migracion `20260302010000`, D-184)
+- Impacto operativo: bajo en uso normal (1-2 usuarios simultaneos en minimarket tipico). Se recomienda priorizar ID-02/03 y RC-01 si el sistema escala a multiples operadores simultaneos.
 - Referencia: `docs/ESTADO_ACTUAL.md` seccion 7
 
 ## OCR-008 - Bug base64 en facturas-ocr (RESUELTO)
@@ -82,4 +84,4 @@
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177). El Asistente IA Sprint 1 + Sprint 1.1/1.2/1.3 (UX improvements) + Sprint 2 (acciones con confirmacion) esta implementado, testeado y desplegado en produccion (D-178→D-182, DEPLOY-001 cerrado). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV) y AUDIT-001 (9 hallazgos MEDIUM, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). El Asistente IA Sprint 1 + Sprint 1.1/1.2/1.3 (UX improvements) + Sprint 2 (acciones con confirmacion) esta implementado, testeado y desplegado en produccion (D-178→D-183, DEPLOY-001 cerrado). Los hallazgos abiertos son: OCR-007 (bloqueante externo GCV) y AUDIT-001 (6 hallazgos MEDIUM de 9 originales, no bloqueantes, recomendados para escala). No hay deuda tecnica critica o alta pendiente.

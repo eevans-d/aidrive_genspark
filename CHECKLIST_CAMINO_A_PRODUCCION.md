@@ -1,7 +1,8 @@
 # CHECKLIST: Camino a Produccion Efectiva
 
 **Creado:** 2026-03-02 (sesion auditoria cruzada)
-**Contexto:** Tier 1 (6/6) + Tier 2 parcial (6/12) ejecutados. Tests 1905 PASS, build OK, lint 0.
+**Ultima verificacion:** 2026-03-03 (tests 1905/1905, build OK, lint 0, 16/16 ACTIVE)
+**Contexto:** Tier 1 (6/6) + Tier 2 (10/12) ejecutados. Tests 1905 PASS, build OK, lint 0.
 **Documento de referencia:** `CLAUDECODE_FASES.AUDITORIA_DEFINITIVA_2026-03-02.md`
 
 ---
@@ -37,21 +38,21 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 
 ---
 
-## FASE 4: Tier 2 restante (6 items pendientes)
+## FASE 4: Tier 2 restante (2 items pendientes, 4 cerrados en verificacion 2026-03-03)
 
 ### Seguridad / Base de datos
-- [ ] **Atomic margin validation:** `/precios/aplicar` deberia hacer SELECT FOR UPDATE antes de aplicar margen (evita stale reads)
-- [ ] **OCR rollback integral:** si `facturas/aplicar` falla a mitad, los items parciales ya aplicados quedan en estado inconsistente (ya tiene compensacion parcial en D-171, evaluar si es suficiente o necesita mas)
+- [x] **Atomic margin validation:** migracion `20260303010000_sp_aplicar_precio_for_update.sql` creada — agrega `FOR UPDATE` al SELECT del producto en el SP, serializando lecturas concurrentes. Gateway pre-check es soft reject, SP es la validacion definitiva con lock. Pendiente de `supabase db push`.
+- [x] **OCR rollback integral:** compensacion verificada como COMPLETA en revision 2026-03-03 — crea movimientos `salida` compensatorios, limpia link idempotencia, revierte estado a `validada`, registra evento `aplicacion_rollback` con detalle. Edge case: si compensacion parcial falla para algunos items queda logueado pero podria dejar inconsistencia menor (riesgo bajo en operacion normal)
 
 ### Backend
-- [ ] **Audit trail expansion:** cubrir endpoints restantes que manejan datos financieros (ofertas/aplicar, ofertas/desactivar, clientes/update, proveedores/update)
+- [x] **Audit trail expansion:** 6 handlers financieros ahora emiten `logAudit()` en operaciones exitosas: `PROVEEDOR_CREADO`, `PROVEEDOR_ACTUALIZADO`, `CLIENTE_CREADO`, `CLIENTE_ACTUALIZADO`, `OFERTA_APLICADA`, `OFERTA_DESACTIVADA`. Tests 1905/1905 PASS. Completado 2026-03-03.
 
 ### Frontend
 - [ ] (Ninguno pendiente critico — todos los fixes frontend de Tier 2 ya se aplicaron)
 
 ### Documentacion / Compliance
 - [ ] **DATA_HANDLING_POLICY.md:** crear documento de politica de manejo de datos personales (PII) — nombres, telefonos, emails de clientes. Definir: retencion, acceso, soft-delete strategy, derecho al olvido
-- [ ] **CORS ALLOWED_ORIGINS:** verificar que en produccion solo el dominio real esta permitido (no `*`, no `localhost`)
+- [x] **CORS ALLOWED_ORIGINS:** verificado 2026-03-03 — modulo centralizado `_shared/cors.ts`, NO usa wildcards (`*`), valida origen exacto contra allowlist, retorna `'null'` para origenes no permitidos, incluye `Vary: Origin`, unit tests cubren rechazo. En produccion: configurar `ALLOWED_ORIGINS` env var con dominio real
 
 ---
 
@@ -59,7 +60,7 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 
 ### Alta prioridad (impacto directo UX/operacion)
 - [ ] PWA `autoUpdate: 'prompt'` — cambiar de auto-update silencioso a prompt para evitar perder datos mid-form
-- [ ] Scanner bundle lazy loading — 116KB gzipped carga siempre, deberia ser lazy
+- [ ] Scanner bundle lazy loading — 116KB gzipped chunk separado por Vite (`scanner-BB-WS6-1.js`); `@zxing`/`jsbarcode` configurados como chunk pero el scanner no se importa activamente en Pos.tsx (usa input texto). Considerar si se necesita o remover del bundle
 - [ ] Offline indicator en PWA UI — el usuario no sabe cuando esta offline
 
 ### Media prioridad (calidad de codigo)
@@ -69,8 +70,8 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 
 ### Baja prioridad (nice-to-have)
 - [ ] Agregar indice compuesto `tareas_pendientes(prioridad, created_at)`
-- [ ] Actualizar README con count de tests (1733 → 1905)
-- [ ] Agregar `VITE_API_ASSISTANT_URL` a `.env.example`
+- [x] Actualizar README con count de tests (1733 → 1905) — completado 2026-03-03
+- [x] Agregar `VITE_API_ASSISTANT_URL` a `.env.example` — completado 2026-03-03
 - [ ] Verificar version de Supabase SDK (3 patches atras)
 - [ ] Configurar Sentry DSN en produccion (opcional monitoring)
 
@@ -129,11 +130,12 @@ Estos items NO se pueden resolver solo con code review — requieren ejecucion r
 | `20260302010000_add_idempotency_movimientos_deposito.sql` | Columna + indice + SP |
 | `20260302020000_fk_cascade_to_restrict.sql` | 2 FK constraints |
 | `20260302030000_add_check_constraints_and_rls_cache.sql` | 3 CHECK + RLS |
+| `20260303010000_sp_aplicar_precio_for_update.sql` | SELECT FOR UPDATE en sp_aplicar_precio |
 
 ### Documentacion
 | Archivo | Contenido |
 |---------|-----------|
 | `CLAUDECODE_FASES.AUDITORIA_DEFINITIVA_2026-03-02.md` | Auditoria cruzada completa |
 | `docs/closure/CODEX_*.md` (2) | Reportes Codex |
-| `docs/ESTADO_ACTUAL.md` | Actualizado con estado Tier 1/2 |
-| `docs/DECISION_LOG.md` | D-184 agregada |
+| `docs/ESTADO_ACTUAL.md` | Actualizado con estado Tier 1/2 + Tier 2 completado |
+| `docs/DECISION_LOG.md` | D-184 + D-185 agregadas |

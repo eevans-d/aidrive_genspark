@@ -2,12 +2,13 @@
 
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
-## Estado actual (2026-02-27)
-- Veredicto global: `GO INCONDICIONAL`
-- Modulo OCR de facturas: `BACKLOG CRITICO PRIORIZADO` (plan de ejecucion activo)
-- Tests unitarios: `1733/1733 PASS`
-- Migraciones SQL: `52`
-- Edge Functions en repo: `15`
+## Estado actual (2026-03-03)
+- Veredicto global: `LISTO PARA PRODUCCION` (Tier 1 6/6 DONE, Tier 2 10/12 DONE)
+- Modulo OCR de facturas: `ESTABLE — backlog tecnico 10/10 cerrado` (GCV bloqueado externamente)
+- Asistente IA: `Sprint 2 completado` (read-only + acciones con confirmacion)
+- Tests unitarios: `1905/1905 PASS` (85 archivos)
+- Migraciones SQL: `56` (4 pendientes de aplicar)
+- Edge Functions desplegadas: `16/16 ACTIVE`
 
 ## Fuentes canónicas
 1. `docs/ESTADO_ACTUAL.md`
@@ -17,6 +18,7 @@ Sistema de gestion para mini markets con frontend React + backend Supabase (Edge
 5. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
 6. `docs/METRICS.md`
 7. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo roadmap OCR)
+8. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md` (roadmap asistente IA)
 
 ## Plan OCR activo
 - Canonico: `docs/PLAN_FUSIONADO_FACTURAS_OCR.md`

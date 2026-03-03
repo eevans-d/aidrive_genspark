@@ -869,6 +869,12 @@ Deno.serve(async (req) => {
         requestId,
         bodyResult as Record<string, unknown>,
       );
+      if (res.status >= 200 && res.status < 300) {
+        const body = bodyResult as Record<string, unknown>;
+        await logAudit('PROVEEDOR_CREADO', 'proveedor', requestId, {
+          nombre: body.nombre || null,
+        });
+      }
       recordCircuitSuccess();
       return res;
     }
@@ -889,6 +895,12 @@ Deno.serve(async (req) => {
         proveedorId,
         bodyResult as Record<string, unknown>,
       );
+      if (res.status >= 200 && res.status < 300) {
+        const body = bodyResult as Record<string, unknown>;
+        await logAudit('PROVEEDOR_ACTUALIZADO', 'proveedor', proveedorId, {
+          campos_modificados: Object.keys(body),
+        });
+      }
       recordCircuitSuccess();
       return res;
     }
@@ -2030,6 +2042,13 @@ Deno.serve(async (req) => {
 	        bodyResult as Record<string, unknown>,
 	        { allowLimiteCredito: user?.role === 'admin' },
 	      );
+	      if (res.status >= 200 && res.status < 300) {
+	        const body = bodyResult as Record<string, unknown>;
+	        await logAudit('CLIENTE_CREADO', 'cliente', requestId, {
+	          nombre: body.nombre || null,
+	          limite_credito: body.limite_credito || null,
+	        });
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }
@@ -2055,6 +2074,13 @@ Deno.serve(async (req) => {
 	        bodyResult as Record<string, unknown>,
 	        { allowLimiteCredito: user?.role === 'admin' },
 	      );
+	      if (res.status >= 200 && res.status < 300) {
+	        const body = bodyResult as Record<string, unknown>;
+	        await logAudit('CLIENTE_ACTUALIZADO', 'cliente', clienteId, {
+	          campos_modificados: Object.keys(body),
+	          limite_credito_modificado: 'limite_credito' in body,
+	        });
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }
@@ -2207,6 +2233,13 @@ Deno.serve(async (req) => {
         requestId,
         bodyResult as Record<string, unknown>,
       );
+      if (res.status >= 200 && res.status < 300) {
+        const body = bodyResult as Record<string, unknown>;
+        await logAudit('OFERTA_APLICADA', 'oferta', requestId, {
+          stock_id: body.stock_id || null,
+          descuento: body.descuento || null,
+        });
+      }
       recordCircuitSuccess();
       return res;
     }
@@ -2219,6 +2252,9 @@ Deno.serve(async (req) => {
 	        return respondFail('VALIDATION_ERROR', 'id de oferta invalido', 400);
 	      }
 	      const res = await handleDesactivarOferta(supabaseUrl, requestHeaders(), responseHeaders, requestId, ofertaId);
+	      if (res.status >= 200 && res.status < 300) {
+	        await logAudit('OFERTA_DESACTIVADA', 'oferta', ofertaId, {});
+	      }
 	      recordCircuitSuccess();
 	      return res;
 	    }

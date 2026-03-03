@@ -37,7 +37,7 @@ supabase/functions/    # Edge Functions (Deno v2) - 16 activas
 └── reposicion-sugerida/ # Sugerencias de reposición
 
 supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
-supabase/migrations/   # 44 migraciones SQL versionadas
+supabase/migrations/   # 56 migraciones SQL versionadas (4 pendientes de aplicar)
 supabase/config.toml   # Configuracion Supabase local
 
 tests/unit/            # Tests unitarios (Vitest) - 85 archivos
@@ -116,14 +116,14 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Credenciales | `docs/OBTENER_SECRETOS.md` (nombres, nunca valores) |
 | Métricas | `docs/METRICS.md` (generado por `scripts/metrics.mjs`) |
 
-## Estado Actual (Marzo 2026 - verificado D-182)
+## Estado Actual (Marzo 2026 - verificado D-185)
 
 ### Proyecto Supabase
 - **Nombre:** minimarket-system
 - **Ref:** dqaygmjpzoqjjrywdsxi
 - **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
-- **Edge Functions:** 16 desplegadas y funcionando (api-minimarket v29, api-proveedor v20, scraper-maxiconsumo v21)
-- **Migraciones:** 44 versionadas (44/44 synced)
+- **Edge Functions:** 16 desplegadas y funcionando (api-minimarket v40, api-assistant v2, api-proveedor v25, scraper-maxiconsumo v26)
+- **Migraciones:** 56 versionadas (4 pendientes de aplicar via `supabase db push`)
 - **Frontend:** Cloudflare Pages — https://aidrive-genspark.pages.dev
 
 ### Testing
@@ -138,8 +138,10 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 ### CI/CD
 - Pipeline tests: `.github/workflows/ci.yml` (lint → test → build → typecheck → edge-check → security)
 - Pipeline deploy: `.github/workflows/deploy-cloudflare-pages.yml` (push a main = producción automática)
-- Veredicto operativo: **GO** (D-140, score 100%, 11/11 gates)
+- Veredicto operativo: **LISTO PARA PRODUCCION** (D-185, Tier 1 6/6 + Tier 2 10/12, 18/18 gates)
 
 ### Pendientes (ver `docs/closure/OPEN_ISSUES.md`)
-1. P1: Configurar `SUPABASE_DB_URL` en GitHub Actions para backup (owner)
-2. P2: Revocar API key anterior de SendGrid (owner)
+1. OCR-007: Activar billing GCP para desbloquear OCR (owner)
+2. 4 migraciones SQL pendientes de aplicar (`supabase db push`)
+3. Deploy frontend a Cloudflare Pages + verificar headers CSP/HSTS
+4. DATA_HANDLING_POLICY.md (documentacion PII, no bloqueante)

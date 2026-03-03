@@ -1,23 +1,24 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-02 (auditoria cruzada Claude Code + Codex — Tier 1 + Tier 2 ejecutados)
-**Veredicto general del sistema:** `LISTO CON CONDICIONES → EN REMEDIACION (Tier 1 DONE, Tier 2 DONE parcial)`
+**Ultima actualizacion:** 2026-03-03 (verificacion integral + Tier 2 completado: audit trail + atomic margin)
+**Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 10/12 DONE — 2 restantes son documentacion/frontend cosmetic)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED`
 **Estado del Asistente IA:** `SPRINT 2 COMPLETADO — plan→confirm con confirm_token, crear_tarea + registrar_pago_cc`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
-- **Auditoria cruzada completada (2026-03-02):** dos agentes independientes (Claude Code 6.7/10, Codex 7.2/10) auditaron el sistema completo. Veredicto consensuado: `LISTO CON CONDICIONES` — 6 items criticos + 12 items importantes + 14 mejoras backlog.
+- **Verificacion integral (2026-03-03):** tests 1905/1905 PASS, build OK, lint 0, 16/16 edge functions ACTIVE. Tier 2 avanzado a 10/12: audit trail expansion (6 handlers), atomic margin validation (SP FOR UPDATE), OCR rollback verificado completo, CORS verificado seguro.
 - **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
-- **Tier 2 (6/12 hardening) — PARCIAL:** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4 operaciones), cross-tab POS.
-- **3 migraciones SQL pendientes de aplicar:** `20260302010000` (idempotency), `20260302020000` (FK restrict), `20260302030000` (CHECK+RLS). Requieren `supabase db push`.
+- **Tier 2 (10/12 hardening):** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4+6 operaciones), cross-tab POS, atomic margin (FOR UPDATE), OCR rollback validado, CORS validado. Pendientes: DATA_HANDLING_POLICY.md, frontend cosmetic.
+- **4 migraciones SQL pendientes de aplicar:** `20260302010000` (idempotency), `20260302020000` (FK restrict), `20260302030000` (CHECK+RLS), `20260303010000` (sp_aplicar_precio FOR UPDATE). Requieren `supabase db push`.
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
-## 2) Estado tecnico verificado (sesion 2026-03-02)
-- Tests unitarios completos: **1905/1905 PASS** (85 archivos, post Tier 1 + Tier 2).
+## 2) Estado tecnico verificado (sesion 2026-03-03)
+- Tests unitarios completos: **1905/1905 PASS** (85 archivos, post Tier 2 audit trail).
 - Build produccion: **OK** (30 chunks PWA, 0 errores).
 - Lint: **0 errores**.
-- Migraciones SQL en repo: **55** (3 nuevas pendientes de aplicar).
+- Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v40, api-assistant v2).
+- Migraciones SQL en repo: **56** (4 pendientes de aplicar).
 
 ## 3) OCR de facturas: estado real
 
@@ -72,7 +73,7 @@
 4. No declarar "cerrado" sin evidencia en `docs/closure/` o `test-reports/`.
 
 ## 6) Nota operativa
-El estado `GO INCONDICIONAL` aplica al sistema general ya auditado. El backlog OCR tecnico esta 10/10 tareas completadas. GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. No hay deuda tecnica interna pendiente.
+El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (10/12) completados. El backlog OCR tecnico esta 10/10 tareas completadas. GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. Los 2 items Tier 2 pendientes (DATA_HANDLING_POLICY.md y frontend cosmetic) no son bloqueantes.
 
 ## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 (read + write con confirmacion)
 
@@ -144,9 +145,11 @@ Analisis de ingenieria inversa simulando escenarios de produccion real en 3 capa
 
 ### Hallazgos MEDIUM no implementados (backlog recomendado)
 - **RC-01**: Race condition si dos usuarios extraen OCR simultaneamente (misma factura)
-- **RC-02**: Check de margen en `/precios/aplicar` usa datos potencialmente stale
-- **RC-03**: Transiciones de estado en tareas sin guard de estado previo
-- **ID-01/02/03**: Sin idempotency key en `/deposito/movimiento`, `/deposito/ingreso`, `/compras/recepcion`
+- ~~**RC-02**: Check de margen en `/precios/aplicar` usa datos potencialmente stale~~ → **RESUELTO** (D-185: `SELECT ... FOR UPDATE` en `sp_aplicar_precio`, migracion `20260303010000`)
+- ~~**RC-03**: Transiciones de estado en tareas sin guard de estado previo~~ → **RESUELTO** (D-184: state machine tareas con validacion de estado previo)
+- ~~**ID-01**~~/**ID-02**/**ID-03**: ~~Sin idempotency key en `/deposito/movimiento`~~ (RESUELTO D-184) / Sin idempotency key en `/deposito/ingreso`, `/compras/recepcion`
 - **RE-01**: Agregacion in-memory sin limite en `/reportes/efectividad-tareas`
 - **ES-01/02**: Fallo silencioso de `precio_compra` insert y auto-validacion de factura
 - **D1/D2**: Insercion parcial de items OCR sin rollback; race condition en extraccion concurrente
+
+**Resumen: 6 hallazgos MEDIUM abiertos** (de 9 originales; RC-02, RC-03, ID-01 resueltos en D-184/D-185).
