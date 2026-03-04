@@ -13,15 +13,15 @@
 - **Verificacion integral (2026-03-03):** tests 1905/1905 PASS, build OK, lint 0, 16/16 edge functions ACTIVE. Tier 2 avanzado a 10/12: audit trail expansion (6 handlers), atomic margin validation (SP FOR UPDATE), OCR rollback verificado completo, CORS verificado seguro.
 - **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
 - **Tier 2 (12/12 hardening — COMPLETO):** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4+6 operaciones), cross-tab POS, atomic margin (FOR UPDATE), OCR rollback validado, CORS validado, DATA_HANDLING_POLICY.md completado (T11), performance baseline v2 (T12).
-- **Migraciones SQL:** 4 ficheros pre-existentes en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`) de los cuales 1 fue aplicado a remote en T10 (`20260303010000`; los 3 anteriores ya estaban aplicados). 1 fichero nuevo creado en T15 (`20260304010000`) pendiente de aplicar.
+- **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
 ## 2) Estado tecnico verificado (sesion 2026-03-04 T01-T15)
 - Tests unitarios completos: **1945/1945 PASS** (86 archivos, post audit fixes).
 - Build produccion: **OK** (30 chunks PWA, 0 errores).
 - Lint: **0 errores, 0 warnings**.
-- Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v40, api-assistant v3-sprint3).
-- Migraciones SQL en repo: **57** (1 pendiente de aplicar: `20260304010000`).
+- Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v41, api-assistant v3, facturas-ocr v12).
+- Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
 - Quality Gates ejecutados 3 veces durante sesion (post T07-T09, T10-T12, T13-T15) — todos PASS.
 
 ## 3) OCR de facturas: estado real
@@ -77,7 +77,7 @@
 4. No declarar "cerrado" sin evidencia en `docs/closure/` o `test-reports/`.
 
 ## 6) Nota operativa
-El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completados. El backlog OCR tecnico esta 10/10 tareas completadas. Los 9 hallazgos MEDIUM de la auditoria profunda estan todos resueltos (0 abiertos). GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. El asistente IA esta en Sprint 3 con 4 acciones write y auditoria persistente en BD (1 migracion pendiente de aplicar: `20260304010000`).
+El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completados. El backlog OCR tecnico esta 10/10 tareas completadas. Los 9 hallazgos MEDIUM de la auditoria profunda estan todos resueltos (0 abiertos). GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. El asistente IA esta en Sprint 3 con 4 acciones write y auditoria persistente en BD. Migracion `20260304010000` aplicada. Edge functions deployadas: api-assistant v3, api-minimarket v41, facturas-ocr v12.
 
 ## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 (read + write con confirmacion)
 
