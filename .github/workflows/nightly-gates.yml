@@ -25,18 +25,10 @@ jobs:
       - name: Install root dependencies
         run: npm ci
 
-      - name: Run unit tests with coverage
+      - name: Run unit tests with coverage (threshold enforced by vitest.config.ts)
         run: npx vitest run --coverage --reporter=verbose
         env:
           CI: 'true'
-
-      - name: Check coverage threshold (80%)
-        run: |
-          npx vitest run --coverage 2>&1 | tee coverage-output.txt
-          if grep -q "ERROR" coverage-output.txt; then
-            echo "::error::Coverage below 80% threshold!"
-            exit 1
-          fi
 
       - name: Upload test results
         if: always()
@@ -101,7 +93,7 @@ jobs:
 
   notify:
     name: Notify Results
-    needs: [unit-tests, lint-and-build]
+    needs: [unit-tests, lint-and-build, migration-drift]
     if: failure()
     runs-on: ubuntu-latest
     steps:

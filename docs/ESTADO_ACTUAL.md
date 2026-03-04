@@ -13,13 +13,13 @@
 - **Verificacion integral (2026-03-03):** tests 1905/1905 PASS, build OK, lint 0, 16/16 edge functions ACTIVE. Tier 2 avanzado a 10/12: audit trail expansion (6 handlers), atomic margin validation (SP FOR UPDATE), OCR rollback verificado completo, CORS verificado seguro.
 - **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
 - **Tier 2 (12/12 hardening — COMPLETO):** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4+6 operaciones), cross-tab POS, atomic margin (FOR UPDATE), OCR rollback validado, CORS validado, DATA_HANDLING_POLICY.md completado (T11), performance baseline v2 (T12).
-- **5 migraciones SQL ejecutadas en sesion T01-T15:** 4 previas (`20260302010000` idempotency, `20260302020000` FK restrict, `20260302030000` CHECK+RLS, `20260303010000` sp_aplicar_precio) + 1 nueva (`20260304010000` asistente_audit_log).
+- **Migraciones SQL:** 4 ficheros pre-existentes en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`) de los cuales 1 fue aplicado a remote en T10 (`20260303010000`; los 3 anteriores ya estaban aplicados). 1 fichero nuevo creado en T15 (`20260304010000`) pendiente de aplicar.
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
 ## 2) Estado tecnico verificado (sesion 2026-03-04 T01-T15)
-- Tests unitarios completos: **1913/1913 PASS** (86 archivos, post T01-T15).
+- Tests unitarios completos: **1945/1945 PASS** (86 archivos, post audit fixes).
 - Build produccion: **OK** (30 chunks PWA, 0 errores).
-- Lint: **0 errores**, 2 warnings pre-existentes.
+- Lint: **0 errores, 0 warnings**.
 - Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v40, api-assistant v3-sprint3).
 - Migraciones SQL en repo: **57** (1 pendiente de aplicar: `20260304010000`).
 - Quality Gates ejecutados 3 veces durante sesion (post T07-T09, T10-T12, T13-T15) — todos PASS.
@@ -117,12 +117,6 @@ El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completad
 - 7 component tests del asistente (3 Sprint 1 + 4 Sprint 2: plan card, confirm, cancel, write quick-prompts).
 - Health version bumped a `2.0.0-sprint2`.
 
-### No implementado (Sprint 3)
-- Acciones adicionales (`actualizar_estado_pedido`, `aplicar_factura`).
-- Auditoria persistente de acciones IA (historial en BD).
-- Expansion de roles (deposito, ventas).
-- Guia visual para usuario no tecnico.
-
 ### Implementado (Sprint 3 — acciones avanzadas + auditoria persistente)
 - 2 intents de escritura adicionales: `actualizar_estado_pedido` y `aplicar_factura`, con plan→confirm.
 - `actualizar_estado_pedido`: extrae numero_pedido y nuevo_estado del mensaje natural; valida transicion contra mapa de estados (pendiente→preparando→listo→entregado; cancelado desde cualquier no-terminal); busca pedido via PostgREST; ejecuta via PUT /pedidos/:id/estado del gateway.
@@ -130,7 +124,7 @@ El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completad
 - Auditoria persistente: nueva tabla `asistente_audit_log` (migracion `20260304010000`) con RLS por usuario, indices por usuario+fecha e intent+fecha. `insertAuditLog()` llamada en ambos paths del /confirm handler (success + error). Non-blocking: failures de audit no afectan flujo.
 - Parser extendido a 11 intents (7 read + 4 write), 10 suggestions.
 - Help text y "no intent" message actualizados con las 4 acciones disponibles.
-- Tests: **1913/1913 PASS** (86 files), build OK, lint 0 errors.
+- Tests: **1945/1945 PASS** (86 files), build OK, lint 0 errors/warnings.
 
 ### No implementado (Sprint 4+)
 - Expansion de roles (deposito, ventas).

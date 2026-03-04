@@ -243,8 +243,12 @@ function StockUpdate({ product, onDone }: { product: ResolvedProduct; onDone: ()
         destino: 'Principal',
         observaciones: 'Pocket ingreso',
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast.success(`${tipo === 'entrada' ? '+' : '-'}${cantidad} ${product.nombre}`)
+      // T07/ES-01: Surface backend warnings to user
+      if (data._warnings?.length) {
+        data._warnings.forEach((w) => toast.warning(w.message, { duration: 8000 }));
+      }
       queryClient.invalidateQueries({ queryKey: ['alertas'] })
       setCantidad('1')
       onDone()

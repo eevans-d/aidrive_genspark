@@ -149,7 +149,7 @@ export const INTENT_RULES: IntentRule[] = [
     patterns: [
       /(?:cambiar?|actualizar?|mover?|pasar?|avanzar?)\s*(?:el\s*)?(?:estado\s*(?:del?\s*)?)?pedido/i,
       /pedido\s*#?\d+\s*(?:a\s+)(?:preparando|listo|entregado|cancelado)/i,
-      /(?:marcar?|poner?)\s*(?:el\s*)?pedido\s*(?:como\s*)?(?:preparando|listo|entregado|cancelado)/i,
+      /(?:marcar?|poner?)\s*(?:el\s*)?pedido\s*(?:#?\d+\s*)?(?:como\s*)?(?:preparando|listo|entregado|cancelado)/i,
       /(?:preparar|entregar|cancelar)\s*(?:el\s*)?pedido/i,
     ],
     extractParams: (msg: string) => {
@@ -229,7 +229,7 @@ export function findRelevantSuggestions(message: string): string[] {
   const normalized = message.toLowerCase();
   const relevant: string[] = [];
 
-  if (/factura|ocr|ingesta/.test(normalized)) relevant.push('estado de las facturas');
+  if (/factura|ocr|ingesta/.test(normalized)) relevant.push('facturas OCR');
   if (/aplic.*factura|factura.*(?:aplicar|deposito|ingresar)|pasar.*factura/i.test(normalized)) relevant.push('aplicar factura');
   if (/stock|producto|reponer|falt[ea]/.test(normalized)) relevant.push('stock bajo');
   if (/pedido|orden|compra|entreg/.test(normalized)) relevant.push('pedidos pendientes');

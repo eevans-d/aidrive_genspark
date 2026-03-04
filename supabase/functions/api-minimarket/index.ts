@@ -2373,11 +2373,12 @@ Deno.serve(async (req) => {
 
       // T02/RC-01: Atomic concurrency lock — claim factura for extraction.
       // Only one request can transition from pendiente/error → extrayendo.
-      const estadosPermitidosStr = Array.from(VALID_FACTURA_OCR_EXTRAER_ESTADOS).join(',');
+      // NOTE: CAS filter MUST exclude 'extrayendo' to prevent concurrent claims.
+      const casEstados = Array.from(VALID_FACTURA_OCR_EXTRAER_ESTADOS).filter(e => e !== 'extrayendo').join(',');
       const claimed = await updateTableConditional(
         supabaseUrl,
         'facturas_ingesta',
-        `id=eq.${facturaId}&estado=in.(${estadosPermitidosStr})`,
+        `id=eq.${facturaId}&estado=in.(${casEstados})`,
         requestHeaders(),
         { estado: 'extrayendo' },
       );

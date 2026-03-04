@@ -172,10 +172,14 @@ export default function Deposito() {
         observaciones: params.observaciones
       })
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['kardex'] })
       queryClient.invalidateQueries({ queryKey: ['deposito'] })
+      // T07/ES-01: Surface backend warnings to user
+      if (data._warnings?.length) {
+        data._warnings.forEach((w) => toast.warning(w.message, { duration: 8000 }));
+      }
       setMensaje({ tipo: 'success', texto: 'Movimiento registrado correctamente' })
       setSelectedProducto(null)
       setCantidad('')

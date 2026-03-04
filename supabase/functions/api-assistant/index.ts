@@ -1050,8 +1050,10 @@ Deno.serve(async (req: Request) => {
         planResult = await buildActualizarEstadoPedidoPlan(parsed.params, supabaseUrl, gatewayHeaders);
       } else if (parsed.intent === 'aplicar_factura') {
         planResult = await buildAplicarFacturaPlan(parsed.params, supabaseUrl, gatewayHeaders);
-      } else {
+      } else if (parsed.intent === 'registrar_pago_cc') {
         planResult = await buildRegistrarPagoCCPlan(parsed.params, supabaseUrl, gatewayHeaders);
+      } else {
+        return fail('UNKNOWN_WRITE_INTENT', `Intent de escritura no soportado: ${parsed.intent}`, 400, responseHeaders, { requestId });
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error preparando accion';

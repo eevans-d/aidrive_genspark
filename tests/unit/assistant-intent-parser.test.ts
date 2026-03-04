@@ -288,7 +288,7 @@ describe('Assistant Intent Parser', () => {
   describe('findRelevantSuggestions', () => {
     it('returns factura suggestion for factura keywords', () => {
       const result = findRelevantSuggestions('las facturas del proveedor');
-      expect(result).toContain('estado de las facturas');
+      expect(result).toContain('facturas OCR');
     });
 
     it('returns stock suggestion for stock keywords', () => {
@@ -313,7 +313,7 @@ describe('Assistant Intent Parser', () => {
 
     it('returns multiple suggestions when multiple keywords match', () => {
       const result = findRelevantSuggestions('productos y facturas');
-      expect(result).toContain('estado de las facturas');
+      expect(result).toContain('facturas OCR');
       expect(result).toContain('stock bajo');
     });
 
@@ -332,15 +332,28 @@ describe('Assistant Intent Parser', () => {
       const result = findRelevantSuggestions('me hicieron un cobro');
       expect(result).toContain('registrar pago');
     });
+
+    it('returns aplicar factura suggestion for aplicar keywords', () => {
+      const result = findRelevantSuggestions('quiero aplicar la factura al deposito');
+      expect(result).toContain('aplicar factura');
+    });
+
+    it('returns actualizar estado pedido suggestion for pedido state keywords', () => {
+      const result = findRelevantSuggestions('necesito cancelar un pedido');
+      expect(result).toContain('actualizar estado pedido');
+    });
   });
 
   // -----------------------------------------------------------------------
-  // Sprint 2: Write intents
+  // Sprint 2 + Sprint 3: Write intents
   // -----------------------------------------------------------------------
   describe('WRITE_INTENTS', () => {
-    it('contains crear_tarea and registrar_pago_cc', () => {
+    it('contains all 4 write intents', () => {
       expect(WRITE_INTENTS.has('crear_tarea')).toBe(true);
       expect(WRITE_INTENTS.has('registrar_pago_cc')).toBe(true);
+      expect(WRITE_INTENTS.has('actualizar_estado_pedido')).toBe(true);
+      expect(WRITE_INTENTS.has('aplicar_factura')).toBe(true);
+      expect(WRITE_INTENTS.size).toBe(4);
     });
 
     it('does not contain read-only intents', () => {
@@ -414,6 +427,122 @@ describe('Assistant Intent Parser', () => {
     it('extracts cliente_nombre when present', () => {
       const result = parseIntent('registrar pago de 5000 de Juan Perez por');
       expect(result.params.cliente_nombre?.toLowerCase()).toBe('juan perez');
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Intent: actualizar_estado_pedido (Sprint 3)
+  // -----------------------------------------------------------------------
+  describe('actualizar_estado_pedido intent', () => {
+    const cases = [
+      'cambiar estado pedido 123 a preparando',
+      'actualizar estado del pedido 45',
+      'mover pedido a listo',
+      'pasar pedido #99 a entregado',
+      'pedido #10 a preparando',
+      'marcar pedido 5 como cancelado',
+      'poner el pedido como listo',
+      'preparar el pedido 7',
+      'entregar pedido 20',
+      'cancelar pedido 15',
+    ];
+
+    cases.forEach((input) => {
+      it(`matches "${input}"`, () => {
+        const result = parseIntent(input);
+        expect(result.intent).toBe('actualizar_estado_pedido');
+        expect(result.confidence).toBeGreaterThanOrEqual(0.8);
+      });
+    });
+
+    it('extracts numero_pedido from "cambiar estado pedido 123 a preparando"', () => {
+      const result = parseIntent('cambiar estado pedido 123 a preparando');
+      expect(result.params.numero_pedido).toBe('123');
+    });
+
+    it('extracts numero_pedido from "pedido #99 a entregado"', () => {
+      const result = parseIntent('pedido #99 a entregado');
+      expect(result.params.numero_pedido).toBe('99');
+    });
+
+    it('extracts nuevo_estado "preparando" from explicit keyword', () => {
+      const result = parseIntent('cambiar estado pedido 10 a preparando');
+      expect(result.params.nuevo_estado).toBe('preparando');
+    });
+
+    it('extracts nuevo_estado "entregado" from explicit keyword', () => {
+      const result = parseIntent('pasar pedido 5 a entregado');
+      expect(result.params.nuevo_estado).toBe('entregado');
+    });
+
+    it('extracts nuevo_estado "cancelado" from "como cancelado"', () => {
+      const result = parseIntent('marcar pedido 3 como cancelado');
+      expect(result.params.nuevo_estado).toBe('cancelado');
+    });
+
+    it('infers nuevo_estado from verb "preparar"', () => {
+      const result = parseIntent('preparar el pedido 7');
+      expect(result.params.nuevo_estado).toBe('preparando');
+    });
+
+    it('infers nuevo_estado from verb "entregar"', () => {
+      const result = parseIntent('entregar pedido 20');
+      expect(result.params.nuevo_estado).toBe('entregado');
+    });
+
+    it('infers nuevo_estado from verb "cancelar"', () => {
+      const result = parseIntent('cancelar pedido 15');
+      expect(result.params.nuevo_estado).toBe('cancelado');
+    });
+
+    it('returns empty params when no pedido number given', () => {
+      const result = parseIntent('cambiar estado pedido');
+      expect(result.intent).toBe('actualizar_estado_pedido');
+      expect(result.params.numero_pedido).toBeUndefined();
+    });
+  });
+
+  // -----------------------------------------------------------------------
+  // Intent: aplicar_factura (Sprint 3)
+  // -----------------------------------------------------------------------
+  describe('aplicar_factura intent', () => {
+    const cases = [
+      'aplicar factura',
+      'aplicar la factura 001-00012345',
+      'factura a aplicar',
+      'ingresar la factura al deposito',
+      'pasar la factura al deposito',
+      'aplicá la factura',
+      'ingresá la factura al stock',
+    ];
+
+    cases.forEach((input) => {
+      it(`matches "${input}"`, () => {
+        const result = parseIntent(input);
+        expect(result.intent).toBe('aplicar_factura');
+        expect(result.confidence).toBeGreaterThanOrEqual(0.8);
+      });
+    });
+
+    it('extracts factura_numero from "aplicar factura 001-00012345"', () => {
+      const result = parseIntent('aplicar factura 001-00012345');
+      expect(result.params.factura_numero).toBe('001-00012345');
+    });
+
+    it('extracts factura_numero from "aplicar factura nro 55678"', () => {
+      const result = parseIntent('aplicar factura nro 55678');
+      expect(result.params.factura_numero).toBe('55678');
+    });
+
+    it('extracts factura_numero from "aplicar factura #12345"', () => {
+      const result = parseIntent('aplicar factura #12345');
+      expect(result.params.factura_numero).toBe('12345');
+    });
+
+    it('returns empty params when no factura number given', () => {
+      const result = parseIntent('aplicar factura');
+      expect(result.intent).toBe('aplicar_factura');
+      expect(result.params.factura_numero).toBeUndefined();
     });
   });
 });
