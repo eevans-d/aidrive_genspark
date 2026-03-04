@@ -110,7 +110,7 @@ export default function Facturas() {
       setSelectedProveedor('')
       toast.success('Factura registrada. Usa el boton "Extraer" para leer los datos.')
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al registrar factura')
+      toast.error(err instanceof Error ? err.message : 'Error al registrar factura', { duration: Infinity })
     }
   }, [selectedProveedor, createFactura])
 
@@ -131,7 +131,7 @@ export default function Facturas() {
       toast.success(parts.join(' | '))
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al extraer datos')
+      toast.error(err instanceof Error ? err.message : 'Error al extraer datos', { duration: Infinity })
     } finally {
       setExtracting(prev => { const next = new Set(prev); next.delete(facturaId); return next })
     }
@@ -144,7 +144,7 @@ export default function Facturas() {
     }
     setValidatingItem(itemId)
     try {
-      await validarItem.mutateAsync({
+      const result = await validarItem.mutateAsync({
         itemId,
         params: {
           estado_match: 'confirmada',
@@ -153,6 +153,11 @@ export default function Facturas() {
           alias_texto: aliasTexto.trim() || undefined,
         },
       })
+      // T08/ES-02: Surface backend warnings to user
+      const warnings = (result as Record<string, unknown>)?._warnings as Array<{ message: string }> | undefined
+      if (warnings?.length) {
+        warnings.forEach(w => toast.warning(w.message, { duration: 8000 }))
+      }
       toast.success('Item confirmado')
       setEditingItem(null)
       setEditProductoId('')
@@ -160,7 +165,7 @@ export default function Facturas() {
       setSaveAlias(false)
       refetchItems()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al confirmar item')
+      toast.error(err instanceof Error ? err.message : 'Error al confirmar item', { duration: Infinity })
     } finally {
       setValidatingItem(null)
     }
@@ -169,15 +174,20 @@ export default function Facturas() {
   const handleRechazar = useCallback(async (itemId: string) => {
     setValidatingItem(itemId)
     try {
-      await validarItem.mutateAsync({
+      const result = await validarItem.mutateAsync({
         itemId,
         params: { estado_match: 'rechazada' },
       })
+      // T08/ES-02: Surface backend warnings to user
+      const warnings = (result as Record<string, unknown>)?._warnings as Array<{ message: string }> | undefined
+      if (warnings?.length) {
+        warnings.forEach(w => toast.warning(w.message, { duration: 8000 }))
+      }
       toast.success('Item rechazado')
       setEditingItem(null)
       refetchItems()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al rechazar item')
+      toast.error(err instanceof Error ? err.message : 'Error al rechazar item', { duration: Infinity })
     } finally {
       setValidatingItem(null)
     }
@@ -190,7 +200,7 @@ export default function Facturas() {
       toast.success(`Factura aplicada: ${result.items_aplicados} items ingresados al deposito`)
       refetch()
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Error al aplicar factura')
+      toast.error(err instanceof Error ? err.message : 'Error al aplicar factura', { duration: Infinity })
     } finally {
       setApplying(prev => { const next = new Set(prev); next.delete(facturaId); return next })
     }

@@ -429,6 +429,7 @@ export interface MovimientoResponse {
         cantidad: number;
         fecha_movimiento: string;
         idempotent?: boolean;
+        _warnings?: Array<{ code: string; message: string }>;
 }
 
 export interface IngresoParams {

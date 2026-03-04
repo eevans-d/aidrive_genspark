@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
-import { ArrowLeft, Banknote, CreditCard, Loader2, Search, Trash2, User, AlertTriangle } from 'lucide-react'
+import { ArrowLeft, Banknote, CreditCard, Loader2, Trash2, User, AlertTriangle } from 'lucide-react'
 
 import {
   ApiError,
@@ -19,6 +19,9 @@ import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { SkeletonTable } from '../components/Skeleton'
 import { money, calcTotal } from '../utils/currency'
+import { ProductCombobox } from '../components/ProductCombobox'
+import { ClienteCombobox } from '../components/ClienteCombobox'
+import { Input } from '../components/ui/input'
 
 type CartItem = {
   producto_id: string
@@ -39,7 +42,6 @@ function buildWhatsAppUrl(e164: string): string {
 export default function Pos() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const inputRef = useRef<HTMLInputElement>(null)
   const isProcessingScan = useRef(false)
 
   // Cross-tab protection: detect if POS is already open in another tab
@@ -68,17 +70,25 @@ export default function Pos() {
     }
   }, [])
 
-  const [scanValue, setScanValue] = useState('')
   const [cart, setCart] = useState<CartItem[]>([])
   const [metodoPago, setMetodoPago] = useState<CreateVentaParams['metodo_pago']>('efectivo')
   const [cliente, setCliente] = useState<ClienteSaldoItem | null>(null)
   const [clientePickerOpen, setClientePickerOpen] = useState(false)
-  const [clienteQuery, setClienteQuery] = useState('')
   const [riskConfirmOpen, setRiskConfirmOpen] = useState(false)
+  const [recentlyAdded, setRecentlyAdded] = useState<DropdownItem[]>([])
+  const [paymentAmount, setPaymentAmount] = useState('')
+  const [showQuickCreateCliente, setShowQuickCreateCliente] = useState(false)
+  const [quickCreateName, setQuickCreateName] = useState('')
 
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 
   const total = useMemo(() => calcTotal(cart), [cart])
+
+  const change = useMemo(() => {
+    const amt = parseFloat(paymentAmount)
+    if (!Number.isFinite(amt) || amt < total) return null
+    return amt - total
+  }, [paymentAmount, total])
 
   const { data: productos = [], isLoading: productosLoading, isError: productosIsError, error: productosError, refetch: refetchProductos, isFetching: productosIsFetching } = useQuery({
     queryKey: ['productos', 'dropdown'],
@@ -139,8 +149,8 @@ export default function Pos() {
     setCliente(null)
     setIdempotencyKey(crypto.randomUUID())
     setRiskConfirmOpen(false)
-    setScanValue('')
-    queueMicrotask(() => inputRef.current?.focus())
+    setPaymentAmount('')
+    setRecentlyAdded([])
   }, [])
 
   const addToCart = useCallback((p: { id: string; nombre: string; sku?: string | null; codigo_barras?: string | null; precio_actual?: number | null }) => {
@@ -148,11 +158,17 @@ export default function Pos() {
     const oferta = ofertaByProductoId.get(p.id) ?? null
     const price = oferta ? oferta.precio_oferta : basePrice
     if (price === null) {
-      toast.error('Producto sin precio. Revisar en Productos.')
+      toast.error('Producto sin precio. Revisar en Productos.', { duration: 6000 })
       return
     }
 
     navigator.vibrate?.(25)
+
+    // Track recently added for quick re-add chips
+    setRecentlyAdded(prev => {
+      const filtered = prev.filter(r => r.id !== p.id)
+      return [{ id: p.id, nombre: p.nombre, sku: p.sku ?? null, codigo_barras: p.codigo_barras ?? null, precio_actual: p.precio_actual ?? null }, ...filtered].slice(0, 5)
+    })
 
     setCart((prev) => {
       const existing = prev.find((it) => it.producto_id === p.id)
@@ -243,16 +259,16 @@ export default function Pos() {
           return
         }
         if (err.code === 'INSUFFICIENT_STOCK') {
-          toast.error('Stock insuficiente para completar la venta')
+          toast.error('Stock insuficiente para completar la venta', { duration: Infinity })
           return
         }
         if (err.code === 'CREDIT_LIMIT_EXCEEDED') {
-          toast.error('Límite de crédito excedido para este cliente')
+          toast.error('Límite de crédito excedido para este cliente', { duration: Infinity })
           return
         }
       }
       const msg = err instanceof ApiError ? err.message : parseErrorMessage(err)
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
     },
   })
 
@@ -276,12 +292,7 @@ export default function Pos() {
     })
   }, [cart, cliente, metodoPago, ventaMutation])
 
-  // Focus input on mount, and keep it focused.
-  useEffect(() => {
-    inputRef.current?.focus()
-  }, [])
-
-  // Hotkeys: F1 efectivo, F2 cliente/fiado, ESC limpiar
+  // Hotkeys: F1 efectivo, F2 cliente/fiado, F3 tarjeta, F4 cobrar, ESC limpiar
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'F1') {
@@ -292,6 +303,14 @@ export default function Pos() {
         e.preventDefault()
         setMetodoPago('cuenta_corriente')
         setClientePickerOpen(true)
+      }
+      if (e.key === 'F3') {
+        e.preventDefault()
+        setMetodoPago('tarjeta')
+      }
+      if (e.key === 'F4') {
+        e.preventDefault()
+        submitVenta(false)
       }
       if (e.key === 'Escape') {
         if (riskConfirmOpen) {
@@ -310,27 +329,7 @@ export default function Pos() {
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  }, [cart.length, clientePickerOpen, resetVenta, riskConfirmOpen])
-
-  const onScanSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (isProcessingScan.current) return
-    isProcessingScan.current = true
-    const value = scanValue
-    setScanValue('')
-    try {
-      await resolveAndAdd(value)
-    } finally {
-      isProcessingScan.current = false
-    }
-    inputRef.current?.focus()
-  }
-
-  const clienteListQuery = useQuery({
-    queryKey: ['pos-clientes', clienteQuery],
-    queryFn: () => clientesApi.list({ q: clienteQuery, limit: 30 }),
-    enabled: clientePickerOpen,
-  })
+  }, [cart.length, clientePickerOpen, resetVenta, riskConfirmOpen, submitVenta])
 
   const removeItem = (producto_id: string) => {
     setCart((prev) => prev.filter((it) => it.producto_id !== producto_id))
@@ -411,30 +410,47 @@ export default function Pos() {
       <div className="max-w-7xl mx-auto px-4 py-4 grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Left: Ticket */}
         <div className="bg-white rounded-xl shadow-sm border p-4">
-          <form onSubmit={onScanSubmit} className="flex gap-2 items-center">
-            <input
-              ref={inputRef}
-              value={scanValue}
-              onChange={(e) => setScanValue(e.target.value)}
-              onBlur={(e) => {
-                if (!e.relatedTarget || e.relatedTarget === document.body) {
-                  queueMicrotask(() => inputRef.current?.focus())
-                }
-              }}
-              placeholder={productosLoading ? 'Cargando productos…' : 'Escanear o escribir código y Enter'}
-              className="flex-1 px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-              autoCapitalize="off"
-              autoCorrect="off"
-              spellCheck={false}
-            />
-            <button
-              type="submit"
-              className="px-4 py-3 rounded-lg bg-blue-600 text-white font-semibold hover:bg-blue-700"
-              title="Buscar/Agregar (Enter)"
-            >
-              <Search className="w-4 h-4" />
-            </button>
-          </form>
+          {/* Product search with autocomplete + barcode scanner support */}
+          <ProductCombobox
+            value={null}
+            onSelect={(product) => {
+              addToCart({
+                id: product.id,
+                nombre: product.nombre,
+                sku: product.sku ?? null,
+                codigo_barras: product.codigo_barras ?? null,
+                precio_actual: product.precio_actual ?? null,
+              })
+            }}
+            onBarcodeScan={async (barcode) => {
+              if (isProcessingScan.current) return
+              isProcessingScan.current = true
+              try {
+                await resolveAndAdd(barcode)
+              } finally {
+                isProcessingScan.current = false
+              }
+            }}
+            mode="inline"
+            autoFocus
+            placeholder={productosLoading ? 'Cargando productos…' : 'Escanear o buscar producto...'}
+          />
+
+          {/* Recently added chips for quick re-add */}
+          {recentlyAdded.length > 0 && (
+            <div className="flex gap-1.5 mt-2 flex-wrap">
+              {recentlyAdded.map((p) => (
+                <button
+                  key={p.id}
+                  onClick={() => addToCart(p)}
+                  className="text-xs px-2.5 py-1 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-700 truncate max-w-[140px] transition-colors"
+                  title={`Agregar ${p.nombre}`}
+                >
+                  + {p.nombre}
+                </button>
+              ))}
+            </div>
+          )}
 
           <div className="mt-4 space-y-2" aria-live="polite" aria-label="Carrito de compras">
             {cart.length === 0 ? (
@@ -502,37 +518,60 @@ export default function Pos() {
           <div className="grid grid-cols-3 gap-2" role="radiogroup" aria-label="Metodo de pago">
             <button
               onClick={() => setMetodoPago('efectivo')}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'efectivo' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 ${metodoPago === 'efectivo' ? 'bg-green-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               title="F1"
               role="radio"
               aria-checked={metodoPago === 'efectivo'}
             >
-              <Banknote className="w-5 h-5" />
-              Efectivo
+              <span className="flex items-center gap-1.5"><Banknote className="w-5 h-5" /> Efectivo</span>
+              <span className="text-[10px] opacity-70">F1</span>
             </button>
             <button
               onClick={() => setMetodoPago('tarjeta')}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'tarjeta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 ${metodoPago === 'tarjeta' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
+              title="F3"
               role="radio"
               aria-checked={metodoPago === 'tarjeta'}
             >
-              <CreditCard className="w-5 h-5" />
-              Tarjeta
+              <span className="flex items-center gap-1.5"><CreditCard className="w-5 h-5" /> Tarjeta</span>
+              <span className="text-[10px] opacity-70">F3</span>
             </button>
             <button
               onClick={() => { setMetodoPago('cuenta_corriente'); setClientePickerOpen(true) }}
-              className={`py-3 rounded-xl font-semibold flex items-center justify-center gap-2 ${metodoPago === 'cuenta_corriente' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              className={`py-3 rounded-xl font-semibold flex flex-col items-center justify-center gap-1 ${metodoPago === 'cuenta_corriente' ? 'bg-orange-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                 }`}
               title="F2"
               role="radio"
               aria-checked={metodoPago === 'cuenta_corriente'}
             >
-              <User className="w-5 h-5" />
-              Fiado
+              <span className="flex items-center gap-1.5"><User className="w-5 h-5" /> Fiado</span>
+              <span className="text-[10px] opacity-70">F2</span>
             </button>
           </div>
+
+          {/* Change calculator for cash payments */}
+          {metodoPago === 'efectivo' && cart.length > 0 && (
+            <div className="rounded-xl border p-3 bg-green-50 border-green-200 space-y-2">
+              <label className="text-sm text-green-800 font-medium">Monto recibido</label>
+              <Input
+                type="number"
+                inputMode="decimal"
+                step="0.01"
+                min="0"
+                value={paymentAmount}
+                onChange={(e) => setPaymentAmount(e.target.value)}
+                placeholder={`$${money(total)}`}
+                className="text-lg h-12 bg-white"
+              />
+              {change !== null && (
+                <div className="text-2xl font-black text-green-700 text-center py-1">
+                  Vuelto: ${money(change)}
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Cliente seleccionado */}
           {metodoPago === 'cuenta_corriente' && (
@@ -591,61 +630,95 @@ export default function Pos() {
           >
             {ventaMutation.isPending && <Loader2 className="w-5 h-5 animate-spin" />}
             Cobrar
+            <span className="text-xs opacity-60 font-normal ml-2">F4</span>
           </button>
         </div>
       </div>
 
-      {/* Cliente Picker Modal */}
+      {/* Cliente Picker Modal with ClienteCombobox */}
       {clientePickerOpen && (
         <div className="fixed inset-0 z-50 bg-black/30 flex items-center justify-center p-4">
           <div className="w-full max-w-xl bg-white rounded-2xl shadow-xl border overflow-hidden" role="dialog" aria-modal="true" aria-label="Seleccionar cliente">
             <div className="p-4 border-b flex items-center justify-between gap-3">
               <div className="font-bold text-gray-900">Seleccionar Cliente</div>
-              <button onClick={() => setClientePickerOpen(false)} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">
+              <button onClick={() => { setClientePickerOpen(false); setShowQuickCreateCliente(false) }} className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100" aria-label="Cerrar">
                 ✕
               </button>
             </div>
             <div className="p-4">
-              <input
-                value={clienteQuery}
-                onChange={(e) => setClienteQuery(e.target.value)}
-                placeholder="Buscar por nombre / teléfono / email"
-                className="w-full px-4 py-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+              <ClienteCombobox
+                value={cliente}
+                onSelect={(c) => {
+                  setCliente(c)
+                  setMetodoPago('cuenta_corriente')
+                  setClientePickerOpen(false)
+                  setShowQuickCreateCliente(false)
+                }}
+                onCreateNew={(name) => {
+                  setQuickCreateName(name)
+                  setShowQuickCreateCliente(true)
+                }}
+                mode="inline"
                 autoFocus
+                placeholder="Buscar por nombre / teléfono / email"
               />
 
-              <div className="mt-3 max-h-[50vh] overflow-auto space-y-2">
-                {clienteListQuery.isLoading ? (
-                  <div className="py-4 space-y-3" aria-label="Cargando clientes">
-                    {Array.from({ length: 4 }).map((_, idx) => (
-                      <div key={idx} className="h-16 rounded-xl bg-gray-100 animate-pulse" />
-                    ))}
-                  </div>
-                ) : (clienteListQuery.data ?? []).length === 0 ? (
-                  <div className="py-10 text-center text-gray-500">Sin resultados</div>
-                ) : (
-                  (clienteListQuery.data ?? []).map((c) => (
+              {/* Quick create client form */}
+              {showQuickCreateCliente && (
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault()
+                    const form = e.currentTarget
+                    const nombre = (form.elements.namedItem('qc_nombre') as HTMLInputElement).value.trim()
+                    const telefono = (form.elements.namedItem('qc_telefono') as HTMLInputElement).value.trim()
+                    if (!nombre) return
+                    try {
+                      await clientesApi.create({ nombre, telefono: telefono || null, email: null })
+                      const clients = await clientesApi.list({ q: nombre, limit: 1 })
+                      if (clients.length > 0) {
+                        setCliente(clients[0] ?? null)
+                        setMetodoPago('cuenta_corriente')
+                      }
+                      setClientePickerOpen(false)
+                      setShowQuickCreateCliente(false)
+                      toast.success(`Cliente "${nombre}" creado`)
+                    } catch (err) {
+                      toast.error(parseErrorMessage(err))
+                    }
+                  }}
+                  className="mt-3 p-3 border rounded-xl bg-gray-50 space-y-2"
+                >
+                  <div className="text-sm font-semibold text-gray-700">Crear cliente rápido</div>
+                  <input
+                    name="qc_nombre"
+                    defaultValue={quickCreateName}
+                    placeholder="Nombre *"
+                    required
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                    autoFocus
+                  />
+                  <input
+                    name="qc_telefono"
+                    placeholder="Teléfono (opcional)"
+                    className="w-full px-3 py-2 border rounded-lg text-sm"
+                  />
+                  <div className="flex gap-2">
                     <button
-                      key={c.cliente_id}
-                      onClick={() => { setCliente(c); setMetodoPago('cuenta_corriente'); setClientePickerOpen(false) }}
-                      className="w-full text-left p-3 rounded-xl border hover:bg-gray-50"
+                      type="button"
+                      onClick={() => setShowQuickCreateCliente(false)}
+                      className="flex-1 py-2 rounded-lg border text-gray-700 text-sm hover:bg-gray-100"
                     >
-                      <div className="font-bold text-gray-900">{c.nombre}</div>
-                      <div className="text-sm text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
-                        {c.telefono && <span>{c.telefono}</span>}
-                        <span>Saldo: <span className="font-semibold">${money(c.saldo)}</span></span>
-                        {c.limite_credito != null ? (
-                          <span>Límite: ${money(c.limite_credito)}</span>
-                        ) : (
-                          <span className="text-orange-700 inline-flex items-center gap-1">
-                            <AlertTriangle className="w-4 h-4" /> Sin límite
-                          </span>
-                        )}
-                      </div>
+                      Cancelar
                     </button>
-                  ))
-                )}
-              </div>
+                    <button
+                      type="submit"
+                      className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
+                    >
+                      Crear y seleccionar
+                    </button>
+                  </div>
+                </form>
+              )}
             </div>
           </div>
         </div>

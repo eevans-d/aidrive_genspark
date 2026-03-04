@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import apiClient, { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
-import { Plus, Minus, Search, Zap, RefreshCw, ClipboardList, Loader2 } from 'lucide-react'
+import { depositoApi, ApiError, DropdownItem } from '../lib/apiClient'
+import { Plus, Minus, Zap, RefreshCw, ClipboardList, Loader2 } from 'lucide-react'
 import { toast } from 'sonner'
-import { ErrorMessage } from '../components/ErrorMessage'
-import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
-import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
+import { SkeletonList } from '../components/Skeleton'
+import { ProductCombobox } from '../components/ProductCombobox'
+import { SupplierCombobox } from '../components/SupplierCombobox'
 import { supabase } from '../lib/supabase'
 
 type TabMode = 'rapido' | 'normal' | 'recepcion'
@@ -15,7 +15,6 @@ export default function Deposito() {
   const [activeTab, setActiveTab] = useState<TabMode>('rapido')
 
   // === Normal mode state ===
-  const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducto, setSelectedProducto] = useState<DropdownItem | null>(null)
   const [tipo, setTipo] = useState<'entrada' | 'salida' | 'ajuste'>('entrada')
   const [cantidad, setCantidad] = useState('')
@@ -26,47 +25,34 @@ export default function Deposito() {
   const [mensaje, setMensaje] = useState<{ tipo: 'success' | 'error', texto: string } | null>(null)
 
   // === Quick entry state ===
-  const [qSearch, setQSearch] = useState('')
   const [qProducto, setQProducto] = useState<DropdownItem | null>(null)
   const [qCantidad, setQCantidad] = useState('')
   const [qProveedorId, setQProveedorId] = useState('')
-  const qSearchRef = useRef<HTMLInputElement>(null)
+  const [qComboboxKey, setQComboboxKey] = useState(0)
   const qCantidadRef = useRef<HTMLInputElement>(null)
 
   // === Recepcion OC state ===
   const [recCantidad, setRecCantidad] = useState('')
   const [receivingId, setReceivingId] = useState<string | null>(null)
 
-  // Query para productos
+  // Query para stock info del producto seleccionado (quick entry o normal)
+  const activeProductId = activeTab === 'rapido' ? qProducto?.id : selectedProducto?.id
   const {
-    data: productos = [],
-    isLoading: isProductosLoading,
-    isError: isProductosError,
-    error: productosError,
-    refetch: refetchProductos,
-    isFetching: isFetchingProductos
+    data: stockInfo,
   } = useQuery({
-    queryKey: ['productos-deposito'],
+    queryKey: ['stock-info', activeProductId],
     queryFn: async () => {
-      return await apiClient.productos.dropdown()
+      const { data, error } = await supabase
+        .from('stock_deposito')
+        .select('cantidad_actual, stock_minimo')
+        .eq('producto_id', activeProductId!)
+        .limit(1)
+        .maybeSingle()
+      if (error) throw error
+      return data as { cantidad_actual: number; stock_minimo: number } | null
     },
-    staleTime: 1000 * 60 * 5,
-  })
-
-  // Query para proveedores
-  const {
-    data: proveedores = [],
-    isLoading: isProveedoresLoading,
-    isError: isProveedoresError,
-    error: proveedoresError,
-    refetch: refetchProveedores,
-    isFetching: isFetchingProveedores
-  } = useQuery({
-    queryKey: ['proveedores-deposito'],
-    queryFn: async () => {
-      return await apiClient.proveedores.dropdown()
-    },
-    staleTime: 1000 * 60 * 10,
+    enabled: !!activeProductId,
+    staleTime: 1000 * 30,
   })
 
   // Query para ordenes de compra pendientes
@@ -110,20 +96,18 @@ export default function Deposito() {
       queryClient.invalidateQueries({ queryKey: ['deposito'] })
       queryClient.invalidateQueries({ queryKey: ['ordenes-compra-pendientes'] })
       toast.success(`Recepcion registrada: ${variables.productoNombre} x ${variables.cantidad}`)
+      // T07/ES-01: Surface backend warnings
+      const warnings = (_data as unknown as Record<string, unknown>)?._warnings as Array<{ message: string }> | undefined
+      if (warnings?.length) {
+        warnings.forEach(w => toast.warning(w.message, { duration: 8000 }))
+      }
       setReceivingId(null)
       setRecCantidad('')
     },
     onError: (error: ApiError | Error) => {
-      toast.error(error instanceof ApiError ? error.message : 'Error al registrar recepcion')
+      toast.error(error instanceof ApiError ? error.message : 'Error al registrar recepcion', { duration: Infinity })
     }
   })
-
-  // Auto-focus search input when switching to quick mode
-  useEffect(() => {
-    if (activeTab === 'rapido') {
-      setTimeout(() => qSearchRef.current?.focus(), 50)
-    }
-  }, [activeTab])
 
   // === Quick entry mutation ===
   const quickMutation = useMutation({
@@ -151,14 +135,19 @@ export default function Deposito() {
       queryClient.invalidateQueries({ queryKey: ['kardex'] })
       queryClient.invalidateQueries({ queryKey: ['deposito'] })
       toast.success(`Entrada registrada: ${variables.productoNombre} x ${variables.cantidad}`)
-      // Reset and re-focus
+      // T07/ES-01: Surface backend warnings to user
+      const warnings = (_data as unknown as Record<string, unknown>)?._warnings as Array<{ message: string }> | undefined
+      if (warnings?.length) {
+        warnings.forEach(w => toast.warning(w.message, { duration: 8000 }))
+      }
+      // Reset and re-focus via combobox remount
       setQProducto(null)
       setQCantidad('')
-      setQSearch('')
-      setTimeout(() => qSearchRef.current?.focus(), 50)
+      setQProveedorId('')
+      setQComboboxKey(k => k + 1)
     },
     onError: (error: ApiError | Error) => {
-      toast.error(error instanceof ApiError ? error.message : 'Error al registrar entrada')
+      toast.error(error instanceof ApiError ? error.message : 'Error al registrar entrada', { duration: Infinity })
     }
   })
 
@@ -194,7 +183,6 @@ export default function Deposito() {
       setProveedorId('')
       setMotivo('')
       setObservaciones('')
-      setSearchTerm('')
     },
     onError: (error: ApiError | Error) => {
       const mensajeError = error.message?.includes('Stock insuficiente')
@@ -206,18 +194,12 @@ export default function Deposito() {
     }
   })
 
-  // === Quick entry filtering & handlers ===
-  const qProductosFiltrados = productos.filter(p =>
-    p.nombre.toLowerCase().includes(qSearch.toLowerCase()) ||
-    (p.codigo_barras && p.codigo_barras.includes(qSearch))
-  )
-
+  // === Quick entry handler ===
   function handleQuickSubmit(e: React.FormEvent) {
     e.preventDefault()
 
     if (!qProducto) {
       toast.error('Seleccione un producto')
-      qSearchRef.current?.focus()
       return
     }
 
@@ -236,12 +218,7 @@ export default function Deposito() {
     })
   }
 
-  // === Normal mode filtering & handlers ===
-  const productosFiltrados = productos.filter(p =>
-    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    (p.codigo_barras && p.codigo_barras.includes(searchTerm))
-  )
-
+  // === Normal mode handler ===
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
 
@@ -282,38 +259,10 @@ export default function Deposito() {
     })
   }
 
-  const catalogError = productosError ?? proveedoresError
-  const hasCatalogError = isProductosError || isProveedoresError
-  const retryCatalogQueries = () => {
-    refetchProductos()
-    refetchProveedores()
-  }
-  const isRetryingCatalog = isFetchingProductos || isFetchingProveedores
-
-  if (isProductosLoading && isProveedoresLoading) {
-    return (
-      <div className="space-y-6">
-        <SkeletonText width="w-64" className="h-8" />
-        <SkeletonCard />
-        <SkeletonList />
-      </div>
-    )
-  }
-
   return (
     <div className="space-y-6">
 
       <h1 className="text-3xl font-bold text-gray-900">Gestion de Deposito</h1>
-
-      {hasCatalogError && (
-        <ErrorMessage
-          message={parseErrorMessage(catalogError, import.meta.env.PROD)}
-          type={detectErrorType(catalogError)}
-          requestId={extractRequestId(catalogError)}
-          onRetry={retryCatalogQueries}
-          isRetrying={isRetryingCatalog}
-        />
-      )}
 
       {/* Tab Toggle */}
       <div className="flex gap-1 bg-gray-100 p-1 rounded-lg w-fit" role="tablist" aria-label="Modo de depósito">
@@ -375,52 +324,23 @@ export default function Deposito() {
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Producto
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input
-                  ref={qSearchRef}
-                  type="text"
-                  value={qSearch}
-                  onChange={(e) => {
-                    setQSearch(e.target.value)
-                    if (qProducto) setQProducto(null)
-                  }}
-                  placeholder="Nombre o codigo de barras..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
-                  autoComplete="off"
-                />
-              </div>
+              <ProductCombobox
+                key={qComboboxKey}
+                value={qProducto}
+                onSelect={(p) => {
+                  setQProducto(p)
+                  // Focus quantity input after selection
+                  setTimeout(() => qCantidadRef.current?.focus(), 100)
+                }}
+                autoFocus
+                placeholder="Nombre o codigo de barras..."
+                mode="inline"
+              />
 
-              {/* Dropdown */}
-              {qSearch && !qProducto && (
-                <div className="border border-gray-200 rounded-lg max-h-48 overflow-y-auto mt-1">
-                  {qProductosFiltrados.map((producto) => (
-                    <button
-                      key={producto.id}
-                      type="button"
-                      onClick={() => {
-                        setQProducto(producto)
-                        setQSearch(producto.nombre)
-                        setTimeout(() => qCantidadRef.current?.focus(), 50)
-                      }}
-                      className="w-full text-left px-4 py-2.5 hover:bg-green-50 border-b last:border-b-0 transition-colors"
-                    >
-                      <div className="font-medium">{producto.nombre}</div>
-                      {producto.codigo_barras && (
-                        <div className="text-sm text-gray-500">{producto.codigo_barras}</div>
-                      )}
-                    </button>
-                  ))}
-                  {qProductosFiltrados.length === 0 && (
-                    <div className="px-4 py-2.5 text-gray-500 text-sm">No se encontraron productos</div>
-                  )}
-                </div>
-              )}
-
-              {/* Selected indicator */}
-              {qProducto && (
-                <div className="mt-1 text-sm text-green-600 font-medium">
-                  Seleccionado: {qProducto.nombre}
+              {/* Stock info */}
+              {qProducto && stockInfo && (
+                <div className="mt-1 text-sm text-gray-500">
+                  Stock actual: {stockInfo.cantidad_actual} | Minimo: {stockInfo.stock_minimo}
                 </div>
               )}
             </div>
@@ -445,18 +365,11 @@ export default function Deposito() {
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Proveedor (opcional)
                 </label>
-                <select
-                  value={qProveedorId}
-                  onChange={(e) => setQProveedorId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-green-500 text-lg"
-                >
-                  <option value="">Sin proveedor</option>
-                  {proveedores.map((prov) => (
-                    <option key={prov.id} value={prov.id}>
-                      {prov.nombre}
-                    </option>
-                  ))}
-                </select>
+                <SupplierCombobox
+                  value={qProveedorId || null}
+                  onSelect={(id) => setQProveedorId(id)}
+                  placeholder="Sin proveedor"
+                />
               </div>
             </div>
 
@@ -525,50 +438,22 @@ export default function Deposito() {
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Buscar Producto
               </label>
-              <div className="relative">
-                <Search className="absolute left-3 top-3 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  placeholder="Escriba el nombre o codigo del producto..."
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                />
-              </div>
+              <ProductCombobox
+                value={selectedProducto}
+                onSelect={(p) => {
+                  setSelectedProducto(p)
+                }}
+                placeholder="Nombre o codigo de barras..."
+                mode="popover"
+              />
+
+              {/* Stock info */}
+              {selectedProducto && stockInfo && (
+                <div className="mt-2 text-sm text-gray-500">
+                  Stock actual: {stockInfo.cantidad_actual} | Minimo: {stockInfo.stock_minimo}
+                </div>
+              )}
             </div>
-
-            {/* Lista de productos filtrados */}
-            {searchTerm && (
-              <div className="border border-gray-200 rounded-lg max-h-60 overflow-y-auto">
-                {productosFiltrados.map((producto) => (
-                  <button
-                    key={producto.id}
-                    type="button"
-                    onClick={() => {
-                      setSelectedProducto(producto)
-                      setSearchTerm('')
-                    }}
-                    className="w-full text-left px-4 py-3 hover:bg-gray-50 border-b last:border-b-0"
-                  >
-                    <div className="font-medium">{producto.nombre}</div>
-                    {producto.codigo_barras && (
-                      <div className="text-sm text-gray-500">{producto.codigo_barras}</div>
-                    )}
-                  </button>
-                ))}
-                {productosFiltrados.length === 0 && (
-                  <div className="px-4 py-3 text-gray-500">No se encontraron productos</div>
-                )}
-              </div>
-            )}
-
-            {/* Producto seleccionado */}
-            {selectedProducto && (
-              <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                <div className="font-medium text-blue-900">Producto seleccionado:</div>
-                <div className="text-lg font-bold text-blue-900">{selectedProducto.nombre}</div>
-              </div>
-            )}
 
             {/* Cantidad */}
             <div>
@@ -592,18 +477,11 @@ export default function Deposito() {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Proveedor
                 </label>
-                <select
-                  value={proveedorId}
-                  onChange={(e) => setProveedorId(e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-lg"
-                >
-                  <option value="">Seleccione un proveedor</option>
-                  {proveedores.map((prov) => (
-                    <option key={prov.id} value={prov.id}>
-                      {prov.nombre}
-                    </option>
-                  ))}
-                </select>
+                <SupplierCombobox
+                  value={proveedorId || null}
+                  onSelect={(id) => setProveedorId(id)}
+                  placeholder="Seleccione un proveedor"
+                />
               </div>
             )}
 

@@ -1,5 +1,5 @@
 /**
- * api-assistant — Edge Function for AI Assistant (Sprint 1 + Sprint 2)
+ * api-assistant — Edge Function for AI Assistant (Sprint 1 + Sprint 2 + Sprint 3)
  *
  * Sprint 1: Receives natural language messages, parses intent via rule-based parser,
  * proxies read-only queries to api-minimarket (or PostgREST), and returns
@@ -8,6 +8,9 @@
  * Sprint 2: Detects write intents (crear_tarea, registrar_pago_cc), returns a
  * confirmation plan (mode: "plan") with a single-use confirm_token. The user
  * must POST /confirm with the token to execute the action.
+ *
+ * Sprint 3: Adds actualizar_estado_pedido intent (plan → confirm) with state
+ * transition validation mirroring the gateway's VALID_TRANSITIONS map.
  *
  * Auth: expects user JWT and validates identity/role via Supabase Auth API.
  */
@@ -317,7 +320,7 @@ const handleSaludo: IntentHandler = async () => ({
 });
 
 const handleAyuda: IntentHandler = async () => ({
-  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nTambien puedo ejecutar acciones:\n- "Crear tarea comprar harina" — crear una tarea pendiente\n- "Registrar pago de 5000 de Juan Perez" — registrar un pago de cliente\n\nEscribi tu consulta como la dirias normalmente.',
+  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nTambien puedo ejecutar acciones:\n- "Crear tarea comprar harina" — crear una tarea pendiente\n- "Registrar pago de 5000 de Juan Perez" — registrar un pago de cliente\n- "Cambiar pedido #123 a preparando" — actualizar estado de un pedido\n- "Aplicar factura 001-00012345" — aplicar factura validada al deposito\n\nEscribi tu consulta como la dirias normalmente.',
   data: null,
 });
 
@@ -338,6 +341,8 @@ const INTENT_HANDLERS: Record<string, IntentHandler> = {
 const INTENT_LABELS: Record<string, string> = {
   crear_tarea: 'Crear tarea',
   registrar_pago_cc: 'Registrar pago',
+  actualizar_estado_pedido: 'Actualizar estado de pedido',
+  aplicar_factura: 'Aplicar factura al deposito',
 };
 
 interface PlanResult {
@@ -470,6 +475,183 @@ async function buildRegistrarPagoCCPlan(
   };
 }
 
+// Sprint 3 — Plan builder: actualizar estado pedido
+const PEDIDO_VALID_TRANSITIONS: Record<string, string[]> = {
+  pendiente: ['preparando', 'cancelado'],
+  preparando: ['listo', 'cancelado'],
+  listo: ['entregado', 'cancelado'],
+  entregado: [],
+  cancelado: [],
+};
+
+async function buildActualizarEstadoPedidoPlan(
+  params: Record<string, string>,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<PlanResult> {
+  const numeroPedido = params.numero_pedido;
+  const nuevoEstado = params.nuevo_estado;
+
+  if (!numeroPedido) {
+    return {
+      plan: { intent: 'actualizar_estado_pedido', label: 'Actualizar estado de pedido', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'numero_pedido',
+        message: 'No pude detectar el numero del pedido. Escribi algo como: "Cambiar pedido #123 a preparando"',
+      },
+    };
+  }
+
+  if (!nuevoEstado || !['preparando', 'listo', 'entregado', 'cancelado'].includes(nuevoEstado)) {
+    return {
+      plan: { intent: 'actualizar_estado_pedido', label: 'Actualizar estado de pedido', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'nuevo_estado',
+        message: `No pude detectar el nuevo estado. Estados validos: preparando, listo, entregado, cancelado.\n\nEjemplo: "Cambiar pedido #${numeroPedido} a preparando"`,
+      },
+    };
+  }
+
+  // Fetch current pedido via PostgREST
+  let pedidos: Array<Record<string, unknown>> = [];
+  try {
+    const query = `select=id,numero_pedido,estado,monto_total&numero_pedido=eq.${encodeURIComponent(numeroPedido)}&limit=1`;
+    const data = await fetchPostgREST(supabaseUrl, 'pedidos', query, headers);
+    pedidos = Array.isArray(data) ? data : [];
+  } catch {
+    // PostgREST lookup failed
+  }
+
+  if (pedidos.length === 0) {
+    return {
+      plan: { intent: 'actualizar_estado_pedido', label: 'Actualizar estado de pedido', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'numero_pedido',
+        message: `No encontre un pedido con el numero #${numeroPedido}. Verifica el numero e intenta de nuevo.`,
+      },
+    };
+  }
+
+  const pedido = pedidos[0];
+  const pedidoId = String(pedido.id);
+  const estadoActual = String(pedido.estado || 'desconocido');
+  const montoTotal = Number(pedido.monto_total ?? 0);
+
+  // Validate transition
+  const allowed = PEDIDO_VALID_TRANSITIONS[estadoActual] || [];
+  if (!allowed.includes(nuevoEstado)) {
+    const allowedStr = allowed.length > 0 ? allowed.join(', ') : 'ninguna (estado terminal)';
+    return {
+      plan: { intent: 'actualizar_estado_pedido', label: 'Actualizar estado de pedido', payload: {}, summary: '', risk: 'medio' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'nuevo_estado',
+        message: `No se puede cambiar el pedido #${numeroPedido} de "${estadoActual}" a "${nuevoEstado}". Transiciones permitidas: ${allowedStr}.`,
+      },
+    };
+  }
+
+  const risk = nuevoEstado === 'cancelado' ? 'alto' : 'medio';
+  const payload = {
+    pedido_id: pedidoId,
+    numero_pedido: numeroPedido,
+    nuevo_estado: nuevoEstado,
+    estado_actual: estadoActual,
+  };
+
+  return {
+    plan: {
+      intent: 'actualizar_estado_pedido',
+      label: 'Actualizar estado de pedido',
+      payload,
+      summary: `Cambiar pedido #${numeroPedido} de "${estadoActual}" a "${nuevoEstado}"`,
+      risk,
+    },
+    answer: `Voy a actualizar el estado del pedido:\n\n- Pedido: #${numeroPedido}\n- Monto: $${montoTotal.toLocaleString('es-AR')}\n- Estado actual: ${estadoActual}\n- Nuevo estado: ${nuevoEstado}\n\n¿Confirmas?`,
+  };
+}
+
+// Sprint 3 — Plan builder: aplicar factura
+async function buildAplicarFacturaPlan(
+  params: Record<string, string>,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<PlanResult> {
+  const facturaNumero = params.factura_numero;
+
+  // Fetch facturas in estado=validada via PostgREST
+  let facturas: Array<Record<string, unknown>> = [];
+  try {
+    let query = 'select=id,numero,total,fecha_factura,estado,proveedores(nombre)&estado=eq.validada&order=created_at.desc&limit=10';
+    if (facturaNumero) {
+      query += `&numero=eq.${encodeURIComponent(facturaNumero)}`;
+    }
+    const data = await fetchPostgREST(supabaseUrl, 'facturas_ingesta', query, headers);
+    facturas = Array.isArray(data) ? data : [];
+  } catch {
+    // PostgREST lookup failed
+  }
+
+  if (facturas.length === 0) {
+    const detail = facturaNumero
+      ? `No encontre una factura validada con numero "${facturaNumero}".`
+      : 'No hay facturas en estado "validada" listas para aplicar.';
+    return {
+      plan: { intent: 'aplicar_factura', label: 'Aplicar factura', payload: {}, summary: '', risk: 'alto' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'factura_numero',
+        message: `${detail} Solo se pueden aplicar facturas que ya pasaron la validacion de items.`,
+      },
+    };
+  }
+
+  if (facturas.length > 1) {
+    const list = facturas.slice(0, 5)
+      .map((f) => {
+        const prov = (f.proveedores as Record<string, unknown>)?.nombre || 'N/A';
+        return `- #${f.numero || 'S/N'} — ${prov} ($${Number(f.total ?? 0).toFixed(2)})`;
+      })
+      .join('\n');
+    return {
+      plan: { intent: 'aplicar_factura', label: 'Aplicar factura', payload: {}, summary: '', risk: 'alto' },
+      answer: '',
+      needsDisambiguation: {
+        field: 'factura_numero',
+        message: `Hay ${facturas.length} facturas validadas. Indica cual aplicar:\n${list}\n\nEjemplo: "Aplicar factura 001-00012345"`,
+      },
+    };
+  }
+
+  const factura = facturas[0];
+  const facturaId = String(factura.id);
+  const numero = String(factura.numero || 'S/N');
+  const total = Number(factura.total ?? 0);
+  const provNombre = String((factura.proveedores as Record<string, unknown>)?.nombre || 'N/A');
+  const fechaFactura = String(factura.fecha_factura || 'N/A');
+
+  const payload = {
+    factura_id: facturaId,
+    numero,
+    proveedor: provNombre,
+    total,
+  };
+
+  return {
+    plan: {
+      intent: 'aplicar_factura',
+      label: 'Aplicar factura al deposito',
+      payload,
+      summary: `Aplicar factura #${numero} de ${provNombre} ($${total.toFixed(2)}) al deposito`,
+      risk: 'alto',
+    },
+    answer: `Voy a aplicar esta factura al deposito (ingresara los items al stock):\n\n- Factura: #${numero}\n- Proveedor: ${provNombre}\n- Total: $${total.toLocaleString('es-AR')}\n- Fecha: ${fechaFactura}\n\nEsta accion es irreversible. ¿Confirmas?`,
+  };
+}
+
 // ---------------------------------------------------------------------------
 // Sprint 2 — Action executors (called after confirm)
 // ---------------------------------------------------------------------------
@@ -544,12 +726,116 @@ async function executeRegistrarPagoCC(
   }
 }
 
+async function executeActualizarEstadoPedido(
+  plan: ActionPlan,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<{ answer: string; data: unknown }> {
+  const url = `${supabaseUrl}/functions/v1/api-minimarket/pedidos/${plan.payload.pedido_id}/estado`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15_000);
+
+  try {
+    const res = await fetch(url, {
+      method: 'PUT',
+      headers,
+      body: JSON.stringify({ estado: plan.payload.nuevo_estado }),
+      signal: controller.signal,
+    });
+
+    const json = await res.json();
+    if (!res.ok || json.success === false) {
+      throw new Error(json.error?.message || `Gateway returned ${res.status}`);
+    }
+
+    return {
+      answer: `Pedido #${plan.payload.numero_pedido} actualizado a "${plan.payload.nuevo_estado}" exitosamente.`,
+      data: json.data,
+    };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+async function executeAplicarFactura(
+  plan: ActionPlan,
+  supabaseUrl: string,
+  headers: Record<string, string>,
+): Promise<{ answer: string; data: unknown }> {
+  const url = `${supabaseUrl}/functions/v1/api-minimarket/facturas/${plan.payload.factura_id}/aplicar`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 30_000); // longer timeout for bulk operation
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers,
+      signal: controller.signal,
+    });
+
+    const json = await res.json();
+    if (!res.ok || json.success === false) {
+      throw new Error(json.error?.message || `Gateway returned ${res.status}`);
+    }
+
+    const data = json.data as Record<string, unknown>;
+    const aplicados = Number(data?.items_aplicados ?? 0);
+    const errores = Number(data?.items_errores ?? 0);
+
+    let answer = `Factura #${plan.payload.numero} aplicada exitosamente:\n- Items ingresados al deposito: ${aplicados}`;
+    if (errores > 0) {
+      answer += `\n- Items con error: ${errores} (aplicacion parcial)`;
+    }
+
+    return { answer, data: json.data };
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Sprint 3 — Persistent audit trail for assistant actions
+// ---------------------------------------------------------------------------
+
+async function insertAuditLog(
+  supabaseUrl: string,
+  headers: Record<string, string>,
+  entry: {
+    usuario_id: string;
+    intent: string;
+    payload: Record<string, unknown>;
+    result_success: boolean;
+    result_data?: unknown;
+    error_message?: string;
+    request_id: string;
+  },
+): Promise<void> {
+  const url = `${supabaseUrl}/rest/v1/asistente_audit_log`;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+
+  try {
+    await fetch(url, {
+      method: 'POST',
+      headers: { ...headers, 'Prefer': 'return=minimal' },
+      body: JSON.stringify(entry),
+      signal: controller.signal,
+    });
+  } catch {
+    // Audit insert failures are non-critical — do not propagate
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 const ACTION_EXECUTORS: Record<
   string,
   (plan: ActionPlan, supabaseUrl: string, headers: Record<string, string>) => Promise<{ answer: string; data: unknown }>
 > = {
   crear_tarea: executeCrearTarea,
   registrar_pago_cc: executeRegistrarPagoCC,
+  actualizar_estado_pedido: executeActualizarEstadoPedido,
+  aplicar_factura: executeAplicarFactura,
 };
 
 // ---------------------------------------------------------------------------
@@ -669,6 +955,17 @@ Deno.serve(async (req: Request) => {
 
     try {
       const execResult = await executor(result.plan, supabaseUrl, gatewayHeaders);
+
+      // Sprint 3: Persistent audit trail
+      insertAuditLog(supabaseUrl, gatewayHeaders, {
+        usuario_id: user.id,
+        intent: result.plan.intent,
+        payload: result.plan.payload,
+        result_success: true,
+        result_data: execResult.data,
+        request_id: requestId,
+      });
+
       return ok(
         {
           executed: true,
@@ -683,6 +980,17 @@ Deno.serve(async (req: Request) => {
       );
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error ejecutando accion';
+
+      // Sprint 3: Audit failed execution
+      insertAuditLog(supabaseUrl, gatewayHeaders, {
+        usuario_id: user.id,
+        intent: result.plan.intent,
+        payload: result.plan.payload,
+        result_success: false,
+        error_message: msg,
+        request_id: requestId,
+      });
+
       return fail('EXECUTION_ERROR', `No se pudo ejecutar la accion: ${msg}`, 502, responseHeaders, { requestId });
     }
   }
@@ -716,7 +1024,7 @@ Deno.serve(async (req: Request) => {
 
     const answer = isContextual
       ? `No encontre una consulta exacta, pero quizas quisiste decir:\n${contextualSuggestions.map(s => `- ${s}`).join('\n')}\n\nToca una sugerencia o reformula tu consulta.`
-      : 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR\n- Crear tarea\n- Registrar pago de cliente\n\nEscribi "ayuda" para ver ejemplos.';
+      : 'No entendi tu consulta. Puedo ayudarte con:\n- Stock bajo\n- Pedidos pendientes\n- Cuentas corrientes (fiado)\n- Ventas del dia\n- Estado de facturas OCR\n- Crear tarea\n- Registrar pago de cliente\n- Actualizar estado de pedido\n- Aplicar factura al deposito\n\nEscribi "ayuda" para ver ejemplos.';
 
     const response: AssistantResponse = {
       intent: null,
@@ -738,6 +1046,10 @@ Deno.serve(async (req: Request) => {
     try {
       if (parsed.intent === 'crear_tarea') {
         planResult = await buildCrearTareaPlan(parsed.params);
+      } else if (parsed.intent === 'actualizar_estado_pedido') {
+        planResult = await buildActualizarEstadoPedidoPlan(parsed.params, supabaseUrl, gatewayHeaders);
+      } else if (parsed.intent === 'aplicar_factura') {
+        planResult = await buildAplicarFacturaPlan(parsed.params, supabaseUrl, gatewayHeaders);
       } else {
         planResult = await buildRegistrarPagoCCPlan(parsed.params, supabaseUrl, gatewayHeaders);
       }

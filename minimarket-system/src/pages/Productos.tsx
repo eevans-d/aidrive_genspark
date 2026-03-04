@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { TrendingUp, TrendingDown, Plus, DollarSign, Loader2 } from 'lucide-react'
+import { useState, useRef, useCallback } from 'react'
+import { TrendingUp, TrendingDown, Plus, DollarSign, Loader2, X } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useProductos, ProductoConHistorial, ProductosResult } from '../hooks/queries'
+import { useDebounced } from '../hooks/useDebounced'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType } from '../components/errorMessageUtils'
 import { SkeletonTable, SkeletonText } from '../components/Skeleton'
@@ -14,30 +15,33 @@ export default function Productos() {
   const queryClient = useQueryClient()
   const [page, setPage] = useState(1)
   const [barcodeInput, setBarcodeInput] = useState('')
-  const [barcodeSearch, setBarcodeSearch] = useState('')
+  const debouncedBarcode = useDebounced(barcodeInput.trim(), 300)
   const [selectedProducto, setSelectedProducto] = useState<ProductoConHistorial | null>(null)
   const [showNewModal, setShowNewModal] = useState(false)
   const [showPriceModal, setShowPriceModal] = useState(false)
   const [newProducto, setNewProducto] = useState({ nombre: '', sku: '', codigo_barras: '', marca: '', contenido_neto: '' })
   const [priceForm, setPriceForm] = useState({ precio_compra: '', margen_ganancia: '' })
+  const [focusedIndex, setFocusedIndex] = useState(-1)
+  const listRef = useRef<HTMLDivElement>(null)
   const pageSize = 20
 
   const { data, isLoading, isError, error, refetch, isFetching } = useProductos({
     page,
     pageSize,
-    barcodeSearch: barcodeSearch || undefined
+    barcodeSearch: debouncedBarcode || undefined
   })
 
-  const handleBarcodeSearch = () => {
-    setPage(1)
-    setBarcodeSearch(barcodeInput.trim())
+  // Reset page when debounced barcode changes
+  const prevDebouncedRef = useRef(debouncedBarcode)
+  if (prevDebouncedRef.current !== debouncedBarcode) {
+    prevDebouncedRef.current = debouncedBarcode
+    if (page !== 1) setPage(1)
   }
 
-  const handleBarcodeClear = () => {
-    setPage(1)
+  const handleBarcodeClear = useCallback(() => {
     setBarcodeInput('')
-    setBarcodeSearch('')
-  }
+    setFocusedIndex(-1)
+  }, [])
 
   const createMutation = useMutation({
     mutationFn: (params: typeof newProducto) =>
@@ -55,7 +59,7 @@ export default function Productos() {
       setNewProducto({ nombre: '', sku: '', codigo_barras: '', marca: '', contenido_neto: '' })
     },
     onError: (err: ApiError | Error) => {
-      toast.error(err instanceof ApiError ? err.message : 'Error al crear producto')
+      toast.error(err instanceof ApiError ? err.message : 'Error al crear producto', { duration: Infinity })
     },
   })
 
@@ -63,7 +67,7 @@ export default function Productos() {
     mutationFn: (params: { producto_id: string; precio_compra: number; margen_ganancia?: number }) =>
       preciosApi.aplicar(params),
     onMutate: async (params) => {
-      const currentQueryKey = [...queryKeys.productos, { page, pageSize, barcodeSearch: barcodeSearch || undefined }]
+      const currentQueryKey = [...queryKeys.productos, { page, pageSize, barcodeSearch: debouncedBarcode || undefined }]
       await queryClient.cancelQueries({ queryKey: currentQueryKey })
       const snapshot = queryClient.getQueryData<ProductosResult>(currentQueryKey)
 
@@ -100,7 +104,7 @@ export default function Productos() {
       if (context?.snapshot && context.currentQueryKey) {
         queryClient.setQueryData(context.currentQueryKey, context.snapshot)
       }
-      toast.error(err instanceof ApiError ? err.message : 'Error al actualizar precio')
+      toast.error(err instanceof ApiError ? err.message : 'Error al actualizar precio', { duration: Infinity })
     },
     onSettled: (_data, _err, _vars, context) => {
       queryClient.invalidateQueries({ queryKey: context?.currentQueryKey ?? ['productos'] })
@@ -181,7 +185,7 @@ export default function Productos() {
   }
 
   const { productos = [], total = 0 } = data ?? {}
-  const isBarcodeSearchActive = barcodeSearch.trim().length > 0
+  const isBarcodeSearchActive = debouncedBarcode.length > 0
   const totalPages = isBarcodeSearchActive ? 1 : Math.max(1, Math.ceil(total / pageSize))
 
   return (
@@ -203,7 +207,7 @@ export default function Productos() {
             Mostrando {productos.length} de {total} productos
             {isBarcodeSearchActive && (
               <span className="ml-2 text-xs text-blue-600">
-                Filtro por código: {barcodeSearch.trim()}
+                Filtro por código: {debouncedBarcode}
               </span>
             )}
           </div>
@@ -237,34 +241,28 @@ export default function Productos() {
 
         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
           <label className="text-sm text-gray-600">Buscar por código de barras</label>
-          <div className="flex flex-1 items-center gap-2">
+          <div className="relative flex-1 sm:max-w-xs">
             <input
               type="text"
               inputMode="numeric"
-              placeholder="Escanear o escribir código"
+              placeholder="Escanear o escribir código..."
               value={barcodeInput}
               onChange={(e) => setBarcodeInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleBarcodeSearch()
-                }
-              }}
-              className="w-full sm:w-72 px-3 py-2 border border-gray-300 rounded text-sm"
+              className="w-full px-3 py-2 pr-8 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             />
-            <button
-              onClick={handleBarcodeSearch}
-              disabled={isFetching || barcodeInput.trim().length === 0}
-              className="px-3 py-2 bg-blue-600 text-white rounded text-sm disabled:opacity-50"
-            >
-              Buscar
-            </button>
-            <button
-              onClick={handleBarcodeClear}
-              disabled={isFetching || (!barcodeInput && !barcodeSearch)}
-              className="px-3 py-2 border border-gray-300 text-gray-700 rounded text-sm disabled:opacity-50"
-            >
-              Limpiar
-            </button>
+            {barcodeInput && (
+              <button
+                type="button"
+                onClick={handleBarcodeClear}
+                className="absolute right-2 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+            {isFetching && barcodeInput && (
+              <Loader2 className="absolute right-8 top-1/2 -translate-y-1/2 w-4 h-4 animate-spin text-blue-500" />
+            )}
           </div>
         </div>
       </div>
@@ -276,50 +274,99 @@ export default function Productos() {
             <h2 className="text-xl font-semibold">Catálogo de Productos</h2>
           </div>
           <div className="p-6">
-            <div className="space-y-3 max-h-[600px] overflow-y-auto">
-              {productos.map((producto) => {
-                const ultimoCambio = producto.historial?.[0]
-                const tendencia = ultimoCambio && ultimoCambio.cambio_porcentaje !== null
-                  ? ultimoCambio.cambio_porcentaje > 0 ? 'subida' : 'bajada'
-                  : null
+            <div
+              ref={listRef}
+              tabIndex={0}
+              role="listbox"
+              aria-label="Lista de productos"
+              onKeyDown={(e) => {
+                if (productos.length === 0) return
+                if (e.key === 'ArrowDown') {
+                  e.preventDefault()
+                  setFocusedIndex((prev) => Math.min(prev + 1, productos.length - 1))
+                } else if (e.key === 'ArrowUp') {
+                  e.preventDefault()
+                  setFocusedIndex((prev) => Math.max(prev - 1, 0))
+                } else if (e.key === 'Enter' && focusedIndex >= 0 && focusedIndex < productos.length) {
+                  e.preventDefault()
+                  setSelectedProducto(productos[focusedIndex] ?? null)
+                }
+              }}
+              className="space-y-3 max-h-[600px] overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-300 rounded"
+            >
+              {productos.length === 0 ? (
+                <div className="rounded-lg border border-dashed border-gray-300 p-6 text-center">
+                  <p className="font-medium text-gray-700">
+                    {isBarcodeSearchActive ? 'No se encontraron productos para ese código.' : 'No hay productos para mostrar.'}
+                  </p>
+                  <p className="mt-1 text-sm text-gray-500">
+                    {isBarcodeSearchActive ? 'Limpiá la búsqueda o escaneá otro código.' : 'Creá un producto nuevo para comenzar.'}
+                  </p>
+                  {isBarcodeSearchActive && (
+                    <button
+                      type="button"
+                      onClick={handleBarcodeClear}
+                      className="mt-3 inline-flex items-center px-3 py-1.5 text-sm font-medium text-blue-700 border border-blue-200 rounded hover:bg-blue-50 transition-colors"
+                    >
+                      Limpiar búsqueda
+                    </button>
+                  )}
+                </div>
+              ) : (
+                productos.map((producto, index) => {
+                  const ultimoCambio = producto.historial?.[0]
+                  const tendencia = ultimoCambio && ultimoCambio.cambio_porcentaje !== null
+                    ? ultimoCambio.cambio_porcentaje > 0 ? 'subida' : 'bajada'
+                    : null
+                  const isFocused = focusedIndex === index
+                  const isSelected = selectedProducto?.id === producto.id
 
-                return (
-                  <div
-                    key={producto.id}
-                    onClick={() => setSelectedProducto(producto)}
-                    className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${selectedProducto?.id === producto.id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                  return (
+                    <div
+                      key={producto.id}
+                      role="option"
+                      aria-selected={isSelected}
+                      onClick={() => {
+                        setSelectedProducto(producto)
+                        setFocusedIndex(index)
+                      }}
+                      className={`p-4 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors ${
+                        isSelected ? 'border-blue-500 bg-blue-50' :
+                        isFocused ? 'border-blue-300 bg-blue-50/50' :
+                        'border-gray-200'
                       }`}
-                  >
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
-                        <p className="text-sm text-gray-500">{producto.categoria}</p>
-                        {producto.proveedor && (
-                          <p className="text-xs text-gray-400 mt-1">
-                            Proveedor: {producto.proveedor.nombre}
-                          </p>
-                        )}
-                      </div>
-                      <div className="text-right">
-                        <div className="text-lg font-bold text-gray-900">
-                          ${producto.precio_actual != null ? money(producto.precio_actual) : '—'}
+                    >
+                      <div className="flex justify-between items-start">
+                        <div className="flex-1">
+                          <h3 className="font-medium text-gray-900">{producto.nombre}</h3>
+                          <p className="text-sm text-gray-500">{producto.categoria}</p>
+                          {producto.proveedor && (
+                            <p className="text-xs text-gray-400 mt-1">
+                              Proveedor: {producto.proveedor.nombre}
+                            </p>
+                          )}
                         </div>
-                        {tendencia && (
-                          <div className={`flex items-center text-sm ${tendencia === 'subida' ? 'text-red-600' : 'text-green-600'
-                            }`}>
-                            {tendencia === 'subida' ? (
-                              <TrendingUp className="w-4 h-4 mr-1" />
-                            ) : (
-                              <TrendingDown className="w-4 h-4 mr-1" />
-                            )}
-                            {ultimoCambio && Math.abs(ultimoCambio.cambio_porcentaje || 0).toFixed(1)}%
+                        <div className="text-right">
+                          <div className="text-lg font-bold text-gray-900">
+                            ${producto.precio_actual != null ? money(producto.precio_actual) : '—'}
                           </div>
-                        )}
+                          {tendencia && (
+                            <div className={`flex items-center text-sm ${tendencia === 'subida' ? 'text-red-600' : 'text-green-600'
+                              }`}>
+                              {tendencia === 'subida' ? (
+                                <TrendingUp className="w-4 h-4 mr-1" />
+                              ) : (
+                                <TrendingDown className="w-4 h-4 mr-1" />
+                              )}
+                              {ultimoCambio && Math.abs(ultimoCambio.cambio_porcentaje || 0).toFixed(1)}%
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )
-              })}
+                  )
+                })
+              )}
             </div>
           </div>
         </div>

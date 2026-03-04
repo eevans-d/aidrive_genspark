@@ -3,7 +3,7 @@
  * @description Validates loading states, error handling, and data display
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
 import Dashboard from './Dashboard';
@@ -102,13 +102,19 @@ describe('Dashboard', () => {
 
                 // Check stats cards
                 expect(screen.getByText('Tareas Urgentes')).toBeInTheDocument();
-                expect(screen.getByText('2')).toBeInTheDocument();
+                const tareasUrgentesBlock = screen.getByText('Tareas Urgentes').parentElement;
+                expect(tareasUrgentesBlock).not.toBeNull();
+                expect(within(tareasUrgentesBlock as HTMLElement).getByText('2')).toBeInTheDocument();
 
                 expect(screen.getByText('Stock Bajo')).toBeInTheDocument();
-                expect(screen.getByText('5')).toBeInTheDocument();
+                const stockBajoBlock = screen.getByText('Stock Bajo').parentElement;
+                expect(stockBajoBlock).not.toBeNull();
+                expect(within(stockBajoBlock as HTMLElement).getByText('5')).toBeInTheDocument();
 
                 expect(screen.getByText('Total Productos')).toBeInTheDocument();
-                expect(screen.getByText('100')).toBeInTheDocument();
+                const totalProductosBlock = screen.getByText('Total Productos').parentElement;
+                expect(totalProductosBlock).not.toBeNull();
+                expect(within(totalProductosBlock as HTMLElement).getByText('100')).toBeInTheDocument();
 
                 // Check task list
                 expect(screen.getByText('Tarea 1')).toBeInTheDocument();

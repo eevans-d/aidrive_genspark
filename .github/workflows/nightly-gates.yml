@@ -1,0 +1,111 @@
+name: Nightly Quality Gates
+
+on:
+  schedule:
+    # Daily at 05:00 UTC (after backup at 03:00, after security at 04:00)
+    - cron: '0 5 * * *'
+  workflow_dispatch:
+
+env:
+  NODE_VERSION: '20'
+  PNPM_VERSION: '9'
+
+jobs:
+  unit-tests:
+    name: Unit Tests (Full Suite)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run unit tests with coverage
+        run: npx vitest run --coverage --reporter=verbose
+        env:
+          CI: 'true'
+
+      - name: Check coverage threshold (80%)
+        run: |
+          npx vitest run --coverage 2>&1 | tee coverage-output.txt
+          if grep -q "ERROR" coverage-output.txt; then
+            echo "::error::Coverage below 80% threshold!"
+            exit 1
+          fi
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results
+          path: test-reports/
+          retention-days: 7
+
+  lint-and-build:
+    name: Lint + Build (Frontend)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - uses: pnpm/action-setup@v4
+        with:
+          version: ${{ env.PNPM_VERSION }}
+
+      - name: Install frontend dependencies
+        run: pnpm install --prefer-offline
+        working-directory: minimarket-system
+
+      - name: Lint (0 errors required)
+        run: pnpm lint
+        working-directory: minimarket-system
+
+      - name: TypeScript check + Build
+        run: pnpm build
+        working-directory: minimarket-system
+
+      - name: Check bundle size
+        run: |
+          TOTAL_KB=$(du -sk minimarket-system/dist/assets/*.js | awk '{sum += $1} END {print sum}')
+          echo "Total JS bundle: ${TOTAL_KB}KB"
+          if [ "$TOTAL_KB" -gt 2048 ]; then
+            echo "::warning::JS bundle exceeds 2MB budget (${TOTAL_KB}KB)"
+          fi
+
+  migration-drift:
+    name: Migration Drift Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Check for pending migrations
+        run: |
+          supabase db push --dry-run 2>&1 | tee migration-status.txt
+          if grep -q "migrations will" migration-status.txt; then
+            echo "::warning::Pending migrations detected — review before next release"
+          fi
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+  notify:
+    name: Notify Results
+    needs: [unit-tests, lint-and-build]
+    if: failure()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Report failure
+        run: |
+          echo "::error::Nightly quality gates FAILED! Review job logs."
+          echo "::warning::Do not release until all nightly gates pass."

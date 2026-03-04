@@ -49,7 +49,7 @@ export default function Proveedores() {
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : 'Error guardando proveedor'
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
     },
   })
 
@@ -491,7 +491,7 @@ function ProveedorFaltantes({ proveedorId }: { proveedorId: string }) {
   const handleResolve = (id: string) => {
     updateFaltante.mutate({ id, resuelto: true }, {
       onSuccess: () => toast.success('Faltante resuelto'),
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
     })
   }
 

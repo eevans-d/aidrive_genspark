@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { AlertTriangle, DollarSign, Edit3, Loader2, MessageCircle, Plus, Search, Users } from 'lucide-react'
@@ -22,6 +22,46 @@ function whatsappUrl(e164: string): string {
 type ModalMode = 'create' | 'edit' | 'pago' | null
 
 const EMPTY_CLIENTES: ClienteSaldoItem[] = []
+
+function InlineEdit({ value, onSave, placeholder, type = 'text' }: {
+  value: string
+  onSave: (v: string) => void
+  placeholder: string
+  type?: string
+}) {
+  const [editing, setEditing] = useState(false)
+  const [draft, setDraft] = useState(value)
+
+  if (!editing) {
+    return (
+      <span
+        onClick={(e) => { e.stopPropagation(); setEditing(true); setDraft(value) }}
+        className="cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-800 rounded px-1 -mx-1 inline-block"
+        title="Click para editar"
+      >
+        {value || <span className="text-gray-400 italic">{placeholder}</span>}
+      </span>
+    )
+  }
+
+  return (
+    <input
+      value={draft}
+      onChange={(e) => setDraft(e.target.value)}
+      onBlur={() => { if (draft !== value) onSave(draft); setEditing(false) }}
+      onKeyDown={(e) => {
+        e.stopPropagation()
+        if (e.key === 'Enter') { if (draft !== value) onSave(draft); setEditing(false) }
+        if (e.key === 'Escape') { setDraft(value); setEditing(false) }
+      }}
+      onClick={(e) => e.stopPropagation()}
+      autoFocus
+      type={type}
+      className="px-1 -mx-1 border-b-2 border-blue-500 outline-none bg-transparent text-sm w-auto"
+      placeholder={placeholder}
+    />
+  )
+}
 
 export default function Clientes() {
   const qc = useQueryClient()
@@ -58,7 +98,7 @@ export default function Clientes() {
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : 'Error guardando cliente'
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
     },
   })
 
@@ -73,9 +113,36 @@ export default function Clientes() {
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : 'Error registrando pago'
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
     },
   })
+
+  // Inline edit mutation (separate from modal mutation to avoid side effects)
+  const inlineUpdateMutation = useMutation({
+    mutationFn: ({ id, field, value }: { id: string; field: string; value: string }) =>
+      clientesApi.update(id, { [field]: value.trim() || null }),
+    onMutate: async ({ id, field, value }) => {
+      await qc.cancelQueries({ queryKey: ['clientes', q] })
+      const prev = qc.getQueryData<ClienteSaldoItem[]>(['clientes', q])
+      if (prev) {
+        qc.setQueryData<ClienteSaldoItem[]>(['clientes', q], prev.map(c =>
+          c.cliente_id === id ? { ...c, [field]: value.trim() || null } : c
+        ))
+      }
+      return { prev }
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.prev) qc.setQueryData(['clientes', q], ctx.prev)
+      toast.error('Error al actualizar')
+    },
+    onSettled: () => {
+      qc.invalidateQueries({ queryKey: ['clientes'] })
+    },
+  })
+
+  const handleInlineSave = useCallback((clienteId: string, field: string, value: string) => {
+    inlineUpdateMutation.mutate({ id: clienteId, field, value })
+  }, [inlineUpdateMutation])
 
   const clientes = clientesQuery.data ?? EMPTY_CLIENTES
   const resumen = resumenQuery.data
@@ -206,8 +273,18 @@ export default function Clientes() {
                   <div className="min-w-0">
                     <div className="font-bold text-gray-900 truncate">{c.nombre}</div>
                     <div className="text-sm text-gray-600 flex flex-wrap gap-x-3 gap-y-1">
-                      {c.telefono && <span>{c.telefono}</span>}
-                      {c.email && <span>{c.email}</span>}
+                      <InlineEdit
+                        value={c.telefono ?? ''}
+                        onSave={(v) => handleInlineSave(c.cliente_id, 'telefono', v)}
+                        placeholder="Agregar tel."
+                        type="tel"
+                      />
+                      <InlineEdit
+                        value={c.email ?? ''}
+                        onSave={(v) => handleInlineSave(c.cliente_id, 'email', v)}
+                        placeholder="Agregar email"
+                        type="email"
+                      />
                       <span className={saldo > 0 ? 'text-red-700 font-semibold' : 'text-gray-700'}>
                         Saldo: ${money(saldo)}
                       </span>

@@ -152,7 +152,7 @@ export default function Tareas() {
     },
     onError: (_err, _id, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
-      toast.error('Error al completar tarea')
+      toast.error('Error al completar tarea', { duration: Infinity })
     },
     onSuccess: (server, id) => {
       toast.success('Tarea completada')
@@ -200,7 +200,7 @@ export default function Tareas() {
     },
     onError: (_err, _vars, ctx) => {
       if (ctx?.previous) queryClient.setQueryData(['tareas'], ctx.previous)
-      toast.error('Error al cancelar tarea')
+      toast.error('Error al cancelar tarea', { duration: Infinity })
     },
     onSuccess: () => {
       toast.success('Tarea cancelada')

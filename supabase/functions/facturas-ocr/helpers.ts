@@ -49,7 +49,7 @@ export interface MatchResult {
 
 export type OcrFeatureType = 'TEXT_DETECTION' | 'DOCUMENT_TEXT_DETECTION';
 
-export const VALID_FACTURA_OCR_EXTRAER_ESTADOS = new Set(['pendiente', 'error']);
+export const VALID_FACTURA_OCR_EXTRAER_ESTADOS = new Set(['pendiente', 'error', 'extrayendo']);
 
 /**
  * Validate if a factura estado can start OCR extraction.

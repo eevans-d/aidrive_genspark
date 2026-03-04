@@ -98,21 +98,21 @@ export default function Cuaderno() {
   const handleResolve = (id: string) => {
     updateFaltante.mutate({ id, resuelto: true }, {
       onSuccess: () => toast.success('Marcado como resuelto'),
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
     })
   }
 
   const handleReopen = (id: string) => {
     updateFaltante.mutate({ id, resuelto: false, estado: 'pendiente', fecha_resolucion: '' }, {
       onSuccess: () => toast.success('Reabierto'),
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
     })
   }
 
   const handleSaveObs = (id: string) => {
     updateFaltante.mutate({ id, observaciones: editObs }, {
       onSuccess: () => { toast.success('Observación actualizada'); setEditingId(null) },
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
     })
   }
 
@@ -120,7 +120,7 @@ export default function Cuaderno() {
     const provId = reasignProvId || null
     updateFaltante.mutate({ id, proveedor_asignado_id: provId }, {
       onSuccess: () => { toast.success('Proveedor reasignado'); setReasignId(null); setReasignProvId('') },
-      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error'),
+      onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
     })
   }
 

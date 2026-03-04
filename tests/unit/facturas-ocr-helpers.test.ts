@@ -516,10 +516,11 @@ describe('canExtractFacturaOCR', () => {
 });
 
 describe('VALID_FACTURA_OCR_EXTRAER_ESTADOS', () => {
-  it('contains exactly pending and error', () => {
+  it('contains pendiente, error, and extrayendo', () => {
     expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('pendiente')).toBe(true);
     expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('error')).toBe(true);
-    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.size).toBe(2);
+    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.has('extrayendo')).toBe(true);
+    expect(VALID_FACTURA_OCR_EXTRAER_ESTADOS.size).toBe(3);
   });
 });
 

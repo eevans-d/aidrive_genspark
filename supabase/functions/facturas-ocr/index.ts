@@ -135,7 +135,7 @@ interface FailedInsertItem {
 interface BatchInsertResult {
   itemsCreated: number;
   failedItems: FailedInsertItem[];
-  insertMode: 'batch' | 'fallback';
+  insertMode: 'batch' | 'fallback' | 'fallback_compensated';
 }
 
 function createMatchCache(): MatchCache {
@@ -362,7 +362,7 @@ Deno.serve(async (req) => {
     } catch {
       return fail('VALIDATION_ERROR', 'El body debe ser JSON válido', 400, corsHeaders, { requestId });
     }
-    const { factura_id } = body;
+    const { factura_id, estado_previo } = body;
 
     if (!factura_id || typeof factura_id !== 'string') {
       return fail('VALIDATION_ERROR', 'factura_id es requerido', 400, corsHeaders, { requestId });
@@ -407,7 +407,10 @@ Deno.serve(async (req) => {
     }
 
     let itemsPreviosEliminados = 0;
-    if (estadoActual === 'error') {
+    // Cleanup needed on retry from error state. When gateway sets 'extrayendo',
+    // use estado_previo to determine if cleanup is required.
+    const estadoParaCleanup = typeof estado_previo === 'string' ? estado_previo : estadoActual;
+    if (estadoParaCleanup === 'error') {
       try {
         itemsPreviosEliminados = await cleanupFacturaItems(supabaseUrl, srHeaders, factura_id);
         await registrarEvento(supabaseUrl, srHeaders, factura_id, 'ocr_reintento', {
@@ -655,6 +658,22 @@ Deno.serve(async (req) => {
       itemsPayload,
     );
 
+    // T03/D1: If all-or-nothing compensation triggered, set estado to error
+    if (insertMode === 'fallback_compensated') {
+      await updateFacturaEstado(supabaseUrl, srHeaders, factura_id, 'error');
+      await registrarEvento(supabaseUrl, srHeaders, factura_id, 'ocr_items_rollback', {
+        requestId,
+        items_detectados: ocrResult.items.length,
+        items_fallidos: failedItems,
+        compensation: 'all-or-nothing',
+        insert_mode: insertMode,
+      });
+      return fail('DB_ERROR', 'Insercion de items OCR fallo parcialmente — rollback aplicado', 500, corsHeaders, {
+        requestId,
+        items_failed: failedItems,
+      });
+    }
+
     // 10b. NOW transition estado to 'extraida' only after items are persisted
     const estadoRes = await fetch(
       `${supabaseUrl}/rest/v1/facturas_ingesta?id=eq.${factura_id}`,
@@ -818,6 +837,8 @@ async function insertFacturaItemsBatch(
     };
   }
 
+  // T03/D1: All-or-nothing fallback — if any individual insert fails,
+  // compensate by deleting all items already inserted in this batch.
   const failedItems: FailedInsertItem[] = [];
   let itemsCreated = 0;
   for (const payload of payloads) {
@@ -829,6 +850,31 @@ async function insertFacturaItemsBatch(
         descripcion_original: payload.descripcion_original,
         error: singleRes.error || 'Error desconocido',
       });
+      // Partial failure detected: compensate by removing all items for this factura
+      if (itemsCreated > 0 && payloads[0]?.factura_id) {
+        try {
+          await fetch(
+            `${supabaseUrl}/rest/v1/facturas_ingesta_items?factura_id=eq.${payloads[0].factura_id}`,
+            {
+              method: 'DELETE',
+              headers: { ...headers, 'Prefer': 'return=minimal' },
+              signal: AbortSignal.timeout(5000),
+            },
+          );
+        } catch { /* best-effort compensation */ }
+      }
+      // Collect remaining failures without inserting
+      for (const remaining of payloads.slice(payloads.indexOf(payload) + 1)) {
+        failedItems.push({
+          descripcion_original: remaining.descripcion_original,
+          error: 'Skipped due to prior failure (all-or-nothing)',
+        });
+      }
+      return {
+        itemsCreated: 0,
+        failedItems,
+        insertMode: 'fallback_compensated',
+      };
     }
   }
 

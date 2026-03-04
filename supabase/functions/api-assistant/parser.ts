@@ -127,6 +127,48 @@ export const INTENT_RULES: IntentRule[] = [
       return params;
     },
   },
+  {
+    intent: 'aplicar_factura',
+    patterns: [
+      /aplic[aá]r?\s*(?:la\s*)?factura/i,
+      /factura\s*(?:a\s*)?(?:aplicar|ingresar|deposito)/i,
+      /ingres[aá]r?\s*(?:la\s*)?factura\s*(?:al\s*)?(?:deposito|stock)/i,
+      /pasar\s*(?:la\s*)?factura\s*(?:al\s*)?deposito/i,
+    ],
+    extractParams: (msg: string) => {
+      const params: Record<string, string> = {};
+      const numMatch = msg.match(/factura\s+(?:(?:n(?:u|ú)mero|nro|#)\s*)?(\d[\d\-]+)/i);
+      if (numMatch) {
+        params.factura_numero = numMatch[1];
+      }
+      return params;
+    },
+  },
+  {
+    intent: 'actualizar_estado_pedido',
+    patterns: [
+      /(?:cambiar?|actualizar?|mover?|pasar?|avanzar?)\s*(?:el\s*)?(?:estado\s*(?:del?\s*)?)?pedido/i,
+      /pedido\s*#?\d+\s*(?:a\s+)(?:preparando|listo|entregado|cancelado)/i,
+      /(?:marcar?|poner?)\s*(?:el\s*)?pedido\s*(?:como\s*)?(?:preparando|listo|entregado|cancelado)/i,
+      /(?:preparar|entregar|cancelar)\s*(?:el\s*)?pedido/i,
+    ],
+    extractParams: (msg: string) => {
+      const params: Record<string, string> = {};
+      const numMatch = msg.match(/pedido\s*#?(\d+)/i);
+      if (numMatch) {
+        params.numero_pedido = numMatch[1];
+      }
+      const estadoMatch = msg.match(/(?:a|como|estado)\s+(preparando|listo|entregado|cancelado)/i);
+      if (estadoMatch) {
+        params.nuevo_estado = estadoMatch[1].toLowerCase();
+      } else {
+        if (/preparar/i.test(msg)) params.nuevo_estado = 'preparando';
+        else if (/entregar/i.test(msg)) params.nuevo_estado = 'entregado';
+        else if (/cancelar/i.test(msg)) params.nuevo_estado = 'cancelado';
+      }
+      return params;
+    },
+  },
   // Non-data intents — placed last so specific queries always match first
   {
     intent: 'saludo',
@@ -153,10 +195,12 @@ export const SUGGESTIONS = [
   'facturas OCR',
   'crear tarea',
   'registrar pago',
+  'aplicar factura',
+  'actualizar estado pedido',
   'ayuda',
 ];
 
-export const WRITE_INTENTS = new Set(['crear_tarea', 'registrar_pago_cc']);
+export const WRITE_INTENTS = new Set(['crear_tarea', 'registrar_pago_cc', 'actualizar_estado_pedido', 'aplicar_factura']);
 
 export function parseIntent(message: string): ParsedIntent {
   const normalized = message.trim().toLowerCase();
@@ -186,8 +230,10 @@ export function findRelevantSuggestions(message: string): string[] {
   const relevant: string[] = [];
 
   if (/factura|ocr|ingesta/.test(normalized)) relevant.push('estado de las facturas');
+  if (/aplic.*factura|factura.*(?:aplicar|deposito|ingresar)|pasar.*factura/i.test(normalized)) relevant.push('aplicar factura');
   if (/stock|producto|reponer|falt[ea]/.test(normalized)) relevant.push('stock bajo');
   if (/pedido|orden|compra|entreg/.test(normalized)) relevant.push('pedidos pendientes');
+  if (/(?:cambiar|actualizar|mover|pasar|preparar|entregar|cancelar).*pedido|pedido.*(?:a |como |estado)/i.test(normalized)) relevant.push('actualizar estado pedido');
   if (/venta|vendi[oó]|facturac|recaud/.test(normalized)) relevant.push('ventas del dia');
   if (/deuda|fiado|saldo|cuenta|corriente|cliente/.test(normalized)) relevant.push('cuentas corrientes');
   if (/tarea|pendiente|anotá|anotar|hacer/.test(normalized)) relevant.push('crear tarea');

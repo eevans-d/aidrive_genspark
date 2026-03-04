@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { Package, Tag, TrendingDown, ArrowLeft, Camera, Loader2, Plus, Minus, Check } from 'lucide-react'
@@ -56,25 +56,22 @@ function LabelPreview({
   const offerPrice = oferta?.activa ? oferta.precio_oferta : null
 
   // Render barcode when component mounts
-  useState(() => {
-    // Use microtask to ensure ref is available
-    queueMicrotask(() => {
-      if (svgRef.current) {
-        try {
-          JsBarcode(svgRef.current, barcode, {
-            format: 'CODE128',
-            width: 2,
-            height: 50,
-            displayValue: true,
-            fontSize: 12,
-            margin: 5,
-          })
-        } catch {
-          // If barcode fails, it'll show empty SVG
-        }
+  useEffect(() => {
+    if (svgRef.current) {
+      try {
+        JsBarcode(svgRef.current, barcode, {
+          format: 'CODE128',
+          width: 2,
+          height: 50,
+          displayValue: true,
+          fontSize: 12,
+          margin: 5,
+        })
+      } catch {
+        // If barcode fails, it'll show empty SVG
       }
-    })
-  })
+    }
+  }, [barcode])
 
   return (
     <div className="flex flex-col gap-3">
@@ -254,7 +251,7 @@ function StockUpdate({ product, onDone }: { product: ResolvedProduct; onDone: ()
     },
     onError: (err) => {
       const msg = err instanceof Error ? err.message : 'Error al registrar movimiento'
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
     },
   })
 
@@ -432,7 +429,7 @@ export default function Pocket() {
       setScannerActive(true)
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Error buscando producto'
-      toast.error(msg)
+      toast.error(msg, { duration: Infinity })
       setScannerActive(true)
     } finally {
       setIsResolving(false)

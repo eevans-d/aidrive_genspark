@@ -251,6 +251,35 @@ export async function callFunction<T = unknown>(
 }
 
 /**
+ * Atomic conditional update: PATCH with raw PostgREST query string filters.
+ * Returns updated rows (empty array = no row matched the conditions).
+ * Useful for optimistic-lock state transitions like:
+ *   `id=eq.${id}&estado=in.(pendiente,error)` → set `estado=extrayendo`
+ */
+export async function updateTableConditional<T = Record<string, unknown>>(
+  supabaseUrl: string,
+  table: string,
+  queryString: string,
+  headers: Record<string, string>,
+  data: unknown,
+  timeout = DEFAULT_TIMEOUT,
+): Promise<T[]> {
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}?${queryString}`, {
+    method: 'PATCH',
+    headers: { ...headers, Prefer: 'return=representation' },
+    body: JSON.stringify(data),
+  },
+    timeout
+  );
+
+  if (!response.ok) {
+    throw await fromFetchResponse(response, `Error actualizando ${table}`);
+  }
+
+  return await response.json();
+}
+
+/**
  * Fetch with custom query string (for complex filters like ilike, or).
  */
 export async function fetchWithParams(

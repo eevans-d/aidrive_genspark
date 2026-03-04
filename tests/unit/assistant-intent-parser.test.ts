@@ -252,12 +252,12 @@ describe('Assistant Intent Parser', () => {
   // Structure validation
   // -----------------------------------------------------------------------
   describe('parser structure', () => {
-    it('has exactly 9 intent rules (7 read + 2 write)', () => {
-      expect(INTENT_RULES).toHaveLength(9);
+    it('has exactly 11 intent rules (7 read + 4 write)', () => {
+      expect(INTENT_RULES).toHaveLength(11);
     });
 
-    it('has 8 suggestions', () => {
-      expect(SUGGESTIONS).toHaveLength(8);
+    it('has 10 suggestions', () => {
+      expect(SUGGESTIONS).toHaveLength(10);
     });
 
     it('data intents have at least 4 patterns', () => {
@@ -269,7 +269,7 @@ describe('Assistant Intent Parser', () => {
 
     it('read-only data intents start with consultar_', () => {
       const dataRules = INTENT_RULES.filter(r =>
-        !['saludo', 'ayuda', 'crear_tarea', 'registrar_pago_cc'].includes(r.intent),
+        !['saludo', 'ayuda', 'crear_tarea', 'registrar_pago_cc', 'actualizar_estado_pedido', 'aplicar_factura'].includes(r.intent),
       );
       for (const rule of dataRules) {
         expect(rule.intent).toMatch(/^consultar_/);
@@ -319,7 +319,7 @@ describe('Assistant Intent Parser', () => {
 
     it('returns full list (minus ayuda) when no keywords match', () => {
       const result = findRelevantSuggestions('xyz random text');
-      expect(result.length).toBe(7);
+      expect(result.length).toBe(9);
       expect(result).not.toContain('ayuda');
     });
 

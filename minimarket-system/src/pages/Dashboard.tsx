@@ -1,13 +1,13 @@
 import { useState, useMemo } from 'react'
-import { Link } from 'react-router-dom'
-import { AlertTriangle, TrendingUp, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X, BookOpen, MessageSquare } from 'lucide-react'
+import { Link, useNavigate } from 'react-router-dom'
+import { AlertTriangle, TrendingUp, TrendingDown, Package, CheckCircle, Monitor, ClipboardList, Users, DollarSign, ArrowRight, Lightbulb, X, BookOpen, MessageSquare, Clock } from 'lucide-react'
 import { ErrorMessage } from '../components/ErrorMessage'
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils'
 import { useDashboardStats } from '../hooks/queries'
 import { SkeletonCard, SkeletonText, SkeletonList, SkeletonChart } from '../components/Skeleton'
 import { BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Tooltip, ResponsiveContainer } from 'recharts'
 import { useQuery } from '@tanstack/react-query'
-import { bitacoraApi, cuentasCorrientesApi } from '../lib/apiClient'
+import { bitacoraApi, cuentasCorrientesApi, insightsApi, type ArbitrajeItem } from '../lib/apiClient'
 import { useUserRole } from '../hooks/useUserRole'
 import { money } from '../utils/currency'
 import { supabase } from '../lib/supabase'
@@ -36,6 +36,7 @@ export default function Dashboard() {
   })
   const { data, isLoading, isError, error, refetch, isFetching } = useDashboardStats();
   const { role, canAccess } = useUserRole()
+  const navigate = useNavigate()
 
   const dismissOnboarding = () => {
     localStorage.setItem('onboarding_completed', '1')
@@ -131,6 +132,43 @@ export default function Dashboard() {
         facturas_aplicadas: facturasAplicadas ?? 0,
       }
     },
+    staleTime: 1000 * 60 * 5,
+  })
+
+  // Pedidos pendientes count (lightweight head-only query)
+  const pedidosPendientesCountQuery = useQuery({
+    queryKey: ['pedidos', 'dashboard-pending-count'],
+    queryFn: async () => {
+      const { count, error: qErr } = await supabase
+        .from('pedidos')
+        .select('*', { count: 'exact', head: true })
+        .in('estado', ['pendiente', 'preparando'])
+      if (qErr) throw qErr
+      return count ?? 0
+    },
+    staleTime: 1000 * 60 * 2,
+  })
+
+  // Tareas vencidas count (overdue: pendiente + past due date)
+  const tareasVencidasCountQuery = useQuery({
+    queryKey: ['tareas', 'dashboard-overdue-count'],
+    queryFn: async () => {
+      const { count, error: qErr } = await supabase
+        .from('tareas_pendientes')
+        .select('*', { count: 'exact', head: true })
+        .eq('estado', 'pendiente')
+        .lt('fecha_vencimiento', new Date().toISOString())
+      if (qErr) throw qErr
+      return count ?? 0
+    },
+    staleTime: 1000 * 60 * 2,
+  })
+
+  // Margin risk: products with riesgo_perdida or margen_bajo (admin only)
+  const marginRiskQuery = useQuery<ArbitrajeItem[]>({
+    queryKey: ['dashboard', 'margin-risk'],
+    queryFn: () => insightsApi.arbitraje(),
+    enabled: role === 'admin',
     staleTime: 1000 * 60 * 5,
   })
 
@@ -431,6 +469,87 @@ export default function Dashboard() {
           </div>
         </Link>
       </div>
+
+      {/* Quick Action Alerts — Boss View */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button
+          onClick={() => navigate('/stock')}
+          className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-orange-200 dark:border-orange-800 hover:border-orange-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
+            <Package className="w-5 h-5 text-orange-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Stock bajo</div>
+            <div className="text-xl font-bold text-orange-600">{stockBajo}</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-orange-600 transition-colors" />
+        </button>
+
+        <button
+          onClick={() => navigate('/pedidos')}
+          className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-purple-200 dark:border-purple-800 hover:border-purple-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+            <ClipboardList className="w-5 h-5 text-purple-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Pedidos pendientes</div>
+            <div className="text-xl font-bold text-purple-600">{pedidosPendientesCountQuery.data ?? '...'}</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-purple-600 transition-colors" />
+        </button>
+
+        <button
+          onClick={() => navigate('/tareas')}
+          className="flex items-center gap-3 p-4 bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-red-200 dark:border-red-800 hover:border-red-400 hover:shadow-md transition-all text-left group"
+        >
+          <div className="flex-shrink-0 w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
+            <Clock className="w-5 h-5 text-red-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <div className="text-sm font-medium text-gray-600 dark:text-gray-400">Tareas vencidas</div>
+            <div className="text-xl font-bold text-red-600">{tareasVencidasCountQuery.data ?? '...'}</div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-gray-400 group-hover:text-red-600 transition-colors" />
+        </button>
+      </div>
+
+      {/* Margin Risk Summary — Admin Only */}
+      {role === 'admin' && marginRiskQuery.data && marginRiskQuery.data.length > 0 && (() => {
+        const riesgoPerdida = marginRiskQuery.data!.filter(p => p.riesgo_perdida)
+        const margenBajo = marginRiskQuery.data!.filter(p => p.margen_bajo && !p.riesgo_perdida)
+        if (riesgoPerdida.length === 0 && margenBajo.length === 0) return null
+        return (
+          <div className="bg-white dark:bg-gray-900 rounded-xl shadow-sm border border-yellow-200 dark:border-yellow-800 p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <TrendingDown className="w-5 h-5 text-yellow-600" />
+                <h3 className="text-sm font-semibold text-gray-700 dark:text-gray-300">Riesgo de Margen</h3>
+              </div>
+              <Link to="/rentabilidad" className="text-xs text-blue-600 hover:text-blue-800">Ver rentabilidad</Link>
+            </div>
+            <div className="flex flex-wrap gap-4">
+              {riesgoPerdida.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-red-50 dark:bg-red-950/30">
+                  <AlertTriangle className="w-4 h-4 text-red-500" />
+                  <span className="text-sm font-medium text-red-700 dark:text-red-400">
+                    {riesgoPerdida.length} con riesgo de pérdida
+                  </span>
+                </div>
+              )}
+              {margenBajo.length > 0 && (
+                <div className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-yellow-50 dark:bg-yellow-950/30">
+                  <TrendingDown className="w-4 h-4 text-yellow-600" />
+                  <span className="text-sm font-medium text-yellow-700 dark:text-yellow-400">
+                    {margenBajo.length} con margen bajo
+                  </span>
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      })()}
 
       {/* Gráficos visuales */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

@@ -57,6 +57,7 @@ import {
   insertTable,
   updateTable,
   updateTableByFilters,
+  updateTableConditional,
   callFunction,
   fetchWithParams,
 } from './helpers/supabase.ts';
@@ -1226,12 +1227,18 @@ Deno.serve(async (req) => {
         queryParams.append('fecha_completado', `lte.${fechaHasta}`);
       }
 
-      const { data: rows } = await fetchWithParams(
+      // T09/RE-01: Hard cap to prevent unbounded memory usage in aggregation
+      const EFECTIVIDAD_MAX_ROWS = 10_000;
+      queryParams.set('limit', String(EFECTIVIDAD_MAX_ROWS));
+
+      const { data: rows, count: totalCount } = await fetchWithParams(
         supabaseUrl,
         'tareas_metricas',
         queryParams,
         serviceHeaders,
       );
+
+      const rowsCapped = totalCount !== null && totalCount > EFECTIVIDAD_MAX_ROWS;
 
       const agregados: Record<string, Record<string, unknown>> = {};
 
@@ -1307,6 +1314,9 @@ Deno.serve(async (req) => {
       return respondOk(data, 200, {
         extra: {
           count: data.length,
+          rows_processed: (rows as unknown[]).length,
+          rows_capped: rowsCapped,
+          ...(rowsCapped ? { rows_total: totalCount, max_rows: EFECTIVIDAD_MAX_ROWS } : {}),
           filtros: {
             usuario_id: usuarioId,
             fecha_desde: fechaDesde,
@@ -1689,10 +1699,14 @@ Deno.serve(async (req) => {
         p_idempotency_key: idempotencyKey,
       });
 
+      // T05/ID-02: Skip side-effects on idempotent replay
+      const movResult = movimiento as Record<string, unknown>;
+      const isIdempotentReplay = movResult?.idempotent === true;
+
       // D-007 cierre: persistir precio de compra en tabla dedicada precios_compra
       // (modelo creado en migración 20260223030000). El trigger trg_update_precio_costo
       // actualiza productos.precio_costo automáticamente.
-      if (precioCompraNumero !== null) {
+      if (precioCompraNumero !== null && !isIdempotentReplay) {
         try {
           await insertTable(supabaseUrl, 'precios_compra', requestHeaders(), {
             producto_id,
@@ -1702,12 +1716,24 @@ Deno.serve(async (req) => {
             created_by: user!.id,
           });
         } catch (e) {
-          // Non-blocking: log error but don't fail the ingreso
+          // T07/ES-01: Propagate precio_compra failure as visible warning in response
           logger.warn('PRECIO_COMPRA_INSERT_FAILED', { requestId, producto_id, precio_compra: precioCompraNumero, error: String(e) });
+          const dataWithWarning = {
+            ...(typeof movimiento === 'object' && movimiento !== null ? movimiento : {}),
+            _warnings: [{
+              code: 'PRECIO_COMPRA_FAILED',
+              message: 'No se pudo registrar el precio de compra. Puede ingresarlo manualmente desde la pantalla del producto.',
+            }],
+          };
+          return respondOk(dataWithWarning as unknown, 201, {
+            message: 'Ingreso registrado, pero no se pudo guardar el precio de compra. Ingreselo manualmente en Productos.',
+          });
         }
       }
 
-      return respondOk(movimiento, 201, { message: 'Ingreso de mercaderia registrado exitosamente' });
+      return respondOk(movimiento, isIdempotentReplay ? 200 : 201, {
+        message: isIdempotentReplay ? 'Operacion idempotente (ya registrada)' : 'Ingreso de mercaderia registrado exitosamente',
+      });
     }
 
     // 21. POST /reservas - Crear reserva de stock
@@ -1805,7 +1831,13 @@ Deno.serve(async (req) => {
           p_idempotency_key: idempotencyKey,
         });
 
-        return respondOk(movimiento, 201, { message: 'Recepcion registrada exitosamente' });
+        // T06/ID-03: Idempotent reply detection
+        const movResult = movimiento as Record<string, unknown>;
+        const isReplay = movResult?.idempotent === true;
+
+        return respondOk(movimiento, isReplay ? 200 : 201, {
+          message: isReplay ? 'Operacion idempotente (ya registrada)' : 'Recepcion registrada exitosamente',
+        });
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         if (errMsg.includes('supera pendiente')) {
@@ -2339,29 +2371,68 @@ Deno.serve(async (req) => {
         );
       }
 
+      // T02/RC-01: Atomic concurrency lock — claim factura for extraction.
+      // Only one request can transition from pendiente/error → extrayendo.
+      const estadosPermitidosStr = Array.from(VALID_FACTURA_OCR_EXTRAER_ESTADOS).join(',');
+      const claimed = await updateTableConditional(
+        supabaseUrl,
+        'facturas_ingesta',
+        `id=eq.${facturaId}&estado=in.(${estadosPermitidosStr})`,
+        requestHeaders(),
+        { estado: 'extrayendo' },
+      );
+      if (!claimed || claimed.length === 0) {
+        return respondFail(
+          'OCR_IN_PROGRESS',
+          'Otra extraccion OCR ya esta en curso para esta factura',
+          409,
+        );
+      }
+
       if (!serviceRoleKey) {
+        try {
+          await updateTable(supabaseUrl, 'facturas_ingesta', facturaId, requestHeaders(), { estado: estadoActual });
+        } catch { /* best-effort rollback */ }
         return respondFail('CONFIG_ERROR', 'Service role key no disponible', 500);
       }
 
       // Invoke facturas-ocr Edge Function server-to-server
-      const ocrRes = await fetch(
-        `${supabaseUrl}/functions/v1/facturas-ocr`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${serviceRoleKey}`,
-            'apikey': serviceRoleKey || '',
-            'Content-Type': 'application/json',
-            'x-request-id': requestId,
+      let ocrRes: Response;
+      try {
+        ocrRes = await fetch(
+          `${supabaseUrl}/functions/v1/facturas-ocr`,
+          {
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${serviceRoleKey}`,
+              'apikey': serviceRoleKey || '',
+              'Content-Type': 'application/json',
+              'x-request-id': requestId,
+            },
+            body: JSON.stringify({ factura_id: facturaId, estado_previo: estadoActual }),
+            signal: AbortSignal.timeout(35_000),
           },
-          body: JSON.stringify({ factura_id: facturaId }),
-          signal: AbortSignal.timeout(35_000),
-        },
-      );
+        );
+      } catch (fetchErr) {
+        // Network/timeout error — rollback estado
+        try {
+          await updateTable(supabaseUrl, 'facturas_ingesta', facturaId, requestHeaders(), { estado: estadoActual });
+        } catch { /* best-effort rollback */ }
+        const errMsg = fetchErr instanceof Error ? fetchErr.message : 'Error de red invocando OCR';
+        return respondFail('OCR_INVOCATION_ERROR', errMsg, 502);
+      }
 
       const ocrBody = await ocrRes.json();
 
       if (!ocrRes.ok) {
+        // facturas-ocr updates estado on its own; if still 'extrayendo', set to 'error'
+        try {
+          const freshFactura = await queryTable(supabaseUrl, 'facturas_ingesta', requestHeaders(), { id: facturaId });
+          const fresh = (freshFactura as Record<string, unknown>[])[0];
+          if (fresh && fresh.estado === 'extrayendo') {
+            await updateTable(supabaseUrl, 'facturas_ingesta', facturaId, requestHeaders(), { estado: 'error' });
+          }
+        } catch { /* best-effort cleanup */ }
         return respondFail(
           ocrBody?.error?.code || 'OCR_ERROR',
           ocrBody?.error?.message || 'Error en extracción OCR',
@@ -2434,6 +2505,7 @@ Deno.serve(async (req) => {
       }
 
       // Check if all items are validated — if so, update factura estado to 'validada'
+      let autoValidateWarning: { code: string; message: string } | null = null;
       try {
         const items = await queryTable(supabaseUrl, 'facturas_ingesta_items', requestHeaders(), { id: itemId });
         const item = (items as Record<string, unknown>[])[0];
@@ -2459,7 +2531,24 @@ Deno.serve(async (req) => {
           }
         }
       } catch (e) {
+        // T08/ES-02: Surface auto-validation failure as visible warning instead of silent log
         logger.warn('FACTURA_AUTO_VALIDATE_FAILED', { requestId, error: String(e) });
+        autoValidateWarning = {
+          code: 'AUTO_VALIDATE_FAILED',
+          message: 'Todos los items estan validados pero no se pudo marcar la factura como validada automaticamente. Recargue la pagina o valide manualmente.',
+        };
+      }
+
+      // T08/ES-02: Include auto-validation warning in response if applicable
+      if (autoValidateWarning) {
+        const updatedRow = Array.isArray(updated) ? (updated as unknown[])[0] : updated;
+        const dataWithWarning = {
+          ...(typeof updatedRow === 'object' && updatedRow !== null ? updatedRow as Record<string, unknown> : {}),
+          _warnings: [autoValidateWarning],
+        };
+        return respondOk(dataWithWarning, 200, {
+          message: 'Item actualizado, pero la auto-validacion de la factura fallo. Recargue la pagina.',
+        });
       }
 
       return respondOk(updated, 200, { message: 'Item actualizado' });

@@ -12,6 +12,7 @@ import { useTheme } from 'next-themes'
 import GlobalSearch from './GlobalSearch'
 import AlertsDrawer from './AlertsDrawer'
 import QuickNoteButton from './QuickNoteButton'
+import { KeyboardShortcutHelp } from './KeyboardShortcutHelp'
 
 interface NavItem {
   path: string
@@ -239,6 +240,9 @@ export default function Layout({ children }: LayoutProps) {
         prefillText={quickNotePrefill}
         onClose={clearQuickNoteRouteState}
       />
+
+      {/* Keyboard Shortcut Help Modal (press "?" to open) */}
+      <KeyboardShortcutHelp />
 
       {/* Logout Bitácora Modal */}
       {logoutOpen && (

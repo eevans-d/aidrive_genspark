@@ -13,12 +13,12 @@ import {
 } from '../hooks/queries/usePedidos';
 import {
         PedidoResponse,
-        PedidoItem,
         CreatePedidoParams,
-        productosApi,
-        DropdownItem
+        DropdownItem,
+        type ClienteSaldoItem
 } from '../lib/apiClient';
-import { useQuery } from '@tanstack/react-query';
+import { ProductCombobox } from '../components/ProductCombobox';
+import { ClienteCombobox } from '../components/ClienteCombobox';
 import { SkeletonTable, SkeletonText } from '../components/Skeleton';
 import { ErrorMessage } from '../components/ErrorMessage';
 import { parseErrorMessage, detectErrorType, extractRequestId } from '../components/errorMessageUtils';
@@ -39,19 +39,14 @@ export default function Pedidos() {
         const updateEstadoMutation = useUpdateEstadoPedido();
         const updateItemMutation = useUpdateItemPreparado();
 
-        // Obtener productos para el dropdown
-        const { data: productos = [] } = useQuery({
-                queryKey: ['productos', 'dropdown'],
-                queryFn: () => productosApi.dropdown(),
-        });
-
         const handleCreatePedido = async (pedidoData: CreatePedidoParams) => {
                 try {
                         await createMutation.mutateAsync(pedidoData);
                         setShowForm(false);
                         refetch();
+                        toast.success('Pedido creado correctamente');
                 } catch (err) {
-                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD), { duration: Infinity });
                 }
         };
 
@@ -59,8 +54,9 @@ export default function Pedidos() {
                 try {
                         await updateEstadoMutation.mutateAsync({ id, estado });
                         refetch();
+                        toast.success(`Estado actualizado a "${estado}"`);
                 } catch (err) {
-                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD), { duration: Infinity });
                 }
         };
 
@@ -68,8 +64,9 @@ export default function Pedidos() {
                 try {
                         await updateItemMutation.mutateAsync({ itemId, preparado });
                         refetch();
+                        toast.success(preparado ? 'Item marcado como preparado' : 'Item marcado como no preparado');
                 } catch (err) {
-                        toast.error(parseErrorMessage(err, import.meta.env.PROD));
+                        toast.error(parseErrorMessage(err, import.meta.env.PROD), { duration: Infinity });
                 }
         };
 
@@ -152,7 +149,6 @@ export default function Pedidos() {
                         {/* Modal de nuevo pedido */}
                         {showForm && (
                                 <NuevoPedidoModal
-                                        productos={productos}
                                         onSubmit={handleCreatePedido}
                                         onClose={() => setShowForm(false)}
                                         isLoading={createMutation.isPending}
@@ -344,13 +340,12 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
 // ============================================================================
 
 interface NuevoPedidoModalProps {
-        productos: DropdownItem[];
         onSubmit: (data: CreatePedidoParams) => void;
         onClose: () => void;
         isLoading: boolean;
 }
 
-function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedidoModalProps) {
+function NuevoPedidoModal({ onSubmit, onClose, isLoading }: NuevoPedidoModalProps) {
         const [formData, setFormData] = useState<{
                 cliente_nombre: string;
                 cliente_telefono: string;
@@ -381,6 +376,8 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                 precio_unitario: 0,
                 observaciones: '',
         });
+        const [selectedProduct, setSelectedProduct] = useState<DropdownItem | null>(null);
+        const [selectedCliente, setSelectedCliente] = useState<ClienteSaldoItem | null>(null);
 
         const handleAddItem = () => {
                 if (!newItem.producto_nombre || newItem.cantidad <= 0) return;
@@ -391,22 +388,33 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
 
                 setItems([...items, { ...newItem }]);
                 setNewItem({ producto_id: '', producto_nombre: '', cantidad: 1, precio_unitario: 0, observaciones: '' });
+                setSelectedProduct(null);
         };
 
         const handleRemoveItem = (index: number) => {
                 setItems(items.filter((_, i) => i !== index));
         };
 
-        const handleSelectProducto = (productoId: string) => {
-                const producto = productos.find(p => p.id === productoId);
-                if (producto) {
-                        setNewItem({
-                                ...newItem,
-                                producto_id: producto.id,
-                                producto_nombre: producto.nombre,
-                                precio_unitario: typeof producto.precio_actual === 'number' ? producto.precio_actual : 0,
-                        });
-                }
+        const handleSelectProducto = (producto: DropdownItem) => {
+                setSelectedProduct(producto);
+                setNewItem({
+                        ...newItem,
+                        producto_id: producto.id,
+                        producto_nombre: producto.nombre,
+                        precio_unitario: typeof producto.precio_actual === 'number' ? producto.precio_actual : 0,
+                });
+        };
+
+        const handleSelectCliente = (cliente: ClienteSaldoItem) => {
+                setSelectedCliente(cliente);
+                setFormData((prev) => ({
+                        ...prev,
+                        cliente_nombre: cliente.nombre,
+                        cliente_telefono: cliente.telefono ?? '',
+                        ...(prev.tipo_entrega === 'domicilio' && cliente.direccion_default
+                                ? { direccion_entrega: cliente.direccion_default }
+                                : {}),
+                }));
         };
 
         const handleSubmit = (e: React.FormEvent) => {
@@ -436,12 +444,10 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                                                         <label className="block text-sm font-medium text-gray-700 mb-1">
                                                                 Nombre del cliente *
                                                         </label>
-                                                        <input
-                                                                type="text"
-                                                                value={formData.cliente_nombre}
-                                                                onChange={(e) => setFormData({ ...formData, cliente_nombre: e.target.value })}
-                                                                className="w-full border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                                                required
+                                                        <ClienteCombobox
+                                                                value={selectedCliente}
+                                                                onSelect={handleSelectCliente}
+                                                                placeholder="Buscar cliente..."
                                                         />
                                                 </div>
                                                 <div>
@@ -543,16 +549,12 @@ function NuevoPedidoModal({ productos, onSubmit, onClose, isLoading }: NuevoPedi
                                         <div>
                                                 <label className="block text-sm font-medium text-gray-700 mb-2">Productos</label>
                                                 <div className="flex gap-2 mb-4">
-                                                        <select
-                                                                value={newItem.producto_id}
-                                                                onChange={(e) => handleSelectProducto(e.target.value)}
-                                                                className="flex-1 border border-gray-300 rounded-lg px-3 py-2"
-                                                        >
-                                                                <option value="">Seleccionar producto...</option>
-                                                                {productos.map((p) => (
-                                                                        <option key={p.id} value={p.id}>{p.nombre}</option>
-                                                                ))}
-                                                        </select>
+                                                        <ProductCombobox
+                                                                value={selectedProduct}
+                                                                onSelect={handleSelectProducto}
+                                                                placeholder="Buscar producto..."
+                                                                className="flex-1"
+                                                        />
                                                         <input
                                                                 type="number"
                                                                 value={newItem.cantidad}
