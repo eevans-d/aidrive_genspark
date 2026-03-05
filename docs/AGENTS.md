@@ -1,16 +1,17 @@
 # Guia Para Agentes IA (Canonica)
 
 **Proyecto:** Mini Market System
-**Ultima actualizacion:** 2026-02-27
+**Ultima actualizacion:** 2026-03-05
 
 ## Estado rapido
 | Metrica | Valor |
 |---|---|
-| Veredicto global | `GO INCONDICIONAL` |
-| Estado OCR facturas | `BACKLOG ABIERTO PRIORIZADO` |
-| Tests unitarios | `1733/1733 PASS` |
-| Migraciones SQL | `52` |
-| Edge Functions activas en repo | `15` |
+| Veredicto global | `LISTO PARA PRODUCCION (Tier 1 6/6, Tier 2 12/12)` |
+| Estado OCR facturas | `BACKLOG CERRADO 10/10 — GCV BLOCKED EXTERNAL` |
+| Asistente IA | `Sprint 3 COMPLETADO (11 intents, auditoria persistente)` |
+| Tests unitarios | `1945/1945 PASS` |
+| Migraciones SQL | `57` |
+| Edge Functions activas en repo | `16` |
 | Skills en `.agent/skills` | `22` |
 
 ## Fuente de verdad (orden)

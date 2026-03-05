@@ -37,10 +37,10 @@ supabase/functions/    # Edge Functions (Deno v2) - 16 activas
 └── reposicion-sugerida/ # Sugerencias de reposición
 
 supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
-supabase/migrations/   # 56 migraciones SQL versionadas (4 pendientes de aplicar)
+supabase/migrations/   # 57 migraciones SQL versionadas (0 pendientes — todas aplicadas)
 supabase/config.toml   # Configuracion Supabase local
 
-tests/unit/            # Tests unitarios (Vitest) - 85 archivos
+tests/unit/            # Tests unitarios (Vitest) - 86 archivos
 tests/contract/        # Tests de contratos - 3 archivos
 tests/api-contracts/   # Tests OpenAPI - 1 archivo
 tests/e2e/             # Smoke tests - 1 archivo
@@ -66,7 +66,7 @@ pnpm build     # Build
 pnpm lint      # Linter
 
 # Tests (desde raíz)
-npx vitest run              # Unit tests (1905 tests, 85 archivos)
+npx vitest run              # Unit tests (1945 tests, 86 archivos)
 npx vitest run tests/unit/  # Solo unit tests
 npx vitest run --coverage   # Con coverage (mínimo 80%)
 
@@ -122,13 +122,13 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 - **Nombre:** minimarket-system
 - **Ref:** dqaygmjpzoqjjrywdsxi
 - **URL:** https://dqaygmjpzoqjjrywdsxi.supabase.co
-- **Edge Functions:** 16 desplegadas y funcionando (api-minimarket v40, api-assistant v2, api-proveedor v25, scraper-maxiconsumo v26)
-- **Migraciones:** 56 versionadas (4 pendientes de aplicar via `supabase db push`)
+- **Edge Functions:** 16 desplegadas y funcionando (api-minimarket v41, api-assistant v3, api-proveedor v25, scraper-maxiconsumo v26)
+- **Migraciones:** 57 versionadas (0 pendientes — todas aplicadas)
 - **Frontend:** Cloudflare Pages — https://aidrive-genspark.pages.dev
 
 ### Testing
 - Framework: **Vitest** (unit/integration) + **Playwright** (E2E)
-- Unit tests: 1905 passing (85 archivos)
+- Unit tests: 1945 passing (86 archivos)
 - Frontend component tests: 249 passing (48 archivos)
 - E2E tests: 4 passing
 - Integration tests: 68 passing
@@ -138,10 +138,8 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 ### CI/CD
 - Pipeline tests: `.github/workflows/ci.yml` (lint → test → build → typecheck → edge-check → security)
 - Pipeline deploy: `.github/workflows/deploy-cloudflare-pages.yml` (push a main = producción automática)
-- Veredicto operativo: **LISTO PARA PRODUCCION** (D-185, Tier 1 6/6 + Tier 2 10/12, 18/18 gates)
+- Veredicto operativo: **LISTO PARA PRODUCCION** (D-185, Tier 1 6/6 + Tier 2 12/12, 18/18 gates)
 
 ### Pendientes (ver `docs/closure/OPEN_ISSUES.md`)
 1. OCR-007: Activar billing GCP para desbloquear OCR (owner)
-2. 4 migraciones SQL pendientes de aplicar (`supabase db push`)
-3. Deploy frontend a Cloudflare Pages + verificar headers CSP/HSTS
-4. DATA_HANDLING_POLICY.md (documentacion PII, no bloqueante)
+2. Deploy frontend a Cloudflare Pages + verificar headers CSP/HSTS

@@ -1,7 +1,7 @@
 # PLAN ASISTENTE IA EN DASHBOARD (V2 - EJECUTABLE)
 
 **Fecha:** 2026-03-01
-**Estado:** Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 COMPLETADO (acciones con confirmacion) — Sprint 3 pendiente
+**Estado:** Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 + Sprint 3 COMPLETADO (7 read-only + 4 write con confirmacion + auditoria persistente)
 **Objetivo:** habilitar un asistente conversacional para usuario no tecnico (principalmente perfil admin), que consulte y ejecute acciones del sistema con seguridad.
 
 ## 1) Estado actual de implementacion

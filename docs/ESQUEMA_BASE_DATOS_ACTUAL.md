@@ -1,7 +1,7 @@
 # Esquema de Base de Datos - Sistema Mini Market
 
-**Actualizado:** 2026-02-27 (sincronizado contra `supabase/migrations/*.sql`)
-**Migraciones:** 52/52 sincronizadas (local = remoto)
+**Actualizado:** 2026-03-05 (sincronizado contra `supabase/migrations/*.sql`)
+**Migraciones:** 57/57 sincronizadas (local = remoto)
 **Fuente de verdad:** `supabase/migrations/*.sql` (este documento es derivado)
 
 ---
@@ -10,12 +10,12 @@
 
 | Metrica | Valor |
 |---------|-------|
-| Tablas | 44 |
+| Tablas | 45 |
 | Vistas no materializadas | 11 |
 | Vistas materializadas | 3 |
 | Funciones/Stored Procedures | 30+ |
 | Triggers | 4 |
-| Migraciones | 52 |
+| Migraciones | 57 |
 
 ---
 
@@ -35,6 +35,7 @@
 | Cron Jobs | cron_jobs_tracking, cron_jobs_execution_log, cron_jobs_alerts, cron_jobs_notifications, cron_jobs_metrics, cron_jobs_monitoring_history, cron_jobs_health_checks, cron_jobs_config, cron_jobs_notification_preferences, cron_jobs_locks |
 | OCR/Facturas | facturas_ingesta, facturas_ingesta_items, facturas_ingesta_eventos, producto_aliases, precios_compra, supplier_profiles |
 | Infraestructura | rate_limit_state, circuit_breaker_state |
+| Asistente IA | asistente_audit_log |
 
 ---
 
@@ -80,7 +81,7 @@ Catalogo de productos con pricing integrado.
 | codigo_barras | text | NULL | | |
 | sku | text | NULL | | |
 | precio_actual | numeric(12,2) | NOT NULL | 0 | Constraint NOT NULL (mig 20260212) |
-| precio_costo | numeric(12,2) | NULL | | |
+| precio_costo | numeric(12,2) | NULL | | CHECK >= 0 (`chk_productos_precio_costo_non_negative`) |
 | precio_sugerido | numeric(12,2) | NULL | | |
 | margen_ganancia | numeric(5,2) | NULL | | |
 | proveedor_principal_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
@@ -129,10 +130,10 @@ Inventario actual por producto y ubicacion.
 | Campo | Tipo | Nullable | Default | Notas |
 |-------|------|----------|---------|-------|
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
-| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE CASCADE |
+| producto_id | uuid | NULL | | FK -> productos(id) ON DELETE RESTRICT |
 | cantidad_actual | integer | NULL | 0 | CHECK >= 0 (`stock_no_negativo`) |
 | stock_minimo | integer | NULL | 0 | |
-| stock_maximo | integer | NULL | 0 | |
+| stock_maximo | integer | NULL | 0 | CHECK >= stock_minimo (`chk_stock_deposito_max_gte_min`) |
 | ubicacion | text | NULL | 'Principal' | |
 | lote | text | NULL | | |
 | fecha_vencimiento | date | NULL | | |
@@ -160,10 +161,11 @@ Historial de movimientos de inventario (kardex).
 | proveedor_id | uuid | NULL | | FK -> proveedores(id) ON DELETE SET NULL |
 | observaciones | text | NULL | | |
 | factura_ingesta_item_id | uuid | NULL | | FK -> facturas_ingesta_items(id) ON DELETE SET NULL |
+| idempotency_key | text | NULL | | Dedup key para movimientos de deposito |
 | fecha_movimiento | timestamptz | NULL | now() | |
 | created_at | timestamptz | NULL | now() | |
 
-**Indices:** `idx_movimientos_deposito_producto_id`, `idx_movimientos_deposito_fecha_movimiento(fecha_movimiento DESC)`, `idx_movimientos_deposito_tipo`, `idx_movimientos_factura_item(factura_ingesta_item_id) WHERE NOT NULL`, `uq_movimientos_factura_item_idempotent(factura_ingesta_item_id) UNIQUE WHERE NOT NULL`
+**Indices:** `idx_movimientos_deposito_producto_id`, `idx_movimientos_deposito_fecha_movimiento(fecha_movimiento DESC)`, `idx_movimientos_deposito_tipo`, `idx_movimientos_factura_item(factura_ingesta_item_id) WHERE NOT NULL`, `uq_movimientos_factura_item_idempotent(factura_ingesta_item_id) UNIQUE WHERE NOT NULL`, `uq_movimientos_deposito_idempotency(idempotency_key) UNIQUE WHERE NOT NULL`
 **RLS:** ENABLED. Policies: SELECT (todos), INSERT (admin, deposito).
 
 ---
@@ -322,7 +324,7 @@ Registro de pedidos con estados y pagos.
 | estado | text | NULL | | pendiente, preparando, listo, entregado, cancelado |
 | estado_pago | text | NULL | | pendiente, parcial, pagado |
 | monto_total | numeric(12,2) | NULL | 0 | |
-| monto_pagado | numeric(12,2) | NULL | 0 | |
+| monto_pagado | numeric(12,2) | NULL | 0 | CHECK <= monto_total (`chk_pedidos_monto_pagado_lte_total`) |
 | observaciones | text | NULL | | Visibles para el cliente |
 | observaciones_internas | text | NULL | | Solo personal |
 | audio_url | text | NULL | | |
@@ -417,7 +419,7 @@ Ledger de cuenta corriente (cargos y pagos por cliente).
 | Campo | Tipo | Nullable | Default | Notas |
 |-------|------|----------|---------|-------|
 | id | uuid | NOT NULL | gen_random_uuid() | PK |
-| cliente_id | uuid | NOT NULL | | FK -> clientes(id) ON DELETE CASCADE |
+| cliente_id | uuid | NOT NULL | | FK -> clientes(id) ON DELETE RESTRICT |
 | venta_id | uuid | NULL | | FK -> ventas(id) ON DELETE SET NULL |
 | usuario_id | uuid | NOT NULL | | |
 | tipo | text | NOT NULL | | CHECK IN ('cargo','pago','ajuste') |
@@ -604,7 +606,7 @@ Cache en base de datos para respuestas de api-proveedor.
 | ttl_seconds | integer | NOT NULL | | |
 
 **Indices:** `cache_proveedor_updated_at_idx(updated_at DESC)`
-**RLS:** No habilitado explicitamente. Grants revocados a anon.
+**RLS:** ENABLED (mig 20260302030000). Grants revocados a anon.
 
 ---
 
@@ -944,6 +946,29 @@ Estado de circuit breakers.
 
 ---
 
+## 11b. Asistente IA
+
+### asistente_audit_log
+
+Audit trail de acciones ejecutadas via el asistente IA (flujo plan→confirm).
+
+| Campo | Tipo | Nullable | Default | Notas |
+|-------|------|----------|---------|-------|
+| id | uuid | NOT NULL | gen_random_uuid() | PK |
+| usuario_id | uuid | NOT NULL | | FK -> auth.users(id) |
+| intent | text | NOT NULL | | Tipo de accion ejecutada |
+| payload | jsonb | NOT NULL | '{}' | Parametros de entrada |
+| result_success | boolean | NOT NULL | | Flag de exito |
+| result_data | jsonb | NULL | '{}' | Datos del resultado |
+| error_message | text | NULL | | Error si fallo |
+| request_id | text | NULL | | Tracing |
+| created_at | timestamptz | NOT NULL | now() | |
+
+**Indices:** `idx_asistente_audit_log_usuario(usuario_id, created_at DESC)`, `idx_asistente_audit_log_intent(intent, created_at DESC)`
+**RLS:** ENABLED. Policies: INSERT (authenticated, own records), SELECT (authenticated, own records).
+
+---
+
 ## 12. OCR / Facturas de Ingesta
 
 ### facturas_ingesta
@@ -1119,7 +1144,7 @@ Configuracion per-vendor para OCR y calculo de precios de factura.
 | Funcion | Tipo | Proposito |
 |---------|------|-----------|
 | `sp_aplicar_precio(uuid, numeric, numeric)` | SECURITY DEFINER | Aplica precio de compra y calcula venta con margen. FOR UPDATE en productos. |
-| `sp_movimiento_inventario(uuid, text, integer, text, uuid, uuid)` | SECURITY DEFINER | Registra movimiento de inventario. FOR UPDATE en stock_deposito/ordenes_compra. |
+| `sp_movimiento_inventario(uuid, text, integer, text, uuid, uuid, text)` | SECURITY DEFINER | Registra movimiento de inventario. FOR UPDATE en stock_deposito/ordenes_compra. Acepta `p_idempotency_key` opcional. |
 | `sp_crear_pedido(...)` | SECURITY DEFINER | Creacion atomica de pedido con items. |
 | `sp_procesar_venta_pos(jsonb)` | SECURITY DEFINER | Venta POS atomica con idempotency, FOR UPDATE/SHARE, ledger CC. Hardened. |
 | `sp_registrar_pago_cc(jsonb)` | SECURITY DEFINER | Registra pago a cuenta corriente. |
@@ -1167,10 +1192,10 @@ Configuracion per-vendor para OCR y calculo de precios de factura.
 ## 15. Notas de Drift Detectado
 
 1. **`precios_historicos.fecha`**: Columna legacy residual. No fue eliminada en la migracion de cleanup (20260213). No es usada por codigo activo.
-2. **`cache_proveedor` RLS**: No tiene `ENABLE ROW LEVEL SECURITY` explicito en migraciones. Solo tiene REVOKE de anon.
+2. ~~**`cache_proveedor` RLS**: No tiene `ENABLE ROW LEVEL SECURITY` explicito en migraciones.~~ **RESUELTO** en mig 20260302030000 — RLS ahora habilitado explicitamente.
 3. **Roles legacy en RLS**: Tablas creadas en mig 20260131000000 usan arrays de roles legacy (`['admin','administrador','deposito','deposito','ventas','vendedor','usuario']`). Tablas creadas/overridden en mig 20260212130000 usan roles canonicos (`['admin','deposito','ventas']`). Funcional pero inconsistente.
 
 ---
 
-**Version:** Post-Mega-Plan-O1 (GO, 49 migraciones, 43 tablas, 11 vistas, 3 MV)
+**Version:** Post-Auditoria-Definitiva (GO, 57 migraciones, 45 tablas, 11 vistas, 3 MV)
 **Estado:** Produccion estable (pipeline OCR desplegado; falta secret GCV_API_KEY)

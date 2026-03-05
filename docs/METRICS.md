@@ -17,8 +17,8 @@
 
 | Métrica | Total | Detalle |
 |---|---:|---|
-| Edge Functions | 15 | `supabase/functions` |
-| Migraciones SQL | 52 | `supabase/migrations` |
+| Edge Functions | 16 | `supabase/functions` |
+| Migraciones SQL | 57 | `supabase/migrations` |
 | Shared modules (_shared) | 8 | `supabase/functions/_shared` |
 | Endpoints | 44 | api-minimarket: 35, api-proveedor: 9 |
 | Hooks (React Query) | 11 | `minimarket-system/src/hooks/queries` |

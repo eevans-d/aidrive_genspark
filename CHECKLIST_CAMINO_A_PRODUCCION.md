@@ -1,8 +1,8 @@
 # CHECKLIST: Camino a Produccion Efectiva
 
 **Creado:** 2026-03-02 (sesion auditoria cruzada)
-**Ultima verificacion:** 2026-03-03 (tests 1905/1905, build OK, lint 0, 16/16 ACTIVE)
-**Contexto:** Tier 1 (6/6) + Tier 2 (10/12) ejecutados. Tests 1905 PASS, build OK, lint 0.
+**Ultima verificacion:** 2026-03-05 (tests 1945/1945, build OK, lint 0, 16/16 ACTIVE)
+**Contexto:** Tier 1 (6/6) + Tier 2 (12/12) ejecutados. Tests 1945 PASS, build OK, lint 0.
 **Documento de referencia:** `CLAUDECODE_FASES.AUDITORIA_DEFINITIVA_2026-03-02.md`
 
 ---
@@ -24,7 +24,7 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 - [x] `supabase functions deploy api-minimarket` (v39→v40) — idempotencia deposito, state machine tareas, audit trail financiero
 - [x] Redeploy 13 funciones que usan `_shared/internal-auth.ts` (timing-safe comparison fix)
 - [x] Verificar con `supabase functions list` que 16/16 estan ACTIVE
-- [ ] Smoke test manual: POST /deposito/movimiento con `Idempotency-Key` header → debe retornar `idempotent: false` la primera vez, `idempotent: true` la segunda
+- [x] Smoke test manual: POST /deposito/movimiento con `Idempotency-Key` header → verificado en T05
 
 ---
 
@@ -51,7 +51,7 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 - [ ] (Ninguno pendiente critico — todos los fixes frontend de Tier 2 ya se aplicaron)
 
 ### Documentacion / Compliance
-- [ ] **DATA_HANDLING_POLICY.md:** crear documento de politica de manejo de datos personales (PII) — nombres, telefonos, emails de clientes. Definir: retencion, acceso, soft-delete strategy, derecho al olvido
+- [x] **DATA_HANDLING_POLICY.md:** creado en T11 (2026-03-04) — 9 secciones cubriendo retencion, acceso, PII, soft-delete
 - [x] **CORS ALLOWED_ORIGINS:** verificado 2026-03-03 — modulo centralizado `_shared/cors.ts`, NO usa wildcards (`*`), valida origen exacto contra allowlist, retorna `'null'` para origenes no permitidos, incluye `Vary: Origin`, unit tests cubren rechazo. En produccion: configurar `ALLOWED_ORIGINS` env var con dominio real
 
 ---
@@ -70,7 +70,7 @@ Verificacion: `supabase db push --dry-run` confirma "Remote database is up to da
 
 ### Baja prioridad (nice-to-have)
 - [ ] Agregar indice compuesto `tareas_pendientes(prioridad, created_at)`
-- [x] Actualizar README con count de tests (1733 → 1905) — completado 2026-03-03
+- [x] Actualizar README con count de tests (1733 → 1945) — completado 2026-03-05
 - [x] Agregar `VITE_API_ASSISTANT_URL` a `.env.example` — completado 2026-03-03
 - [ ] Verificar version de Supabase SDK (3 patches atras)
 - [ ] Configurar Sentry DSN en produccion (opcional monitoring)
