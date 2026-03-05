@@ -127,7 +127,6 @@ Regla obligatoria del agente:
 | Schema BD | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Decisiones | `docs/DECISION_LOG.md` |
-| Constitución agéntica | `docs/CONSTITUCION_UNIVERSAL_SKILLS_WORKFLOWS_v1.0.0.md` |
 
 ### Politicas
 

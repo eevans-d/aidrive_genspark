@@ -1,10 +1,10 @@
-> [ACTIVO_VERIFICADO: 2026-02-13] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+> [ACTIVO_VERIFICADO: 2026-03-05] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Security Policy - Sistema Mini Market
 
 ## Supported Versions
 
-Este proyecto está en fase de **pre-producción**. Actualmente solo la rama `main` recibe actualizaciones de seguridad.
+Este proyecto está en fase de **producción**. Actualmente solo la rama `main` recibe actualizaciones de seguridad.
 
 | Version | Supported          |
 | ------- | ------------------ |

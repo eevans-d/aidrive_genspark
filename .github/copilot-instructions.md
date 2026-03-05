@@ -6,8 +6,8 @@ minimarket-system/     # Frontend React 18 + Vite 6 + TS 5.9 (SPA/PWA)
 ├── src/lib/supabase.ts       # Cliente Supabase (lecturas directas vía RLS)
 ├── src/lib/apiClient.ts      # Gateway client (escrituras)
 ├── src/contexts/AuthContext.tsx  # Autenticación (useAuth hook)
-├── src/pages/                # 15 páginas (React Query + React.lazy)
-├── src/hooks/queries/        # 9 hooks de React Query
+├── src/pages/                # 18 páginas (React Query + React.lazy)
+├── src/hooks/queries/        # 11 hooks de React Query
 ├── src/components/           # Componentes compartidos
 └── src/types/database.ts     # Tipos TS
 
@@ -19,11 +19,13 @@ supabase/functions/    # Edge Functions (Deno v2) - 16 activas
 │   ├── logger.ts      # Logging estructurado
 │   ├── rate-limit.ts  # Rate limiting (FixedWindow + Adaptive)
 │   └── circuit-breaker.ts # Circuit breaker
-├── api-minimarket/    # API Gateway principal (~2243 líneas, monolito)
-│   ├── index.ts       # Gateway (35 endpoints, JWT → roles → CORS → rate limit)
+├── api-minimarket/    # API Gateway principal (~2843 líneas, monolito)
+│   ├── index.ts       # Gateway (58 endpoints, JWT → roles → CORS → rate limit)
 │   ├── handlers/      # Handlers puntuales
 │   └── helpers/       # Auth, validation, pagination, supabase client
 ├── api-proveedor/     # API proveedor - MODULAR (router + handlers + utils)
+├── api-assistant/     # Asistente IA (11 intents: 7 read + 4 write con plan→confirm)
+├── facturas-ocr/      # Extracción OCR de facturas (Google Cloud Vision)
 ├── scraper-maxiconsumo/  # Scraper de precios - MODULAR (9 módulos)
 ├── cron-jobs-maxiconsumo/ # Orquestador cron - MODULAR (4 jobs + orchestrator)
 ├── cron-testing-suite/ # Suite de testing cron
@@ -34,7 +36,8 @@ supabase/functions/    # Edge Functions (Deno v2) - 16 activas
 ├── alertas-vencimientos/ # Alertas de vencimientos
 ├── reportes-automaticos/ # Reportes
 ├── notificaciones-tareas/ # Notificaciones
-└── reposicion-sugerida/ # Sugerencias de reposición
+├── reposicion-sugerida/ # Sugerencias de reposición
+└── backfill-faltantes-recordatorios/ # Backfill de faltantes
 
 supabase/cron_jobs/    # Scripts/JSON de scheduling de cron jobs
 supabase/migrations/   # 57 migraciones SQL versionadas (0 pendientes — todas aplicadas)
@@ -112,11 +115,9 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
 | Operaciones | `docs/OPERATIONS_RUNBOOK.md` |
 | Continuidad | `docs/closure/README_CANONICO.md` |
-| Obra objetivo | `docs/closure/OBRA_OBJETIVO_FINAL_PRODUCCION/README.md` |
-| Credenciales | `docs/OBTENER_SECRETOS.md` (nombres, nunca valores) |
 | Métricas | `docs/METRICS.md` (generado por `scripts/metrics.mjs`) |
 
-## Estado Actual (Marzo 2026 - verificado D-185)
+## Estado Actual (Marzo 2026 - verificado D-189)
 
 ### Proyecto Supabase
 - **Nombre:** minimarket-system
@@ -138,7 +139,7 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 ### CI/CD
 - Pipeline tests: `.github/workflows/ci.yml` (lint → test → build → typecheck → edge-check → security)
 - Pipeline deploy: `.github/workflows/deploy-cloudflare-pages.yml` (push a main = producción automática)
-- Veredicto operativo: **LISTO PARA PRODUCCION** (D-185, Tier 1 6/6 + Tier 2 12/12, 18/18 gates)
+- Veredicto operativo: **LISTO PARA PRODUCCION** (D-189, Tier 1 6/6 + Tier 2 12/12, 18/18 gates)
 
 ### Pendientes (ver `docs/closure/OPEN_ISSUES.md`)
 1. OCR-007: Activar billing GCP para desbloquear OCR (owner)

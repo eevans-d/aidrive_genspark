@@ -1,12 +1,13 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-05 (Verificacion post-commit `3bc9ebc` + sincronizacion DocuGuard — Codex)
+**Ultima actualizacion:** 2026-03-05 (Verificacion post-commit `8d226fe` — remediacion dependencias + sincronizacion DocuGuard)
 **Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED, RC-01/D1/D2 RESUELTOS`
 **Estado del Asistente IA:** `SPRINT 3 COMPLETADO — 4 intents write con plan→confirm, auditoria persistente en BD`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
+- **Remediacion de dependencias frontend (2026-03-05, commit `8d226fe`):** corregidas 6 vulnerabilidades HIGH en audit de produccion. `vite-plugin-pwa` movido de `dependencies` a `devDependencies` (es herramienta de build, no runtime). Overrides actualizados: `minimatch` 5.1.7→5.1.8 y 10.2.1→10.2.3 (fix ReDoS), `rollup` >=4.59.0 (fix arbitrary file write), `serialize-javascript` >=7.0.3 (fix RCE). Resultado: **audit --prod 0 HIGH/0 CRITICAL**. Tests: **1945/1945 PASS**, build OK, lint 0 errores.
 - **Hardening de tipado TypeScript (2026-03-05, commit `3bc9ebc`):** eliminados ~249 `any` explicitos en codigo de produccion (45 archivos en commit, 2 archivos de tipos nuevos). `@typescript-eslint/no-explicit-any` quedo en `warn` para prevenir regresiones. Verificacion Codex: **1945/1945 PASS** (suite raiz), **249/249 PASS** (frontend), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks + 1 `KEEP` de interop `JsBarcode`).
 - **Ejecucion de 15 tareas (T01-T15, 2026-03-04):** sesion de Claude Code Executor completo. 14/15 tareas DONE, 1 BLOCKED_EXTERNAL (T01: GCV API Key — requiere accion del owner). Highlights: lock de concurrencia OCR (T02), transaccionalidad OCR (T03), mutex OCR (T04), idempotencia 2 endpoints (T05-T06), errores visibles frontend (T07-T08), hard cap reportes (T09), migraciones aplicadas (T10), DATA_HANDLING_POLICY (T11), performance baseline v2 (T12), nightly gates CI (T13), asistente IA Sprint 3 — 2 nuevos intents write (T14-T15), auditoria persistente en BD (T15). Tests: **1945/1945 PASS**, build OK, lint 0 errors. Evidencia: `docs/closure/execution-logs/T01..T15_*.md`.
 - **Plan de ejecucion para Claude Code (2026-03-04):** se genero artefacto operativo con 15 tareas complejas, subtareas y micro-pasos, incluyendo regla obligatoria de auto-continuidad: si una tarea queda `BLOCKED_EXTERNAL`, se documenta evidencia y se continua inmediatamente con `Tn+1` sin esperar aprobacion manual. Referencia: `docs/closure/archive/historical/CONTEXT_PROMPT_CLAUDE_CODE_15_TAREAS_2026-03-04_044540.md`.
@@ -17,13 +18,14 @@
 - **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
-## 2) Estado tecnico verificado (sesion 2026-03-05, post `3bc9ebc`)
-- Tests unitarios completos: **1945/1945 PASS** (86 archivos, post audit fixes).
-- Build produccion: **OK** (30 chunks PWA, 0 errores).
+## 2) Estado tecnico verificado (sesion 2026-03-05, post `8d226fe`)
+- Tests unitarios completos: **1945/1945 PASS** (86 archivos).
+- Build produccion: **OK** (34 chunks PWA, 0 errores).
 - Lint: **0 errores, 72 warnings** (esperado: warnings de `no-explicit-any` en tests/mocks; produccion sin `any` explicitos salvo 1 `KEEP` documentado).
+- Audit de dependencias produccion: **0 HIGH, 0 CRITICAL** (remediadas 6 HIGH en commit `8d226fe`).
 - Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v41, api-assistant v3, facturas-ocr v12).
 - Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
-- Quality Gates ejecutados 3 veces durante sesion (post T07-T09, T10-T12, T13-T15) — todos PASS.
+- Health endpoint: HTTP 200, `{"status":"healthy"}`.
 
 ## 3) OCR de facturas: estado real
 

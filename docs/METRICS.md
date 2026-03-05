@@ -1,6 +1,6 @@
 # Métricas de Código (Fuente única)
 
-**Generado:** 2026-02-26T08:03:43.936Z (UTC)
+**Generado:** 2026-03-05T07:20:51.091Z (UTC)
 **Script:** `scripts/metrics.mjs`
 
 ## Definiciones
@@ -19,11 +19,11 @@
 |---|---:|---|
 | Edge Functions | 16 | `supabase/functions` |
 | Migraciones SQL | 57 | `supabase/migrations` |
-| Shared modules (_shared) | 8 | `supabase/functions/_shared` |
-| Endpoints | 44 | api-minimarket: 35, api-proveedor: 9 |
+| Shared modules (_shared) | 9 | `supabase/functions/_shared` |
+| Endpoints | 67 | api-minimarket: 58, api-proveedor: 9 |
 | Hooks (React Query) | 11 | `minimarket-system/src/hooks/queries` |
-| Páginas | 17 | `minimarket-system/src/pages` |
-| Test files | 139 | total en repo |
+| Páginas | 18 | `minimarket-system/src/pages` |
+| Test files | 145 | total en repo |
 
 ## Test files por carpeta
 
@@ -37,10 +37,10 @@
 | minimarket-system/src/hooks/queries | 9 |
 | minimarket-system/src/lib | 2 |
 | minimarket-system/src/lib/__tests__ | 2 |
-| minimarket-system/src/pages | 19 |
+| minimarket-system/src/pages | 20 |
 | tests/api-contracts | 1 |
 | tests/contract | 3 |
 | tests/e2e | 1 |
 | tests/performance | 1 |
 | tests/security | 1 |
-| tests/unit | 81 |
+| tests/unit | 86 |
