@@ -6,6 +6,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { StockDeposito, MovimientoDeposito, Producto } from '../../types/database';
+import type { StockDepositoJoinedRow } from '../../types/supabase-joins';
 
 export interface StockDepositoConProducto extends StockDeposito {
         producto?: Pick<Producto, 'id' | 'nombre' | 'categoria' | 'codigo_barras'>;
@@ -35,9 +36,9 @@ async function fetchDeposito(): Promise<DepositoResult> {
 
         if (stockError) throw stockError;
 
-        const stock: StockDepositoConProducto[] = (stockData || []).map((item: any) => ({
+        const stock: StockDepositoConProducto[] = (stockData || []).map((item: StockDepositoJoinedRow) => ({
                 ...item,
-                producto: item.productos,
+                producto: item.productos ?? undefined,
         }));
 
         // Obtener últimos movimientos (últimas 24h)

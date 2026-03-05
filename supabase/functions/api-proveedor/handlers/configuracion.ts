@@ -18,7 +18,7 @@ export async function getConfiguracionProveedorOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any,
+    requestLog: Record<string, unknown>,
     request: Request
 ): Promise<Response> {
     const authResult = validateApiSecret(request);

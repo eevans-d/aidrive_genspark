@@ -98,7 +98,7 @@ interface NotificationRequest {
         slack_channels?: string[];
         webhook_urls?: string[];
     };
-    data: Record<string, any>;
+    data: Record<string, unknown>;
     priority: 'low' | 'medium' | 'high' | 'critical';
     source: string;
     requiresEscalation: boolean;
@@ -166,7 +166,7 @@ async function redactRecipients(recipients: NotificationRequest['recipients']) {
     };
 }
 
-function redactData(data: Record<string, any>) {
+function redactData(data: Record<string, unknown>) {
     return {
         keys: Object.keys(data ?? {}),
         size: JSON.stringify(data ?? {}).length,
@@ -1100,7 +1100,7 @@ async function sendWebhook(
 // FUNCIONES DE UTILIDAD
 // =====================================================
 
-function processTemplate(template: string, data: Record<string, any>): string {
+function processTemplate(template: string, data: Record<string, unknown>): string {
     let processed = template;
     
     // Reemplazar variables {{variable}}

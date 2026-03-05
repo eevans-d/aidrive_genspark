@@ -119,7 +119,7 @@ async function handleScraping(
   keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const cached = getFromCache<any>('scraping:latest');
+  const cached = getFromCache<Record<string, unknown>>('scraping:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   // Scraping externo no usa DB key, pero guardar usa writeKey
@@ -140,7 +140,7 @@ async function handleComparacion(
   keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const cached = getFromCache<any>('comparison:latest');
+  const cached = getFromCache<Record<string, unknown>>('comparison:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   // Lecturas con readKey
@@ -167,7 +167,7 @@ async function handleAlertas(
   keys: ScraperKeys,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const cached = getFromCache<any>('alerts:latest');
+  const cached = getFromCache<Record<string, unknown>>('alerts:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
@@ -210,7 +210,7 @@ async function handleStatus(
   log: StructuredLog,
   corsHeaders: Record<string, string>
 ): Promise<Response> {
-  const cached = getFromCache<any>('status:latest');
+  const cached = getFromCache<Record<string, unknown>>('status:latest');
   if (cached) return jsonResponse({ ...cached, fromCache: true }, 200, corsHeaders, log.requestId);
 
   const cacheStats = getCacheStats();

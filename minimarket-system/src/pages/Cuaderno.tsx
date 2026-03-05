@@ -4,6 +4,7 @@ import { toast } from 'sonner'
 import { useQuery } from '@tanstack/react-query'
 import { supabase } from '../lib/supabase'
 import { useFaltantesByProveedor, useUpdateFaltante, type FaltanteRow } from '../hooks/queries'
+import type { FaltanteWithProveedor } from '../types/supabase-joins'
 import { generatePurchaseSummary } from '../utils/cuadernoParser'
 import { SkeletonCard, SkeletonText, SkeletonList } from '../components/Skeleton'
 import { ErrorMessage } from '../components/ErrorMessage'
@@ -60,7 +61,7 @@ export default function Cuaderno() {
         .order('fecha_resolucion', { ascending: false })
         .limit(50)
       if (error) throw error
-      return (data || []).map((row: any) => ({
+      return (data || []).map((row: FaltanteWithProveedor) => ({
         ...row,
         proveedor_nombre: row.proveedores?.nombre ?? null,
         proveedores: undefined,

@@ -1,3 +1,5 @@
+import type { AlertaVistaRow, AlertPattern, AlertRiskScore, AlertInsight } from '../../_shared/types.ts';
+
 export function buildAlertasQuery(severidad: string, tipo: string, limite: number): string {
     let query = `${Deno.env.get('SUPABASE_URL')}/rest/v1/vista_alertas_activas?select=*`;
 
@@ -18,8 +20,8 @@ export function buildAlertasQuery(severidad: string, tipo: string, limite: numbe
     return `${query}&order=fecha_alerta.desc&limit=${limite}`;
 }
 
-export async function detectAlertPatterns(alertas: any[]): Promise<any> {
-    const patterns = [] as any[];
+export async function detectAlertPatterns(alertas: AlertaVistaRow[]): Promise<AlertPattern[]> {
+    const patterns = [] as AlertPattern[];
     const recentAlerts = alertas.filter(
         (alert) => Date.now() - new Date(alert.fecha_alerta).getTime() < 86400000
     );
@@ -35,7 +37,7 @@ export async function detectAlertPatterns(alertas: any[]): Promise<any> {
     return patterns;
 }
 
-export async function predictAlertTrends(alertas: any[]): Promise<any> {
+export async function predictAlertTrends(alertas: AlertaVistaRow[]) {
     const trend = {
         direction: 'stable',
         confidence: 0.7,
@@ -57,7 +59,7 @@ export async function predictAlertTrends(alertas: any[]): Promise<any> {
     return trend;
 }
 
-export async function calculateAlertRiskScore(alertas: any[]): Promise<any> {
+export async function calculateAlertRiskScore(alertas: AlertaVistaRow[]): Promise<AlertRiskScore> {
     const scores = alertas.map((alert) => {
         let score = 0;
 
@@ -87,7 +89,7 @@ export async function calculateAlertRiskScore(alertas: any[]): Promise<any> {
     };
 }
 
-export function calculateAlertImpact(alerta: any): number {
+export function calculateAlertImpact(alerta: AlertaVistaRow): number {
     let impact = 0;
 
     const severityImpact = {
@@ -111,7 +113,7 @@ export function calculateAlertImpact(alerta: any): number {
     return Math.min(100, impact);
 }
 
-export function generateAlertRecommendations(alerta: any): string[] {
+export function generateAlertRecommendations(alerta: AlertaVistaRow): string[] {
     const recommendations = [] as string[];
 
     if (alerta.severidad === 'critica') {
@@ -129,11 +131,11 @@ export function generateAlertRecommendations(alerta: any): string[] {
     return recommendations;
 }
 
-export async function assignAlertCluster(alerta: any): Promise<string> {
+export async function assignAlertCluster(alerta: AlertaVistaRow): Promise<string> {
     return `${alerta.categoria}_${alerta.tipo_cambio}_${alerta.severidad}`;
 }
 
-export function calculateAlertPriority(alerta: any): number {
+export function calculateAlertPriority(alerta: AlertaVistaRow): number {
     let priority = 0;
 
     if (alerta.severidad === 'critica') priority += 100;
@@ -150,7 +152,7 @@ export function calculateAlertPriority(alerta: any): number {
     return Math.min(150, priority);
 }
 
-export function determineActionRequired(alerta: any): boolean {
+export function determineActionRequired(alerta: AlertaVistaRow): boolean {
     const isCritical = alerta.severidad === 'critica';
     const hasHighImpact = alerta.diferencia_absoluta > 100;
     const isRecent = Date.now() - new Date(alerta.fecha_alerta).getTime() < 3600000;
@@ -158,8 +160,8 @@ export function determineActionRequired(alerta: any): boolean {
     return isCritical || (hasHighImpact && isRecent);
 }
 
-export function generateAlertInsights(alertas: any[]): any {
-    const insights = [] as any[];
+export function generateAlertInsights(alertas: AlertaVistaRow[]): AlertInsight[] {
+    const insights = [] as AlertInsight[];
 
     const criticalCount = alertas.filter((a) => a.severidad === 'critica').length;
     if (criticalCount > 0) {

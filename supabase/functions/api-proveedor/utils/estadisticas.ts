@@ -1,3 +1,4 @@
+import type { EstadisticaScrapingRow } from '../../_shared/types.ts';
 import { REQUEST_METRICS, calculateErrorRate } from './metrics.ts';
 
 export function buildEstadisticasQuery(fechaInicio: Date, categoria: string, granularidad: string): string {
@@ -10,7 +11,7 @@ export function buildEstadisticasQuery(fechaInicio: Date, categoria: string, gra
     return query;
 }
 
-export function calcularMetricasScraping(estadisticas: any[]) {
+export function calcularMetricasScraping(estadisticas: EstadisticaScrapingRow[]) {
     if (estadisticas.length === 0) {
         return {
             total_ejecuciones: 0,
@@ -36,7 +37,7 @@ export function calcularMetricasScraping(estadisticas: any[]) {
     };
 }
 
-export function calcularMetricasScrapingOptimizado(estadisticas: any[]) {
+export function calcularMetricasScrapingOptimizado(estadisticas: EstadisticaScrapingRow[]) {
     if (estadisticas.length === 0) {
         return {
             total_ejecuciones: 0,
@@ -71,7 +72,7 @@ export function calcularMetricasScrapingOptimizado(estadisticas: any[]) {
     };
 }
 
-export function aggregateTemporalMetrics(estadisticas: any[], granularidad: string): any {
+export function aggregateTemporalMetrics(estadisticas: EstadisticaScrapingRow[], granularidad: string) {
     const grouped = estadisticas.reduce((acc, stat) => {
         const date = new Date(stat.created_at);
         let key: string;
@@ -87,19 +88,19 @@ export function aggregateTemporalMetrics(estadisticas: any[], granularidad: stri
         if (!acc[key]) acc[key] = [];
         acc[key].push(stat);
         return acc;
-    }, {} as Record<string, any[]>);
+    }, {} as Record<string, EstadisticaScrapingRow[]>);
 
-    const groupedEntries = Object.entries(grouped) as Array<[string, any[]]>;
+    const groupedEntries = Object.entries(grouped) as Array<[string, EstadisticaScrapingRow[]]>;
     return groupedEntries.map(([period, stats]) => ({
         period,
         ejecuciones: stats.length,
-        productos_totales: stats.reduce((sum: number, s: any) => sum + (s.productos_encontrados || 0), 0),
-        tasa_exito_promedio: (stats.filter((s: any) => s.status === 'exitoso').length / stats.length) * 100,
-        tiempo_promedio: stats.reduce((sum: number, s: any) => sum + (s.tiempo_ejecucion_ms || 0), 0) / stats.length
+        productos_totales: stats.reduce((sum: number, s: EstadisticaScrapingRow) => sum + (s.productos_encontrados || 0), 0),
+        tasa_exito_promedio: (stats.filter((s: EstadisticaScrapingRow) => s.status === 'exitoso').length / stats.length) * 100,
+        tiempo_promedio: stats.reduce((sum: number, s: EstadisticaScrapingRow) => sum + (s.tiempo_ejecucion_ms || 0), 0) / stats.length
     }));
 }
 
-export function calculateKPIs(estadisticas: any[]): any {
+export function calculateKPIs(estadisticas: EstadisticaScrapingRow[]) {
     if (estadisticas.length === 0) return {};
 
     const exitosas = estadisticas.filter((s) => s.status === 'exitoso');
@@ -112,7 +113,7 @@ export function calculateKPIs(estadisticas: any[]): any {
     };
 }
 
-export function calculatePerformanceMetrics(estadisticas: any[]): any {
+export function calculatePerformanceMetrics(estadisticas: EstadisticaScrapingRow[]) {
     return {
         throughput: estadisticas.length / Math.max(1, estadisticas.length),
         latency_p95: Math.round(REQUEST_METRICS.averageResponseTime * 1.5),
@@ -120,7 +121,7 @@ export function calculatePerformanceMetrics(estadisticas: any[]): any {
     };
 }
 
-export function calculateTrendAnalysis(estadisticas: any[]): any {
+export function calculateTrendAnalysis(estadisticas: EstadisticaScrapingRow[]) {
     return {
         trend_direction: 'stable',
         confidence: 0.8,
@@ -128,18 +129,18 @@ export function calculateTrendAnalysis(estadisticas: any[]): any {
     };
 }
 
-export function identifyAnomalies(estadisticas: any[]): any[] {
+export function identifyAnomalies(estadisticas: EstadisticaScrapingRow[]) {
     return estadisticas
         .filter((s) => s.status !== 'exitoso')
         .map((s) => ({ date: s.created_at, type: 'execution_failure', severity: 'medium' }));
 }
 
-export function calculateUptimePercentage(estadisticas: any[]): number {
+export function calculateUptimePercentage(estadisticas: EstadisticaScrapingRow[]): number {
     const successful = estadisticas.filter((s) => s.status === 'exitoso').length;
     return estadisticas.length > 0 ? (successful / estadisticas.length) * 100 : 100;
 }
 
-export function calculateEfficiencyScore(estadisticas: any[]): number {
+export function calculateEfficiencyScore(estadisticas: EstadisticaScrapingRow[]): number {
     const avgProducts =
         estadisticas.reduce((sum, s) => sum + (s.productos_encontrados || 0), 0) / Math.max(estadisticas.length, 1);
     const avgTime = estadisticas.reduce((sum, s) => sum + (s.tiempo_ejecucion_ms || 0), 0) / Math.max(estadisticas.length, 1);
@@ -148,7 +149,7 @@ export function calculateEfficiencyScore(estadisticas: any[]): number {
     return Math.min(100, Math.round(productsPerSecond * 10));
 }
 
-export function getPeakPerformanceDay(estadisticas: any[]): string {
+export function getPeakPerformanceDay(estadisticas: EstadisticaScrapingRow[]): string {
     const dailyPerf = estadisticas.reduce((acc, stat) => {
         const date = new Date(stat.created_at).toDateString();
         if (!acc[date]) acc[date] = { products: 0, count: 0 };
@@ -165,7 +166,7 @@ export function getPeakPerformanceDay(estadisticas: any[]): string {
     return bestDay?.date || 'N/A';
 }
 
-export function calculateConsistencyScore(estadisticas: any[]): number {
+export function calculateConsistencyScore(estadisticas: EstadisticaScrapingRow[]): number {
     if (estadisticas.length < 2) return 100;
 
     const products = estadisticas.map((s) => s.productos_encontrados || 0);
@@ -177,7 +178,7 @@ export function calculateConsistencyScore(estadisticas: any[]): number {
     return Math.max(0, Math.round((1 - cv) * 100));
 }
 
-export async function predictPerformanceTrends(_estadisticas: any[]): Promise<any> {
+export async function predictPerformanceTrends(_estadisticas: EstadisticaScrapingRow[]) {
     return {
         predicted_success_rate: 95,
         predicted_avg_products: 150,
@@ -186,7 +187,7 @@ export async function predictPerformanceTrends(_estadisticas: any[]): Promise<an
     };
 }
 
-export async function forecastScrapingSuccess(estadisticas: any[]): Promise<any> {
+export async function forecastScrapingSuccess(estadisticas: EstadisticaScrapingRow[]) {
     const recentStats = estadisticas.slice(0, 7);
     const avgSuccessRate = recentStats.filter((s) => s.status === 'exitoso').length / Math.max(recentStats.length, 1);
 
@@ -197,7 +198,7 @@ export async function forecastScrapingSuccess(estadisticas: any[]): Promise<any>
     };
 }
 
-export async function estimateOptimalTiming(_estadisticas: any[]): Promise<any> {
+export async function estimateOptimalTiming(_estadisticas: EstadisticaScrapingRow[]) {
     return {
         recommended_time: '02:00-04:00',
         confidence: 0.78,
@@ -206,7 +207,7 @@ export async function estimateOptimalTiming(_estadisticas: any[]): Promise<any> 
     };
 }
 
-function analyzeScrapingTrends(_estadisticas: any[]): any {
+function analyzeScrapingTrends(_estadisticas: EstadisticaScrapingRow[]) {
     return {
         performance_trend: 'stable',
         success_rate_trend: 'improving',
@@ -214,8 +215,8 @@ function analyzeScrapingTrends(_estadisticas: any[]): any {
     };
 }
 
-function detectScrapingAnomalies(estadisticas: any[]): any[] {
-    const anomalies = [] as any[];
+function detectScrapingAnomalies(estadisticas: EstadisticaScrapingRow[]) {
+    const anomalies: { date: string; type: string; severity: string }[] = [];
     const avgProducts =
         estadisticas.reduce((sum, s) => sum + (s.productos_encontrados || 0), 0) / Math.max(estadisticas.length, 1);
 

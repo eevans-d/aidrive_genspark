@@ -25,7 +25,7 @@ export async function getHealthCheckOptimizado(
     supabaseReadHeaders: Record<string, string>,
     apiSecret: string | null,
     corsHeaders: Record<string, string>,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     logger.info('HEALTH_REQUEST', { ...requestLog });
 

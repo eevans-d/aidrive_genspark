@@ -1,3 +1,4 @@
+import type { HealthComponent, HealthComponentMap, HealthAlert, HealthRecommendation } from '../../_shared/types.ts';
 import { API_CACHE } from './cache.ts';
 import { fetchWithTimeout } from './http.ts';
 import {
@@ -12,7 +13,7 @@ import {
 export async function checkDatabaseHealth(
     supabaseUrl: string,
     supabaseReadHeaders: Record<string, string>
-): Promise<any> {
+): Promise<HealthComponent> {
     try {
         const start = Date.now();
         const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/precios_proveedor?select=count&limit=1`, {
@@ -35,7 +36,7 @@ export async function checkScraperHealth(
     supabaseUrl: string,
     apiSecret: string | null,
     requestId?: string
-): Promise<any> {
+): Promise<HealthComponent> {
     try {
         const headers: Record<string, string> = {};
         if (apiSecret) headers['x-api-secret'] = apiSecret;
@@ -54,7 +55,7 @@ export async function checkScraperHealth(
     }
 }
 
-export function checkCacheHealth(): any {
+export function checkCacheHealth(): HealthComponent {
     const size = API_CACHE.size;
     return {
         status: size >= 0 ? 'healthy' : 'unhealthy',
@@ -64,8 +65,8 @@ export function checkCacheHealth(): any {
     };
 }
 
-export function checkMemoryHealth(): any {
-    const usage = (globalThis as any).performance?.memory || {};
+export function checkMemoryHealth(): HealthComponent {
+    const usage = (globalThis as unknown as { performance?: { memory?: { usedJSHeapSize?: number; totalJSHeapSize?: number; jsHeapSizeLimit?: number } } }).performance?.memory || {};
     return {
         status: 'healthy',
         score: 100,
@@ -75,7 +76,7 @@ export function checkMemoryHealth(): any {
     };
 }
 
-export function checkAPIPerformance(): any {
+export function checkAPIPerformance(): HealthComponent {
     const avgResponseTime = REQUEST_METRICS.averageResponseTime;
     const successRate = (REQUEST_METRICS.success / Math.max(REQUEST_METRICS.total, 1)) * 100;
 
@@ -93,7 +94,7 @@ export async function checkExternalDependencies(
     supabaseReadHeaders?: Record<string, string>,
     apiSecret?: string | null,
     requestId?: string
-): Promise<any> {
+): Promise<HealthComponent> {
     const PROBE_TIMEOUT_MS = 3000;
     const probeEntries: Array<[string, Promise<{ ok: boolean }>]> = [];
 
@@ -156,8 +157,8 @@ async function fetchProbe(url: string, options: RequestInit, timeoutMs: number):
     }
 }
 
-export function generateHealthAlerts(components: any, score: number): any[] {
-    const alerts = [] as any[];
+export function generateHealthAlerts(components: HealthComponentMap, score: number): HealthAlert[] {
+    const alerts = [] as HealthAlert[];
 
     if (score < 70) {
         alerts.push({
@@ -186,8 +187,8 @@ export function generateHealthAlerts(components: any, score: number): any[] {
     return alerts;
 }
 
-export function generateHealthRecommendations(components: any, _score: number): any[] {
-    const recommendations = [] as any[];
+export function generateHealthRecommendations(components: HealthComponentMap, _score: number): HealthRecommendation[] {
+    const recommendations = [] as HealthRecommendation[];
 
     if (components.api_performance?.avg_response_time_ms > 1000) {
         recommendations.push({

@@ -25,7 +25,7 @@ export async function getEstadisticasScrapingOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     const { dias, categoria, granularidad, incluirPredicciones } = validateEstadisticasParams(url);
 

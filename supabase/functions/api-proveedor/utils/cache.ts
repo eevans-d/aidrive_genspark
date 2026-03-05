@@ -16,7 +16,7 @@ export type CacheWriteOptions = {
 
 const logger = createLogger('api-proveedor:cache');
 
-export const API_CACHE = new Map<string, { data: any; timestamp: number; ttl: number }>();
+export const API_CACHE = new Map<string, { data: unknown; timestamp: number; ttl: number }>();
 const PERSISTENT_CACHE_TABLE = 'cache_proveedor';
 
 export const IN_MEMORY_CACHE_TTL_MS: Record<string, number> = {
@@ -37,7 +37,7 @@ export const PERSISTENT_CACHE_TTL_SECONDS: Record<string, number> = {
     estadisticas: 3600
 };
 
-export async function getFromAPICache(key: string, options: CacheReadOptions = {}): Promise<any | null> {
+export async function getFromAPICache(key: string, options: CacheReadOptions = {}): Promise<unknown> {
     const entry = API_CACHE.get(key);
     const now = Date.now();
     const isEntryValid = entry && now - entry.timestamp <= entry.ttl;
@@ -58,7 +58,7 @@ export async function getFromAPICache(key: string, options: CacheReadOptions = {
     return persistent ?? memoryFallback;
 }
 
-function setInMemoryCache(key: string, data: any, ttl: number): void {
+function setInMemoryCache(key: string, data: unknown, ttl: number): void {
     if (API_CACHE.size > 500) {
         const oldestEntries = Array.from(API_CACHE.entries())
             .sort(([, a], [, b]) => a.timestamp - b.timestamp)
@@ -68,7 +68,7 @@ function setInMemoryCache(key: string, data: any, ttl: number): void {
     API_CACHE.set(key, { data, timestamp: Date.now(), ttl });
 }
 
-export async function addToAPICache(key: string, data: any, ttl: number, options?: CacheWriteOptions): Promise<void> {
+export async function addToAPICache(key: string, data: unknown, ttl: number, options?: CacheWriteOptions): Promise<void> {
     const now = Date.now();
     const existing = API_CACHE.get(key);
     const memoryValid = existing && now - existing.timestamp <= existing.ttl;
@@ -109,7 +109,7 @@ export async function invalidateRelatedCaches(categoria: string): Promise<number
 
 async function writeToPersistentCache(
     key: string,
-    payload: any,
+    payload: unknown,
     ttlSeconds: number,
     supabaseUrl: string,
     serviceRoleKey: string,
@@ -153,7 +153,7 @@ async function readFromPersistentCache(
     key: string,
     supabaseUrl: string,
     serviceRoleKey: string
-): Promise<any | null> {
+): Promise<unknown> {
     try {
         const params = new URLSearchParams({
             select: 'endpoint,payload,updated_at,ttl_seconds',

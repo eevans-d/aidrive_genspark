@@ -6,6 +6,7 @@
 import { executeJob, createExecutionContext, getJobStatus } from './orchestrator.ts';
 import { getJobConfig, getAllJobConfigs } from './config.ts';
 import type { StructuredLog } from './types.ts';
+import type { CronJobExecutionLogRow } from '../_shared/types.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
@@ -75,11 +76,11 @@ async function handleMetrics(supabaseUrl: string, serviceRoleKey: string, log: S
 
   const metrics = {
     total_executions: executions.length,
-    successful: executions.filter((e: any) => e.estado === 'exitoso').length,
-    failed: executions.filter((e: any) => e.estado === 'fallido').length,
-    partial: executions.filter((e: any) => e.estado === 'parcial').length,
-    avg_execution_time: executions.length > 0 
-      ? Math.round(executions.reduce((s: number, e: any) => s + (e.duracion_ms || 0), 0) / executions.length)
+    successful: executions.filter((e: CronJobExecutionLogRow) => e.estado === 'exitoso').length,
+    failed: executions.filter((e: CronJobExecutionLogRow) => e.estado === 'fallido').length,
+    partial: executions.filter((e: CronJobExecutionLogRow) => e.estado === 'parcial').length,
+    avg_execution_time: executions.length > 0
+      ? Math.round(executions.reduce((s: number, e: CronJobExecutionLogRow) => s + (e.duracion_ms || 0), 0) / executions.length)
       : 0
   };
 

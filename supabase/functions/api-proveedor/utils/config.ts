@@ -1,4 +1,6 @@
-export function analyzeConfiguration(config: any): any {
+import type { ProveedorConfig, ConfigAnalysis, OptimizationSuggestion } from '../../_shared/types.ts';
+
+export function analyzeConfiguration(config: ProveedorConfig | null): ConfigAnalysis {
     if (!config) {
         return { score: 0, issues: ['No configuration found'], needsUpdate: true, optimizationPotential: 0 };
     }
@@ -28,7 +30,7 @@ export function analyzeConfiguration(config: any): any {
     return { score, issues, needsUpdate, optimizationPotential };
 }
 
-export function assessConfigHealth(config: any): string {
+export function assessConfigHealth(config: ProveedorConfig | null): string {
     if (!config) return 'unhealthy';
 
     const hasRequiredFields = config.frecuencia_scraping && config.umbral_cambio_precio;
@@ -41,8 +43,8 @@ export function assessConfigHealth(config: any): string {
     return 'unhealthy';
 }
 
-export function generateOptimizationSuggestions(config: any): any[] {
-    const suggestions = [] as any[];
+export function generateOptimizationSuggestions(config: ProveedorConfig | null): OptimizationSuggestion[] {
+    const suggestions = [] as OptimizationSuggestion[];
 
     if (!config?.cache_aggressive) {
         suggestions.push({
@@ -63,7 +65,7 @@ export function generateOptimizationSuggestions(config: any): any[] {
     return suggestions;
 }
 
-export function generateConfigHash(config: any): string {
+export function generateConfigHash(config: ProveedorConfig): string {
     const configString = JSON.stringify(config, Object.keys(config).sort());
     let hash = 0;
     for (let i = 0; i < configString.length; i++) {

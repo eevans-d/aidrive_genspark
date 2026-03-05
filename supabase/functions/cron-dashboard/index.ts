@@ -19,6 +19,7 @@
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
+import type { CronJobTrackingRow, CronJobMetricsRow, CronJobExecutionLogRow, CronJobAlertRow, MonitoringHistoryRow, JobControlResult } from '../_shared/types.ts';
 
 const logger = createLogger('cron-dashboard');
 
@@ -101,10 +102,10 @@ interface DashboardData {
     };
     systemHealth: {
         components: {
-            database: { status: string; responseTime: number; details: any };
-            memory: { status: string; usage: number; details: any };
-            jobs: { status: string; activeJobs: number; details: any };
-            alerts: { status: string; activeCount: number; details: any };
+            database: { status: string; responseTime: number; details: Record<string, unknown> };
+            memory: { status: string; usage: number; details: Record<string, unknown> };
+            jobs: { status: string; activeJobs: number; details: Record<string, unknown> };
+            alerts: { status: string; activeCount: number; details: Record<string, unknown> };
         };
         recommendations: string[];
     };
@@ -113,8 +114,8 @@ interface DashboardData {
 interface ChartData {
     type: 'line' | 'bar' | 'pie' | 'area' | 'gauge';
     title: string;
-    data: any;
-    options: any;
+    data: Record<string, unknown>;
+    options: Record<string, unknown>;
 }
 
 // =====================================================
@@ -339,7 +340,7 @@ async function controlPanelHandler(
     logger.info('CONTROL_ACTION', { action, jobId });
 
     try {
-        let result: any;
+        let result: JobControlResult;
 
         switch (action) {
             case 'pause':
@@ -476,7 +477,7 @@ async function calculateSystemUptime(supabaseUrl: string, serviceRoleKey: string
         }
 
         // Calcular promedio de uptime
-        const avgUptime = history.reduce((sum: number, record: any) => {
+        const avgUptime = history.reduce((sum: number, record: MonitoringHistoryRow) => {
             return sum + (record.uptime_percentage || 100);
         }, 0) / history.length;
 
@@ -498,8 +499,8 @@ async function calculateSystemUptime(supabaseUrl: string, serviceRoleKey: string
  * Compara métricas de esta semana vs semana anterior
  */
 async function calculateWeeklyTrend(
-    thisWeekMetrics: any,
-    lastWeekMetrics: any
+    thisWeekMetrics: { executions: number; successRate: number } | null,
+    lastWeekMetrics: { executions: number; successRate: number } | null
 ): Promise<{ trend: 'up' | 'down' | 'stable', change: number }> {
     try {
         // Si no hay datos suficientes, retornar stable
@@ -563,7 +564,7 @@ async function calculateWeeklyTrend(
     }
 }
 
-async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getSystemData(supabaseUrl: string, serviceRoleKey: string) {
     const today = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
@@ -609,16 +610,16 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
 
     // Calcular métricas de esta semana
     const thisWeekMetrics = {
-        executions: weekly.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
+        executions: weekly.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.ejecuciones_totales || 0), 0),
         successRate: weekly.length > 0 ?
-            weekly.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / weekly.length : 100
+            weekly.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.disponibilidad_porcentual || 100), 0) / weekly.length : 100
     };
 
     // Calcular métricas de la semana pasada
     const lastWeekMetrics = {
-        executions: lastWeek.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
+        executions: lastWeek.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.ejecuciones_totales || 0), 0),
         successRate: lastWeek.length > 0 ?
-            lastWeek.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / lastWeek.length : 100
+            lastWeek.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.disponibilidad_porcentual || 100), 0) / lastWeek.length : 100
     };
 
     // Calcular tendencia real
@@ -626,17 +627,17 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
 
     return {
         today: {
-            executions: metrics.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
-            successRate: metrics.length > 0 ? 
-                metrics.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / metrics.length : 100,
+            executions: metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.ejecuciones_totales || 0), 0),
+            successRate: metrics.length > 0 ?
+                metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.disponibilidad_porcentual || 100), 0) / metrics.length : 100,
             avgTime: metrics.length > 0 ?
-                metrics.reduce((sum: number, m: any) => sum + (m.tiempo_promedio_ms || 0), 0) / metrics.length : 0,
-            alerts: metrics.reduce((sum: number, m: any) => sum + (m.alertas_generadas_total || 0), 0)
+                metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.tiempo_promedio_ms || 0), 0) / metrics.length : 0,
+            alerts: metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.alertas_generadas_total || 0), 0)
         },
         weekly: {
             trend: weeklyTrend.trend,
             change: weeklyTrend.change,
-            topJobs: metrics.slice(0, 5).map((m: any) => ({
+            topJobs: metrics.slice(0, 5).map((m: CronJobMetricsRow) => ({
                 id: m.job_id,
                 name: m.job_id,
                 executions: m.ejecuciones_totales || 0,
@@ -646,7 +647,7 @@ async function getSystemData(supabaseUrl: string, serviceRoleKey: string): Promi
     };
 }
 
-async function getJobsData(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getJobsData(supabaseUrl: string, serviceRoleKey: string) {
     const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_tracking?select=*&order=ultima_ejecucion.desc.nullsfirst`,
         {
@@ -663,7 +664,7 @@ async function getJobsData(supabaseUrl: string, serviceRoleKey: string): Promise
 
     const jobs = await response.json();
 
-    return jobs.map((job: any) => ({
+    return jobs.map((job: CronJobTrackingRow) => ({
         id: job.job_id,
         name: job.nombre_job,
         status: job.estado_job,
@@ -676,7 +677,7 @@ async function getJobsData(supabaseUrl: string, serviceRoleKey: string): Promise
     }));
 }
 
-async function getAlertsData(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getAlertsData(supabaseUrl: string, serviceRoleKey: string) {
     const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_alerts?select=*&order=created_at.desc&limit=50`,
         {
@@ -693,7 +694,7 @@ async function getAlertsData(supabaseUrl: string, serviceRoleKey: string): Promi
 
     const alerts = await response.json();
 
-    return alerts.map((alert: any) => ({
+    return alerts.map((alert: CronJobAlertRow) => ({
         id: alert.id,
         type: alert.tipo_alerta,
         severity: alert.severidad,
@@ -704,7 +705,7 @@ async function getAlertsData(supabaseUrl: string, serviceRoleKey: string): Promi
     }));
 }
 
-async function getHealthData(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getHealthData(supabaseUrl: string, serviceRoleKey: string) {
     try {
         const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
             method: 'GET',
@@ -735,7 +736,7 @@ async function getHealthData(supabaseUrl: string, serviceRoleKey: string): Promi
     }
 }
 
-async function getChartData(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getChartData(supabaseUrl: string, serviceRoleKey: string) {
     const executionHistory = await getExecutionHistory(supabaseUrl, serviceRoleKey);
     const alertTrends = await getAlertTrends(supabaseUrl, serviceRoleKey);
     const performanceMetrics = await getPerformanceMetrics(supabaseUrl, serviceRoleKey);
@@ -747,7 +748,7 @@ async function getChartData(supabaseUrl: string, serviceRoleKey: string): Promis
     };
 }
 
-async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
     const response = await fetchWithTimeout(
@@ -767,7 +768,7 @@ async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string):
     const executions = await response.json();
     
     // Agrupar por día
-    const grouped = executions.reduce((acc: any, execution: any) => {
+    const grouped = executions.reduce((acc: Record<string, { executions: number; successes: number; totalDuration: number }>, execution: CronJobExecutionLogRow) => {
         const date = execution.start_time.split('T')[0];
         if (!acc[date]) {
             acc[date] = { executions: 0, successes: 0, totalDuration: 0 };
@@ -778,7 +779,7 @@ async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string):
         return acc;
     }, {});
 
-    return Object.entries(grouped).map(([date, data]: [string, any]) => ({
+    return Object.entries(grouped).map(([date, data]: [string, { executions: number; successes: number; totalDuration: number }]) => ({
         timestamp: date,
         executions: data.executions,
         successRate: Math.round((data.successes / data.executions) * 100),
@@ -786,7 +787,7 @@ async function getExecutionHistory(supabaseUrl: string, serviceRoleKey: string):
     }));
 }
 
-async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string) {
     const sevenDaysAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString();
     
     const response = await fetchWithTimeout(
@@ -806,7 +807,7 @@ async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string): Prom
     const alerts = await response.json();
     
     // Agrupar por día y severidad
-    const grouped = alerts.reduce((acc: any, alert: any) => {
+    const grouped = alerts.reduce((acc: Record<string, { critical: number; high: number; medium: number; low: number }>, alert: CronJobAlertRow) => {
         const date = alert.created_at.split('T')[0];
         if (!acc[date]) {
             acc[date] = { critical: 0, high: 0, medium: 0, low: 0 };
@@ -815,13 +816,13 @@ async function getAlertTrends(supabaseUrl: string, serviceRoleKey: string): Prom
         return acc;
     }, {});
 
-    return Object.entries(grouped).map(([date, counts]: [string, any]) => ({
+    return Object.entries(grouped).map(([date, counts]: [string, { critical: number; high: number; medium: number; low: number }]) => ({
         date,
         ...counts
     }));
 }
 
-async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string) {
     const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
     
     const response = await fetchWithTimeout(
@@ -840,7 +841,7 @@ async function getPerformanceMetrics(supabaseUrl: string, serviceRoleKey: string
 
     const executions = await response.json();
     
-    return executions.map((execution: any, index: number) => ({
+    return executions.map((execution: CronJobExecutionLogRow, _index: number) => ({
         time: execution.start_time.split('T')[1]?.substring(0, 8) || '00:00:00',
         responseTime: execution.duracion_ms || null,
         memoryUsage: null,
@@ -990,7 +991,7 @@ async function getPerformanceCharts(supabaseUrl: string, serviceRoleKey: string)
 async function getJobsCharts(supabaseUrl: string, serviceRoleKey: string): Promise<ChartData[]> {
     const jobsData = await getJobsData(supabaseUrl, serviceRoleKey);
     
-    const statusCounts = jobsData.reduce((acc: any, job: any) => {
+    const statusCounts = jobsData.reduce((acc: Record<string, number>, job: { status: string }) => {
         acc[job.status] = (acc[job.status] || 0) + 1;
         return acc;
     }, {});
@@ -1022,7 +1023,7 @@ async function getJobsCharts(supabaseUrl: string, serviceRoleKey: string): Promi
 // FUNCIONES DE CONTROL DE JOBS
 // =====================================================
 
-async function pauseJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function pauseJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<JobControlResult> {
     const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
@@ -1043,7 +1044,7 @@ async function pauseJob(jobId: string, supabaseUrl: string, serviceRoleKey: stri
     return { success: true, message: `Job ${jobId} paused successfully` };
 }
 
-async function resumeJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function resumeJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<JobControlResult> {
     const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
@@ -1064,7 +1065,7 @@ async function resumeJob(jobId: string, supabaseUrl: string, serviceRoleKey: str
     return { success: true, message: `Job ${jobId} resumed successfully` };
 }
 
-async function triggerJob(jobId: string, parameters: any, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function triggerJob(jobId: string, parameters: Record<string, unknown>, supabaseUrl: string, serviceRoleKey: string): Promise<Record<string, unknown>> {
     const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-jobs-maxiconsumo`, {
         method: 'POST',
         headers: {
@@ -1085,7 +1086,7 @@ async function triggerJob(jobId: string, parameters: any, supabaseUrl: string, s
     return result;
 }
 
-async function restartJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function restartJob(jobId: string, supabaseUrl: string, serviceRoleKey: string): Promise<JobControlResult> {
     // Pausar y reanudar para "restart"
     await pauseJob(jobId, supabaseUrl, serviceRoleKey);
     await new Promise(resolve => setTimeout(resolve, 1000));
@@ -1094,7 +1095,7 @@ async function restartJob(jobId: string, supabaseUrl: string, serviceRoleKey: st
     return { success: true, message: `Job ${jobId} restarted successfully` };
 }
 
-async function updateJobConfig(jobId: string, config: any, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function updateJobConfig(jobId: string, config: Record<string, unknown>, supabaseUrl: string, serviceRoleKey: string): Promise<JobControlResult> {
     const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/cron_jobs_tracking?job_id=eq.${jobId}`, {
         method: 'PATCH',
         headers: {
@@ -1119,7 +1120,7 @@ async function updateJobConfig(jobId: string, config: any, supabaseUrl: string, 
 // FUNCIONES DE TIEMPO REAL
 // =====================================================
 
-async function getCurrentSystemStatus(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getCurrentSystemStatus(supabaseUrl: string, serviceRoleKey: string) {
     try {
         const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/status`, {
             method: 'GET',
@@ -1139,7 +1140,7 @@ async function getCurrentSystemStatus(supabaseUrl: string, serviceRoleKey: strin
     }
 }
 
-async function getActiveJobs(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getActiveJobs(supabaseUrl: string, serviceRoleKey: string) {
     const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_tracking?select=*&estado_job=eq.ejecutando&order=ultima_ejecucion.desc`,
         {
@@ -1157,7 +1158,7 @@ async function getActiveJobs(supabaseUrl: string, serviceRoleKey: string): Promi
     return await response.json();
 }
 
-async function getRecentAlerts(supabaseUrl: string, serviceRoleKey: string): Promise<any[]> {
+async function getRecentAlerts(supabaseUrl: string, serviceRoleKey: string) {
     const response = await fetchWithTimeout(
         `${supabaseUrl}/rest/v1/cron_jobs_alerts?select=*&estado_alerta=eq.activas&order=created_at.desc&limit=10`,
         {
@@ -1175,7 +1176,7 @@ async function getRecentAlerts(supabaseUrl: string, serviceRoleKey: string): Pro
     return await response.json();
 }
 
-async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string) {
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
     
     const response = await fetchWithTimeout(
@@ -1194,9 +1195,9 @@ async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string
 
     const executions = await response.json();
     const avgResponseTime = executions.length > 0 ? 
-        executions.reduce((sum: number, e: any) => sum + (e.duracion_ms || 0), 0) / executions.length : 0;
-    const successRate = executions.length > 0 ? 
-        (executions.filter((e: any) => e.estado === 'exitoso').length / executions.length) * 100 : 0;
+        executions.reduce((sum: number, e: CronJobExecutionLogRow) => sum + (e.duracion_ms || 0), 0) / executions.length : 0;
+    const successRate = executions.length > 0 ?
+        (executions.filter((e: CronJobExecutionLogRow) => e.estado === 'exitoso').length / executions.length) * 100 : 0;
 
     return {
         avgResponseTime: Math.round(avgResponseTime),
@@ -1205,7 +1206,7 @@ async function getCurrentPerformance(supabaseUrl: string, serviceRoleKey: string
     };
 }
 
-async function getHealthIndicators(supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getHealthIndicators(supabaseUrl: string, serviceRoleKey: string) {
     try {
         const response = await fetchWithTimeout(`${supabaseUrl}/functions/v1/cron-health-monitor/health-check`, {
             method: 'GET',
@@ -1229,7 +1230,7 @@ async function getHealthIndicators(supabaseUrl: string, serviceRoleKey: string):
 // FUNCIONES DE DATOS HISTÓRICOS
 // =====================================================
 
-async function getHistoricalData(period: string, jobId: string | null, supabaseUrl: string, serviceRoleKey: string): Promise<any> {
+async function getHistoricalData(period: string, jobId: string | null, supabaseUrl: string, serviceRoleKey: string) {
     const now = new Date();
     let startDate: Date;
 
@@ -1276,15 +1277,15 @@ async function getHistoricalData(period: string, jobId: string | null, supabaseU
         metrics: {
             totalExecutions: executions.length,
             successRate: executions.length > 0 ? 
-                (executions.filter((e: any) => e.estado === 'exitoso').length / executions.length) * 100 : 0,
+                (executions.filter((e: CronJobExecutionLogRow) => e.estado === 'exitoso').length / executions.length) * 100 : 0,
             avgDuration: executions.length > 0 ?
-                executions.reduce((sum: number, e: any) => sum + (e.duracion_ms || 0), 0) / executions.length : 0,
+                executions.reduce((sum: number, e: CronJobExecutionLogRow) => sum + (e.duracion_ms || 0), 0) / executions.length : 0,
             trends: calculateTrends(executions)
         }
     };
 }
 
-function calculateTrends(executions: any[]): any {
+function calculateTrends(executions: CronJobExecutionLogRow[]) {
     if (executions.length < 2) return { trend: 'insufficient_data' };
 
     const sortedExecutions = executions.sort((a, b) => 

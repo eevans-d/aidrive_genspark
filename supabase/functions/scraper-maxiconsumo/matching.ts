@@ -3,7 +3,7 @@
  * @module scraper-maxiconsumo/matching
  */
 
-import type { MatchResult, ComparacionPrecio, StructuredLog } from './types.ts';
+import type { MatchResult, ComparacionPrecio, StructuredLog, ProductoMaxiconsumo } from './types.ts';
 import { FUENTE_MAXICONSUMO } from './types.ts';
 import { createLogger } from '../_shared/logger.ts';
 
@@ -35,10 +35,10 @@ export function calculateMatchConfidence(match: MatchResult): number {
 }
 
 export async function performAdvancedMatching(
-  productosProveedor: any[], productosSistema: any[], structuredLog: StructuredLog
+  productosProveedor: ProductoMaxiconsumo[], productosSistema: Record<string, unknown>[], structuredLog: StructuredLog
 ): Promise<MatchResult[]> {
   const matches: MatchResult[] = [];
-  const skuIdx = new Map(), barcodeIdx = new Map(), nameIdx = new Map<string, any[]>();
+  const skuIdx = new Map<string, Record<string, unknown>>(), barcodeIdx = new Map<string, Record<string, unknown>>(), nameIdx = new Map<string, Record<string, unknown>[]>();
   
   for (const p of productosSistema) {
     if (p.sku) skuIdx.set(p.sku, p);
@@ -79,7 +79,7 @@ export async function performAdvancedMatching(
   return matches;
 }
 
-function performFuzzyMatching(pProv: any, productosSistema: any[]): any | null {
+function performFuzzyMatching(pProv: ProductoMaxiconsumo, productosSistema: Record<string, unknown>[]): (Record<string, unknown> & { fuzzy_score: number }) | null {
   let best = null, bestScore = 0;
   for (let i = 0; i < Math.min(100, productosSistema.length); i++) {
     const pSist = productosSistema[i];

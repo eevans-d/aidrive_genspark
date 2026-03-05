@@ -18,7 +18,7 @@ export async function getEstadoSistemaOptimizado(
     apiSecret: string | null,
     url: URL,
     corsHeaders: Record<string, string>,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     logger.info('STATUS_REQUEST', { ...requestLog });
 
@@ -150,12 +150,12 @@ export async function getEstadoSistemaOptimizado(
     }
 }
 
-function calcularProximoScrape(configuracion: any): string {
+function calcularProximoScrape(configuracion: Record<string, unknown> | null): string {
     if (!configuracion?.proxima_sincronizacion) {
         const proximo = new Date();
         proximo.setHours(proximo.getHours() + 6);
         return proximo.toISOString();
     }
 
-    return configuracion.proxima_sincronizacion;
+    return configuracion.proxima_sincronizacion as string;
 }

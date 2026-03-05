@@ -7,6 +7,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../lib/supabase';
 import { queryKeys } from '../../lib/queryClient';
 import { StockDeposito } from '../../types/database';
+import type { StockDepositoJoinedRow } from '../../types/supabase-joins';
 
 export interface StockConProducto extends StockDeposito {
         producto_nombre?: string;
@@ -34,10 +35,10 @@ async function fetchStock(): Promise<StockResult> {
 
         if (error) throw error;
 
-        const items: StockConProducto[] = (data || []).map((item: any) => ({
+        const items: StockConProducto[] = (data || []).map((item: StockDepositoJoinedRow) => ({
                 ...item,
                 producto_nombre: item.productos?.nombre,
-                producto_categoria: item.productos?.categoria,
+                producto_categoria: item.productos?.categoria ?? undefined,
         }));
 
         // Calcular alertas

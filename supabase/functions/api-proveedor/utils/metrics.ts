@@ -1,3 +1,5 @@
+import type { HealthComponentMap } from '../../_shared/types.ts';
+
 export const REQUEST_METRICS = {
     total: 0,
     success: 0,
@@ -29,7 +31,7 @@ export function calculatePerformanceScore(metrics: typeof REQUEST_METRICS): numb
     return Math.round(combinedScore);
 }
 
-export function calculateOverallHealthScore(components: any): number {
+export function calculateOverallHealthScore(components: HealthComponentMap): number {
     const weights = {
         database: 0.25,
         scraper: 0.25,
@@ -48,11 +50,11 @@ export function calculateOverallHealthScore(components: any): number {
     return Math.round(totalScore);
 }
 
-export function determineSystemStatus(score: number, components: any): { status: string; color: string } {
-    if (score >= 90 && Object.values(components).every((c: any) => c.status === 'healthy')) {
+export function determineSystemStatus(score: number, components: HealthComponentMap): { status: string; color: string } {
+    if (score >= 90 && Object.values(components).every((c) => c.status === 'healthy')) {
         return { status: 'healthy', color: 'green' };
     }
-    if (score >= 70 && !Object.values(components).some((c: any) => c.status === 'unhealthy')) {
+    if (score >= 70 && !Object.values(components).some((c) => c.status === 'unhealthy')) {
         return { status: 'degraded', color: 'yellow' };
     }
     return { status: 'unhealthy', color: 'red' };
@@ -62,7 +64,7 @@ export function calculateSystemUptime(): number {
     return Math.floor((Date.now() - (Date.now() - 3600000)) / 1000);
 }
 
-export function assessSystemHealth(checks: any): { score: number; overall: string } {
+export function assessSystemHealth(checks: HealthComponentMap): { score: number; overall: string } {
     let score = 100;
 
     if (!checks.database) score -= 30;

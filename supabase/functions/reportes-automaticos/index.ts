@@ -2,6 +2,7 @@ import { getCorsHeaders, handleCors } from '../_shared/cors.ts';
 import { createLogger } from '../_shared/logger.ts';
 import { ok, fail } from '../_shared/response.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
+import type { StockReporteRow, MovimientoReporteRow, TareaReporteRow, PrecioReporteRow, FaltanteReporteRow } from '../_shared/types.ts';
 
 /** Timeout for individual PostgREST fetches */
 const FETCH_TIMEOUT_MS = 8000;
@@ -39,7 +40,7 @@ Deno.serve(async (req) => {
             'Authorization': `Bearer ${serviceRoleKey}`,
         };
 
-        const reportData: any = {
+        const reportData: Record<string, unknown> = {
             fecha_reporte: new Date().toISOString(),
             tipo: 'diario',
         };
@@ -60,13 +61,13 @@ Deno.serve(async (req) => {
         // 1. Stock
         if (stockResult.status === 'fulfilled' && stockResult.value.ok) {
             const stock = await stockResult.value.json();
-            const stockBajo = stock.filter((s: any) => s.cantidad_actual <= s.stock_minimo);
-            const stockCritico = stock.filter((s: any) => s.cantidad_actual === 0);
+            const stockBajo = stock.filter((s: StockReporteRow) => s.cantidad_actual <= s.stock_minimo);
+            const stockCritico = stock.filter((s: StockReporteRow) => s.cantidad_actual === 0);
             reportData.stock = {
                 total_productos: stock.length,
                 productos_stock_bajo: stockBajo.length,
                 productos_criticos: stockCritico.length,
-                valor_total_inventario: stock.reduce((sum: number, s: any) => sum + (s.cantidad_actual || 0), 0)
+                valor_total_inventario: stock.reduce((sum: number, s: StockReporteRow) => sum + (s.cantidad_actual || 0), 0)
             };
         } else {
             logger.warn('REPORT_STOCK_FAILED', { reason: stockResult.status === 'rejected' ? stockResult.reason?.message : 'non-ok response' });
@@ -75,14 +76,14 @@ Deno.serve(async (req) => {
         // 2. Movimientos
         if (movResult.status === 'fulfilled' && movResult.value.ok) {
             const movimientos = await movResult.value.json();
-            const entradas = movimientos.filter((m: any) => m.tipo_movimiento === 'entrada');
-            const salidas = movimientos.filter((m: any) => m.tipo_movimiento === 'salida');
+            const entradas = movimientos.filter((m: MovimientoReporteRow) => m.tipo_movimiento === 'entrada');
+            const salidas = movimientos.filter((m: MovimientoReporteRow) => m.tipo_movimiento === 'salida');
             reportData.movimientos = {
                 total: movimientos.length,
                 entradas: entradas.length,
                 salidas: salidas.length,
-                cantidad_total_entrada: entradas.reduce((sum: number, e: any) => sum + (e.cantidad || 0), 0),
-                cantidad_total_salida: salidas.reduce((sum: number, s: any) => sum + (s.cantidad || 0), 0)
+                cantidad_total_entrada: entradas.reduce((sum: number, e: MovimientoReporteRow) => sum + (e.cantidad || 0), 0),
+                cantidad_total_salida: salidas.reduce((sum: number, s: MovimientoReporteRow) => sum + (s.cantidad || 0), 0)
             };
         } else {
             logger.warn('REPORT_MOVIMIENTOS_FAILED', { reason: movResult.status === 'rejected' ? movResult.reason?.message : 'non-ok response' });
@@ -91,9 +92,9 @@ Deno.serve(async (req) => {
         // 3. Tareas
         if (tareasResult.status === 'fulfilled' && tareasResult.value.ok) {
             const tareas = await tareasResult.value.json();
-            const pendientes = tareas.filter((t: any) => t.estado === 'pendiente');
-            const urgentes = pendientes.filter((t: any) => t.prioridad === 'urgente');
-            const vencidas = pendientes.filter((t: any) => {
+            const pendientes = tareas.filter((t: TareaReporteRow) => t.estado === 'pendiente');
+            const urgentes = pendientes.filter((t: TareaReporteRow) => t.prioridad === 'urgente');
+            const vencidas = pendientes.filter((t: TareaReporteRow) => {
                 if (!t.fecha_vencimiento) return false;
                 return new Date(t.fecha_vencimiento) < new Date();
             });
@@ -102,7 +103,7 @@ Deno.serve(async (req) => {
                 pendientes: pendientes.length,
                 urgentes: urgentes.length,
                 vencidas: vencidas.length,
-                completadas_hoy: tareas.filter((t: any) => {
+                completadas_hoy: tareas.filter((t: TareaReporteRow) => {
                     if (!t.fecha_completada) return false;
                     const fc = new Date(t.fecha_completada);
                     return fc >= hoy;
@@ -115,14 +116,14 @@ Deno.serve(async (req) => {
         // 4. Precios
         if (preciosResult.status === 'fulfilled' && preciosResult.value.ok) {
             const precios = await preciosResult.value.json();
-            const aumentos = precios.filter((p: any) => (p.cambio_porcentaje || 0) > 0);
-            const disminuciones = precios.filter((p: any) => (p.cambio_porcentaje || 0) < 0);
+            const aumentos = precios.filter((p: PrecioReporteRow) => (p.cambio_porcentaje || 0) > 0);
+            const disminuciones = precios.filter((p: PrecioReporteRow) => (p.cambio_porcentaje || 0) < 0);
             reportData.precios = {
                 total_cambios: precios.length,
                 aumentos: aumentos.length,
                 disminuciones: disminuciones.length,
                 cambio_promedio: precios.length > 0
-                    ? (precios.reduce((sum: number, p: any) => sum + (p.cambio_porcentaje || 0), 0) / precios.length).toFixed(2)
+                    ? (precios.reduce((sum: number, p: PrecioReporteRow) => sum + (p.cambio_porcentaje || 0), 0) / precios.length).toFixed(2)
                     : 0
             };
         } else {
@@ -134,7 +135,7 @@ Deno.serve(async (req) => {
             const faltantes = await faltantesResult.value.json();
             reportData.productos_faltantes = {
                 total: faltantes.length,
-                sin_asignar_proveedor: faltantes.filter((f: any) => !f.proveedor_asignado_id).length
+                sin_asignar_proveedor: faltantes.filter((f: FaltanteReporteRow) => !f.proveedor_asignado_id).length
             };
         } else {
             logger.warn('REPORT_FALTANTES_FAILED', { reason: faltantesResult.status === 'rejected' ? faltantesResult.reason?.message : 'non-ok response' });

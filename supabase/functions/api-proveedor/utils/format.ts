@@ -1,3 +1,10 @@
+interface ProductoInput {
+    stock_disponible?: number;
+    precio_actual?: number;
+    nombre?: string;
+    marca?: string;
+}
+
 export function formatTiempoTranscurrido(timestamp: string): string {
     const now = new Date();
     const time = new Date(timestamp);
@@ -23,7 +30,7 @@ export function formatUptime(seconds: number): string {
 }
 
 export function getMemoryUsage(): { used: number; total: number; limit: number } {
-    const mem = (globalThis as any).performance?.memory;
+    const mem = (globalThis as unknown as { performance?: { memory?: { usedJSHeapSize: number; totalJSHeapSize: number; jsHeapSizeLimit: number } } }).performance?.memory;
     return mem ? {
         used: Math.round(mem.usedJSHeapSize / 1024 / 1024),
         total: Math.round(mem.totalJSHeapSize / 1024 / 1024),
@@ -54,14 +61,14 @@ export function generateSearchTags(nombre: string, marca: string): string[] {
     return [...new Set(tags)].slice(0, 10);
 }
 
-export function calculateCompetitivenessScore(producto: any): number {
+export function calculateCompetitivenessScore(producto: ProductoInput): number {
     const hasStock = producto.stock_disponible > 0 ? 1 : 0;
     const priceReasonableness = producto.precio_actual > 0 ? 1 : 0;
     const hasInfo = producto.nombre && producto.marca ? 1 : 0;
     return Math.round((hasStock + priceReasonableness + hasInfo) / 3 * 100);
 }
 
-export function calculateRelevanceScore(productos: any[], searchTerm: string): number {
+export function calculateRelevanceScore(productos: ProductoInput[], searchTerm: string): number {
     if (!searchTerm) return 100;
 
     let totalScore = 0;

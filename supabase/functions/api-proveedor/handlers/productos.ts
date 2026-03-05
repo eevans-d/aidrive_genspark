@@ -13,7 +13,7 @@ export async function getProductosDisponiblesOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     const { busqueda, categoria, marca, limite, soloConStock, ordenarPor } = validateProductosParams(url);
 
@@ -47,13 +47,13 @@ export async function getProductosDisponiblesOptimizado(
         const productos = await productosResponse.value.json();
 
         const productosEnriquecidos = await Promise.allSettled(
-            productos.map(async (producto: any) => {
+            productos.map(async (producto: Record<string, unknown>) => {
                 return {
                     ...producto,
-                    precio_formateado: formatPrecio(producto.precio_actual),
-                    stock_status: producto.stock_disponible > 0 ? 'disponible' : 'agotado',
-                    categoria_slug: generateSlug(producto.categoria || ''),
-                    etiquetas_busqueda: generateSearchTags(producto.nombre, producto.marca),
+                    precio_formateado: formatPrecio(producto.precio_actual as number),
+                    stock_status: (producto.stock_disponible as number) > 0 ? 'disponible' : 'agotado',
+                    categoria_slug: generateSlug((producto.categoria as string) || ''),
+                    etiquetas_busqueda: generateSearchTags(producto.nombre as string, producto.marca as string),
                     competitiveness_score: calculateCompetitivenessScore(producto)
                 };
             })
@@ -61,9 +61,9 @@ export async function getProductosDisponiblesOptimizado(
 
         const productosFinales = productosEnriquecidos
             .filter(result => result.status === 'fulfilled')
-            .map(result => (result as PromiseFulfilledResult<any>).value);
+            .map(result => (result as PromiseFulfilledResult<unknown>).value);
 
-        const preciosValores = productosFinales.map((p: any) => p.precio_actual).filter((v: any) => typeof v === 'number');
+        const preciosValores = productosFinales.map((p: Record<string, unknown>) => p.precio_actual).filter((v: unknown) => typeof v === 'number');
         const rangoPrecios = preciosValores.length > 0
             ? {
                 min: Math.min(...preciosValores),
@@ -74,8 +74,8 @@ export async function getProductosDisponiblesOptimizado(
 
         const estadisticas = {
             total_productos: productosFinales.length,
-            productos_con_stock: productosFinales.filter((p: any) => p.stock_disponible > 0).length,
-            marcas_unicas: [...new Set(productosFinales.map((p: any) => p.marca).filter(Boolean))].length,
+            productos_con_stock: productosFinales.filter((p: Record<string, unknown>) => (p.stock_disponible as number) > 0).length,
+            marcas_unicas: [...new Set(productosFinales.map((p: Record<string, unknown>) => p.marca).filter(Boolean))].length,
             categorias_disponibles: statsResponse.status === 'fulfilled' ? statsResponse.value : [],
             facetas_busqueda: facetasResponse.status === 'fulfilled' ? facetasResponse.value : {},
             rango_precios: rangoPrecios
@@ -164,13 +164,14 @@ async function obtenerEstadisticasCategoriasOptimizado(
     }
 
     const data = await response.json();
-    const stats = data.reduce((acc: any, item: any) => {
-        acc[item.categoria] = acc[item.categoria] || { total: 0, stock: 0, precio_promedio: 0 };
-        acc[item.categoria].total++;
-        acc[item.categoria].stock += item.stock_disponible || 0;
-        acc[item.categoria].precio_promedio += item.precio_actual;
+    const stats = data.reduce((acc: Record<string, { total: number; stock: number; precio_promedio: number }>, item: Record<string, unknown>) => {
+        const cat = item.categoria as string;
+        acc[cat] = acc[cat] || { total: 0, stock: 0, precio_promedio: 0 };
+        acc[cat].total++;
+        acc[cat].stock += (item.stock_disponible as number) || 0;
+        acc[cat].precio_promedio += item.precio_actual as number;
         return acc;
-    }, {} as Record<string, any>);
+    }, {} as Record<string, { total: number; stock: number; precio_promedio: number }>);
 
     Object.keys(stats).forEach(key => {
         stats[key].precio_promedio = stats[key].precio_promedio / stats[key].total;
@@ -193,8 +194,8 @@ async function obtenerFacetasProductos(
     }
 
     const data = await response.json();
-    const marcas = [...new Set(data.map((item: any) => item.marca).filter(Boolean))];
-    const categorias = [...new Set(data.map((item: any) => item.categoria).filter(Boolean))];
+    const marcas = [...new Set(data.map((item: Record<string, unknown>) => item.marca).filter(Boolean))];
+    const categorias = [...new Set(data.map((item: Record<string, unknown>) => item.categoria).filter(Boolean))];
 
     return {
         marcas,

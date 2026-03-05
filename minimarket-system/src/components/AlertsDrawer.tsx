@@ -464,7 +464,7 @@ export default function AlertsDrawer({ isOpen, onClose }: AlertsDrawerProps) {
     setApplyingStockId(stockId)
     try {
       const res = await ofertasApi.aplicar({ stock_id: stockId, descuento_pct: 30 })
-      const status = typeof (res as any)?.status === 'string' ? String((res as any).status) : ''
+      const status = typeof res?.status === 'string' ? String(res.status) : ''
       toast.success(status === 'existing' ? 'Oferta ya estaba activa' : 'Oferta aplicada (30% OFF)')
       navigator.vibrate?.(30)
       qc.invalidateQueries({ queryKey: ['alertas', 'ofertas-sugeridas'] })

@@ -13,7 +13,7 @@ export async function getPreciosActualesOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     const { categoria, limite, offset, activo } = validatePreciosParams(url);
 
@@ -41,22 +41,22 @@ export async function getPreciosActualesOptimizado(
         const estadisticas = statsResult.status === 'fulfilled' ? statsResult.value : {};
 
         const productosConStats = await Promise.allSettled(
-            productos.map(async (producto: any) => {
+            productos.map(async (producto: Record<string, unknown>) => {
                 return {
                     ...producto,
                     tendencias: producto.precio_anterior ? {
-                        cambio_absoluto: producto.precio_actual - producto.precio_anterior,
-                        cambio_porcentual: ((producto.precio_actual - producto.precio_anterior) / producto.precio_anterior * 100).toFixed(2),
-                        direccion: producto.precio_actual > producto.precio_anterior ? 'subida' : 'bajada'
+                        cambio_absoluto: (producto.precio_actual as number) - (producto.precio_anterior as number),
+                        cambio_porcentual: (((producto.precio_actual as number) - (producto.precio_anterior as number)) / (producto.precio_anterior as number) * 100).toFixed(2),
+                        direccion: (producto.precio_actual as number) > (producto.precio_anterior as number) ? 'subida' : 'bajada'
                     } : null,
-                    ultima_actualizacion_humanizada: formatTiempoTranscurrido(producto.ultima_actualizacion)
+                    ultima_actualizacion_humanizada: formatTiempoTranscurrido(producto.ultima_actualizacion as string)
                 };
             })
         );
 
         const productosFinales = productosConStats
             .filter(result => result.status === 'fulfilled')
-            .map(result => (result as PromiseFulfilledResult<any>).value);
+            .map(result => (result as PromiseFulfilledResult<unknown>).value);
 
         const data = {
             productos: productosFinales,
@@ -153,7 +153,7 @@ async function buildPreciosStatsQuery(
     supabaseReadHeaders: Record<string, string>,
     categoria: string,
     activo: string
-): Promise<any> {
+): Promise<Record<string, unknown>> {
     const query = `${supabaseUrl}/rest/v1/precios_proveedor?select=precio_actual,stock_disponible,categoria&fuente=eq.Maxiconsumo Necochea&activo=eq.true${categoria !== 'todos' ? `&categoria=eq.${encodeURIComponent(categoria)}` : ''}`;
 
     const res = await fetchWithTimeout(query, {
@@ -165,14 +165,14 @@ async function buildPreciosStatsQuery(
     }
 
     const data = await res.json();
-    const precios = data.map((item: any) => item.precio_actual);
-    const totalStock = data.reduce((sum: number, item: any) => sum + (item.stock_disponible || 0), 0);
+    const precios = data.map((item: Record<string, unknown>) => item.precio_actual);
+    const totalStock = data.reduce((sum: number, item: Record<string, unknown>) => sum + ((item.stock_disponible as number) || 0), 0);
 
     return {
         precio_promedio: precios.length > 0 ? precios.reduce((a: number, b: number) => a + b, 0) / precios.length : 0,
         precio_minimo: precios.length > 0 ? Math.min(...precios) : 0,
         precio_maximo: precios.length > 0 ? Math.max(...precios) : 0,
         total_stock_disponible: totalStock,
-        productos_con_stock: data.filter((item: any) => item.stock_disponible > 0).length
+        productos_con_stock: data.filter((item: Record<string, unknown>) => (item.stock_disponible as number) > 0).length
     };
 }

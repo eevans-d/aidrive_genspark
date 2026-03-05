@@ -611,6 +611,7 @@ function LabelPrintView({
     ;(async () => {
       try {
         const mod = await import('jsbarcode')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const JsBarcode = (mod as any).default ?? mod
         if (cancelled) return
         if (svgRef.current) {

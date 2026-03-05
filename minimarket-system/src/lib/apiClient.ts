@@ -283,8 +283,8 @@ export interface TareaResponse {
         id: string;
         titulo: string;
         descripcion?: string;
-        estado: string;
-        prioridad: string;
+        estado: 'pendiente' | 'completada' | 'cancelada';
+        prioridad: 'baja' | 'normal' | 'urgente';
         asignada_a_nombre?: string;
         fecha_vencimiento?: string;
         created_at: string;
@@ -874,7 +874,10 @@ export type AplicarOfertaParams = {
         descuento_pct?: number;
 };
 
-export type AplicarOfertaResponse = Record<string, unknown>;
+export interface AplicarOfertaResponse {
+        status?: string;
+        [key: string]: unknown;
+}
 
 export const ofertasApi = {
         async sugeridas(): Promise<OfertaSugeridaItem[]> {

@@ -77,7 +77,7 @@ interface TestResult {
     status: 'passed' | 'failed' | 'skipped' | 'timeout';
     duration: number;
     error?: string;
-    details?: any;
+    details?: Record<string, unknown>;
     coverage?: number;
 }
 
@@ -944,7 +944,7 @@ class CronJobsTestSuite {
                     const rateLimited = results.filter(r => 
                         r.status === 'fulfilled' && 
                         r.value.ok &&
-                        r.value.json().then((data: any) => !data.success && data.data?.status === 'rate_limited')
+                        r.value.json().then((data: { success?: boolean; data?: { status?: string } }) => !data.success && data.data?.status === 'rate_limited')
                     ).length;
 
                     logger.info('RATE_LIMIT_TEST', { successful, rateLimited });
@@ -1064,8 +1064,8 @@ class CronJobsTestSuite {
                     // Verificar que los circuit breakers están en estado inicial correcto
                     const breakers = data.data.circuitBreakers;
                     for (const [jobId, breaker] of Object.entries(breakers)) {
-                        if (!['closed', 'open', 'half_open'].includes((breaker as any).state)) {
-                            throw new Error(`Invalid circuit breaker state for ${jobId}: ${(breaker as any).state}`);
+                        if (!['closed', 'open', 'half_open'].includes((breaker as { state: string }).state)) {
+                            throw new Error(`Invalid circuit breaker state for ${jobId}: ${(breaker as { state: string }).state}`);
                         }
                     }
 
@@ -1188,7 +1188,7 @@ class CronJobsTestSuite {
                     const rateLimited = results.filter(r => 
                         r.status === 'fulfilled' && 
                         r.value.ok &&
-                        r.value.json().then((data: any) => 
+                        r.value.json().then((data: { success?: boolean; data?: { result?: { rateLimited?: number } } }) =>
                             !data.success && data.data?.result?.rateLimited > 0
                         )
                     ).length;
@@ -1351,7 +1351,7 @@ interface TestReport {
  */
 export async function runCompleteTestSuite(): Promise<TestReport> {
     const config: TestConfig = {
-        environment: (Deno.env.get('TEST_ENVIRONMENT') as any) || 'development',
+        environment: (Deno.env.get('TEST_ENVIRONMENT') as TestConfig['environment']) || 'development',
         baseUrl: resolveSupabaseBaseUrl(),
         timeout: 30000,
         retries: 2,

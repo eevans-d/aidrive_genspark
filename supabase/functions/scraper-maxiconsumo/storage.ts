@@ -28,8 +28,8 @@ async function supabaseFetch(url: string, key: string, options: RequestInit = {}
   });
 }
 
-export async function bulkCheckExistingProducts(skus: string[], supabaseUrl: string, key: string): Promise<any[]> {
-  const results: any[] = [];
+export async function bulkCheckExistingProducts(skus: string[], supabaseUrl: string, key: string): Promise<Array<{ sku: string; id: string }>> {
+  const results: Array<{ sku: string; id: string }> = [];
   for (const chunk of splitIntoBatches(skus, 100)) {
     try {
       const q = `${supabaseUrl}/rest/v1/precios_proveedor?select=sku,id&sku=in.(${chunk.map(s => `"${s}"`).join(',')})`;
@@ -174,8 +174,8 @@ export async function batchSaveAlerts(alertas: AlertaCambio[], supabaseUrl: stri
 }
 
 // Fetch helpers
-export async function fetchProductosProveedor(supabaseUrl: string, key: string): Promise<any[]> {
-  const productos: any[] = [];
+export async function fetchProductosProveedor(supabaseUrl: string, key: string): Promise<Array<Record<string, unknown>>> {
+  const productos: Array<Record<string, unknown>> = [];
   let offset = 0;
   while (true) {
     const res = await supabaseFetch(`${supabaseUrl}/rest/v1/precios_proveedor?select=*&fuente=eq.${encodeURIComponent(FUENTE_MAXICONSUMO)}&activo=eq.true&limit=500&offset=${offset}&order=sku.asc`, key);
@@ -188,8 +188,8 @@ export async function fetchProductosProveedor(supabaseUrl: string, key: string):
   return productos;
 }
 
-export async function fetchProductosSistema(supabaseUrl: string, key: string): Promise<any[]> {
-  const productos: any[] = [];
+export async function fetchProductosSistema(supabaseUrl: string, key: string): Promise<Array<Record<string, unknown>>> {
+  const productos: Array<Record<string, unknown>> = [];
   let offset = 0;
   while (true) {
     const res = await supabaseFetch(`${supabaseUrl}/rest/v1/productos?select=*&activo=eq.true&limit=500&offset=${offset}&order=nombre.asc`, key);

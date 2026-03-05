@@ -1,4 +1,4 @@
-export async function fetchWithRetry(url: string, options: any, maxRetries: number, baseDelay: number, timeoutMs = 10000): Promise<Response> {
+export async function fetchWithRetry(url: string, options: RequestInit, maxRetries: number, baseDelay: number, timeoutMs = 10000): Promise<Response> {
     let lastError: Error;
 
     for (let i = 0; i <= maxRetries; i++) {
@@ -31,7 +31,7 @@ function isRetryableStatusCode(status: number): boolean {
     return status >= 500 || status === 429;
 }
 
-export async function fetchWithTimeout(url: string, options: any, timeoutMs: number): Promise<Response> {
+export async function fetchWithTimeout(url: string, options: RequestInit, timeoutMs: number): Promise<Response> {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 

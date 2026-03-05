@@ -1,3 +1,4 @@
+import type { OportunidadAhorroRow } from '../../_shared/types.ts';
 import { validateComparacionParams } from '../validators.ts';
 import {
     assessMarketRisk,
@@ -23,7 +24,7 @@ export async function getComparacionConSistemaOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     const { soloOportunidades, minDiferencia, limite, orden, incluirAnalisis } = validateComparacionParams(url);
 
@@ -60,7 +61,7 @@ export async function getComparacionConSistemaOptimizado(
         const estadisticas = calcularEstadisticasComparacionOptimizado(oportunidades);
 
         const oportunidadesScored = await Promise.allSettled(
-            oportunidades.map(async (opp: any) => ({
+            oportunidades.map(async (opp: OportunidadAhorroRow) => ({
                 ...opp,
                 score_oportunidad: calculateOpportunityScore(opp),
                 riesgo_mercado: assessMarketRisk(opp),
@@ -75,7 +76,7 @@ export async function getComparacionConSistemaOptimizado(
 
         const oportunidadesFinales = oportunidadesScored
             .filter((result) => result.status === 'fulfilled')
-            .map((result) => (result as PromiseFulfilledResult<any>).value);
+            .map((result) => (result as PromiseFulfilledResult<unknown>).value);
 
         const data = {
             oportunidades: oportunidadesFinales,

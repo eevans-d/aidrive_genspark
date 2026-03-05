@@ -6,6 +6,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { supabase } from '../../lib/supabase'
 import { queryKeys } from '../../lib/queryClient'
+import type { FaltanteWithProveedor } from '../../types/supabase-joins'
 
 export interface FaltanteRow {
   id: string
@@ -108,7 +109,7 @@ async function fetchFaltantes(options: UseFaltantesOptions = {}): Promise<Faltan
 
   if (error) throw error
 
-  const faltantes: FaltanteRow[] = (data || []).map((row: any) => ({
+  const faltantes: FaltanteRow[] = (data || []).map((row: FaltanteWithProveedor) => ({
     ...row,
     proveedor_nombre: row.proveedores?.nombre ?? null,
     proveedores: undefined,
@@ -161,7 +162,7 @@ export function useFaltantesByProveedor() {
 
       if (error) throw error
 
-      const rows: FaltanteRow[] = (data || []).map((row: any) => ({
+      const rows: FaltanteRow[] = (data || []).map((row: FaltanteWithProveedor) => ({
         ...row,
         proveedor_nombre: row.proveedores?.nombre ?? null,
         proveedores: undefined,

@@ -1,3 +1,4 @@
+import type { AlertaVistaRow } from '../../_shared/types.ts';
 import { validateAlertasParams } from '../validators.ts';
 import { formatTiempoTranscurrido } from '../utils/format.ts';
 import {
@@ -25,7 +26,7 @@ export async function getAlertasActivasOptimizado(
     url: URL,
     corsHeaders: Record<string, string>,
     isAuthenticated: boolean,
-    requestLog: any
+    requestLog: Record<string, unknown>
 ): Promise<Response> {
     const { severidad, tipo, limite, soloNoProcesadas, incluirAnalisis } = validateAlertasParams(url);
 
@@ -59,7 +60,7 @@ export async function getAlertasActivasOptimizado(
         const [patterns, trends, riskScores] = analisisResults ?? [];
 
         const alertasEnriquecidas = await Promise.allSettled(
-            alertas.map(async (alerta: any) => ({
+            alertas.map(async (alerta: AlertaVistaRow) => ({
                 ...alerta,
                 impacto_estimado: calculateAlertImpact(alerta),
                 recomendaciones: generateAlertRecommendations(alerta),
@@ -72,21 +73,21 @@ export async function getAlertasActivasOptimizado(
 
         const alertasFinales = alertasEnriquecidas
             .filter((result) => result.status === 'fulfilled')
-            .map((result) => (result as PromiseFulfilledResult<any>).value);
+            .map((result) => (result as PromiseFulfilledResult<unknown>).value);
 
         const estadisticas = {
             total_alertas: alertasFinales.length,
-            criticas: alertasFinales.filter((a: any) => a.severidad === 'critica').length,
-            altas: alertasFinales.filter((a: any) => a.severidad === 'alta').length,
-            medias: alertasFinales.filter((a: any) => a.severidad === 'media').length,
-            bajas: alertasFinales.filter((a: any) => a.severidad === 'baja').length,
-            aumentos: alertasFinales.filter((a: any) => a.tipo_cambio === 'aumento').length,
-            disminuciones: alertasFinales.filter((a: any) => a.tipo_cambio === 'disminucion').length,
-            nuevos_productos: alertasFinales.filter((a: any) => a.tipo_cambio === 'nuevo_producto').length,
+            criticas: alertasFinales.filter((a: Record<string, unknown>) => a.severidad === 'critica').length,
+            altas: alertasFinales.filter((a: Record<string, unknown>) => a.severidad === 'alta').length,
+            medias: alertasFinales.filter((a: Record<string, unknown>) => a.severidad === 'media').length,
+            bajas: alertasFinales.filter((a: Record<string, unknown>) => a.severidad === 'baja').length,
+            aumentos: alertasFinales.filter((a: Record<string, unknown>) => a.tipo_cambio === 'aumento').length,
+            disminuciones: alertasFinales.filter((a: Record<string, unknown>) => a.tipo_cambio === 'disminucion').length,
+            nuevos_productos: alertasFinales.filter((a: Record<string, unknown>) => a.tipo_cambio === 'nuevo_producto').length,
             promedio_impacto:
-                alertasFinales.reduce((sum: number, a: any) => sum + (a.impacto_estimado || 0), 0) /
+                alertasFinales.reduce((sum: number, a: Record<string, unknown>) => sum + ((a.impacto_estimado as number) || 0), 0) /
                 Math.max(alertasFinales.length, 1),
-            alertas_requieren_accion: alertasFinales.filter((a: any) => a.action_required).length
+            alertas_requieren_accion: alertasFinales.filter((a: Record<string, unknown>) => a.action_required).length
         };
 
         const data = {

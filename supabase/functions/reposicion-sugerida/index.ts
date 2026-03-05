@@ -144,7 +144,7 @@ Deno.serve(async (req: Request) => {
     const sugerencias: SugerenciaReposicion[] = []
     
     stockData?.forEach(stock => {
-      const producto = stock.productos as any
+      const producto = stock.productos as { nombre: string; codigo_barras: string | null; proveedores: { id: string; nombre: string } | null } | null
       if (!producto) return
 
       const stockActual = stock.cantidad_actual || 0

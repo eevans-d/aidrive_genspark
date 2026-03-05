@@ -1,3 +1,5 @@
+import type { OportunidadAhorroRow } from '../../_shared/types.ts';
+
 export function buildComparacionQuery(soloOportunidades: boolean, minDiferencia: number, orden: string, limite: number): string {
     let query = `${Deno.env.get('SUPABASE_URL')}/rest/v1/vista_oportunidades_ahorro?select=*`;
 
@@ -25,7 +27,7 @@ export function buildComparacionQuery(soloOportunidades: boolean, minDiferencia:
     return `${query}&limit=${limite}`;
 }
 
-export function calcularEstadisticasComparacionOptimizado(oportunidades: any[]) {
+export function calcularEstadisticasComparacionOptimizado(oportunidades: OportunidadAhorroRow[]) {
     if (oportunidades.length === 0) {
         return {
             total_oportunidades: 0,
@@ -57,7 +59,7 @@ export function calcularEstadisticasComparacionOptimizado(oportunidades: any[]) 
     };
 }
 
-export function calculateOpportunityScore(oportunidad: any): number {
+export function calculateOpportunityScore(oportunidad: OportunidadAhorroRow): number {
     const weightDifference = Math.abs(oportunidad.diferencia_porcentual) * 0.4;
     const stockScore = oportunidad.stock_disponible > 0 ? 30 : 0;
     const recencyScore = oportunidad.ultima_actualizacion ? 20 : 0;
@@ -66,7 +68,7 @@ export function calculateOpportunityScore(oportunidad: any): number {
     return Math.min(100, weightDifference + stockScore + recencyScore + stabilityScore);
 }
 
-export function assessMarketRisk(oportunidad: any): string {
+export function assessMarketRisk(oportunidad: OportunidadAhorroRow): string {
     const priceVolatility = Math.abs(oportunidad.diferencia_porcentual);
     const stockRisk = oportunidad.stock_disponible < 5 ? 'alto' : oportunidad.stock_disponible < 20 ? 'medio' : 'bajo';
 
@@ -75,7 +77,7 @@ export function assessMarketRisk(oportunidad: any): string {
     return 'bajo';
 }
 
-export function determinePurchaseUrgency(oportunidad: any): string {
+export function determinePurchaseUrgency(oportunidad: OportunidadAhorroRow): string {
     const daysSinceUpdate = oportunidad.ultima_actualizacion
         ? Math.floor((Date.now() - new Date(oportunidad.ultima_actualizacion).getTime()) / (1000 * 60 * 60 * 24))
         : 999;
@@ -86,7 +88,7 @@ export function determinePurchaseUrgency(oportunidad: any): string {
     return 'baja';
 }
 
-export function generateBusinessInsights(oportunidades: any[]): any {
+export function generateBusinessInsights(oportunidades: OportunidadAhorroRow[]) {
     const insights = [];
 
     if (oportunidades.length > 10) {
@@ -109,7 +111,7 @@ export function generateBusinessInsights(oportunidades: any[]): any {
     return insights;
 }
 
-export async function calculateMarketTrends(_oportunidades: any[]): Promise<any> {
+export async function calculateMarketTrends(_oportunidades: OportunidadAhorroRow[]) {
     return {
         trending_categories: ['Bebidas', 'Lácteos', 'Carnes'],
         price_movement: 'mixed',
@@ -118,10 +120,10 @@ export async function calculateMarketTrends(_oportunidades: any[]): Promise<any>
     };
 }
 
-export async function identifyProductPatterns(oportunidades: any[]): Promise<any> {
+export async function identifyProductPatterns(oportunidades: OportunidadAhorroRow[]) {
     const patterns = {
         high_opportunity_categories: [] as Array<{ categoria: string; oportunidades: number }>,
-        seasonal_trends: null as any,
+        seasonal_trends: null as unknown,
         competitor_behavior: 'stable'
     };
 
@@ -139,7 +141,7 @@ export async function identifyProductPatterns(oportunidades: any[]): Promise<any
     return patterns;
 }
 
-export async function generateRecommendations(_oportunidades: any[]): Promise<any> {
+export async function generateRecommendations(_oportunidades: OportunidadAhorroRow[]) {
     return {
         immediate_actions: [
             'Priorizar productos con mayor diferencia de precio',
@@ -156,7 +158,7 @@ export async function generateRecommendations(_oportunidades: any[]): Promise<an
     };
 }
 
-export function analyzeOpportunityTrends(oportunidades: any[]): any {
+export function analyzeOpportunityTrends(oportunidades: OportunidadAhorroRow[]) {
     const trends = {
         growth_rate: 0,
         volatility: 0,
@@ -178,8 +180,8 @@ export function analyzeOpportunityTrends(oportunidades: any[]): any {
     return trends;
 }
 
-export function identifyOpportunityClusters(oportunidades: any[]): any[] {
-    const clusters = [] as any[];
+export function identifyOpportunityClusters(oportunidades: OportunidadAhorroRow[]) {
+    const clusters: { categoria: string; tamaño: number; valor_promedio: number; variacion_precio: number }[] = [];
     const categorias = [...new Set(oportunidades.map((o) => o.categoria))];
 
     categorias.forEach((categoria) => {
@@ -198,7 +200,7 @@ export function identifyOpportunityClusters(oportunidades: any[]): any[] {
     return clusters;
 }
 
-export function calculateSavingsDistribution(oportunidades: any[]): any {
+export function calculateSavingsDistribution(oportunidades: OportunidadAhorroRow[]) {
     const ranges = [
         { min: 0, max: 10, count: 0, label: '$0-$10' },
         { min: 10, max: 50, count: 0, label: '$10-$50' },

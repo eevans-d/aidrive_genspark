@@ -8,6 +8,10 @@ import {
     ESTADISTICAS_GRANULARIDADES
 } from './utils/constants.ts';
 
+function includesValue<T extends readonly string[]>(arr: T, value: string): value is T[number] {
+  return (arr as readonly string[]).includes(value);
+}
+
 export type PreciosParams = {
     categoria: string;
     limite: number;
@@ -44,7 +48,7 @@ export function validateProductosParams(url: URL): ProductosParams {
     const limite = Number.isNaN(limiteRaw) ? 100 : Math.min(Math.max(limiteRaw, 1), 1000);
     const soloConStock = url.searchParams.get('solo_con_stock') === 'true';
     const ordenarPorRaw = url.searchParams.get('ordenar_por') || 'nombre_asc';
-    const ordenarPor = PRODUCT_ORDER_FIELDS.includes(ordenarPorRaw as any) ? ordenarPorRaw : 'nombre_asc';
+    const ordenarPor = includesValue(PRODUCT_ORDER_FIELDS, ordenarPorRaw) ? ordenarPorRaw : 'nombre_asc';
 
     return { busqueda, categoria, marca, limite, soloConStock, ordenarPor };
 }
@@ -64,7 +68,7 @@ export function validateComparacionParams(url: URL): ComparacionParams {
     const limiteRaw = parseInt(url.searchParams.get('limit') || '50', 10);
     const limite = Number.isNaN(limiteRaw) ? 50 : Math.min(Math.max(limiteRaw, 1), 500);
     const ordenRaw = url.searchParams.get('orden') || 'diferencia_absoluta_desc';
-    const orden = COMPARACION_ORDER_FIELDS.includes(ordenRaw as any) ? ordenRaw : 'diferencia_absoluta_desc';
+    const orden = includesValue(COMPARACION_ORDER_FIELDS, ordenRaw) ? ordenRaw : 'diferencia_absoluta_desc';
     const incluirAnalisis = url.searchParams.get('incluir_analisis') === 'true';
 
     return { soloOportunidades, minDiferencia, limite, orden, incluirAnalisis };
@@ -80,7 +84,7 @@ export function validateSincronizacionParams(url: URL): SincronizacionParams {
     const categoria = sanitizeSearchInput(url.searchParams.get('categoria') || 'todos');
     const forceFull = url.searchParams.get('force_full') === 'true';
     const priorityRaw = url.searchParams.get('priority') || 'normal';
-    const priority = SINCRONIZACION_PRIORIDADES.includes(priorityRaw as any) ? priorityRaw : 'normal';
+    const priority = includesValue(SINCRONIZACION_PRIORIDADES, priorityRaw) ? priorityRaw : 'normal';
 
     return { categoria, forceFull, priority };
 }
@@ -95,9 +99,9 @@ export type AlertasParams = {
 
 export function validateAlertasParams(url: URL): AlertasParams {
     const severidadRaw = url.searchParams.get('severidad') || 'todos';
-    const severidad = ALERTA_SEVERIDADES.includes(severidadRaw as any) ? severidadRaw : 'todos';
+    const severidad = includesValue(ALERTA_SEVERIDADES, severidadRaw) ? severidadRaw : 'todos';
     const tipoRaw = url.searchParams.get('tipo') || 'todos';
-    const tipo = ALERTA_TIPOS.includes(tipoRaw as any) ? tipoRaw : 'todos';
+    const tipo = includesValue(ALERTA_TIPOS, tipoRaw) ? tipoRaw : 'todos';
     const limiteRaw = parseInt(url.searchParams.get('limit') || '20', 10);
     const limite = Number.isNaN(limiteRaw) ? 20 : Math.min(Math.max(limiteRaw, 1), 100);
     const soloNoProcesadas = url.searchParams.get('solo_no_procesadas') !== 'false';
@@ -118,7 +122,7 @@ export function validateEstadisticasParams(url: URL): EstadisticasParams {
     const dias = Math.min(Math.max(Number.isNaN(diasRaw) ? 7 : diasRaw, 1), 90);
     const categoria = sanitizeSearchInput(url.searchParams.get('categoria') || '');
     const granularidadRaw = url.searchParams.get('granularidad') || 'dia';
-    const granularidad = ESTADISTICAS_GRANULARIDADES.includes(granularidadRaw as any) ? granularidadRaw : 'dia';
+    const granularidad = includesValue(ESTADISTICAS_GRANULARIDADES, granularidadRaw) ? granularidadRaw : 'dia';
     const incluirPredicciones = url.searchParams.get('incluir_predicciones') === 'true';
 
     return { dias, categoria, granularidad, incluirPredicciones };

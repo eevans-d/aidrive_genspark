@@ -131,7 +131,7 @@ export async function executeWeeklyAnalysis(
       total_cambios: totalChanges,
       promedio_cambio: avgChange.toFixed(2),
       alertas_semana: alerts.length,
-      alertas_criticas: alerts.filter((a: any) => a.severidad === 'critica').length
+      alertas_criticas: alerts.filter((a: AlertRow) => a.severidad === 'critica').length
     };
 
     logger.info('TRENDS_CALCULATED', { ...jobLog, trends });

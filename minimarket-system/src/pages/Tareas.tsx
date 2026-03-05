@@ -96,8 +96,8 @@ export default function Tareas() {
           id: server.id,
           titulo: server.titulo,
           descripcion: server.descripcion ?? null,
-          estado: (server.estado as any) ?? 'pendiente',
-          prioridad: (server.prioridad as any) ?? 'normal',
+          estado: server.estado ?? 'pendiente',
+          prioridad: server.prioridad ?? 'normal',
           asignada_a_nombre: server.asignada_a_nombre ?? null,
           fecha_vencimiento: server.fecha_vencimiento ?? null,
           fecha_creacion: server.created_at ?? now,
@@ -162,7 +162,7 @@ export default function Tareas() {
           t.id === id
             ? {
               ...t,
-              estado: (server.estado as any) ?? 'completada',
+              estado: server.estado ?? 'completada',
             }
             : t,
         )
@@ -327,7 +327,7 @@ export default function Tareas() {
                 <select
                   id="prioridad"
                   value={formData.prioridad}
-                  onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as any })}
+                  onChange={(e) => setFormData({ ...formData, prioridad: e.target.value as TareaPendiente['prioridad'] })}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="baja">Baja</option>

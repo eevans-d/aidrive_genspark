@@ -4,6 +4,7 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
+import type { KardexJoinedRow } from '../../types/supabase-joins';
 import { supabase } from '../../lib/supabase';
 import { MovimientoDeposito } from '../../types/database';
 
@@ -57,7 +58,7 @@ export async function fetchKardex(options: UseKardexOptions = {}): Promise<Karde
 
         if (error) throw error;
 
-        const movimientos: KardexMovimiento[] = (data || []).map((item: any) => ({
+        const movimientos: KardexMovimiento[] = (data || []).map((item: KardexJoinedRow) => ({
                 ...item,
                 producto_nombre: item.productos?.nombre,
                 proveedor_nombre: item.proveedores?.nombre,

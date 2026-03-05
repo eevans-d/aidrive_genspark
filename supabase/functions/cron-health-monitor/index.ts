@@ -18,6 +18,7 @@
 import { createLogger } from '../_shared/logger.ts';
 import { getCorsHeaders } from '../_shared/cors.ts';
 import { requireServiceRoleAuth } from '../_shared/internal-auth.ts';
+import type { CronJobMetricsRow } from '../_shared/types.ts';
 
 const logger = createLogger('cron-health-monitor');
 // =====================================================
@@ -28,7 +29,7 @@ interface HealthCheckResult {
     component: string;
     status: 'healthy' | 'degraded' | 'critical';
     responseTime: number;
-    details: any;
+    details: Record<string, unknown>;
     timestamp: string;
 }
 
@@ -60,7 +61,7 @@ interface MonitoringMetrics {
 interface RecoveryAction {
     type: 'restart_job' | 'clear_cache' | 'reset_circuit_breaker' | 'cleanup_db' | 'escalate_alert';
     target: string;
-    parameters: any;
+    parameters: Record<string, unknown>;
     timestamp: string;
     status: 'pending' | 'executing' | 'completed' | 'failed';
 }
@@ -320,7 +321,7 @@ async function checkMemoryHealth(): Promise<HealthCheckResult> {
             usedMB: Math.round(memoryUsage.used / 1024 / 1024),
             totalMB: Math.round(memoryUsage.total / 1024 / 1024),
             percentage: Math.round(memoryUsage.percentage),
-            gcRuns: (globalThis as any).gcRuns || 0
+            gcRuns: (globalThis as unknown as { gcRuns?: number }).gcRuns || 0
         },
         timestamp: new Date().toISOString()
     };
@@ -371,9 +372,9 @@ async function checkJobsHealth(
             responseTime: Date.now() - startTime,
             details: {
                 totalJobs: jobs.length,
-                activeJobs: jobs.filter((j: any) => j.estado_job === 'ejecutando').length,
-                successfulJobs: jobs.filter((j: any) => j.estado_job === 'exitoso').length,
-                failedJobs: jobs.filter((j: any) => j.estado_job === 'fallido').length,
+                activeJobs: jobs.filter((j: { estado_job?: string }) => j.estado_job === 'ejecutando').length,
+                successfulJobs: jobs.filter((j: { estado_job?: string }) => j.estado_job === 'exitoso').length,
+                failedJobs: jobs.filter((j: { estado_job?: string }) => j.estado_job === 'fallido').length,
                 recentSuccessRate: Math.round(successRate),
                 recentFailures,
                 lastExecution: jobs.length > 0 ? jobs[0].ultima_ejecucion : null
@@ -418,8 +419,8 @@ async function checkAlertsHealth(
         );
 
         const alerts = alertsResponse.ok ? await alertsResponse.json() : [];
-        const criticalAlerts = alerts.filter((a: any) => a.severidad === 'critica').length;
-        const oldAlerts = alerts.filter((a: any) => 
+        const criticalAlerts = alerts.filter((a: { severidad?: string; created_at: string; fecha_resolucion?: string }) => a.severidad === 'critica').length;
+        const oldAlerts = alerts.filter((a: { severidad?: string; created_at: string; fecha_resolucion?: string }) =>
             new Date(a.created_at) < new Date(Date.now() - 2 * 60 * 60 * 1000)
         ).length;
 
@@ -433,8 +434,8 @@ async function checkAlertsHealth(
             details: {
                 totalActiveAlerts: alerts.length,
                 criticalAlerts,
-                mediumAlerts: alerts.filter((a: any) => a.severidad === 'media').length,
-                lowAlerts: alerts.filter((a: any) => a.severidad === 'baja').length,
+                mediumAlerts: alerts.filter((a: { severidad?: string; created_at: string; fecha_resolucion?: string }) => a.severidad === 'media').length,
+                lowAlerts: alerts.filter((a: { severidad?: string; created_at: string; fecha_resolucion?: string }) => a.severidad === 'baja').length,
                 oldAlerts,
                 averageResolutionTime: calculateAverageResolutionTime(alerts)
             },
@@ -492,8 +493,8 @@ async function checkPerformanceMetrics(
             };
         }
 
-        const totalUptime = metrics.reduce((sum: number, m: any) => sum + (m.disponibilidad_porcentual || 100), 0) / metrics.length;
-        const totalSuccessRate = metrics.reduce((sum: number, m: any) => sum + (m.uptime_porcentaje || 100), 0) / metrics.length;
+        const totalUptime = metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.disponibilidad_porcentual || 100), 0) / metrics.length;
+        const totalSuccessRate = metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.uptime_porcentaje || 100), 0) / metrics.length;
 
         const status = totalUptime > 95 && totalSuccessRate > 90 ? 'healthy' :
                       totalUptime > 80 ? 'degraded' : 'critical';
@@ -505,8 +506,8 @@ async function checkPerformanceMetrics(
             details: {
                 uptime: Math.round(totalUptime),
                 successRate: Math.round(totalSuccessRate),
-                jobsExecuted: metrics.reduce((sum: number, m: any) => sum + (m.ejecuciones_totales || 0), 0),
-                avgExecutionTime: metrics.reduce((sum: number, m: any) => sum + (m.tiempo_promedio_ms || 0), 0) / metrics.length
+                jobsExecuted: metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.ejecuciones_totales || 0), 0),
+                avgExecutionTime: metrics.reduce((sum: number, m: CronJobMetricsRow) => sum + (m.tiempo_promedio_ms || 0), 0) / metrics.length
             },
             timestamp: new Date().toISOString()
         };
@@ -905,7 +906,7 @@ async function getSystemStatus(
 // FUNCIONES DE UTILIDAD
 // =====================================================
 
-function calculateTrends(data: MonitoringMetrics[]): any {
+function calculateTrends(data: MonitoringMetrics[]) {
     if (data.length < 2) return { trend: 'insufficient_data' };
 
     const recent = data.slice(-6); // Last 30 minutes
@@ -924,7 +925,7 @@ function calculateTrends(data: MonitoringMetrics[]): any {
 async function getDatabasePerformanceMetrics(
     supabaseUrl: string,
     serviceRoleKey: string
-): Promise<any> {
+): Promise<{ healthy: boolean; score: number; recentQueries: number }> {
     try {
         // Obtener tiempo promedio de queries recientes
         const recentQueriesResponse = await fetch(
@@ -943,7 +944,7 @@ async function getDatabasePerformanceMetrics(
 
         const queries = await recentQueriesResponse.json();
         const avgTime = queries.length > 0 ? 
-            queries.reduce((sum: number, q: any) => sum + (q.duracion_ms || 0), 0) / queries.length : 0;
+            queries.reduce((sum: number, q: { duracion_ms?: number }) => sum + (q.duracion_ms || 0), 0) / queries.length : 0;
 
         return {
             healthy: avgTime < 2000,
@@ -956,7 +957,7 @@ async function getDatabasePerformanceMetrics(
     }
 }
 
-function calculateAverageResolutionTime(alerts: any[]): number {
+function calculateAverageResolutionTime(alerts: Array<{ fecha_resolucion?: string; created_at: string }>): number {
     const resolvedAlerts = alerts.filter(a => a.fecha_resolucion);
     if (resolvedAlerts.length === 0) return 0;
 
