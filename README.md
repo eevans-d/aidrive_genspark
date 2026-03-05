@@ -2,12 +2,12 @@
 
 Sistema de gestion para mini markets con frontend React + backend Supabase (Edge Functions + PostgreSQL).
 
-## Estado actual (2026-03-03)
-- Veredicto global: `LISTO PARA PRODUCCION` (Tier 1 6/6 DONE, Tier 2 10/12 DONE)
+## Estado actual (2026-03-05)
+- Veredicto global: `LISTO PARA PRODUCCION` (Tier 1 6/6 DONE, Tier 2 12/12 DONE)
 - Modulo OCR de facturas: `ESTABLE — backlog tecnico 10/10 cerrado` (GCV bloqueado externamente)
-- Asistente IA: `Sprint 2 completado` (read-only + acciones con confirmacion)
-- Tests unitarios: `1905/1905 PASS` (85 archivos)
-- Migraciones SQL: `56` (4 pendientes de aplicar)
+- Asistente IA: `Sprint 3 completado` (7 read-only + 4 write con confirmacion + auditoria persistente)
+- Tests unitarios: `1945/1945 PASS` (86 archivos)
+- Migraciones SQL: `57` (0 pendientes)
 - Edge Functions desplegadas: `16/16 ACTIVE`
 
 ## Fuentes canónicas

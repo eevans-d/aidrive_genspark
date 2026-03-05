@@ -109,9 +109,9 @@ supabase_constraints:
 
 quality_metrics:
   coverage_target: 80
-  coverage_current: 69.39
-  coverage_date: "2026-02-11"
-  test_files_total: 71
+  coverage_current: 90.06
+  coverage_date: "2026-03-05"
+  test_files_total: 86
   error_message_pages: "9/13"
   skeleton_pages: "5/13"
   skills_total: 22
