@@ -884,7 +884,7 @@ Deno.serve(async (req: Request) => {
 
   // Health check
   if (path === '/health' && method === 'GET') {
-    return ok({ status: 'ok', version: '2.0.0-sprint2' }, 200, responseHeaders, { requestId });
+    return ok({ status: 'ok', version: '3.0.0-sprint3' }, 200, responseHeaders, { requestId });
   }
 
   if (method !== 'POST' || (path !== '/message' && path !== '/confirm')) {

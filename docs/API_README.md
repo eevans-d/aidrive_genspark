@@ -717,4 +717,133 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
+## api-assistant — Asistente IA (Sprint 3)
+
+Edge function independiente con auth JWT propio. Solo accesible para usuarios con rol `admin`.
+
+### Endpoints
+
+| Metodo | Ruta | Descripcion |
+|--------|------|-------------|
+| GET | `/health` | Health check (sin auth) |
+| POST | `/message` | Procesar mensaje del usuario |
+| POST | `/confirm` | Confirmar accion write pendiente |
+
+### Auth y Rate Limiting
+
+- **Auth:** Header `Authorization: Bearer <JWT>`. Se valida contra Supabase Auth API. Solo rol `admin`.
+- **Rate limit:** 30 req/min por usuario. Headers `RateLimit-Limit`, `RateLimit-Remaining`, `RateLimit-Reset` en cada respuesta.
+
+### POST /message
+
+**Request:**
+```json
+{
+  "message": "string (2-500 chars, requerido)",
+  "context": {
+    "ui_route": "string (opcional)",
+    "timezone": "string (opcional, ej: America/Argentina/Buenos_Aires)"
+  }
+}
+```
+
+**Modos de respuesta:**
+
+| Modo | Cuando | Descripcion |
+|------|--------|-------------|
+| `answer` | Intents read-only exitosos | Respuesta directa con datos |
+| `clarify` | Mensaje ambiguo o parametros faltantes | Pide aclaracion con sugerencias |
+| `plan` | Intents write detectados | Presenta plan para confirmar via `/confirm` |
+
+**Respuesta modo `answer` (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "intent": "consultar_stock_bajo",
+    "confidence": 0.90,
+    "mode": "answer",
+    "answer": "Hay 5 productos con stock bajo...",
+    "data": [...],
+    "request_id": "uuid",
+    "navigation": [{"label": "Ver stock", "path": "/stock"}]
+  }
+}
+```
+
+**Respuesta modo `plan` (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "intent": "crear_tarea",
+    "confidence": 0.90,
+    "mode": "plan",
+    "answer": "Voy a crear la tarea...",
+    "confirm_token": "uuid (expira en 120s, uso unico)",
+    "action_plan": {
+      "intent": "crear_tarea",
+      "label": "Crear tarea",
+      "payload": {"titulo": "...", "prioridad": "normal"},
+      "summary": "Crear tarea \"Revisar stock\" con prioridad normal",
+      "risk": "bajo"
+    }
+  }
+}
+```
+
+### POST /confirm
+
+**Request:**
+```json
+{
+  "confirm_token": "string (UUID del /message, requerido)"
+}
+```
+
+**Respuesta (200):**
+```json
+{
+  "success": true,
+  "data": {
+    "executed": true,
+    "operation": "crear_tarea",
+    "answer": "Tarea creada exitosamente",
+    "result": {...},
+    "request_id": "uuid"
+  }
+}
+```
+
+**Errores de confirmacion (400):**
+- Token no encontrado (`NOT_FOUND`)
+- Token expirado despues de 120s (`EXPIRED`)
+- Token de otro usuario (`USER_MISMATCH`)
+
+### Intents soportados
+
+**Read (7):** `consultar_stock_bajo`, `consultar_pedidos_pendientes`, `consultar_resumen_cc`, `consultar_ventas_dia`, `consultar_estado_ocr_facturas`, `saludo`, `ayuda`
+
+**Write (4) — requieren plan/confirm:**
+
+| Intent | Keywords | Parametros extraidos | Risk |
+|--------|----------|---------------------|------|
+| `crear_tarea` | "crear tarea", "nueva tarea" | titulo, prioridad | bajo |
+| `registrar_pago_cc` | "registrar pago", "cobrar" | monto, cliente_nombre | medio |
+| `actualizar_estado_pedido` | "cambiar pedido", "marcar listo" | numero_pedido, nuevo_estado | medio/alto |
+| `aplicar_factura` | "aplicar factura" | factura_numero (opcional) | alto |
+
+### Codigos de error comunes
+
+| HTTP | Codigo | Causa |
+|------|--------|-------|
+| 400 | `BAD_REQUEST` | JSON invalido, mensaje < 2 chars |
+| 401 | `UNAUTHORIZED` | JWT faltante o expirado |
+| 403 | `FORBIDDEN` | Rol no es admin |
+| 429 | `RATE_LIMITED` | > 30 req/min |
+| 502 | `QUERY_ERROR` | Fallo en consulta a PostgREST |
+| 502 | `EXECUTION_ERROR` | Fallo al ejecutar accion write |
+
+---
+
 *Última actualización: 2026-03-05*
