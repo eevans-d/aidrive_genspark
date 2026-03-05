@@ -2,7 +2,7 @@
 
 - Fecha (UTC): `2026-02-28 12:07:04`
 - Repo: `.`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-28_120548.md`
+- Baseline log (safe): `docs/closure/archive/historical/BASELINE_LOG_2026-02-28_120548.md`
 
 ## 1. RECURSOS DEL PROYECTO
 

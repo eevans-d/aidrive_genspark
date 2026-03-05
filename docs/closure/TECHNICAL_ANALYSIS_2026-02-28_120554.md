@@ -4,7 +4,7 @@
 - Repo: `.`
 - Branch: `main`
 - Commit: `f0a9c7350d36092632cc13e4fbbf43a6cae9b450`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-02-28_120548.md`
+- Baseline log (safe): `docs/closure/archive/historical/BASELINE_LOG_2026-02-28_120548.md`
 
 ## 1. ARQUITECTURA Y ESTRUCTURA DEL PROYECTO
 

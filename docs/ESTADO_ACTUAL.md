@@ -1,14 +1,15 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-05 (Verificacion de consistencia documental — Claude Code)
+**Ultima actualizacion:** 2026-03-05 (Verificacion post-commit `3bc9ebc` + sincronizacion DocuGuard — Codex)
 **Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED, RC-01/D1/D2 RESUELTOS`
 **Estado del Asistente IA:** `SPRINT 3 COMPLETADO — 4 intents write con plan→confirm, auditoria persistente en BD`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
+- **Hardening de tipado TypeScript (2026-03-05, commit `3bc9ebc`):** eliminados ~249 `any` explicitos en codigo de produccion (45 archivos en commit, 2 archivos de tipos nuevos). `@typescript-eslint/no-explicit-any` quedo en `warn` para prevenir regresiones. Verificacion Codex: **1945/1945 PASS** (suite raiz), **249/249 PASS** (frontend), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks + 1 `KEEP` de interop `JsBarcode`).
 - **Ejecucion de 15 tareas (T01-T15, 2026-03-04):** sesion de Claude Code Executor completo. 14/15 tareas DONE, 1 BLOCKED_EXTERNAL (T01: GCV API Key — requiere accion del owner). Highlights: lock de concurrencia OCR (T02), transaccionalidad OCR (T03), mutex OCR (T04), idempotencia 2 endpoints (T05-T06), errores visibles frontend (T07-T08), hard cap reportes (T09), migraciones aplicadas (T10), DATA_HANDLING_POLICY (T11), performance baseline v2 (T12), nightly gates CI (T13), asistente IA Sprint 3 — 2 nuevos intents write (T14-T15), auditoria persistente en BD (T15). Tests: **1945/1945 PASS**, build OK, lint 0 errors. Evidencia: `docs/closure/execution-logs/T01..T15_*.md`.
-- **Plan de ejecucion para Claude Code (2026-03-04):** se genero artefacto operativo con 15 tareas complejas, subtareas y micro-pasos, incluyendo regla obligatoria de auto-continuidad: si una tarea queda `BLOCKED_EXTERNAL`, se documenta evidencia y se continua inmediatamente con `Tn+1` sin esperar aprobacion manual. Referencia: `docs/closure/CONTEXT_PROMPT_CLAUDE_CODE_15_TAREAS_2026-03-04_044540.md`.
+- **Plan de ejecucion para Claude Code (2026-03-04):** se genero artefacto operativo con 15 tareas complejas, subtareas y micro-pasos, incluyendo regla obligatoria de auto-continuidad: si una tarea queda `BLOCKED_EXTERNAL`, se documenta evidencia y se continua inmediatamente con `Tn+1` sin esperar aprobacion manual. Referencia: `docs/closure/archive/historical/CONTEXT_PROMPT_CLAUDE_CODE_15_TAREAS_2026-03-04_044540.md`.
 - **Verificacion operativa + UXFixOps (2026-03-04):** `RealityCheck` + `DocuGuard` + `UXFixOps/TestMaster` ejecutados. HC-1/HC-2/HC-3 sin hallazgos criticos. Fricciones P1 cerradas en alcance corregido: estado vacio accionable en `Productos`, feedback de exito en mutaciones de `Pedidos`, y test de `Dashboard` estabilizado. Metadata operativa sincronizada: `.agent/skills/project_config.yaml` actualizado a `functions_deployed: 16`.
 - **Verificacion integral (2026-03-03):** tests 1905/1905 PASS, build OK, lint 0, 16/16 edge functions ACTIVE. Tier 2 avanzado a 10/12: audit trail expansion (6 handlers), atomic margin validation (SP FOR UPDATE), OCR rollback verificado completo, CORS verificado seguro.
 - **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
@@ -16,10 +17,10 @@
 - **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
-## 2) Estado tecnico verificado (sesion 2026-03-04 T01-T15)
+## 2) Estado tecnico verificado (sesion 2026-03-05, post `3bc9ebc`)
 - Tests unitarios completos: **1945/1945 PASS** (86 archivos, post audit fixes).
 - Build produccion: **OK** (30 chunks PWA, 0 errores).
-- Lint: **0 errores, 0 warnings**.
+- Lint: **0 errores, 72 warnings** (esperado: warnings de `no-explicit-any` en tests/mocks; produccion sin `any` explicitos salvo 1 `KEEP` documentado).
 - Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v41, api-assistant v3, facturas-ocr v12).
 - Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
 - Quality Gates ejecutados 3 veces durante sesion (post T07-T09, T10-T12, T13-T15) — todos PASS.
@@ -124,7 +125,7 @@ El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completad
 - Auditoria persistente: nueva tabla `asistente_audit_log` (migracion `20260304010000`) con RLS por usuario, indices por usuario+fecha e intent+fecha. `insertAuditLog()` llamada en ambos paths del /confirm handler (success + error). Non-blocking: failures de audit no afectan flujo.
 - Parser extendido a 11 intents (7 read + 4 write), 10 suggestions.
 - Help text y "no intent" message actualizados con las 4 acciones disponibles.
-- Tests: **1945/1945 PASS** (86 files), build OK, lint 0 errors/warnings.
+- Tests: **1945/1945 PASS** (86 files), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks tras activar `no-explicit-any: warn`).
 
 ### No implementado (Sprint 4+)
 - Expansion de roles (deposito, ventas).

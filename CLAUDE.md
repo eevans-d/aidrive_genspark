@@ -2,6 +2,10 @@
 
 > **AUTO-CARGA:** Este archivo es leido automaticamente por Claude Code al iniciar sesion. Define el sistema agentico completo.
 
+## Preferencias del usuario
+
+- **Idioma de respuesta:** SIEMPRE responder en **espanol**. Toda comunicacion, explicacion, comentario y plan debe estar en espanol.
+
 ## Proyecto
 
 Mini Market System - Sistema de gestion de inventario, ventas, tareas y proveedores.
