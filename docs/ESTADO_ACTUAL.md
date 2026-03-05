@@ -79,7 +79,7 @@
 ## 6) Nota operativa
 El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completados. El backlog OCR tecnico esta 10/10 tareas completadas. Los 9 hallazgos MEDIUM de la auditoria profunda estan todos resueltos (0 abiertos). GCV es prerequisito externo unico para validacion funcional end-to-end del modulo OCR. El asistente IA esta en Sprint 3 con 4 acciones write y auditoria persistente en BD. Migracion `20260304010000` aplicada. Edge functions deployadas: api-assistant v3, api-minimarket v41, facturas-ocr v12.
 
-## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 (read + write con confirmacion)
+## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 + Sprint 3 (read + write con confirmacion + auditoria persistente)
 
 ### Implementado (Sprint 1 → 1.3)
 - Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 7 intent handlers read-only.

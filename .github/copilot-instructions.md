@@ -90,7 +90,7 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 - API Gateway: `api-minimarket/index.ts` → routing por path/method + roles
 - Nota: `api-minimarket` se despliega con `--no-verify-jwt`
 
-### Base de Datos (38 tablas)
+### Base de Datos (45 tablas)
 - Schema completo: `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
 - Tablas core: `categorias`, `productos`, `proveedores`, `stock_deposito`, `movimientos_deposito`
 - Tablas POS/ventas: `clientes`, `ventas`, `venta_items`, `cuentas_corrientes_movimientos`
@@ -106,7 +106,7 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 | Pendientes | `docs/closure/OPEN_ISSUES.md` |
 | Decisiones | `docs/DECISION_LOG.md` |
 | API endpoints | `docs/API_README.md` |
-| Schema BD (38 tablas) | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
+| Schema BD (45 tablas) | `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` |
 | OpenAPI spec | `docs/api-openapi-3.1.yaml` |
 | Arquitectura | `docs/ARCHITECTURE_DOCUMENTATION.md` |
 | Deploy | `docs/DEPLOYMENT_GUIDE.md` |
@@ -132,7 +132,7 @@ node scripts/metrics.mjs             # Regenerar METRICS.md
 - Frontend component tests: 249 passing (48 archivos)
 - E2E tests: 4 passing
 - Integration tests: 68 passing
-- Coverage: 88.52% stmts / 80.16% branch / 92.32% funcs / 89.88% lines
+- Coverage: 90.06% stmts (target minimo: 80%)
 - Coverage mínimo: 80%
 
 ### CI/CD

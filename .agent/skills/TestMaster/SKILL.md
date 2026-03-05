@@ -104,14 +104,14 @@ Seleccionar comando segun necesidad:
 
 - [ ] Exit code 0.
 - [ ] 100% tests passed.
-- [ ] Coverage >= 80% (codigo nuevo). **Nota:** cobertura actual del proyecto es ~69.39%, por debajo del target de 80%.
+- [ ] Coverage >= 80% (codigo nuevo). **Nota:** cobertura actual del proyecto es ~90.06%, por encima del target de 80%.
 - [ ] Sin tests deshabilitados/skipped sin justificacion.
 - [ ] Legacy test suites integradas en CI (verificar que no hay suites orphans).
 
 ## Audit-Discovered Patterns
 
 ### Coverage Gap Awareness
-La auditoria detecto coverage de 69.39% < 80% target. Al ejecutar tests:
+La cobertura actual es 90.06% > 80% target. El proyecto supera el umbral minimo. Al ejecutar tests:
 1. Reportar coverage actual vs target.
 2. Listar los 5 archivos con menor cobertura.
 3. No bloquear por coverage < 80% (generar WARNING, no FAIL).

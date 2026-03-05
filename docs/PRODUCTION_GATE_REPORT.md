@@ -1,5 +1,6 @@
 # Production Gate Report
 **Fecha:** 2026-03-01 06:02 UTC | **Score:** 100.00/100 | **Veredicto:** GO
+**Nota:** Snapshot historico de 2026-03-01. Estado actual: 1945 tests (86 archivos), 57 migraciones, 45 tablas. Ver `docs/ESTADO_ACTUAL.md`.
 
 ## Gates
 

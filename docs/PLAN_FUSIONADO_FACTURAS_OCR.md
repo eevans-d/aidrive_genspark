@@ -29,13 +29,13 @@ Excluye:
 - `minimarket-system/src/hooks/queries/useFacturas.ts`: 139 lineas.
 
 ### 3.2 Base de datos y runtime
-- Migraciones SQL: 52 (`supabase/migrations/*.sql`).
-- Edge Functions desplegables en repo: 15 (excluye `_shared`).
+- Migraciones SQL: 57 (`supabase/migrations/*.sql`).
+- Edge Functions desplegables en repo: 16 (excluye `_shared`).
 - Estados de `facturas_ingesta`: `pendiente|extraida|validada|aplicada|error|rechazada`.
 - Estados de `facturas_ingesta_items`: `auto_match|alias_match|fuzzy_pendiente|confirmada|rechazada`.
 
 ### 3.3 Tests
-- Suite unitaria completa ejecutada en esta sesion: **1733/1733 PASS** (81 archivos).
+- Suite unitaria completa ejecutada: **1945/1945 PASS** (86 archivos).
 
 ## 4) Hallazgos confirmados contra codigo
 

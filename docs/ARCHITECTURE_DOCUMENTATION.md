@@ -8,13 +8,12 @@
 > - Issues abiertos: `docs/closure/OPEN_ISSUES.md`
 > - Decisiones: `docs/DECISION_LOG.md`
 >
-> **Estado real del sistema (resumen, 2026-03-01):**
-> - 16 Edge Functions en repo (`api-minimarket`, `api-proveedor`, `api-assistant`, `facturas-ocr`, `scraper-maxiconsumo`, 11 cron/auxiliares).
-> - 15 funciones ACTIVE en produccion (api-assistant pendiente de deploy).
-> - 18 paginas frontend (React/Vite/TS), 18 rutas, 52 migraciones SQL.
-> - Tests: 1850 unit, 68 integration, 242 component, 17 contract — ALL PASS.
-> - Sprint 1 Asistente IA implementado (read-only, admin only).
-> - Veredicto: GO INCONDICIONAL.
+> **Estado real del sistema (resumen, 2026-03-05):**
+> - 16 Edge Functions en repo y en produccion (`api-minimarket` v41, `api-assistant` v3, `facturas-ocr` v12, `scraper-maxiconsumo`, 12 cron/auxiliares).
+> - 57 migraciones SQL (45 tablas, 11 vistas, 3 MV).
+> - Tests: 1945/1945 PASS (86 archivos), coverage 90.06%.
+> - Asistente IA Sprint 3 COMPLETADO (7 read + 4 write intents, auditoria persistente).
+> - Veredicto: LISTO PARA PRODUCCION (Tier 1 6/6, Tier 2 12/12).
 
 # ARCHITECTURE DOCUMENTATION - SISTEMA MINI MARKET SPRINT 6
 ## Documentación Técnica de Arquitectura Nivel Empresa (HISTORICA)

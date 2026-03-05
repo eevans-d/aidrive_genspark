@@ -1,4 +1,4 @@
-> [ACTIVO_VERIFICADO: 2026-02-21] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
+> [ACTIVO_VERIFICADO: 2026-03-05] Documento activo. Revisado contra baseline actual y mantenido como referencia operativa.
 
 # Mini Market API - Guía Rápida de Uso
 
@@ -304,7 +304,7 @@ Inventario verificado en repo (16 funciones excluyendo `_shared`; 14 independien
 |---|---|---|
 | `alertas-stock` | `requireServiceRoleAuth` | Alertas de stock bajo |
 | `alertas-vencimientos` | `requireServiceRoleAuth` | Alertas de vencimientos |
-| `api-assistant` | JWT usuario (validación interna via Auth API) | Asistente IA operativo (Sprint 1: solo lectura) |
+| `api-assistant` | JWT usuario (validación interna via Auth API) | Asistente IA (Sprint 3: 7 read + 4 write intents, plan/confirm flow, audit log) |
 | `backfill-faltantes-recordatorios` | `requireServiceRoleAuth` | Backfill diario idempotente de recordatorios para faltantes críticos |
 | `cron-dashboard` | `requireServiceRoleAuth` | Métricas/estado de cron jobs |
 | `cron-health-monitor` | `requireServiceRoleAuth` | Health checks de cron |
@@ -717,4 +717,4 @@ const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`
 
 ---
 
-*Última actualización: 2026-03-01*
+*Última actualización: 2026-03-05*
