@@ -3,7 +3,9 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
 import Asistente from './Asistente'
 import { assistantApi } from '../lib/assistantApi'
-import type { AssistantResponseData } from '../lib/assistantApi'
+import type { AssistantMessage, AssistantResponseData } from '../lib/assistantApi'
+
+const CHAT_STORAGE_KEY = 'assistant_chat_history_v1'
 
 vi.mock('../lib/assistantApi', () => ({
   assistantApi: {
@@ -12,7 +14,11 @@ vi.mock('../lib/assistantApi', () => ({
   },
 }))
 
-function renderAsistente() {
+function renderAsistente(options?: { storedMessages?: AssistantMessage[] }) {
+  if (options?.storedMessages) {
+    localStorage.setItem(CHAT_STORAGE_KEY, JSON.stringify(options.storedMessages))
+  }
+
   return render(
     <MemoryRouter initialEntries={['/asistente']}>
       <Asistente />
@@ -47,14 +53,33 @@ describe('Asistente', () => {
 
   it('renders quick prompts and handles loading + response with navigation', async () => {
     let resolveRequest!: (value: AssistantResponseData) => void
-    sendMessageMock.mockImplementation(
-      () =>
-        new Promise<AssistantResponseData>((resolve) => {
-          resolveRequest = resolve
+    sendMessageMock
+      .mockResolvedValueOnce(
+        baseResponse({
+          intent: 'briefing',
+          answer: 'Estado del negocio listo.',
+          data: { stock_bajo: 2 },
+          request_id: 'req-briefing',
         }),
-    )
+      )
+      .mockImplementationOnce(
+        () =>
+          new Promise<AssistantResponseData>((resolve) => {
+            resolveRequest = resolve
+          }),
+      )
 
     renderAsistente()
+
+    expect(await screen.findByText('Estado del negocio listo.')).toBeInTheDocument()
+    expect(sendMessageMock).toHaveBeenNthCalledWith(
+      1,
+      'briefing',
+      expect.objectContaining({
+        ui_route: '/asistente',
+        timezone: expect.any(String),
+      }),
+    )
 
     fireEvent.change(screen.getByPlaceholderText(/Ej:/i), {
       target: { value: 'stock bajo' },
@@ -62,7 +87,8 @@ describe('Asistente', () => {
     fireEvent.click(screen.getByTitle('Enviar'))
 
     expect(await screen.findByText('Consultando...')).toBeInTheDocument()
-    expect(sendMessageMock).toHaveBeenCalledWith(
+    expect(sendMessageMock).toHaveBeenNthCalledWith(
+      2,
       'stock bajo',
       expect.objectContaining({
         ui_route: '/asistente',
@@ -85,7 +111,15 @@ describe('Asistente', () => {
       .mockRejectedValueOnce(new Error('Fallo de red'))
       .mockResolvedValueOnce(baseResponse({ answer: 'Reintento exitoso.' }))
 
-    renderAsistente()
+    renderAsistente({
+      storedMessages: [
+        {
+          role: 'assistant',
+          content: 'Chat listo',
+          timestamp: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+    })
 
     fireEvent.change(screen.getByPlaceholderText(/Ej:/i), {
       target: { value: 'ventas del dia' },
@@ -105,27 +139,25 @@ describe('Asistente', () => {
   })
 
   it('loads stored chat and resets it with "Nuevo chat"', async () => {
-    localStorage.setItem(
-      'assistant_chat_history_v1',
-      JSON.stringify([
+    renderAsistente({
+      storedMessages: [
         {
           role: 'assistant',
           content: 'Mensaje persistido',
           timestamp: '2026-03-01T00:00:00.000Z',
         },
-      ]),
-    )
-
-    renderAsistente()
+      ],
+    })
 
     expect(screen.getByText('Mensaje persistido')).toBeInTheDocument()
+    expect(sendMessageMock).not.toHaveBeenCalled()
 
     fireEvent.click(screen.getByRole('button', { name: 'Nuevo chat' }))
 
     expect(await screen.findByText(/Hola! Soy el asistente operativo/i)).toBeInTheDocument()
 
     await waitFor(() => {
-      const raw = localStorage.getItem('assistant_chat_history_v1')
+      const raw = localStorage.getItem(CHAT_STORAGE_KEY)
       expect(raw).toBeTruthy()
       expect(raw).toContain('Hola! Soy el asistente operativo')
     })
@@ -152,7 +184,15 @@ describe('Asistente', () => {
       }),
     )
 
-    renderAsistente()
+    renderAsistente({
+      storedMessages: [
+        {
+          role: 'assistant',
+          content: 'Chat listo',
+          timestamp: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+    })
 
     fireEvent.change(screen.getByPlaceholderText(/Ej:/i), {
       target: { value: 'crear tarea comprar harina' },
@@ -193,7 +233,15 @@ describe('Asistente', () => {
       request_id: 'req-2',
     })
 
-    renderAsistente()
+    renderAsistente({
+      storedMessages: [
+        {
+          role: 'assistant',
+          content: 'Chat listo',
+          timestamp: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+    })
 
     fireEvent.change(screen.getByPlaceholderText(/Ej:/i), {
       target: { value: 'crear tarea test' },
@@ -224,7 +272,15 @@ describe('Asistente', () => {
       }),
     )
 
-    renderAsistente()
+    renderAsistente({
+      storedMessages: [
+        {
+          role: 'assistant',
+          content: 'Chat listo',
+          timestamp: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+    })
 
     fireEvent.change(screen.getByPlaceholderText(/Ej:/i), {
       target: { value: 'registrar pago' },
@@ -240,7 +296,15 @@ describe('Asistente', () => {
   })
 
   it('shows quick prompts for creating tasks and registering payments', () => {
-    renderAsistente()
+    renderAsistente({
+      storedMessages: [
+        {
+          role: 'assistant',
+          content: 'Chat listo',
+          timestamp: '2026-03-01T00:00:00.000Z',
+        },
+      ],
+    })
 
     expect(screen.getByRole('button', { name: /Crear tarea/i })).toBeInTheDocument()
     expect(screen.getByRole('button', { name: /Registrar pago/i })).toBeInTheDocument()

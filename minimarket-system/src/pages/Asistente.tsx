@@ -59,11 +59,12 @@ const RISK_COLORS: Record<string, string> = {
 
 const CHAT_STORAGE_KEY = 'assistant_chat_history_v1'
 const MAX_STORED_MESSAGES = 80
+const WELCOME_MESSAGE_CONTENT = 'Hola! Soy el asistente operativo. Puedo consultar informacion del negocio: stock, pedidos, cuentas corrientes, ventas y facturas.\n\nEscribi tu consulta o usa los accesos rapidos de abajo.'
 
 function createWelcomeMessage(): AssistantMessage {
   return {
     role: 'assistant',
-    content: 'Hola! Soy el asistente operativo. Puedo consultar informacion del negocio: stock, pedidos, cuentas corrientes, ventas y facturas.\n\nEscribi tu consulta o usa los accesos rapidos de abajo.',
+    content: WELCOME_MESSAGE_CONTENT,
     timestamp: new Date().toISOString(),
   }
 }
@@ -92,15 +93,56 @@ function loadStoredMessages(): AssistantMessage[] | null {
   }
 }
 
+function loadInitialChatState(): { messages: AssistantMessage[]; fromStorage: boolean } {
+  const stored = loadStoredMessages()
+
+  if (stored) {
+    return { messages: stored, fromStorage: true }
+  }
+
+  return { messages: [createWelcomeMessage()], fromStorage: false }
+}
+
+type StockBajoItem = {
+  nombre?: string
+  producto_nombre?: string
+  cantidad_actual?: number | string | null
+  stock_minimo?: number | string | null
+}
+
+type PedidoPendienteItem = {
+  numero_pedido?: number | string
+  cliente_nombre?: string
+  monto_total?: number | string | null
+  estado?: string
+}
+
+type VentasDiaData = {
+  ventas?: unknown
+  total?: number | string | null
+  count?: number | string | null
+}
+
+type ResumenCuentaCorrienteData = {
+  dinero_en_la_calle?: number | string | null
+  clientes_con_deuda?: number | string | null
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null
+}
+
 // M4: Data Renderer Component
-function DataRenderer({ intent, data }: { intent: string; data: any }) {
-  if (!data) return null;
+function DataRenderer({ intent, data }: { intent: string; data: unknown }) {
+  if (data == null) return null
 
   if (intent === 'consultar_stock_bajo' && Array.isArray(data)) {
+    const items = data as StockBajoItem[]
+
     return (
       <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
         <ul className="divide-y divide-gray-200 dark:divide-gray-700">
-          {data.slice(0, 5).map((p: any, i: number) => (
+          {items.slice(0, 5).map((p, i) => (
             <li key={i} className="flex justify-between items-center p-3 text-sm">
               <span className="font-medium text-gray-900 dark:text-gray-100">{p.nombre || p.producto_nombre}</span>
               <div className="flex items-center gap-2">
@@ -112,15 +154,17 @@ function DataRenderer({ intent, data }: { intent: string; data: any }) {
             </li>
           ))}
         </ul>
-        {data.length > 5 && <div className="p-2 text-center text-xs text-gray-500">...y {data.length - 5} más</div>}
+        {items.length > 5 && <div className="p-2 text-center text-xs text-gray-500">...y {items.length - 5} más</div>}
       </div>
-    );
+    )
   }
 
   if (intent === 'consultar_pedidos_pendientes' && Array.isArray(data)) {
+    const items = data as PedidoPendienteItem[]
+
     return (
       <div className="mt-3 space-y-2">
-        {data.slice(0, 5).map((p: any, i: number) => (
+        {items.slice(0, 5).map((p, i) => (
           <div key={i} className="flex flex-col p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
             <div className="flex justify-between items-start">
               <span className="font-semibold text-gray-900 dark:text-gray-100">#{p.numero_pedido} — {p.cliente_nombre}</span>
@@ -131,36 +175,41 @@ function DataRenderer({ intent, data }: { intent: string; data: any }) {
             </span>
           </div>
         ))}
-        {data.length > 5 && <div className="text-center text-xs text-gray-500">...y {data.length - 5} más</div>}
+        {items.length > 5 && <div className="text-center text-xs text-gray-500">...y {items.length - 5} más</div>}
       </div>
-    );
+    )
   }
 
-  if (intent === 'consultar_ventas_dia' && data.ventas) {
+  if (intent === 'consultar_ventas_dia' && isRecord(data) && 'ventas' in data) {
+    const ventasData = data as VentasDiaData
+
     return (
       <div className="mt-3 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30">
         <p className="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Total Facturado</p>
-        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(data.total || 0).toLocaleString('es-AR')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{data.count} ventas registradas hoy</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(ventasData.total || 0).toLocaleString('es-AR')}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{ventasData.count} ventas registradas hoy</p>
       </div>
-    );
+    )
   }
 
-  if (intent === 'consultar_resumen_cc') {
+  if (intent === 'consultar_resumen_cc' && isRecord(data)) {
+    const resumen = data as ResumenCuentaCorrienteData
+
     return (
       <div className="mt-3 p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/30">
         <p className="text-xs font-medium text-rose-800 dark:text-rose-300 uppercase tracking-wider">Dinero en la calle (Deuda Total)</p>
-        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(data.dinero_en_la_calle || 0).toLocaleString('es-AR')}</p>
-        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{data.clientes_con_deuda} clientes con saldo pendiente</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(resumen.dinero_en_la_calle || 0).toLocaleString('es-AR')}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{resumen.clientes_con_deuda} clientes con saldo pendiente</p>
       </div>
-    );
+    )
   }
 
-  return null;
+  return null
 }
 
 export default function Asistente() {
-  const [messages, setMessages] = useState<AssistantMessage[]>(() => loadStoredMessages() || [createWelcomeMessage()])
+  const initialChatStateRef = useRef(loadInitialChatState())
+  const [messages, setMessages] = useState<AssistantMessage[]>(() => initialChatStateRef.current.messages)
   const [input, setInput] = useState('')
   const [loading, setLoading] = useState(false)
   const [confirming, setConfirming] = useState(false)
@@ -181,10 +230,17 @@ export default function Asistente() {
 
   // Auto-briefing on first mount — proactive instead of passive
   const autoBriefingDone = useRef(false)
+  const shouldAutoBriefOnMount = useRef(!initialChatStateRef.current.fromStorage)
   useEffect(() => {
-    if (!autoBriefingDone.current && messages.length === 1 && messages[0]?.role === 'assistant' && !messages[0]?.intent) {
+    if (
+      !autoBriefingDone.current &&
+      shouldAutoBriefOnMount.current &&
+      messages.length === 1 &&
+      messages[0]?.role === 'assistant' &&
+      messages[0]?.content === WELCOME_MESSAGE_CONTENT
+    ) {
       autoBriefingDone.current = true
-      handleSend('hola')
+      handleSend('briefing')
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -384,7 +440,7 @@ export default function Asistente() {
 
               {/* M4: Rich Data Renderer */}
               {msg.role === 'assistant' && msg.intent && msg.data != null && (
-                <DataRenderer intent={msg.intent} data={msg.data as any} />
+                <DataRenderer intent={msg.intent} data={msg.data} />
               )}
 
               {msg.intent && (

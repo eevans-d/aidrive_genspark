@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-04 (AUDIT-001 cerrado — 9/9 hallazgos MEDIUM resueltos en T01-T15)
+**Ultima actualizacion:** 2026-03-08 (auditoria integral + cleanup de contexto + nuevo hallazgo PERF-001)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -15,6 +15,39 @@
 - Evidencia de re-check: invocacion directa a `facturas-ocr` devuelve `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persiste `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
 - Accion requerida: owner debe activar billing en `console.cloud.google.com/billing` → boton "Activar" → ingresar datos de pago → vincular al proyecto. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
 - Plan asociado: `docs/closure/archive/historical/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
+
+## AUTH-001 - CAPTCHA de Auth no configurado en Supabase (MEDIA - hardening externo pendiente)
+- Severidad: MEDIA
+- Impacto: el login no tiene challenge anti-bot adicional. `signup` ya esta deshabilitado, por lo que el riesgo actual se concentra en intentos automatizados sobre credenciales existentes.
+- Estado: PENDIENTE_EXTERNAL
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/COMET_BROWSER_FINDINGS_2026-03-08.md`.
+- Accion requerida: crear credenciales del proveedor (`hCaptcha` o `Turnstile`), configurar el secret en Supabase Auth y agregar el widget al frontend de login.
+- Ruta candidata de integracion frontend: `minimarket-system/src/pages/Login.tsx`
+
+## AUTH-002 - Session timeouts server-side no disponibles en el plan actual (MEDIA - mitigado en frontend)
+- Severidad: MEDIA
+- Impacto: el dashboard actual no permite `timebox` ni `inactivity timeout` nativos. Sin compensacion, una sesion podia quedar abierta indefinidamente en un dispositivo compartido.
+- Estado: MITIGADO_PARCIAL
+- Evidencia externa: validacion via Comet en Supabase Dashboard (2026-03-08).
+- Fix aplicado en repo: mitigacion client-side en `minimarket-system/src/contexts/AuthContext.tsx` + `minimarket-system/src/lib/authSessionPolicy.ts` con defaults `24h`/`8h`.
+- Verificacion local: `8/8 PASS` en tests focalizados (`authSessionPolicy` + `AuthContext`) y `tsc --noEmit` OK.
+- Accion restante: si el proyecto sube a un plan con soporte nativo, alinear el timeout tambien a nivel server-side para que el corte no dependa solo del cliente.
+
+## DB-001 - Network restrictions de PostgreSQL no configuradas (MEDIA - hardening externo pendiente)
+- Severidad: MEDIA
+- Impacto: el host directo de la base permanece accesible desde cualquier IP hasta definir una allowlist. El pooler no queda cubierto por esta restriccion.
+- Estado: PENDIENTE_EXTERNAL
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/COMET_BROWSER_FINDINGS_2026-03-08.md`.
+- Accion requerida: inventariar IPs salientes de Render/Railway/desarrollo y aplicar CIDRs permitidos en Supabase Database → Network restrictions.
+- Nota: no existe evidencia en el repo sobre el valor actual de `DATABASE_URL` en servicios externos; esa comprobacion debe hacerse fuera del filesystem.
+
+## PERF-001 - Build frontend con warnings de chunking/PWA (BAJA - no bloqueante)
+- Severidad: BAJA
+- Impacto: el build de produccion termina correctamente, pero emite warnings de chunking circular (`vendor -> react -> vendor`, `vendor -> react -> charts -> vendor`), chunks grandes (`react` ~549 kB, `scanner` ~457 kB) y `Unknown input options: manualChunks` durante el paso de Workbox/PWA. No hay evidencia actual de fallo runtime, pero queda deuda de performance y ruido operativo.
+- Estado: ABIERTO
+- Evidencia: `pnpm -C minimarket-system build` ejecutado el 2026-03-08.
+- Ruta candidata: `minimarket-system/vite.config.ts`
+- Accion requerida: revisar estrategia de `manualChunks`, code-splitting de `scanner`/`react` y la interaccion `VitePWA`/Workbox para eliminar el warning residual.
 
 ## AUDIT-001 - Hallazgos MEDIUM de auditoria de produccion (CERRADO)
 - Severidad: MEDIA (ninguno bloqueante)
@@ -56,6 +89,7 @@
 - Evidencia: `supabase/functions/api-minimarket/index.ts` (lineas 2513-2579), `tests/unit/facturas-aplicar-hardening.test.ts` (25 tests PASS)
 
 ## Hallazgos cerrados (resumen)
+- **Supabase Browser Check (2026-03-08):** `signup` publico confirmado en `OFF`, `confirm email` confirmado en `ON`, y `Supavisor` ya activo como pooler compartido. Quedan pendientes solo CAPTCHA, `network restrictions` y la verificacion externa de `DATABASE_URL` en servicios conectados.
 - **Auditoria de produccion D-177 (2026-03-01):** 11 fixes implementados cubriendo CRITICO (RL-01 error leakage, F2+D3 estado transition ordering) + HIGH (S2 auth bypass, F1+S1 GCV safety, M1 image limits, ES-03/PW-02/TC-01 aplicar robustness) + MEDIUM (MISC-02 request-id sanitization, F3 JSON parse, UI-01 double-submit).
 - **D-183 (2026-03-02):** hardening de `registrar_pago_cc` en asistente IA: ya no selecciona cliente implicito cuando hay candidatos duplicados; fuerza desambiguacion antes de permitir confirmacion. `api-assistant` redeployada (v2).
 - Revalidacion pre-entrega 2026-03-01: `ProductionGate` 18/18 PASS (score 100), `RealityCheck` sin blockers UX P0, `DocuGuard` PASS (ver reporte de cierre 2026-03-01).
@@ -84,4 +118,4 @@
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico hallazgo abierto es OCR-007 (bloqueante externo GCV). No hay deuda tecnica critica, alta o media pendiente.
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (GCV); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`) y un hallazgo BAJO de performance/build (`PERF-001`).

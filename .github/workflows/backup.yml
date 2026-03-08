@@ -20,7 +20,7 @@ jobs:
     name: Database Backup
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
       - name: Install PostgreSQL client
         run: sudo apt-get install -y curl ca-certificates && sudo install -d /usr/share/postgresql-common/pgdg && sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc && sudo sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list' && sudo apt-get update && sudo apt-get install -y postgresql-client-16
@@ -48,7 +48,7 @@ jobs:
           echo "Backup verified: $BACKUP_FILE ($FILE_SIZE bytes)"
 
       - name: Upload backup artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
         with:
           name: db-backup-${{ github.run_number }}
           path: backups/backup_*.sql.gz

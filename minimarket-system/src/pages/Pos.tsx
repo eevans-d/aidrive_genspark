@@ -90,8 +90,6 @@ export default function Pos() {
   const queryClient = useQueryClient()
   const isProcessingScan = useRef(false)
 
-  useUnsavedChangesWarning(cart.length > 0)
-
   // Cross-tab protection: detect if POS is already open in another tab
   const [otherTabActive, setOtherTabActive] = useState(false)
   const tabId = useRef(crypto.randomUUID())
@@ -128,6 +126,8 @@ export default function Pos() {
   const [paymentAmount, setPaymentAmount] = useState('')
   const [showQuickCreateCliente, setShowQuickCreateCliente] = useState(false)
   const [quickCreateName, setQuickCreateName] = useState('')
+
+  useUnsavedChangesWarning(cart.length > 0)
 
   const [idempotencyKey, setIdempotencyKey] = useState(() => crypto.randomUUID())
 

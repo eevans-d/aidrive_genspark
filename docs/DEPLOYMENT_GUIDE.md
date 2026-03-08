@@ -17,6 +17,7 @@
 ## 2) Prerrequisitos
 - Acceso al proyecto Supabase (staging/prod).
 - Secrets configurados (`SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`).
+- Si un servicio externo usa `DATABASE_URL`, preferir el transaction pooler de Supabase (`6543`) en lugar de la conexion directa a Postgres.
 - En producción: `NOTIFICATIONS_MODE=real` configurado en `.env` y Supabase Secrets.
 - Working tree limpio y tag de release.
 - Plan de backup/restore (PITR o snapshot).
