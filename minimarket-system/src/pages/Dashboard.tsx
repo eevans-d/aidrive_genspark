@@ -300,6 +300,44 @@ export default function Dashboard() {
         </div>
       )}
 
+      {/* M2: Proactive Today Actions — actionable alerts */}
+      {(() => {
+        const actions: { text: string; path: string; severity: 'red' | 'amber' | 'blue' }[] = [];
+        const ov = tareasVencidasCountQuery.data ?? 0;
+        if (ov > 0) actions.push({ text: `${ov} tarea${ov !== 1 ? 's' : ''} vencida${ov !== 1 ? 's' : ''}`, path: '/tareas', severity: 'red' });
+        const pp = pedidosPendientesCountQuery.data ?? 0;
+        if (pp > 0) actions.push({ text: `${pp} pedido${pp !== 1 ? 's' : ''} pendiente${pp !== 1 ? 's' : ''}`, path: '/pedidos', severity: 'amber' });
+        if (stockBajo > 0) actions.push({ text: `${stockBajo} producto${stockBajo !== 1 ? 's' : ''} a reponer`, path: '/stock', severity: 'amber' });
+        const falt = faltantesCountQuery.data ?? 0;
+        if (falt > 0) actions.push({ text: `${falt} faltante${falt !== 1 ? 's' : ''} pendiente${falt !== 1 ? 's' : ''}`, path: '/cuaderno', severity: 'blue' });
+        if (actions.length === 0) return null;
+        const severityStyles = {
+          red: 'bg-red-100 dark:bg-red-900/40 text-red-800 dark:text-red-300 border-red-200 dark:border-red-800',
+          amber: 'bg-amber-100 dark:bg-amber-900/40 text-amber-800 dark:text-amber-300 border-amber-200 dark:border-amber-800',
+          blue: 'bg-blue-100 dark:bg-blue-900/40 text-blue-800 dark:text-blue-300 border-blue-200 dark:border-blue-800',
+        };
+        return (
+          <div className="bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30 border border-indigo-200 dark:border-indigo-800 rounded-xl p-4">
+            <p className="text-sm font-semibold text-gray-800 dark:text-gray-200 mb-2">📋 Hoy necesitás:</p>
+            <div className="flex flex-wrap gap-2">
+              {actions.map((a) => (
+                <Link
+                  key={a.path}
+                  to={a.path}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium rounded-full border transition-all hover:shadow-md hover:scale-105 ${severityStyles[a.severity]}`}
+                >
+                  {a.severity === 'red' && '🔴'}
+                  {a.severity === 'amber' && '🟡'}
+                  {a.severity === 'blue' && '🔵'}
+                  {a.text}
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        );
+      })()}
+
       {/* V2-08: Intent chips — IA guiada fase 1 */}
       <div className="space-y-3">
         <div className="flex flex-wrap gap-2">
@@ -310,11 +348,10 @@ export default function Dashboard() {
               <button
                 key={chip.id}
                 onClick={() => setActiveChip(isActive ? null : chip.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${
-                  isActive
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-sm font-medium transition-all ${isActive
                     ? 'bg-blue-600 text-white shadow-md'
                     : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-blue-300 hover:text-blue-600 shadow-sm'
-                }`}
+                  }`}
               >
                 <Icon className="w-4 h-4" />
                 {chip.label}

@@ -54,6 +54,8 @@ describe('apiClient branch coverage', () => {
   let fetchSpy: ReturnType<typeof vi.fn>;
 
   beforeEach(() => {
+    vi.stubEnv('VITE_USE_MOCKS', 'false');
+    vi.resetModules();
     fetchSpy = vi.fn();
     vi.stubGlobal('fetch', fetchSpy);
     vi.useFakeTimers({ shouldAdvanceTime: true });
@@ -62,6 +64,7 @@ describe('apiClient branch coverage', () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.restoreAllMocks();
+    vi.unstubAllEnvs();
   });
 
   // =========================================================================

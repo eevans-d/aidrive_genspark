@@ -169,6 +169,21 @@ export const INTENT_RULES: IntentRule[] = [
       return params;
     },
   },
+  // Briefing — business overview (before saludo so specific phrases match first)
+  {
+    intent: 'briefing',
+    patterns: [
+      /resumen\s*(del?\s*)?(negocio|estado|general|hoy)/i,
+      /estado\s*(del?\s*)?(negocio|general|todo)/i,
+      /c[oó]mo\s*est[aá]\s*(todo|el\s*negocio)/i,
+      /novedades|panorama|briefing/i,
+      /qu[eé]\s*hay\s*(de\s*)?nuevo/i,
+      /dame\s*un\s*reporte/i,
+      /reporte\s*de\s*hoy/i,
+      /pasame\s*el\s*parte/i,
+      /qu[eé]\s*(necesito|tengo\s*que)\s*(hacer|atender|ver)/i,
+    ],
+  },
   // Non-data intents — placed last so specific queries always match first
   {
     intent: 'saludo',
@@ -188,6 +203,7 @@ export const INTENT_RULES: IntentRule[] = [
 ];
 
 export const SUGGESTIONS = [
+  'briefing',
   'stock bajo',
   'pedidos pendientes',
   'cuentas corrientes',
@@ -229,6 +245,7 @@ export function findRelevantSuggestions(message: string): string[] {
   const normalized = message.toLowerCase();
   const relevant: string[] = [];
 
+  if (/resumen|estado.*negocio|novedades|panorama|briefing|c[oó]mo\s*est[aá]\s*todo/.test(normalized)) relevant.push('briefing');
   if (/factura|ocr|ingesta/.test(normalized)) relevant.push('facturas OCR');
   if (/aplic.*factura|factura.*(?:aplicar|deposito|ingresar)|pasar.*factura/i.test(normalized)) relevant.push('aplicar factura');
   if (/stock|producto|reponer|falt[ea]/.test(normalized)) relevant.push('stock bajo');

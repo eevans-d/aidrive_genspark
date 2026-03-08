@@ -1,0 +1,28 @@
+# Cursor AI indexing exclusions
+# Prevents Cursor from processing heavy/irrelevant dirs for AI context
+
+node_modules/
+minimarket-system/node_modules/
+.git/
+proveedores_facturas_temp/
+minimarket-system/dist/
+minimarket-system/coverage/
+test-reports/
+minimarket-system/test-reports/
+minimarket-system/test-results/
+logs/
+.husky/
+
+# Lockfiles (large, low-value for AI context)
+package-lock.json
+minimarket-system/package-lock.json
+minimarket-system/pnpm-lock.yaml
+deno.lock
+
+# Binary/non-code
+product_catalog_final_updated (1).pdf
+*.jpg
+*.png
+*.gif
+*.pdf
+*:Zone.Identifier

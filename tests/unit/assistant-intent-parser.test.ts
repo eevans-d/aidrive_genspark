@@ -136,6 +136,27 @@ describe('Assistant Intent Parser', () => {
   });
 
   // -----------------------------------------------------------------------
+  // Intent: briefing
+  // -----------------------------------------------------------------------
+  describe('briefing', () => {
+    const cases = [
+      'briefing',
+      'resumen del negocio',
+      'novedades',
+      'dame un reporte',
+      'reporte de hoy',
+      'resumen de hoy',
+      'pasame el parte',
+    ];
+
+    it.each(cases)('detects intent for: "%s"', (msg) => {
+      const result = parseIntent(msg);
+      expect(result.intent).toBe('briefing');
+      expect(result.confidence).toBeGreaterThanOrEqual(0.9);
+    });
+  });
+
+  // -----------------------------------------------------------------------
   // Intent: saludo
   // -----------------------------------------------------------------------
   describe('saludo', () => {
@@ -252,12 +273,12 @@ describe('Assistant Intent Parser', () => {
   // Structure validation
   // -----------------------------------------------------------------------
   describe('parser structure', () => {
-    it('has exactly 11 intent rules (7 read + 4 write)', () => {
-      expect(INTENT_RULES).toHaveLength(11);
+    it('has exactly 12 intent rules (8 read + 4 write)', () => {
+      expect(INTENT_RULES).toHaveLength(12);
     });
 
-    it('has 10 suggestions', () => {
-      expect(SUGGESTIONS).toHaveLength(10);
+    it('has 11 suggestions', () => {
+      expect(SUGGESTIONS).toHaveLength(11);
     });
 
     it('data intents have at least 4 patterns', () => {
@@ -267,12 +288,12 @@ describe('Assistant Intent Parser', () => {
       }
     });
 
-    it('read-only data intents start with consultar_', () => {
+    it('read-only data intents start with consultar_ or briefing', () => {
       const dataRules = INTENT_RULES.filter(r =>
         !['saludo', 'ayuda', 'crear_tarea', 'registrar_pago_cc', 'actualizar_estado_pedido', 'aplicar_factura'].includes(r.intent),
       );
       for (const rule of dataRules) {
-        expect(rule.intent).toMatch(/^consultar_/);
+        expect(rule.intent).toMatch(/^(consultar_|briefing)/);
       }
     });
 
@@ -319,7 +340,7 @@ describe('Assistant Intent Parser', () => {
 
     it('returns full list (minus ayuda) when no keywords match', () => {
       const result = findRelevantSuggestions('xyz random text');
-      expect(result.length).toBe(9);
+      expect(result.length).toBe(10);
       expect(result).not.toContain('ayuda');
     });
 

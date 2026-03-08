@@ -1,0 +1,65 @@
+{
+  "deno.enable": false,
+  "deno.enablePaths": [
+    "./supabase/functions"
+  ],
+
+  "files.watcherExclude": {
+    "**/node_modules/**": true,
+    "**/.git/objects/**": true,
+    "**/.git/subtree-cache/**": true,
+    "**/.git/refs/**": true,
+    "**/minimarket-system/node_modules/**": true,
+    "**/minimarket-system/dist/**": true,
+    "**/minimarket-system/coverage/**": true,
+    "**/proveedores_facturas_temp/**": true,
+    "**/test-reports/**": true,
+    "**/minimarket-system/test-reports/**": true,
+    "**/minimarket-system/test-results/**": true,
+    "**/logs/**": true,
+    "**/.husky/**": true,
+    "**/.github/**": true
+  },
+
+  "files.exclude": {
+    "**/node_modules": true,
+    "**/.git": true,
+    "**/proveedores_facturas_temp": true,
+    "**/minimarket-system/coverage": true,
+    "**/minimarket-system/dist": true,
+    "**/minimarket-system/test-results": true,
+    "**/logs": true,
+    "**/*:Zone.Identifier": true,
+    "**/product_catalog_final_updated*": true
+  },
+
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/minimarket-system/node_modules": true,
+    "**/minimarket-system/dist": true,
+    "**/minimarket-system/coverage": true,
+    "**/proveedores_facturas_temp": true,
+    "**/test-reports": true,
+    "**/minimarket-system/test-reports": true,
+    "**/minimarket-system/test-results": true,
+    "**/*.log": true,
+    "**/logs": true,
+    "**/package-lock.json": true,
+    "**/minimarket-system/package-lock.json": true,
+    "**/pnpm-lock.yaml": true,
+    "**/deno.lock": true,
+    "**/.git": true
+  },
+
+  "git.autorefresh": false,
+
+  "typescript.tsdk": "minimarket-system/node_modules/typescript/lib",
+
+  "files.autoSave": "onFocusChange",
+
+  "typescript.preferences.importModuleSpecifier": "relative",
+
+  "editor.bracketPairColorization.enabled": true,
+  "editor.guides.bracketPairs": true,
+  "editor.largeFileOptimizations": true
+}

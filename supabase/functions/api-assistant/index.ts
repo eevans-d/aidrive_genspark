@@ -251,28 +251,47 @@ const handleResumenCC: IntentHandler = async (supabaseUrl, headers) => {
 };
 
 const handleVentasDia: IntentHandler = async (supabaseUrl, headers, _params, _requestId, context) => {
-  // Use client timezone to compute "today" (server runs in UTC)
+  // Use client timezone to compute "today" and "yesterday" (server runs in UTC)
   const tz = context?.timezone || 'America/Argentina/Buenos_Aires';
   let today: string;
+  let yesterday: string;
   try {
-    today = new Intl.DateTimeFormat('en-CA', {
+    const fmt = (d: Date) => new Intl.DateTimeFormat('en-CA', {
       timeZone: tz,
       year: 'numeric',
       month: '2-digit',
       day: '2-digit',
-    }).format(new Date());
+    }).format(d);
+    const now = new Date();
+    today = fmt(now);
+    const yesterdayDate = new Date(now.getTime() - 86_400_000);
+    yesterday = fmt(yesterdayDate);
   } catch {
     today = new Date().toISOString().split('T')[0];
+    const yd = new Date(Date.now() - 86_400_000);
+    yesterday = yd.toISOString().split('T')[0];
   }
-  const fechaDesde = today + 'T00:00:00';
-  const fechaHasta = today + 'T23:59:59';
 
-  const data = await fetchGateway(
-    supabaseUrl,
-    `/ventas?fecha_desde=${fechaDesde}&fecha_hasta=${fechaHasta}&limit=200`,
-    headers,
-  );
-  const ventas = Array.isArray(data) ? data : [];
+  const fechaDesdeHoy = today + 'T00:00:00';
+  const fechaHastaHoy = today + 'T23:59:59';
+  const fechaDesdeAyer = yesterday + 'T00:00:00';
+  const fechaHastaAyer = yesterday + 'T23:59:59';
+
+  // Parallel fetch: today + yesterday (yesterday is best-effort)
+  const [todayR, yesterdayR] = await Promise.allSettled([
+    fetchGateway(
+      supabaseUrl,
+      `/ventas?fecha_desde=${fechaDesdeHoy}&fecha_hasta=${fechaHastaHoy}&limit=200`,
+      headers,
+    ),
+    fetchGateway(
+      supabaseUrl,
+      `/ventas?fecha_desde=${fechaDesdeAyer}&fecha_hasta=${fechaHastaAyer}&limit=200`,
+      headers,
+    ),
+  ]);
+
+  const ventas = todayR.status === 'fulfilled' && Array.isArray(todayR.value) ? todayR.value : [];
   const count = ventas.length;
   const totalMonto = ventas.reduce((sum: number, v: Record<string, unknown>) => sum + Number(v.monto_total ?? 0), 0);
 
@@ -280,8 +299,20 @@ const handleVentasDia: IntentHandler = async (supabaseUrl, headers, _params, _re
     return { answer: 'No se registraron ventas hoy todavia.', data: ventas };
   }
 
+  let comparativa = '';
+  if (yesterdayR.status === 'fulfilled') {
+    const ventasAyer = Array.isArray(yesterdayR.value) ? yesterdayR.value : [];
+    const totalAyer = ventasAyer.reduce((sum: number, v: Record<string, unknown>) => sum + Number(v.monto_total ?? 0), 0);
+    if (totalAyer > 0) {
+      const delta = ((totalMonto - totalAyer) / totalAyer) * 100;
+      const sign = delta >= 0 ? '+' : '';
+      const emoji = delta >= 0 ? '📈' : '📉';
+      comparativa = `\n\n${emoji} ${sign}${delta.toFixed(0)}% vs ayer ($${totalAyer.toLocaleString('es-AR')})`;
+    }
+  }
+
   return {
-    answer: `Ventas del dia:\n- ${count} venta${count !== 1 ? 's' : ''}\n- Total facturado: $${totalMonto.toLocaleString('es-AR')}`,
+    answer: `Ventas del dia:\n- ${count} venta${count !== 1 ? 's' : ''}\n- Total facturado: $${totalMonto.toLocaleString('es-AR')}${comparativa}`,
     data: { count, total: totalMonto, ventas: ventas.slice(0, 10) },
     navigation: [{ label: 'Ver Ventas', path: '/ventas' }],
   };
@@ -314,13 +345,96 @@ const handleEstadoOCRFacturas: IntentHandler = async (supabaseUrl, headers) => {
   };
 };
 
-const handleSaludo: IntentHandler = async () => ({
-  answer: 'Hola! Soy el asistente operativo del minimarket. Puedo ayudarte con consultas rapidas sobre el negocio.\n\nPreguntame sobre stock bajo, pedidos pendientes, cuentas corrientes, ventas del dia o facturas.',
-  data: null,
-});
+const handleBriefing: IntentHandler = async (supabaseUrl, headers) => {
+  // Parallel queries with individual error resilience
+  const [stockR, tareasR, pedidosR, ccR] = await Promise.allSettled([
+    fetchGateway(supabaseUrl, '/stock/minimo', headers)
+      .then((d: unknown) => (Array.isArray(d) ? d : []).length)
+      .catch(() => -1),
+    fetchPostgREST(
+      supabaseUrl,
+      'tareas_pendientes',
+      `select=id&estado=eq.pendiente&fecha_vencimiento=lt.${new Date().toISOString()}&limit=100`,
+      headers,
+    )
+      .then((d: unknown) => (Array.isArray(d) ? d : []).length)
+      .catch(() => -1),
+    fetchPostgREST(
+      supabaseUrl,
+      'pedidos',
+      'select=id&estado=in.(pendiente,preparando)&limit=100',
+      headers,
+    )
+      .then((d: unknown) => (Array.isArray(d) ? d : []).length)
+      .catch(() => -1),
+    fetchGateway(supabaseUrl, '/cuentas-corrientes/resumen', headers)
+      .then((d: unknown) => d as Record<string, unknown>)
+      .catch(() => null),
+  ]);
+
+  const stockBajo = stockR.status === 'fulfilled' ? stockR.value : -1;
+  const tareasVencidas = tareasR.status === 'fulfilled' ? tareasR.value : -1;
+  const pedidosPendientes = pedidosR.status === 'fulfilled' ? pedidosR.value : -1;
+  const ccData = ccR.status === 'fulfilled' ? ccR.value : null;
+  const deudaTotal = ccData ? Number(ccData.dinero_en_la_calle ?? 0) : -1;
+
+  // If ALL queries failed, fallback to generic greeting
+  if (stockBajo === -1 && tareasVencidas === -1 && pedidosPendientes === -1 && deudaTotal === -1) {
+    return {
+      answer: 'Hola! Soy el asistente operativo del minimarket. Puedo ayudarte con consultas rapidas sobre el negocio.\n\nPreguntame sobre stock bajo, pedidos pendientes, cuentas corrientes, ventas del dia o facturas.',
+      data: null,
+    };
+  }
+
+  // Build adaptive briefing
+  const lines: string[] = [];
+  const navigation: NavigationHint[] = [];
+  let hasUrgent = false;
+
+  if (tareasVencidas > 0) {
+    lines.push(`🔴 **${tareasVencidas} tarea${tareasVencidas !== 1 ? 's' : ''} vencida${tareasVencidas !== 1 ? 's' : ''}** — requiere${tareasVencidas !== 1 ? 'n' : ''} atencion`);
+    navigation.push({ label: 'Ver Tareas', path: '/tareas' });
+    hasUrgent = true;
+  }
+
+  if (stockBajo > 0) {
+    lines.push(`⚠️ **${stockBajo} producto${stockBajo !== 1 ? 's' : ''}** con stock bajo`);
+    navigation.push({ label: 'Ver Stock', path: '/stock' });
+    hasUrgent = true;
+  }
+
+  if (pedidosPendientes > 0) {
+    lines.push(`📦 **${pedidosPendientes} pedido${pedidosPendientes !== 1 ? 's' : ''}** pendiente${pedidosPendientes !== 1 ? 's' : ''}`);
+    navigation.push({ label: 'Ver Pedidos', path: '/pedidos' });
+  }
+
+  if (deudaTotal > 0) {
+    lines.push(`💰 **$${deudaTotal.toLocaleString('es-AR')}** en deudas de clientes`);
+    navigation.push({ label: 'Ver Clientes', path: '/clientes' });
+  }
+
+  let answer: string;
+  if (lines.length === 0) {
+    answer = '👍 Todo esta en orden. No hay tareas vencidas, el stock esta en niveles normales y no hay pedidos pendientes.\n\n¿En que te puedo ayudar?';
+  } else {
+    const greeting = hasUrgent ? '📋 Esto es lo que necesita tu atencion:' : '📋 Estado del negocio:';
+    answer = `${greeting}\n\n${lines.join('\n')}\n\n¿Queres que te detalle alguno?`;
+  }
+
+  return {
+    answer,
+    data: { stock_bajo: stockBajo, tareas_vencidas: tareasVencidas, pedidos_pendientes: pedidosPendientes, deuda_total: deudaTotal },
+    navigation,
+  };
+};
+
+const handleSaludo: IntentHandler = async (supabaseUrl, headers) => {
+  // Saludo triggers briefing — proactive instead of passive
+  return handleBriefing(supabaseUrl, headers, {}, '', undefined);
+};
 
 const handleAyuda: IntentHandler = async () => ({
-  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n\nTambien puedo ejecutar acciones:\n- "Crear tarea comprar harina" — crear una tarea pendiente\n- "Registrar pago de 5000 de Juan Perez" — registrar un pago de cliente\n- "Cambiar pedido #123 a preparando" — actualizar estado de un pedido\n- "Aplicar factura 001-00012345" — aplicar factura validada al deposito\n\nEscribi tu consulta como la dirias normalmente.',
+  answer: 'Puedo ayudarte con estas consultas:\n\n- "Que productos tienen stock bajo?" — ver productos a reponer\n- "Hay pedidos pendientes?" — estado de pedidos\n- "Cuanto me deben?" — resumen de cuentas corrientes\n- "Como fueron las ventas hoy?" — ventas del dia\n- "Estado de las facturas?" — facturas cargadas\n- "Briefing" — resumen proactivo del negocio\n\nTambien puedo ejecutar acciones:\n- "Crear tarea comprar harina" — crear una tarea pendiente\n- "Registrar pago de 5000 de Juan Perez" — registrar un pago de cliente\n- "Cambiar pedido #123 a preparando" — actualizar estado de un pedido\n- "Aplicar factura 001-00012345" — aplicar factura validada al deposito\n\nEscribi tu consulta como la dirias normalmente.',
   data: null,
 });
 
@@ -330,6 +444,7 @@ const INTENT_HANDLERS: Record<string, IntentHandler> = {
   consultar_resumen_cc: handleResumenCC,
   consultar_ventas_dia: handleVentasDia,
   consultar_estado_ocr_facturas: handleEstadoOCRFacturas,
+  briefing: handleBriefing,
   saludo: handleSaludo,
   ayuda: handleAyuda,
 };

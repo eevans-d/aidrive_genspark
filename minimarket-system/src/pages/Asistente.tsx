@@ -4,6 +4,7 @@ import { assistantApi, type AssistantMessage, type AssistantResponseData } from 
 import { useLocation, Link } from 'react-router-dom'
 
 const QUICK_PROMPTS = [
+  { label: '📋 Briefing', prompt: 'briefing' },
   { label: 'Stock bajo', prompt: 'Que productos tienen stock bajo?' },
   { label: 'Pedidos pendientes', prompt: 'Hay pedidos pendientes?' },
   { label: 'Cuentas corrientes', prompt: 'Cuanto me deben?' },
@@ -14,12 +15,36 @@ const QUICK_PROMPTS = [
   { label: 'Ayuda', prompt: 'ayuda' },
 ]
 
+const ROUTE_PROMPTS: Record<string, typeof QUICK_PROMPTS> = {
+  '/stock': [
+    { label: '📋 Briefing', prompt: 'briefing' },
+    { label: 'Stock bajo', prompt: 'Que productos tienen stock bajo?' },
+    { label: 'Crear reposición', prompt: 'Crear tarea reponer productos con stock bajo' },
+  ],
+  '/pedidos': [
+    { label: '📋 Briefing', prompt: 'briefing' },
+    { label: 'Pedidos pendientes', prompt: 'Hay pedidos pendientes?' },
+    { label: 'Marcar como listo', prompt: 'Cambiar pedido # a listo' },
+  ],
+  '/clientes': [
+    { label: '📋 Briefing', prompt: 'briefing' },
+    { label: 'Deudas', prompt: 'Cuanto me deben?' },
+    { label: 'Registrar pago', prompt: 'Registrar pago de ' },
+  ],
+  '/facturas': [
+    { label: '📋 Briefing', prompt: 'briefing' },
+    { label: 'Estado facturas', prompt: 'Estado de las facturas?' },
+    { label: 'Aplicar factura', prompt: 'Aplicar factura ' },
+  ],
+}
+
 const INTENT_LABELS: Record<string, string> = {
   consultar_stock_bajo: 'Stock bajo',
   consultar_pedidos_pendientes: 'Pedidos',
   consultar_resumen_cc: 'Cuentas corrientes',
   consultar_ventas_dia: 'Ventas del dia',
   consultar_estado_ocr_facturas: 'Facturas',
+  briefing: 'Briefing',
   crear_tarea: 'Crear tarea',
   registrar_pago_cc: 'Registrar pago',
   saludo: 'Saludo',
@@ -67,6 +92,73 @@ function loadStoredMessages(): AssistantMessage[] | null {
   }
 }
 
+// M4: Data Renderer Component
+function DataRenderer({ intent, data }: { intent: string; data: any }) {
+  if (!data) return null;
+
+  if (intent === 'consultar_stock_bajo' && Array.isArray(data)) {
+    return (
+      <div className="mt-3 overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+        <ul className="divide-y divide-gray-200 dark:divide-gray-700">
+          {data.slice(0, 5).map((p: any, i: number) => (
+            <li key={i} className="flex justify-between items-center p-3 text-sm">
+              <span className="font-medium text-gray-900 dark:text-gray-100">{p.nombre || p.producto_nombre}</span>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 rounded text-xs font-semibold bg-red-100 text-red-800 dark:bg-red-900/40 dark:text-red-300">
+                  Stock: {p.cantidad_actual ?? '?'}
+                </span>
+                <span className="text-xs text-gray-500">Min: {p.stock_minimo ?? '?'}</span>
+              </div>
+            </li>
+          ))}
+        </ul>
+        {data.length > 5 && <div className="p-2 text-center text-xs text-gray-500">...y {data.length - 5} más</div>}
+      </div>
+    );
+  }
+
+  if (intent === 'consultar_pedidos_pendientes' && Array.isArray(data)) {
+    return (
+      <div className="mt-3 space-y-2">
+        {data.slice(0, 5).map((p: any, i: number) => (
+          <div key={i} className="flex flex-col p-3 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
+            <div className="flex justify-between items-start">
+              <span className="font-semibold text-gray-900 dark:text-gray-100">#{p.numero_pedido} — {p.cliente_nombre}</span>
+              <span className="font-medium text-emerald-600 dark:text-emerald-400">${Number(p.monto_total || 0).toLocaleString('es-AR')}</span>
+            </div>
+            <span className="mt-1 self-start px-2 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 dark:bg-amber-900/40 dark:text-amber-300">
+              {p.estado}
+            </span>
+          </div>
+        ))}
+        {data.length > 5 && <div className="text-center text-xs text-gray-500">...y {data.length - 5} más</div>}
+      </div>
+    );
+  }
+
+  if (intent === 'consultar_ventas_dia' && data.ventas) {
+    return (
+      <div className="mt-3 p-4 rounded-xl border border-indigo-200 dark:border-indigo-800 bg-gradient-to-r from-indigo-50 to-purple-50 dark:from-indigo-950/40 dark:to-purple-950/30">
+        <p className="text-xs font-medium text-indigo-800 dark:text-indigo-300 uppercase tracking-wider">Total Facturado</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(data.total || 0).toLocaleString('es-AR')}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{data.count} ventas registradas hoy</p>
+      </div>
+    );
+  }
+
+  if (intent === 'consultar_resumen_cc') {
+    return (
+      <div className="mt-3 p-4 rounded-xl border border-rose-200 dark:border-rose-800 bg-gradient-to-r from-rose-50 to-orange-50 dark:from-rose-950/40 dark:to-orange-950/30">
+        <p className="text-xs font-medium text-rose-800 dark:text-rose-300 uppercase tracking-wider">Dinero en la calle (Deuda Total)</p>
+        <p className="text-3xl font-bold text-gray-900 dark:text-white mt-1">${Number(data.dinero_en_la_calle || 0).toLocaleString('es-AR')}</p>
+        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{data.clientes_con_deuda} clientes con saldo pendiente</p>
+      </div>
+    );
+  }
+
+  return null;
+}
+
 export default function Asistente() {
   const [messages, setMessages] = useState<AssistantMessage[]>(() => loadStoredMessages() || [createWelcomeMessage()])
   const [input, setInput] = useState('')
@@ -77,6 +169,7 @@ export default function Asistente() {
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const location = useLocation()
+  const currentPrompts = ROUTE_PROMPTS[location.pathname] || QUICK_PROMPTS
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -85,6 +178,15 @@ export default function Asistente() {
   useEffect(() => {
     scrollToBottom()
   }, [messages, scrollToBottom])
+
+  // Auto-briefing on first mount — proactive instead of passive
+  const autoBriefingDone = useRef(false)
+  useEffect(() => {
+    if (!autoBriefingDone.current && messages.length === 1 && messages[0]?.role === 'assistant' && !messages[0]?.intent) {
+      autoBriefingDone.current = true
+      handleSend('hola')
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     inputRef.current?.focus()
@@ -246,7 +348,7 @@ export default function Asistente() {
 
       {/* Quick prompts */}
       <div className="flex flex-wrap gap-2 mb-3">
-        {QUICK_PROMPTS.map((qp) => (
+        {currentPrompts.map((qp) => (
           <button
             key={qp.label}
             onClick={() => handleSend(qp.prompt)}
@@ -269,17 +371,22 @@ export default function Asistente() {
               </div>
             )}
             <div
-              className={`max-w-[80%] rounded-lg px-4 py-3 ${
-                msg.role === 'user'
-                  ? 'bg-blue-600 text-white'
-                  : msg.content.startsWith('Error')
-                    ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
-                    : msg.mode === 'plan'
-                      ? 'bg-amber-50 dark:bg-amber-950/30 text-gray-800 dark:text-gray-200 border-2 border-amber-300 dark:border-amber-700'
-                      : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
-              }`}
+              className={`max-w-[80%] rounded-lg px-4 py-3 ${msg.role === 'user'
+                ? 'bg-blue-600 text-white'
+                : msg.content.startsWith('Error')
+                  ? 'bg-red-50 dark:bg-red-950/40 text-red-800 dark:text-red-300 border border-red-200 dark:border-red-800'
+                  : msg.mode === 'plan'
+                    ? 'bg-amber-50 dark:bg-amber-950/30 text-gray-800 dark:text-gray-200 border-2 border-amber-300 dark:border-amber-700'
+                    : 'bg-gray-50 dark:bg-gray-800 text-gray-800 dark:text-gray-200 border border-gray-100 dark:border-gray-700'
+                }`}
             >
               <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
+
+              {/* M4: Rich Data Renderer */}
+              {msg.role === 'assistant' && msg.intent && msg.data != null && (
+                <DataRenderer intent={msg.intent} data={msg.data as any} />
+              )}
+
               {msg.intent && (
                 <div className="mt-2 text-xs opacity-60">
                   <span>{INTENT_LABELS[msg.intent] || msg.intent}</span>

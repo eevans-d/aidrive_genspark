@@ -71,6 +71,7 @@ export default function Pos() {
   }, [])
 
   const [cart, setCart] = useState<CartItem[]>([])
+  const [lastSale, setLastSale] = useState<{ items: CartItem[]; total: number } | null>(null)
   const [metodoPago, setMetodoPago] = useState<CreateVentaParams['metodo_pago']>('efectivo')
   const [cliente, setCliente] = useState<ClienteSaldoItem | null>(null)
   const [clientePickerOpen, setClientePickerOpen] = useState(false)
@@ -247,6 +248,7 @@ export default function Pos() {
     onSuccess: (venta) => {
       toast.success(`Venta ${venta.status === 'existing' ? 'idempotente' : 'registrada'}: $${money(venta.monto_total)}`)
       navigator.vibrate?.([30, 50, 30])
+      setLastSale({ items: [...cart], total: venta.monto_total })
       queryClient.invalidateQueries({ queryKey: ['ventas'] })
       queryClient.invalidateQueries({ queryKey: ['stock'] })
       queryClient.invalidateQueries({ queryKey: ['dashboard'] })
@@ -453,6 +455,22 @@ export default function Pos() {
           )}
 
           <div className="mt-4 space-y-2" aria-live="polite" aria-label="Carrito de compras">
+            {/* M5: Repeat Last Sale Banner */}
+            {lastSale && cart.length === 0 && (
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 flex items-center justify-between mb-3 shadow-sm">
+                <div className="text-sm text-emerald-800">
+                  <span className="font-semibold">Última venta:</span> {lastSale.items.length} producto{lastSale.items.length !== 1 ? 's' : ''} — <span className="font-bold">${money(lastSale.total)}</span>
+                </div>
+                <button
+                  onClick={() => setCart(lastSale.items)}
+                  className="px-3 py-1.5 bg-emerald-600 text-white text-xs font-bold rounded-md hover:bg-emerald-700 transition"
+                  title="Volver a cargar los productos de la última venta"
+                >
+                  Repetir
+                </button>
+              </div>
+            )}
+
             {cart.length === 0 ? (
               <div className="py-10 text-center text-gray-500">
                 Escanea un producto para comenzar
