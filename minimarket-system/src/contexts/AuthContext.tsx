@@ -3,6 +3,7 @@ import { supabase } from '../lib/supabase'
 import { User } from '@supabase/supabase-js'
 import { AuthContext } from './auth-context'
 import { authEvents } from '../lib/authEvents'
+import { reportError } from '../lib/observability'
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null)
@@ -12,7 +13,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await supabase.auth.signOut()
     } catch (error) {
-      console.error('Error signing out:', error)
+      reportError({ error, source: 'AuthContext.signOut' })
     }
   }, [])
 
@@ -23,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { data: { user } } = await supabase.auth.getUser()
         setUser(user)
       } catch (error) {
-        console.error('Error loading user:', error)
+        reportError({ error, source: 'AuthContext.loadUser' })
       } finally {
         setLoading(false)
       }

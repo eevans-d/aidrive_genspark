@@ -217,8 +217,15 @@ export default function Tareas() {
     createMutation.mutate(formData)
   }
 
+  const [completingId, setCompletingId] = useState<string | null>(null)
+  const [cancellingId, setCancellingId] = useState<string | null>(null)
+
   const handleCompletarTarea = (id: string) => {
-    completeMutation.mutate(id)
+    if (completingId) return
+    setCompletingId(id)
+    completeMutation.mutate(id, {
+      onSettled: () => setCompletingId(null),
+    })
   }
 
   const handleCancelarTarea = (id: string) => {
@@ -227,8 +234,11 @@ export default function Tareas() {
   }
 
   const handleConfirmCancel = () => {
-    if (!cancelDialogId || !cancelRazon.trim()) return
-    cancelMutation.mutate({ id: cancelDialogId, razon: cancelRazon.trim() })
+    if (!cancelDialogId || !cancelRazon.trim() || cancellingId) return
+    setCancellingId(cancelDialogId)
+    cancelMutation.mutate({ id: cancelDialogId, razon: cancelRazon.trim() }, {
+      onSettled: () => setCancellingId(null),
+    })
   }
 
   if (isLoading) {
@@ -289,6 +299,7 @@ export default function Tareas() {
                 value={formData.titulo}
                 onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
                 required
+                maxLength={255}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -302,6 +313,7 @@ export default function Tareas() {
                 value={formData.descripcion}
                 onChange={(e) => setFormData({ ...formData, descripcion: e.target.value })}
                 rows={3}
+                maxLength={2000}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
               />
             </div>
@@ -422,7 +434,7 @@ export default function Tareas() {
                 <div className="flex gap-2 ml-4">
                   <button
                     onClick={() => handleCompletarTarea(tarea.id)}
-                    disabled={completeMutation.isPending}
+                    disabled={completingId === tarea.id || !!cancellingId}
                     className="p-2 text-green-600 hover:bg-green-100 rounded-lg disabled:opacity-50"
                     title="Completar"
                   >
@@ -430,7 +442,7 @@ export default function Tareas() {
                   </button>
                   <button
                     onClick={() => handleCancelarTarea(tarea.id)}
-                    disabled={cancelMutation.isPending}
+                    disabled={!!completingId || cancellingId === tarea.id}
                     className="p-2 text-red-600 hover:bg-red-100 rounded-lg disabled:opacity-50"
                     title="Cancelar"
                   >

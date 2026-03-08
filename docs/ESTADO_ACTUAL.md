@@ -1,12 +1,13 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-05 (Verificacion post-commit `8d226fe` — remediacion dependencias + sincronizacion DocuGuard)
-**Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE)`
+**Ultima actualizacion:** 2026-03-08 (Auditoria completa + hardening UX: double-submit protection, memory leak fix, beforeunload warnings)
+**Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE, UX Audit DONE)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED, RC-01/D1/D2 RESUELTOS`
 **Estado del Asistente IA:** `SPRINT 3 COMPLETADO — 4 intents write con plan→confirm, auditoria persistente en BD`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
+- **Auditoria completa de produccion + hardening UX (2026-03-08):** Auditoria exhaustiva de 3 fases (reconocimiento profundo, analisis de gaps, plan de despliegue). Se ejecutaron 17 fixes en 2 rondas: Ronda 1 (infra/config, 7 items): sincronizacion `.env.example` con vars CI/CD, correccion de comentarios, campo `engines` en package.json, `.nvmrc`, observabilidad en `AuthContext`, nombre descriptivo, favicon SVG + meta description. Ronda 2 (UX usuario real, 8 items): proteccion doble-submit en Pedidos (3 botones estado + checkboxes), POS quick-create cliente (extraido a componente con `saving` state), Cuaderno (tracking per-ID con `mutatingIds` Set), Proveedores faltantes (`resolvingId` guard), Tareas (disabled per-ID en vez de global), memory leak `FacturaUpload` (cleanup `URL.revokeObjectURL` en unmount), hook `useUnsavedChangesWarning` (aplicado en POS carrito y Pedidos formulario), `maxLength` en inputs de texto libre. Tests: **1952/1952 PASS**, build OK, TypeScript OK, ESLint **0 errores**.
 - **Mejoras UX y Proactividad Wave 1 & 2 (2026-03-06):** Reducción drástica de la fricción del usuario mediante 6 mejoras de alto impacto (M1-M6). El Asistente IA ahora inicia con un Briefing Proactivo de 4 métricas, cuenta con Quick Prompts contextuales dinámicos, un renderizador de datos enriquecido (mini-tablas), y ofrece comparativas interdiarias automatizadas. El Dashboard incorpora alertas de acción en `TodayActions`. El componente POS incluye repetir ticket (`lastSale`). Se inyectó heurística NLP al parser (`parser.ts`) basada en validaciones de `TestMaster`. Testeado al 100%: **1959/1959 unit PASS**, **249/249 UI PASS**.
 - **Remediacion de dependencias frontend (2026-03-05, commit `8d226fe`):** corregidas 6 vulnerabilidades HIGH en audit de produccion. `vite-plugin-pwa` movido de `dependencies` a `devDependencies` (es herramienta de build, no runtime). Overrides actualizados: `minimatch` 5.1.7→5.1.8 y 10.2.1→10.2.3 (fix ReDoS), `rollup` >=4.59.0 (fix arbitrary file write), `serialize-javascript` >=7.0.3 (fix RCE). Resultado: **audit --prod 0 HIGH/0 CRITICAL**. Tests: **1945/1945 PASS**, build OK, lint 0 errores.
 - **Hardening de tipado TypeScript (2026-03-05, commit `3bc9ebc`):** eliminados ~249 `any` explicitos en codigo de produccion (45 archivos en commit, 2 archivos de tipos nuevos). `@typescript-eslint/no-explicit-any` quedo en `warn` para prevenir regresiones. Verificacion Codex: **1945/1945 PASS** (suite raiz), **249/249 PASS** (frontend), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks + 1 `KEEP` de interop `JsBarcode`).
@@ -19,11 +20,12 @@
 - **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
 - GCV sigue BLOCKED: requiere accion del owner en GCP Console (billing inactivo).
 
-## 2) Estado tecnico verificado (sesion 2026-03-05, post `8d226fe`)
-- Tests unitarios completos: **1945/1945 PASS** (86 archivos).
-- Build produccion: **OK** (34 chunks PWA, 0 errores).
-- Lint: **0 errores, 72 warnings** (esperado: warnings de `no-explicit-any` en tests/mocks; produccion sin `any` explicitos salvo 1 `KEEP` documentado).
-- Audit de dependencias produccion: **0 HIGH, 0 CRITICAL** (remediadas 6 HIGH en commit `8d226fe`).
+## 2) Estado tecnico verificado (sesion 2026-03-08, post auditoria completa)
+- Tests unitarios completos: **1952/1952 PASS** (86 archivos).
+- Build produccion: **OK** (36 precache entries PWA, 0 errores).
+- TypeScript: **0 errores** (`tsc --noEmit` limpio).
+- Lint: **0 errores** en archivos modificados.
+- Audit de dependencias produccion: **0 HIGH, 0 CRITICAL**.
 - Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v41, api-assistant v3, facturas-ocr v12).
 - Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
 - Health endpoint: HTTP 200, `{"status":"healthy"}`.

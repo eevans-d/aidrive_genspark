@@ -34,6 +34,7 @@ export default function Cuaderno() {
 
   const faltantesQuery = useFaltantesByProveedor()
   const updateFaltante = useUpdateFaltante()
+  const [mutatingIds, setMutatingIds] = useState<Set<string>>(new Set())
 
   // Proveedores list for reassignment
   const { data: proveedoresList } = useQuery({
@@ -96,32 +97,47 @@ export default function Cuaderno() {
     })
   }
 
+  const markMutating = (id: string) => setMutatingIds(prev => new Set(prev).add(id))
+  const unmarkMutating = (id: string) => setMutatingIds(prev => { const next = new Set(prev); next.delete(id); return next })
+
   const handleResolve = (id: string) => {
+    if (mutatingIds.has(id)) return
+    markMutating(id)
     updateFaltante.mutate({ id, resuelto: true }, {
       onSuccess: () => toast.success('Marcado como resuelto'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
+      onSettled: () => unmarkMutating(id),
     })
   }
 
   const handleReopen = (id: string) => {
+    if (mutatingIds.has(id)) return
+    markMutating(id)
     updateFaltante.mutate({ id, resuelto: false, estado: 'pendiente', fecha_resolucion: '' }, {
       onSuccess: () => toast.success('Reabierto'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
+      onSettled: () => unmarkMutating(id),
     })
   }
 
   const handleSaveObs = (id: string) => {
+    if (mutatingIds.has(id)) return
+    markMutating(id)
     updateFaltante.mutate({ id, observaciones: editObs }, {
       onSuccess: () => { toast.success('Observación actualizada'); setEditingId(null) },
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
+      onSettled: () => unmarkMutating(id),
     })
   }
 
   const handleReasign = (id: string) => {
+    if (mutatingIds.has(id)) return
+    markMutating(id)
     const provId = reasignProvId || null
     updateFaltante.mutate({ id, proveedor_asignado_id: provId }, {
       onSuccess: () => { toast.success('Proveedor reasignado'); setReasignId(null); setReasignProvId('') },
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
+      onSettled: () => unmarkMutating(id),
     })
   }
 
@@ -214,6 +230,7 @@ export default function Cuaderno() {
                 onConfirmReasign={() => handleReasign(item.id)}
                 onCancelReasign={() => setReasignId(null)}
                 proveedoresList={proveedoresList ?? []}
+                isMutating={mutatingIds.has(item.id)}
               />
             ))
           )}
@@ -352,13 +369,14 @@ interface FaltanteCardProps {
   onConfirmReasign: () => void
   onCancelReasign: () => void
   proveedoresList: Array<{ id: string; nombre: string }>
+  isMutating?: boolean
 }
 
 function FaltanteCard({
   item, onResolve, onEditObs, onReasign,
   isEditing, editObs, onEditObsChange, onSaveObs, onCancelEdit,
   isReasigning, reasignProvId, onReasignProvChange, onConfirmReasign, onCancelReasign,
-  proveedoresList,
+  proveedoresList, isMutating,
 }: FaltanteCardProps) {
   const prioColor = PRIORIDAD_COLORS[item.prioridad ?? 'normal'] ?? 'bg-gray-100 text-gray-600'
   const prioLabel = PRIORIDAD_LABELS[item.prioridad ?? 'normal'] ?? 'Normal'
@@ -405,10 +423,11 @@ function FaltanteCard({
 
         <button
           onClick={() => onResolve(item.id)}
-          className="px-3 py-2 min-h-[44px] bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-sm font-medium flex items-center gap-1.5 shrink-0"
+          disabled={isMutating}
+          className="px-3 py-2 min-h-[44px] bg-green-50 hover:bg-green-100 text-green-700 rounded-xl text-sm font-medium flex items-center gap-1.5 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <Check className="w-4 h-4" />
-          Listo
+          {isMutating ? 'Guardando...' : 'Listo'}
         </button>
       </div>
 
@@ -420,6 +439,7 @@ function FaltanteCard({
             onChange={(e) => onEditObsChange(e.target.value)}
             className="w-full border rounded-lg px-3 py-2 text-sm"
             rows={2}
+            maxLength={1000}
             placeholder="Observación..."
           />
           <div className="flex gap-2">

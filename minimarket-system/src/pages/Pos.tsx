@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useUnsavedChangesWarning } from '../hooks/useUnsavedChangesWarning'
 import { useNavigate } from 'react-router-dom'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { toast, Toaster } from 'sonner'
@@ -39,10 +40,57 @@ function buildWhatsAppUrl(e164: string): string {
   return `https://wa.me/${digits}`
 }
 
+function QuickCreateClienteForm({ defaultName, onCreated, onCancel }: {
+  defaultName: string
+  onCreated: (client: ClienteSaldoItem) => void
+  onCancel: () => void
+}) {
+  const [saving, setSaving] = useState(false)
+
+  return (
+    <form
+      onSubmit={async (e) => {
+        e.preventDefault()
+        if (saving) return
+        const form = e.currentTarget
+        const nombre = (form.elements.namedItem('qc_nombre') as HTMLInputElement).value.trim()
+        const telefono = (form.elements.namedItem('qc_telefono') as HTMLInputElement).value.trim()
+        if (!nombre) return
+        setSaving(true)
+        try {
+          await clientesApi.create({ nombre, telefono: telefono || null, email: null })
+          const clients = await clientesApi.list({ q: nombre, limit: 1 })
+          if (clients.length > 0 && clients[0]) {
+            onCreated(clients[0])
+            toast.success(`Cliente "${nombre}" creado`)
+          }
+        } catch (err) {
+          toast.error(parseErrorMessage(err))
+        } finally {
+          setSaving(false)
+        }
+      }}
+      className="mt-3 p-3 border rounded-xl bg-gray-50 space-y-2"
+    >
+      <div className="text-sm font-semibold text-gray-700">Crear cliente rápido</div>
+      <input name="qc_nombre" defaultValue={defaultName} placeholder="Nombre *" required maxLength={150} className="w-full px-3 py-2 border rounded-lg text-sm" autoFocus />
+      <input name="qc_telefono" placeholder="Teléfono (opcional)" maxLength={30} className="w-full px-3 py-2 border rounded-lg text-sm" />
+      <div className="flex gap-2">
+        <button type="button" onClick={onCancel} disabled={saving} className="flex-1 py-2 rounded-lg border text-gray-700 text-sm hover:bg-gray-100 disabled:opacity-50">Cancelar</button>
+        <button type="submit" disabled={saving} className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed">
+          {saving ? 'Creando...' : 'Crear y seleccionar'}
+        </button>
+      </div>
+    </form>
+  )
+}
+
 export default function Pos() {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
   const isProcessingScan = useRef(false)
+
+  useUnsavedChangesWarning(cart.length > 0)
 
   // Cross-tab protection: detect if POS is already open in another tab
   const [otherTabActive, setOtherTabActive] = useState(false)
@@ -683,59 +731,16 @@ export default function Pos() {
 
               {/* Quick create client form */}
               {showQuickCreateCliente && (
-                <form
-                  onSubmit={async (e) => {
-                    e.preventDefault()
-                    const form = e.currentTarget
-                    const nombre = (form.elements.namedItem('qc_nombre') as HTMLInputElement).value.trim()
-                    const telefono = (form.elements.namedItem('qc_telefono') as HTMLInputElement).value.trim()
-                    if (!nombre) return
-                    try {
-                      await clientesApi.create({ nombre, telefono: telefono || null, email: null })
-                      const clients = await clientesApi.list({ q: nombre, limit: 1 })
-                      if (clients.length > 0) {
-                        setCliente(clients[0] ?? null)
-                        setMetodoPago('cuenta_corriente')
-                      }
-                      setClientePickerOpen(false)
-                      setShowQuickCreateCliente(false)
-                      toast.success(`Cliente "${nombre}" creado`)
-                    } catch (err) {
-                      toast.error(parseErrorMessage(err))
-                    }
+                <QuickCreateClienteForm
+                  defaultName={quickCreateName}
+                  onCreated={(client) => {
+                    setCliente(client)
+                    setMetodoPago('cuenta_corriente')
+                    setClientePickerOpen(false)
+                    setShowQuickCreateCliente(false)
                   }}
-                  className="mt-3 p-3 border rounded-xl bg-gray-50 space-y-2"
-                >
-                  <div className="text-sm font-semibold text-gray-700">Crear cliente rápido</div>
-                  <input
-                    name="qc_nombre"
-                    defaultValue={quickCreateName}
-                    placeholder="Nombre *"
-                    required
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                    autoFocus
-                  />
-                  <input
-                    name="qc_telefono"
-                    placeholder="Teléfono (opcional)"
-                    className="w-full px-3 py-2 border rounded-lg text-sm"
-                  />
-                  <div className="flex gap-2">
-                    <button
-                      type="button"
-                      onClick={() => setShowQuickCreateCliente(false)}
-                      className="flex-1 py-2 rounded-lg border text-gray-700 text-sm hover:bg-gray-100"
-                    >
-                      Cancelar
-                    </button>
-                    <button
-                      type="submit"
-                      className="flex-1 py-2 rounded-lg bg-green-600 text-white text-sm font-semibold hover:bg-green-700"
-                    >
-                      Crear y seleccionar
-                    </button>
-                  </div>
-                </form>
+                  onCancel={() => setShowQuickCreateCliente(false)}
+                />
               )}
             </div>
           </div>

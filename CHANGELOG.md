@@ -5,6 +5,31 @@ Todos los cambios notables de este proyecto se documentan aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.0] - 2026-03-08
+
+### Added
+- **Hook `useUnsavedChangesWarning`**: alerta `beforeunload` nativa cuando hay datos sin guardar. Aplicado en POS (carrito con items) y Pedidos (formulario de nuevo pedido).
+- **Favicon SVG** (`minimarket-system/public/favicon.svg`): ícono de marca para PWA e iOS.
+- **Meta description** en `index.html` para SEO/PWA.
+- **`.nvmrc`** con Node 20 para consistencia entre desarrolladores.
+
+### Fixed
+- **Protección doble-submit en Pedidos** (3 botones de estado + checkboxes): prop `isUpdating` con `disabled` + texto "Actualizando...".
+- **POS quick-create cliente**: extraído a componente `QuickCreateClienteForm` con estado `saving`, `disabled` y feedback "Creando...".
+- **Cuaderno faltantes**: tracking per-ID con `mutatingIds` Set — botones "Listo" ahora se deshabilitan individualmente durante la mutación.
+- **Proveedores faltantes**: `resolvingId` guard — botón "Listo" protegido contra doble-click.
+- **Tareas disabled per-ID**: `completingId`/`cancellingId` reemplazan `completeMutation.isPending` global — solo se deshabilita la tarea activa, no todas.
+- **FacturaUpload memory leak**: `useEffect` cleanup que revoca `URL.createObjectURL` al desmontar componente.
+- **AuthContext observabilidad**: `console.error` migrados a `reportError()` del sistema de observabilidad (Sentry + localStorage).
+- **Comentario incorrecto** en `queryClient.ts`: `refetchOnWindowFocus: false` → `true` (valor real).
+- **`maxLength`** en inputs de texto libre: título tareas (255), descripción (2000), observaciones cuaderno (1000).
+
+### Changed
+- **`.env.example` raíz**: sincronizado con `.env` — añadida sección CI/CD (`PROJECT_ID`, `ACCESS_TOKEN`, `DB_PASSWORD`), limpieza duplicado `VITE_API_ASSISTANT_URL`.
+- **`minimarket-system/.env.example`**: documentadas variables `VITE_USE_MOCKS`, `VITE_SENTRY_DSN`, `VITE_API_ASSISTANT_URL` con comentarios.
+- **`package.json` raíz**: nombre `workspace` → `minimarket-system-workspace`, campo `engines.node >= 20.0.0`.
+- **`minimarket-system/package.json`**: nombre `react_repo` → `minimarket-frontend`, campos `engines.node >= 20.0.0` + `engines.pnpm >= 9.0.0`.
+
 ## [2.1.0] - 2026-02-19
 
 ### Changed

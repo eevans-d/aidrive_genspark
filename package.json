@@ -1,5 +1,5 @@
 {
-  "name": "workspace",
+  "name": "minimarket-system-workspace",
   "version": "1.0.0",
   "description": "> **Sistema completo de gestión para mini markets desarrollado con React, TypeScript, Supabase y automatizaciones completas.**",
   "directories": {
@@ -25,6 +25,9 @@
     "test:all": "npm run test && npm run test:auxiliary",
     "deploy:cloudflare:pages": "bash scripts/deploy-cloudflare-pages.sh",
     "prepare": "husky"
+  },
+  "engines": {
+    "node": ">=20.0.0"
   },
   "keywords": [],
   "author": "",

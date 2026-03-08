@@ -488,10 +488,14 @@ function ProveedorFaltantes({ proveedorId }: { proveedorId: string }) {
   const { data, isLoading } = useFaltantes({ proveedorId, resuelto: false, limit: 20 })
   const updateFaltante = useUpdateFaltante()
 
+  const [resolvingId, setResolvingId] = useState<string | null>(null)
   const handleResolve = (id: string) => {
+    if (resolvingId) return
+    setResolvingId(id)
     updateFaltante.mutate({ id, resuelto: true }, {
       onSuccess: () => toast.success('Faltante resuelto'),
       onError: (err) => toast.error(err instanceof Error ? err.message : 'Error', { duration: Infinity }),
+      onSettled: () => setResolvingId(null),
     })
   }
 
@@ -531,10 +535,11 @@ function ProveedorFaltantes({ proveedorId }: { proveedorId: string }) {
                 </div>
                 <button
                   onClick={() => handleResolve(item.id)}
-                  className="px-2 py-1.5 min-h-[36px] bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1 shrink-0"
+                  disabled={resolvingId === item.id}
+                  className="px-2 py-1.5 min-h-[36px] bg-green-100 hover:bg-green-200 text-green-700 rounded-lg text-xs font-medium flex items-center gap-1 shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   <Check className="w-3 h-3" />
-                  Listo
+                  {resolvingId === item.id ? '...' : 'Listo'}
                 </button>
               </div>
             )

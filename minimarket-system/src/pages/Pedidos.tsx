@@ -4,6 +4,7 @@
  */
 
 import { useState } from 'react';
+import { useUnsavedChangesWarning } from '../hooks/useUnsavedChangesWarning';
 import {
         usePedidos,
         useCreatePedido,
@@ -131,13 +132,14 @@ export default function Pedidos() {
                         {/* Lista de pedidos */}
                         <div className="grid gap-4">
                                 {data?.pedidos.map((pedido) => (
-                                        <PedidoCard
-                                                key={pedido.id}
-                                                pedido={pedido}
-                                                onUpdateEstado={handleUpdateEstado}
-                                                onToggleItem={handleToggleItemPreparado}
-                                                onSelect={() => setSelectedPedido(pedido)}
-                                        />
+				<PedidoCard
+					key={pedido.id}
+					pedido={pedido}
+					onUpdateEstado={handleUpdateEstado}
+					onToggleItem={handleToggleItemPreparado}
+					onSelect={() => setSelectedPedido(pedido)}
+					isUpdating={updateEstadoMutation.isPending || updateItemMutation.isPending}
+				/>
                                 ))}
                                 {data?.pedidos.length === 0 && (
                                         <div className="text-center py-12 text-gray-500">
@@ -173,13 +175,14 @@ export default function Pedidos() {
 // ============================================================================
 
 interface PedidoCardProps {
-        pedido: PedidoResponse;
-        onUpdateEstado: (id: string, estado: PedidoResponse['estado']) => void;
-        onToggleItem: (itemId: string, preparado: boolean) => void;
-        onSelect: () => void;
+	pedido: PedidoResponse;
+	onUpdateEstado: (id: string, estado: PedidoResponse['estado']) => void;
+	onToggleItem: (itemId: string, preparado: boolean) => void;
+	onSelect: () => void;
+	isUpdating?: boolean;
 }
 
-function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCardProps) {
+function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect, isUpdating }: PedidoCardProps) {
         const estadoColors: Record<string, string> = {
                 pendiente: 'bg-yellow-100 text-yellow-800',
                 preparando: 'bg-blue-100 text-blue-800',
@@ -245,12 +248,13 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
                                                         key={item.id}
                                                         className="flex items-center gap-3 p-2 bg-gray-50 rounded-lg"
                                                 >
-                                                        <input
-                                                                type="checkbox"
-                                                                checked={item.preparado}
-                                                                onChange={() => item.id && onToggleItem(item.id, !item.preparado)}
-                                                                className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                                                        />
+								<input
+									type="checkbox"
+									checked={item.preparado}
+									onChange={() => item.id && onToggleItem(item.id, !item.preparado)}
+									disabled={isUpdating}
+									className="w-5 h-5 rounded border-gray-300 text-blue-600 focus:ring-blue-500 disabled:opacity-50"
+								/>
                                                         <span className={item.preparado ? 'line-through text-gray-400' : ''}>
                                                                 {item.cantidad}x {item.producto_nombre}
                                                         </span>
@@ -294,36 +298,39 @@ function PedidoCard({ pedido, onUpdateEstado, onToggleItem, onSelect }: PedidoCa
 
                         {/* Acciones */}
                         <div className="flex gap-2 mt-4">
-                                {pedido.estado === 'pendiente' && (
-                                        <button
-                                                onClick={() => onUpdateEstado(pedido.id, 'preparando')}
-                                                className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors"
-                                        >
-                                                Comenzar Preparación
-                                        </button>
-                                )}
-                                {pedido.estado === 'preparando' && itemsPreparados === totalItems && (
-                                        <button
-                                                onClick={() => {
-                                                        if (!window.confirm('¿Marcar pedido como listo? Esta acción no se puede deshacer.')) return;
-                                                        onUpdateEstado(pedido.id, 'listo');
-                                                }}
-                                                className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-colors"
-                                        >
-                                                Marcar como Listo
-                                        </button>
-                                )}
-                                {pedido.estado === 'listo' && (
-                                        <button
-                                                onClick={() => {
-                                                        if (!window.confirm('¿Marcar pedido como entregado? Esta acción no se puede deshacer.')) return;
-                                                        onUpdateEstado(pedido.id, 'entregado');
-                                                }}
-                                                className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-medium transition-colors"
-                                        >
-                                                Marcar Entregado
-                                        </button>
-                                )}
+			{pedido.estado === 'pendiente' && (
+				<button
+					onClick={() => onUpdateEstado(pedido.id, 'preparando')}
+					disabled={isUpdating}
+					className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{isUpdating ? 'Actualizando...' : 'Comenzar Preparación'}
+				</button>
+			)}
+			{pedido.estado === 'preparando' && itemsPreparados === totalItems && (
+				<button
+					onClick={() => {
+						if (!window.confirm('¿Marcar pedido como listo? Esta acción no se puede deshacer.')) return;
+						onUpdateEstado(pedido.id, 'listo');
+					}}
+					disabled={isUpdating}
+					className="flex-1 bg-green-600 hover:bg-green-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{isUpdating ? 'Actualizando...' : 'Marcar como Listo'}
+				</button>
+			)}
+			{pedido.estado === 'listo' && (
+				<button
+					onClick={() => {
+						if (!window.confirm('¿Marcar pedido como entregado? Esta acción no se puede deshacer.')) return;
+						onUpdateEstado(pedido.id, 'entregado');
+					}}
+					disabled={isUpdating}
+					className="flex-1 bg-gray-600 hover:bg-gray-700 text-white py-2 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+				>
+					{isUpdating ? 'Actualizando...' : 'Marcar Entregado'}
+				</button>
+			)}
                                 <button
                                         onClick={onSelect}
                                         className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
@@ -368,14 +375,16 @@ function NuevoPedidoModal({ onSubmit, onClose, isLoading }: NuevoPedidoModalProp
                 observaciones: '',
         });
 
-        const [items, setItems] = useState<CreatePedidoParams['items']>([]);
-        const [newItem, setNewItem] = useState({
-                producto_id: '',
-                producto_nombre: '',
-                cantidad: 1,
-                precio_unitario: 0,
-                observaciones: '',
-        });
+	const [items, setItems] = useState<CreatePedidoParams['items']>([]);
+	const [newItem, setNewItem] = useState({
+		producto_id: '',
+		producto_nombre: '',
+		cantidad: 1,
+		precio_unitario: 0,
+		observaciones: '',
+	});
+
+	useUnsavedChangesWarning(items.length > 0 || formData.cliente_nombre.trim() !== '');
         const [selectedProduct, setSelectedProduct] = useState<DropdownItem | null>(null);
         const [selectedCliente, setSelectedCliente] = useState<ClienteSaldoItem | null>(null);
 

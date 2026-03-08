@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import { Upload, Camera, X, FileText, Loader2 } from 'lucide-react'
 import { supabase } from '../lib/supabase'
 import { toast } from 'sonner'
@@ -90,6 +90,12 @@ export default function FacturaUpload({ proveedorId, onUploaded, disabled }: Fac
     if (preview) URL.revokeObjectURL(preview)
     setPreview(null)
     setFileName(null)
+  }, [preview])
+
+  useEffect(() => {
+    return () => {
+      if (preview) URL.revokeObjectURL(preview)
+    }
   }, [preview])
 
   return (

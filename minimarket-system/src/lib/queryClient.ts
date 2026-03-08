@@ -10,7 +10,7 @@ import { QueryClient } from '@tanstack/react-query';
  * - staleTime: 5 min → datos frescos sin refetch innecesario
  * - gcTime: 30 min → caché persistente durante sesión típica
  * - retry: 1 → un reintento automático ante fallo de red
- * - refetchOnWindowFocus: false → evita refetch al cambiar pestañas (offline-friendly)
+ * - refetchOnWindowFocus: true → refresca datos al volver a la pestaña
  */
 export const queryClient = new QueryClient({
   defaultOptions: {
