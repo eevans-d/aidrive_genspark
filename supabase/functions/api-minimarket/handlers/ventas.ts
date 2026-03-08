@@ -244,8 +244,9 @@ export async function handleListarVentas(
     });
 
     if (!res.ok) {
-      const body = await res.text();
-      throw new Error(`Error listando ventas: ${body}`);
+      const errorBody = await res.text();
+      logger.warn('PostgREST error listing ventas', { status: res.status, body: errorBody });
+      throw new Error('Error consultando ventas');
     }
 
     const data = await res.json();
@@ -280,7 +281,7 @@ export async function handleObtenerVenta(
       'ventas',
       headers,
       { id: ventaId },
-      '*,venta_items(*),clientes(*)',
+      '*,venta_items(*),clientes(id,nombre,telefono)',
     );
 
     if (!rows || rows.length === 0) {

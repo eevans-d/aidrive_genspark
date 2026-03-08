@@ -109,13 +109,14 @@ export async function handleListarPedidos(
                         } as HeadersInit,
                 });
 
-                if (!response.ok) {
-                        const error = await response.text();
-                        throw toAppError(new Error(error), 'DB_ERROR', response.status);
-                }
+		if (!response.ok) {
+				const errorBody = await response.text();
+				logger.warn('PostgREST error listing pedidos', { status: response.status, body: errorBody });
+				throw toAppError(new Error('Error consultando pedidos'), 'DB_ERROR', response.status >= 500 ? 500 : 400);
+			}
 
-                const pedidos = await response.json();
-                const count = response.headers.get('content-range')?.split('/')[1] || pedidos.length;
+			const pedidos = await response.json();
+			const count = response.headers.get('content-range')?.split('/')[1] || pedidos.length;
 
                 return ok(pedidos, 200, responseHeaders, {
                         requestId,
@@ -140,15 +141,16 @@ export async function handleObtenerPedido(
 ): Promise<Response> {
         try {
                 const queryParams = new URLSearchParams();
-                queryParams.set('select', '*,detalle_pedidos(*),clientes(*)');
-                queryParams.set('id', `eq.${pedidoId}`);
+			queryParams.set('select', '*,detalle_pedidos(*),clientes(id,nombre,telefono)');
+			queryParams.set('id', `eq.${pedidoId}`);
 
                 const url = `${supabaseUrl}/rest/v1/pedidos?${queryParams.toString()}`;
                 const response = await fetch(url, { headers });
 
                 if (!response.ok) {
-                        const error = await response.text();
-                        throw toAppError(new Error(error), 'DB_ERROR', response.status);
+                        const errorBody = await response.text();
+                        logger.warn('PostgREST error fetching pedido', { status: response.status, body: errorBody, pedidoId });
+                        throw toAppError(new Error('Error consultando pedido'), 'DB_ERROR', response.status >= 500 ? 500 : 400);
                 }
 
                 const pedidos = await response.json();

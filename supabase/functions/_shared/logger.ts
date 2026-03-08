@@ -1,6 +1,22 @@
 type LogLevel = 'debug' | 'info' | 'warn' | 'error';
 type LogMeta = Record<string, unknown>;
 
+const SENSITIVE_KEYS = /^(token|password|secret|apikey|api_key|authorization|credential|session|cookie|private.?key)$/i;
+
+function redactSensitive(meta: LogMeta): LogMeta {
+  const result: LogMeta = {};
+  for (const [k, v] of Object.entries(meta)) {
+    if (SENSITIVE_KEYS.test(k)) {
+      result[k] = '[REDACTED]';
+    } else if (v && typeof v === 'object' && !Array.isArray(v)) {
+      result[k] = redactSensitive(v as LogMeta);
+    } else {
+      result[k] = v;
+    }
+  }
+  return result;
+}
+
 const LEVEL_ORDER: Record<LogLevel, number> = {
   debug: 10,
   info: 20,
@@ -53,7 +69,7 @@ export function createLogger(scope: string, baseMeta: LogMeta = {}) {
       scope,
       message,
       ...baseMeta,
-      ...meta,
+      ...redactSensitive(meta),
     });
   };
 

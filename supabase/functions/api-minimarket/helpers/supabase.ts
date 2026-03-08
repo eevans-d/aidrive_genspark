@@ -176,7 +176,8 @@ export async function updateTable<T = Record<string, unknown>>(
   data: unknown,
   timeout = DEFAULT_TIMEOUT,
 ): Promise<T[]> {
-  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}?id=eq.${id}`, {
+  const params = new URLSearchParams({ id: `eq.${id}` });
+  const response = await fetchWithTimeout(`${supabaseUrl}/rest/v1/${table}?${params.toString()}`, {
     method: 'PATCH',
     headers: { ...headers, Prefer: 'return=representation' },
     body: JSON.stringify(data),

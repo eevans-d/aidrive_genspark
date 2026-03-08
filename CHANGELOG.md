@@ -5,6 +5,15 @@ Todos los cambios notables de este proyecto se documentan aquí.
 El formato está basado en [Keep a Changelog](https://keepachangelog.com/es-ES/1.1.0/),
 y este proyecto adhiere a [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.2.1] - 2026-03-08
+
+### Security
+- **Fix over-fetching `clientes(*)`**: `ventas.ts` y `pedidos.ts` ahora retornan solo `clientes(id,nombre,telefono)` en vez de todos los campos (email, WhatsApp, límite de crédito, link de pago ya no se exponen).
+- **Fix PostgREST error leak**: errores 4xx de PostgREST en `pedidos.ts` ya no se pasan crudos al cliente — se logean internamente y se retorna mensaje genérico.
+- **Fix ventas.ts error handling**: mismo patrón — PostgREST body crudo reemplazado por mensaje genérico.
+- **Fix URL encoding en `updateTable`**: `supabase.ts` ahora usa `URLSearchParams` para el parámetro `id` en vez de interpolación directa, cerrando vector de inyección de filtros PostgREST.
+- **Logger con redacción de campos sensibles**: `logger.ts` ahora filtra recursivamente campos como `token`, `password`, `secret`, `apikey`, `authorization`, `credential`, `session`, `cookie`, `private_key` antes de serializar a JSON.
+
 ## [2.2.0] - 2026-03-08
 
 ### Added
