@@ -1,9 +1,9 @@
-# Comet Browser Findings - Supabase Auth y DB (2026-03-08)
+# Comet Browser Findings - Supabase Auth, DB y GCP OCR (2026-03-08)
 
 ## Contexto
-- Fuente: outputs compartidos por el usuario tras ejecutar `PROMPT 1` y `PROMPT 2` de `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md`.
+- Fuente: outputs compartidos por el usuario tras ejecutar `PROMPT 1`, `PROMPT 2` y `PROMPT 5` de `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md`.
 - Naturaleza de evidencia: `EXTERNAL_DASHBOARD` (verificada en navegador por Comet, no reproducible desde el filesystem del repo).
-- Alcance: configuracion Auth de Supabase y ajustes operativos de base de datos.
+- Alcance: configuracion Auth de Supabase, ajustes operativos de base de datos y diagnostico externo de Google Cloud Vision para OCR.
 
 ## Hallazgos confirmados en dashboard
 
@@ -17,6 +17,17 @@
 - `Connection pooler` de Supabase (`Supavisor`): **activo**.
 - Modo recomendado para servicios externos: **transaction pooler** (puerto `6543`).
 - `Network restrictions`: **no configuradas**; la base directa sigue accesible desde todas las IPs hasta definir allowlist.
+
+### GCP OCR
+- Proyecto nuevo creado por Comet: `aidrive-genspark` (`1030231636936`), pero **sin billing activo** y por tanto inutilizable para habilitar Vision API en este momento.
+- Proyecto realmente usado por OCR hasta ahora: `gen-lang-client-0312126042` (`Nano banana pro`).
+- En `gen-lang-client-0312126042`, **Cloud Vision API ya estaba habilitada**; el problema no era falta de enablement.
+- La unica cuenta de facturacion detectada (`0156DA-EB3EB0-9C9339`) esta **cerrada/inactiva** tras expirar la prueba gratuita.
+- La key `GCV_API_KEY` en el proyecto activo ya existia y tenia restricciones correctas:
+  - API restriction: solo `Cloud Vision API`
+  - Application restriction: ninguna
+- En Supabase (`dqaygmjpzoqjjrywdsxi`), el secret `GCV_API_KEY` fue **reemplazado/actualizado** externamente con el valor confirmado desde Google Cloud.
+- Diagnostico refinado: el timeout OCR observado (`504 OCR_TIMEOUT`) es **consistente con billing inactivo**, no con una key ausente o mal restringida.
 
 ## Acciones derivadas
 
@@ -34,13 +45,20 @@
 - Crear credenciales CAPTCHA y conectar el widget en `minimarket-system/src/pages/Login.tsx`.
 - Verificar fuera del filesystem que `DATABASE_URL` de Render/Railway/Vercel use el transaction pooler, no la conexion directa.
 - Inventariar IPs salientes y aplicar `Network restrictions` sobre el host directo de PostgreSQL.
+- Activar billing en Google Cloud para la cuenta `0156DA-EB3EB0-9C9339` y vincularlo al proyecto OCR activo `gen-lang-client-0312126042`.
+- Reejecutar `POST /facturas/{id}/extraer` una vez restablecido billing para confirmar salida del estado `OCR_TIMEOUT`.
 
 ## Clasificacion Protocol Zero
 - `REAL`:
   - mitigacion frontend de expiracion de sesion
   - existencia de evidencia externa compartida
+  - Cloud Vision API habilitada en el proyecto OCR activo
+  - `GCV_API_KEY` existente con restricciones correctas
+  - secret `GCV_API_KEY` actualizado externamente en Supabase
 - `A_CREAR`:
   - credenciales CAPTCHA
   - allowlist de IPs para DB
+  - reactivacion de billing GCP en la cuenta existente
 - `NO_VERIFICABLE_DESDE_REPO`:
   - valor actual de `DATABASE_URL` en servicios externos
+  - estado runtime post-billing del endpoint OCR hasta ejecutar un nuevo intento real

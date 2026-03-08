@@ -1,19 +1,20 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-08 (auditoria integral + cleanup de contexto + nuevo hallazgo PERF-001)
+**Ultima actualizacion:** 2026-03-08 (sync Comet Prompt 5 + diagnostico refinado OCR-007)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
 
-## OCR-007 - GCV_API_KEY no responde (CRITICO - bloqueante para OCR)
+## OCR-007 - Billing inactivo bloquea Google Cloud Vision (CRITICO - bloqueante para OCR)
 - Severidad: CRITICA
 - Impacto: ningun OCR puede ejecutarse hasta resolver billing GCP.
 - Estado: BLOCKED — causa raiz confirmada
-- Causa raiz: Free Trial expirado en proyecto GCP `gen-lang-client-0312126042` ("Nano banana pro"). Cuenta de facturacion `0156DA-EB3EB0-9C9339` cerrada/vencida. Cloud Vision API habilitada y key sin restricciones, pero billing inactivo bloquea todas las llamadas.
+- Causa raiz: Free Trial expirado en el proyecto OCR activo `gen-lang-client-0312126042` ("Nano banana pro"). La unica cuenta de facturacion detectada (`0156DA-EB3EB0-9C9339`) esta cerrada/vencida. Cloud Vision API ya esta habilitada y la key esta correctamente restringida, pero sin billing activo las llamadas siguen bloqueadas.
 - Evidencia original: `facturas_ingesta_eventos` evento `ocr_error` status 403 (2026-02-28 04:09 UTC)
 - Evidencia actualizada: timeout 15s (2026-02-28 05:19 UTC). Diagnostico GCP Console via Comet (2026-02-28 05:50 UTC).
-- Evidencia de re-check: invocacion directa a `facturas-ocr` devuelve `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persiste `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
-- Accion requerida: owner debe activar billing en `console.cloud.google.com/billing` → boton "Activar" → ingresar datos de pago → vincular al proyecto. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
+- Evidencia refinada (Comet Prompt 5, 2026-03-08): (1) el proyecto nuevo `aidrive-genspark` fue creado pero no puede habilitar Vision por falta de billing; (2) el proyecto realmente usado por OCR (`gen-lang-client-0312126042`) ya tenia Cloud Vision API habilitada; (3) `GCV_API_KEY` existia con restricciones correctas; (4) el secret `GCV_API_KEY` en Supabase fue actualizado externamente con el valor confirmado desde GCP.
+- Evidencia de re-check runtime: invocacion directa a `facturas-ocr` devuelve `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persiste `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
+- Accion requerida: owner debe activar billing en `https://console.cloud.google.com/billing/0156DA-EB3EB0-9C9339`, agregar metodo de pago y vincular esa cuenta al proyecto `gen-lang-client-0312126042`. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
 - Plan asociado: `docs/closure/archive/historical/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
 
 ## AUTH-001 - CAPTCHA de Auth no configurado en Supabase (MEDIA - hardening externo pendiente)
@@ -114,8 +115,8 @@
 - Referencia: D-178, D-182 en `docs/DECISION_LOG.md`
 
 ## BLOCKED
-- OCR-007: GCV_API_KEY no responde (timeout 15s). Bloqueante para extraccion OCR de las 21 facturas cargadas.
+- OCR-007: billing inactivo bloquea Cloud Vision; el ultimo sintoma observable sigue siendo `504 OCR_TIMEOUT`. Bloqueante para extraccion OCR de las 21 facturas cargadas.
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (GCV); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`) y un hallazgo BAJO de performance/build (`PERF-001`).
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`) y un hallazgo BAJO de performance/build (`PERF-001`).

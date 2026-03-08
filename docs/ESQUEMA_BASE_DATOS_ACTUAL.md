@@ -1198,4 +1198,4 @@ Configuracion per-vendor para OCR y calculo de precios de factura.
 ---
 
 **Version:** Post-Auditoria-Definitiva (GO, 57 migraciones, 45 tablas, 11 vistas, 3 MV)
-**Estado:** Produccion estable (pipeline OCR desplegado; falta secret GCV_API_KEY)
+**Estado:** Produccion estable (pipeline OCR desplegado; secret `GCV_API_KEY` documentado/configurado externamente, billing GCP pendiente para OCR end-to-end)
