@@ -6,7 +6,7 @@ Ultima actualizacion: 2026-03-05
 Fuente de verdad: docs/ESTADO_ACTUAL.md
 Owner documental: Operacion + Producto
 
-> Referencia de metricas y conteos: segun estado actual 2026-03-05 (rama `main`, 16 Edge Functions, 22 skills, 57 migraciones SQL).
+> Referencia de metricas y conteos: segun estado actual 2026-03-11 (rama `main`, 16 Edge Functions, 24 skills, 57 migraciones SQL).
 
 ## Objetivo
 Este manual explica como operar el sistema en el dia a dia sin conocimientos tecnicos. El foco inicial es:

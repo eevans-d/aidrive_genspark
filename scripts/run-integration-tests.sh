@@ -93,24 +93,60 @@ is_local_supabase() {
   return 1
 }
 
+trim_wrapping_quotes() {
+  local value="${1:-}"
+  if [[ "$value" == \"*\" ]]; then
+    value="${value#\"}"
+    value="${value%\"}"
+  fi
+  printf '%s' "$value"
+}
+
+hydrate_supabase_env_from_status() {
+  local status_env line key raw value
+  if ! status_env="$(supabase status -o env 2>/dev/null)"; then
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    case "$line" in
+      API_URL=*|ANON_KEY=*|SERVICE_ROLE_KEY=*)
+        key="${line%%=*}"
+        raw="${line#*=}"
+        value="$(trim_wrapping_quotes "$raw")"
+        case "$key" in
+          API_URL) export SUPABASE_URL="$value" ;;
+          ANON_KEY) export SUPABASE_ANON_KEY="$value" ;;
+          SERVICE_ROLE_KEY) export SUPABASE_SERVICE_ROLE_KEY="$value" ;;
+        esac
+        ;;
+    esac
+  done <<< "$status_env"
+
+  return 0
+}
+
+SUPABASE_START_LOG="${TMPDIR:-/tmp}/supabase-start-integration.log"
+
+start_supabase_quietly() {
+  if ! supabase start >"$SUPABASE_START_LOG" 2>&1; then
+    echo "ERROR: supabase start fallo. Revisa $SUPABASE_START_LOG para detalles." >&2
+    return 1
+  fi
+}
+
 # ============================================================================
 # EJECUCIÓN DE TESTS
 # ============================================================================
 
 if is_local_supabase || [ "${SUPABASE_FORCE_LOCAL:-}" = "1" ]; then
   echo "Iniciando Supabase local..."
-  supabase start
+  start_supabase_quietly
+  hydrate_supabase_env_from_status || true
 
   echo "Reiniciando base de datos local..."
   supabase db reset
-
-  # Actualizar variables desde supabase status si están disponibles
-  if supabase status -o env >/dev/null 2>&1; then
-    eval "$(supabase status -o env)"
-    export SUPABASE_URL="${SUPABASE_URL:-${API_URL:-}}"
-    export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
-    export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
-  fi
+  hydrate_supabase_env_from_status || true
 else
   echo "SUPABASE_URL apunta a un proyecto remoto. Se omite supabase start/db reset." >&2
 fi

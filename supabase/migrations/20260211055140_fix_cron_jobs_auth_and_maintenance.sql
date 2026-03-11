@@ -99,23 +99,29 @@ $$;
 -- ----------------------------------------------------------------
 -- Step 3: Reschedule jobs with same cron expressions
 -- ----------------------------------------------------------------
-SELECT cron.schedule(
-  'notificaciones-tareas_invoke',
-  '0 */2 * * *',
-  'CALL notificaciones_tareas_5492c915()'
-);
+DO $$
+BEGIN
+  -- Local/test environments may not have pg_cron installed; keep bootstrap safe.
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'notificaciones-tareas_invoke',
+      '0 */2 * * *',
+      'CALL notificaciones_tareas_5492c915()'
+    );
 
-SELECT cron.schedule(
-  'alertas-stock_invoke',
-  '0 * * * *',
-  'CALL alertas_stock_38c42a40()'
-);
+    PERFORM cron.schedule(
+      'alertas-stock_invoke',
+      '0 * * * *',
+      'CALL alertas_stock_38c42a40()'
+    );
 
-SELECT cron.schedule(
-  'reportes-automaticos_invoke',
-  '0 8 * * *',
-  'CALL reportes_automaticos_523bf055()'
-);
+    PERFORM cron.schedule(
+      'reportes-automaticos_invoke',
+      '0 8 * * *',
+      'CALL reportes_automaticos_523bf055()'
+    );
+  END IF;
+END $$;
 
 -- ----------------------------------------------------------------
 -- Step 4: Add maintenance_cleanup job (weekly, Sundays 04:00 UTC)
@@ -145,11 +151,16 @@ BEGIN
 END;
 $$;
 
-SELECT cron.schedule(
-  'maintenance_cleanup',
-  '0 4 * * 0',
-  'CALL maintenance_cleanup_7b3e9d1f()'
-);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule(
+      'maintenance_cleanup',
+      '0 4 * * 0',
+      'CALL maintenance_cleanup_7b3e9d1f()'
+    );
+  END IF;
+END $$;
 
 COMMIT;
 

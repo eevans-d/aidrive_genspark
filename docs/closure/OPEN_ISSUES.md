@@ -21,7 +21,7 @@
 - Severidad: MEDIA
 - Impacto: el login no tiene challenge anti-bot adicional. `signup` ya esta deshabilitado, por lo que el riesgo actual se concentra en intentos automatizados sobre credenciales existentes.
 - Estado: PENDIENTE_EXTERNAL
-- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/COMET_BROWSER_FINDINGS_2026-03-08.md`.
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
 - Accion requerida: crear credenciales del proveedor (`hCaptcha` o `Turnstile`), configurar el secret en Supabase Auth y agregar el widget al frontend de login.
 - Ruta candidata de integracion frontend: `minimarket-system/src/pages/Login.tsx`
 
@@ -38,7 +38,7 @@
 - Severidad: MEDIA
 - Impacto: el host directo de la base permanece accesible desde cualquier IP hasta definir una allowlist. El pooler no queda cubierto por esta restriccion.
 - Estado: PENDIENTE_EXTERNAL
-- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/COMET_BROWSER_FINDINGS_2026-03-08.md`.
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
 - Accion requerida: inventariar IPs salientes de Render/Railway/desarrollo y aplicar CIDRs permitidos en Supabase Database → Network restrictions.
 - Nota: no existe evidencia en el repo sobre el valor actual de `DATABASE_URL` en servicios externos; esa comprobacion debe hacerse fuera del filesystem.
 

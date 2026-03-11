@@ -32,8 +32,6 @@ BEGIN
 END;
 $$;
 
-SELECT cron.schedule('daily_price_update', '0 2 * * *', 'CALL daily_price_update_9f7c2a8b()');
-
 -- 2. weekly_trend_analysis — 0 3 * * 0 → cron-jobs-maxiconsumo
 CREATE OR REPLACE PROCEDURE weekly_trend_analysis_3d8e5f7c()
 LANGUAGE plpgsql
@@ -60,8 +58,6 @@ BEGIN
   COMMIT;
 END;
 $$;
-
-SELECT cron.schedule('weekly_trend_analysis', '0 3 * * 0', 'CALL weekly_trend_analysis_3d8e5f7c()');
 
 -- 3. realtime_change_alerts — */15 * * * * → cron-jobs-maxiconsumo
 CREATE OR REPLACE PROCEDURE realtime_change_alerts_5a9b4c2d()
@@ -91,8 +87,6 @@ BEGIN
 END;
 $$;
 
-SELECT cron.schedule('realtime_change_alerts', '*/15 * * * *', 'CALL realtime_change_alerts_5a9b4c2d()');
-
 -- 4. notificaciones-tareas_invoke — 0 */2 * * * → notificaciones-tareas
 CREATE OR REPLACE PROCEDURE notificaciones_tareas_5492c915()
 LANGUAGE plpgsql
@@ -110,8 +104,6 @@ BEGIN
   COMMIT;
 END;
 $$;
-
-SELECT cron.schedule('notificaciones-tareas_invoke', '0 */2 * * *', 'CALL notificaciones_tareas_5492c915()');
 
 -- 5. alertas-stock_invoke — 0 * * * * → alertas-stock
 CREATE OR REPLACE PROCEDURE alertas_stock_38c42a40()
@@ -131,8 +123,6 @@ BEGIN
 END;
 $$;
 
-SELECT cron.schedule('alertas-stock_invoke', '0 * * * *', 'CALL alertas_stock_38c42a40()');
-
 -- 6. reportes-automaticos_invoke — 0 8 * * * → reportes-automaticos
 CREATE OR REPLACE PROCEDURE reportes_automaticos_523bf055()
 LANGUAGE plpgsql
@@ -150,8 +140,6 @@ BEGIN
   COMMIT;
 END;
 $$;
-
-SELECT cron.schedule('reportes-automaticos_invoke', '0 8 * * *', 'CALL reportes_automaticos_523bf055()');
 
 -- 7. maintenance_cleanup — 0 4 * * 0 → cron-jobs-maxiconsumo
 CREATE OR REPLACE PROCEDURE maintenance_cleanup_7b3e9d1f()
@@ -179,4 +167,17 @@ BEGIN
 END;
 $$;
 
-SELECT cron.schedule('maintenance_cleanup', '0 4 * * 0', 'CALL maintenance_cleanup_7b3e9d1f()');
+DO $$
+BEGIN
+  -- Fresh local resets may not have pg_cron; create procedures either way and
+  -- schedule jobs only when the extension is available.
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
+    PERFORM cron.schedule('daily_price_update', '0 2 * * *', 'CALL daily_price_update_9f7c2a8b()');
+    PERFORM cron.schedule('weekly_trend_analysis', '0 3 * * 0', 'CALL weekly_trend_analysis_3d8e5f7c()');
+    PERFORM cron.schedule('realtime_change_alerts', '*/15 * * * *', 'CALL realtime_change_alerts_5a9b4c2d()');
+    PERFORM cron.schedule('notificaciones-tareas_invoke', '0 */2 * * *', 'CALL notificaciones_tareas_5492c915()');
+    PERFORM cron.schedule('alertas-stock_invoke', '0 * * * *', 'CALL alertas_stock_38c42a40()');
+    PERFORM cron.schedule('reportes-automaticos_invoke', '0 8 * * *', 'CALL reportes_automaticos_523bf055()');
+    PERFORM cron.schedule('maintenance_cleanup', '0 4 * * 0', 'CALL maintenance_cleanup_7b3e9d1f()');
+  END IF;
+END $$;

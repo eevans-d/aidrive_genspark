@@ -93,21 +93,87 @@ is_local_supabase() {
   return 1
 }
 
+trim_wrapping_quotes() {
+  local value="${1:-}"
+  if [[ "$value" == \"*\" ]]; then
+    value="${value#\"}"
+    value="${value%\"}"
+  fi
+  printf '%s' "$value"
+}
+
+hydrate_supabase_env_from_status() {
+  local status_env line key raw value
+  if ! status_env="$(supabase status -o env 2>/dev/null)"; then
+    return 1
+  fi
+
+  while IFS= read -r line; do
+    case "$line" in
+      API_URL=*|ANON_KEY=*|SERVICE_ROLE_KEY=*|JWT_SECRET=*)
+        key="${line%%=*}"
+        raw="${line#*=}"
+        value="$(trim_wrapping_quotes "$raw")"
+        case "$key" in
+          API_URL) export SUPABASE_URL="$value" ;;
+          ANON_KEY) export SUPABASE_ANON_KEY="$value" ;;
+          SERVICE_ROLE_KEY) export SUPABASE_SERVICE_ROLE_KEY="$value" ;;
+          JWT_SECRET) export SUPABASE_JWT_SECRET="$value" ;;
+        esac
+        ;;
+    esac
+  done <<< "$status_env"
+
+  return 0
+}
+
+SUPABASE_START_LOG="${TMPDIR:-/tmp}/supabase-start-e2e.log"
+
+start_supabase_quietly() {
+  if ! supabase start >"$SUPABASE_START_LOG" 2>&1; then
+    echo "ERROR: supabase start fallo. Revisa $SUPABASE_START_LOG para detalles." >&2
+    return 1
+  fi
+}
+
+load_project_id() {
+  awk -F '"' '/^project_id = /{print $2; exit}' "$ROOT_DIR/supabase/config.toml"
+}
+
+ensure_edge_runtime_running() {
+  local project_id container_name
+  project_id="$(load_project_id)"
+  if [ -z "$project_id" ]; then
+    echo "WARN: No se pudo detectar project_id en supabase/config.toml. Se omite verificacion de edge runtime." >&2
+    return 0
+  fi
+
+  container_name="supabase_edge_runtime_${project_id}"
+  if docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+    return 0
+  fi
+
+  echo "Edge Runtime no detectado (${container_name}). Ejecutando autorrecuperacion..." >&2
+  supabase stop --no-backup >/dev/null 2>&1 || true
+  start_supabase_quietly
+  hydrate_supabase_env_from_status || true
+
+  if ! docker ps --format '{{.Names}}' | grep -q "^${container_name}$"; then
+    echo "ERROR: Edge Runtime sigue caido (${container_name})." >&2
+    echo "Accion requerida: actualiza Supabase CLI y reintenta (version detectada: $(supabase --version | head -n1))." >&2
+    exit 1
+  fi
+}
+
 # ============================================================================
 # EJECUCIÓN DE TESTS
 # ============================================================================
 
 if is_local_supabase || [ "${SUPABASE_FORCE_LOCAL:-}" = "1" ]; then
   echo "Iniciando Supabase local..."
-  supabase start
-
-  # Actualizar variables desde supabase status si están disponibles
-  if supabase status -o env >/dev/null 2>&1; then
-    eval "$(supabase status -o env)"
-    export SUPABASE_URL="${SUPABASE_URL:-${API_URL:-}}"
-    export SUPABASE_ANON_KEY="${SUPABASE_ANON_KEY:-${ANON_KEY:-}}"
-    export SUPABASE_SERVICE_ROLE_KEY="${SUPABASE_SERVICE_ROLE_KEY:-${SERVICE_ROLE_KEY:-}}"
-  fi
+  start_supabase_quietly
+  hydrate_supabase_env_from_status || true
+  ensure_edge_runtime_running
 else
   echo "SUPABASE_URL apunta a un proyecto remoto. Se omite supabase start." >&2
 fi

@@ -277,15 +277,16 @@ Evidencia: `tests/unit/assistant-confirm-store.test.ts`, `tests/unit/assistant-i
 Pendiente post-Sprint 2:
 - ~~Deploy de `api-assistant` a Supabase Cloud (`supabase functions deploy api-assistant --use-api`).~~ ✅ Desplegado 2026-03-01
 
-## Sprint 3 (3-5 dias) - hardening y adopcion
+## Sprint 3 (historico - completado)
 
-Entregables:
-1. Acciones adicionales (`actualizar_estado_pedido`, `aplicar_factura` si corresponde).
-2. Guia visual para usuario no tecnico.
-3. Panel "historial de acciones IA".
+Entregables originalmente definidos:
+1. ~~Acciones adicionales (`actualizar_estado_pedido`, `aplicar_factura` si corresponde).~~ ✅ Implementado
+2. Guia visual para usuario no tecnico. ⏳ Pendiente para Sprint 4+
+3. Panel "historial de acciones IA". ⏳ Pendiente para Sprint 4+
 
-Definition of Done:
-- Piloto con usuario real (tu padre) completando 3 tareas sin asistencia tecnica.
+Definition of Done ejecutada parcialmente:
+- ✅ Hardening y adopcion backend completados (`actualizar_estado_pedido`, `aplicar_factura`, auditoria persistente)
+- ⏳ Pendiente la capa UX/adopcion final (guia visual + historial)
 
 ## 8) Backlog tecnico priorizado (realista)
 
@@ -328,10 +329,10 @@ P2:
 
 ## 11) Recomendacion ejecutiva
 
-Sprint 1 (read-only) y Sprint 2 (acciones con confirmacion) estan **COMPLETADOS** y funcionales.
-Siguiente paso: comenzar Sprint 3 (hardening y adopcion).
+Sprint 1, Sprint 2 y el hardening backend de Sprint 3 estan **COMPLETADOS** y funcionales.
+Siguiente paso: avanzar a Sprint 4+ de adopcion/UX.
 Ruta recomendada:
 - Mantener monitoreo de `api-assistant` desplegada (errores, rate-limit, feedback de uso)
 - Piloto con usuario real para validar flujo plan→confirm
-- Implementar Sprint 3: acciones adicionales + historial de acciones + guia visual
+- Implementar backlog de adopcion: historial de acciones IA + guia visual
 - Recien despues evaluar LLM para mejorar interpretacion.

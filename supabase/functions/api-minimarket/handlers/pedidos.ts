@@ -13,6 +13,7 @@ import {
         queryTableWithCount,
         insertTable,
         updateTable,
+        updateTableByFilters,
         callFunction,
 } from '../helpers/supabase.ts';
 import { isUuid, sanitizeTextParam, isValidISODateString, VALID_PEDIDO_ESTADOS, VALID_PEDIDO_ESTADOS_PAGO } from '../helpers/validation.ts';
@@ -315,10 +316,23 @@ export async function handleActualizarEstadoPedido(
                         updates.entregado_por_id = userId;
                 }
 
-                const result = await updateTable(supabaseUrl, 'pedidos', pedidoId, headers, updates);
+                // Optimistic lock: only update if the state we validated is still current.
+                const result = await updateTableByFilters(
+                        supabaseUrl,
+                        'pedidos',
+                        headers,
+                        { id: pedidoId, estado: currentEstado },
+                        updates
+                );
 
                 if ((result as unknown[]).length === 0) {
-                        return fail('NOT_FOUND', 'Pedido no encontrado', 404, responseHeaders, { requestId });
+                        return fail(
+                                'CONFLICT',
+                                'El pedido fue actualizado por otra operación. Reintentá con el estado actual.',
+                                409,
+                                responseHeaders,
+                                { requestId }
+                        );
                 }
 
                 logger.info('PEDIDO_ESTADO_ACTUALIZADO', { requestId, pedidoId, from: currentEstado, to: estado });

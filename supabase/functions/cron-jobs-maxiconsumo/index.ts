@@ -5,6 +5,7 @@
 
 import { executeJob, createExecutionContext, getJobStatus } from './orchestrator.ts';
 import { getJobConfig, getAllJobConfigs } from './config.ts';
+import { normalizeExecuteJobPayload } from './request.ts';
 import type { StructuredLog } from './types.ts';
 import type { CronJobExecutionLogRow } from '../_shared/types.ts';
 import { createLogger } from '../_shared/logger.ts';
@@ -29,14 +30,18 @@ function getEnvOrThrow(name: string): string {
 }
 
 async function handleExecute(req: Request, supabaseUrl: string, serviceRoleKey: string, log: StructuredLog): Promise<Response> {
-  let body: { jobId?: string; parameters?: Record<string, unknown> } = {};
-  try { body = await req.json(); } catch { /* empty body ok */ }
+  let parsedBody = normalizeExecuteJobPayload({});
+  try {
+    parsedBody = normalizeExecuteJobPayload(await req.json());
+  } catch {
+    /* empty body ok */
+  }
 
-  const jobId = body.jobId || 'daily_price_update';
+  const { jobId, parameters } = parsedBody;
   const config = getJobConfig(jobId);
   if (!config) return jsonResponse({ error: `Job not found: ${jobId}` }, 404);
 
-  const ctx = createExecutionContext(jobId, log.requestId, 'api', body.parameters);
+  const ctx = createExecutionContext(jobId, log.requestId, 'api', parameters);
   logger.info('EXECUTE_JOB', { ...log, jobId, runId: ctx.runId });
 
   try {

@@ -2,19 +2,19 @@
 
 Estado: Activo
 Audiencia: Tecnico interno
-Ultima actualizacion: 2026-03-05
+Ultima actualizacion: 2026-03-11
 Fuente de verdad: docs/ESTADO_ACTUAL.md
 Owner documental: QA + Desarrollo
 
-> Referencias: corrida verificada 2026-03-05 (`unit_files=86`, `unit_tests=1945`) y estado operativo en `docs/ESTADO_ACTUAL.md`.
+> Referencias: corrida verificada 2026-03-11 (`unit_files=88`, `unit_tests=1959`, `integration=68 PASS`, `components=257 PASS`, `e2e=4 PASS`) y auditoria consolidada en `docs/audit/FULL_AUDIT_REPORT_2026-03-11.md`.
 
-## Estado Verificado 2026-03-05 (Continuidad GO-LIVE)
-- Unit (root): `86/86` files, `1945/1945` tests PASS.
-- Coverage global (unit): `90.06% statements`.
-- Build frontend: PASS (`vite build` + PWA assets generados).
-- TypeCheck frontend: PASS (`npx tsc --noEmit`, 0 errores).
-- Deno check: `16/16 OK`.
-- Dependency alignment: `11/11 PASS` (CI guard + tests).
+## Estado Verificado 2026-03-11
+- Unit (root): `88/88` files, `1959/1959` tests PASS.
+- Integracion: `68/68` PASS.
+- Componentes frontend: `257/257` PASS.
+- Lint frontend: `0 errores`, `72 warnings` (tests/mocks).
+- Build frontend: PASS (`vite build` + PWA assets generados) con warnings conocidos de chunking/PWA.
+- E2E smoke local de Edge Functions: PASS (`4/4`) con JWT HS256 de test + secret inyectado al runtime local.
 
 ## Objetivo
 Estandarizar como ejecutar, interpretar y mantener tests del proyecto sin ambiguedad.

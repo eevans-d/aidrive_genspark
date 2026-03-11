@@ -47,6 +47,7 @@ Kickoff (push-button: session-start + extract + mega-plan template):
 - `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` — roadmap OCR (10/10 completado)
 - `docs/PLAN_ASISTENTE_IA_DASHBOARD.md` — plan asistente IA (Sprint 3 COMPLETADO — 7 read + 4 write + auditoria)
 - `docs/closure/OPEN_ISSUES.md` — issues abiertos y cerrados
+- `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md` — prompts para Comet (hallazgos ejecutables desde navegador)
 - `docs/api-openapi-3.1.yaml` — OpenAPI spec
 - `docs/PRODUCTION_GATE_REPORT.md` — ultimo reporte de production gate
 - `AGENTS.md` (this file)
