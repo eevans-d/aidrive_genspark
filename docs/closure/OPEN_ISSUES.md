@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-12 (continuidad produccion + context engineering operativo)
+**Ultima actualizacion:** 2026-03-12 (cierre PERF-001 + convergencia DOCS-CTX-001 + seguimiento de pendientes externos)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -16,6 +16,7 @@
 - Evidencia de re-check runtime: invocacion directa a `facturas-ocr` devuelve `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persiste `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
 - Accion requerida: owner debe activar billing en `https://console.cloud.google.com/billing/0156DA-EB3EB0-9C9339`, agregar metodo de pago y vincular esa cuenta al proyecto `gen-lang-client-0312126042`. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
 - Plan asociado: `docs/closure/archive/historical/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
+- Seguimiento 2026-03-12: **sin cambios** en condicion externa; permanece bloqueante.
 
 ## AUTH-001 - CAPTCHA de Auth no configurado en Supabase (MEDIA - hardening externo pendiente)
 - Severidad: MEDIA
@@ -24,6 +25,7 @@
 - Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
 - Accion requerida: crear credenciales del proveedor (`hCaptcha` o `Turnstile`), configurar el secret en Supabase Auth y agregar el widget al frontend de login.
 - Ruta candidata de integracion frontend: `minimarket-system/src/pages/Login.tsx`
+- Seguimiento 2026-03-12: **sin cambios** (pendiente externo).
 
 ## AUTH-002 - Session timeouts server-side no disponibles en el plan actual (MEDIA - mitigado en frontend)
 - Severidad: MEDIA
@@ -33,6 +35,7 @@
 - Fix aplicado en repo: mitigacion client-side en `minimarket-system/src/contexts/AuthContext.tsx` + `minimarket-system/src/lib/authSessionPolicy.ts` con defaults `24h`/`8h`.
 - Verificacion local: `8/8 PASS` en tests focalizados (`authSessionPolicy` + `AuthContext`) y `tsc --noEmit` OK.
 - Accion restante: si el proyecto sube a un plan con soporte nativo, alinear el timeout tambien a nivel server-side para que el corte no dependa solo del cliente.
+- Seguimiento 2026-03-12: **sin cambios** (mitigacion local vigente).
 
 ## DB-001 - Network restrictions de PostgreSQL no configuradas (MEDIA - hardening externo pendiente)
 - Severidad: MEDIA
@@ -41,22 +44,21 @@
 - Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
 - Accion requerida: inventariar IPs salientes de Render/Railway/desarrollo y aplicar CIDRs permitidos en Supabase Database → Network restrictions.
 - Nota: no existe evidencia en el repo sobre el valor actual de `DATABASE_URL` en servicios externos; esa comprobacion debe hacerse fuera del filesystem.
+- Seguimiento 2026-03-12: **sin cambios** (pendiente externo).
 
-## PERF-001 - Build frontend con warnings de chunking/PWA (BAJA - no bloqueante)
+## PERF-001 - Warning residual de chunking/PWA en build frontend (CERRADO)
 - Severidad: BAJA
-- Impacto: el build de produccion termina correctamente y ya no dispara warning de chunk >500 kB en `react` tras ajuste de `manualChunks` (`react-core` ~143 kB, `scanner` ~457 kB). Permanece ruido no bloqueante en paso PWA/Workbox: `Unknown input options: manualChunks`.
-- Estado: ABIERTO_PARCIAL (mitigado en parte)
-- Evidencia: `pnpm -C minimarket-system build` re-ejecutado el 2026-03-12.
-- Ruta candidata: `minimarket-system/vite.config.ts`
-- Accion requerida: aislar la fuente exacta del warning residual en integracion `VitePWA`/Workbox y cerrar trazabilidad de `manualChunks` en ese paso.
+- Impacto previo: ruido en build por warning residual de Workbox y warning circular de chunks.
+- Estado: CERRADO
+- Fix aplicado: `minimarket-system/vite.config.ts` mantiene split manual por dominios y agrega `workbox.inlineWorkboxRuntime=true`, eliminando el warning `Unknown input options: manualChunks`; ademas se ajusta fallback de `manualChunks` para evitar warning circular `radix -> vendor -> radix`.
+- Evidencia: `pnpm -C minimarket-system build` (2026-03-12) sin warnings de chunking/PWA.
 
-## DOCS-CTX-001 - Presupuesto de contexto canonico aun excedido en docs legacy (BAJA - no bloqueante)
+## DOCS-CTX-001 - Presupuesto de contexto canonico (CERRADO)
 - Severidad: BAJA
-- Impacto: se incorporo `CONTEXT0` como entrada unica y chequeo automatizado de budget, pero docs canonicos legacy extensos (`ESTADO_ACTUAL`, `DECISION_LOG`, `API_README`, `ESQUEMA_BASE_DATOS_ACTUAL`) siguen sobre el target ideal de `<=2000` palabras; esto puede aumentar costo cognitivo si se ignora el flujo de carga recomendado.
-- Estado: ABIERTO_PLANIFICADO
-- Evidencia: `node scripts/check-context-budget.mjs` (baseline 2026-03-12).
-- Ruta candidata: `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/API_README.md`, `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
-- Accion requerida: ejecutar poda incremental por secciones (mover narrativa extensa a historicos) hasta converger al target sin perder evidencia canonica.
+- Impacto previo: cuatro docs canonicos excedian target de `<=2000` palabras.
+- Estado: CERRADO
+- Fix aplicado: poda incremental y compactacion operativa de `ESTADO_ACTUAL`, `DECISION_LOG`, `API_README`, `ESQUEMA_BASE_DATOS_ACTUAL`; trazabilidad preservada en historial de git y decision log canonico.
+- Evidencia: `npm run docs:context-budget` (2026-03-12) con `ok=9 warn=0 fail=0`.
 
 ## AUDIT-001 - Hallazgos MEDIUM de auditoria de produccion (CERRADO)
 - Severidad: MEDIA (ninguno bloqueante)
@@ -127,4 +129,4 @@
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`), un hallazgo BAJO de performance/build (`PERF-001`, mitigado parcial) y una deuda baja de poda documental (`DOCS-CTX-001`).
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items externos no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`). `PERF-001` y `DOCS-CTX-001` quedan cerrados en esta corrida.

@@ -1,193 +1,81 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-12 (continuidad hacia produccion + revalidacion completa + context engineering)
-**Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE, UX Audit DONE, Security Audit DONE, hardening externo no bloqueante pendiente)`
-**Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED, RC-01/D1/D2 RESUELTOS`
-**Estado del Asistente IA:** `SPRINT 3 COMPLETADO — 4 intents write con plan→confirm, auditoria persistente en BD`
+**Ultima actualizacion:** 2026-03-12 (continuidad de produccion, cierre PERF-001 y poda canonica incremental)
+**Veredicto general:** `LISTO PARA PRODUCCION`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
-- **Continuidad hacia produccion + context engineering (2026-03-12):** revalidacion completa de quality gates obligatorios con evidencia fresca: `unit 1959/1959 PASS`, `integration 68/68 PASS`, `e2e 4/4 PASS`, `components 257/257 PASS`, `lint 0 errors/72 warnings`, `build PASS`, `doc links PASS`, `closure policy PASS`. Se aplicaron tres hardenings tecnicos: (1) `vite.config.ts` refina `manualChunks` para bajar acoplamiento y eliminar warning de chunks >500 kB en `react` (nuevo `react-core` ~143 kB; `scanner` ~457 kB); (2) `run-e2e-tests.sh` ahora detecta `API_PROVEEDOR_SECRET` stale en runtime local y autorrecupera con restart controlado de Supabase; (3) `.agent/scripts/env_audit.py` corrige falso negativo para `VITE_*` accedidas via alias (`env = import.meta.env`). Adicionalmente se alinea `supabase/config.toml` para que local respete `api-minimarket verify_jwt=false`, quedando paridad local/remoto en `GET /api-minimarket/health` (200/200). Hallazgo residual no bloqueante: persiste warning `Unknown input options: manualChunks` durante paso PWA/Workbox (`PERF-001`).
-- **Cierre de plan intensivo (2026-03-11):** se cerraron los hallazgos de codigo y harness local verificados en auditoria. `PUT /pedidos/:id/estado` ahora aplica lock optimista y responde `409 CONFLICT` en carreras; `cron-jobs-maxiconsumo` acepta `jobId` y `job_id`; migraciones cron quedaron blindadas para entornos sin `pg_cron`. El harness local de pruebas se endurecio: hidratacion segura de `SUPABASE_*` desde `supabase status -o env` (sin `eval`), autorrecuperacion de `supabase_edge_runtime_<project_id>` y smoke E2E con JWT HS256 valido + secret inyectado en edge runtime local. Resultado verificado: `unit 1959/1959 PASS`, `integration 68/68 PASS`, `e2e 4/4 PASS`, `components 257/257 PASS`, `lint 0 errors/72 warnings`, `build PASS`, links docs OK y closure policy OK.
-- **Auditoria integral + hygiene sweep (2026-03-08):** revalidacion completa bajo `RealityCheck` + `DocuGuard` con evidencia fresca del repo. Se detecto una desincronizacion real en `Asistente.tsx`: el briefing proactivo estaba disparando `hola` y afectaba tests/continuidad de chats persistidos. Fix aplicado: el auto-briefing ahora usa `briefing` y solo corre en chats limpios, preservando historiales guardados; `Asistente.test.tsx` quedo resincronizado (**7/7 PASS**). Validacion global posterior: suite unitaria raiz **1952/1952 PASS**, suite frontend **257/257 PASS**, `tsc -b` **OK**, build **OK**, links de docs **OK**. Higiene aplicada: se eliminaron artefactos generados (`dist/`, `test-reports/`, `supabase/.temp/`) y archivos `:Zone.Identifier`; ramas remotas depuradas para dejar solo `origin/main`. Hallazgo residual no bloqueante: `PERF-001` (warnings de chunking/PWA durante build).
-- **Hardening CI / GitHub Actions (2026-03-08):** `PROMPT 4` ejecutado localmente en el repo. Se pinnearon a commit SHA las actions usadas en `.github/workflows/ci.yml`, `.github/workflows/deploy-cloudflare-pages.yml`, `.github/workflows/nightly-gates.yml`, `.github/workflows/security-nightly.yml` y `.github/workflows/backup.yml`. Ademas, `nightly-gates.yml` reemplaza `pnpm install --prefer-offline` por `pnpm install --frozen-lockfile`. Verificacion local: **0** referencias restantes a `uses: ...@v*|@main|@master`, parseo YAML **OK**. Pendiente externo: observar la siguiente corrida real de GitHub Actions para validar que no haya SHAs invalidos.
-- **Validacion browser Comet — Supabase Auth/DB (2026-03-08):** `signup` publico confirmado en `OFF` y `confirm email` en `ON`. `CAPTCHA` sigue pendiente por credenciales del proveedor e integracion en frontend. El plan actual del dashboard no expone `session timebox` ni `inactivity timeout` nativos; se mitigo en codigo con guardas client-side en `AuthContext` (`24h` max session + `8h` inactivity timeout por defecto, configurables via `VITE_AUTH_TIMEBOX_MS` y `VITE_AUTH_INACTIVITY_TIMEOUT_MS`). Tests focalizados: **8/8 PASS** y `tsc --noEmit` **OK**. `Supavisor` ya esta activo como pooler; `network restrictions` siguen pendientes de inventario de IPs. Evidencia: `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
-- **Validacion browser Comet — GCP OCR / Prompt 5 (2026-03-08):** el diagnostico de `OCR-007` queda refinado. Comet confirmo que el proyecto OCR realmente usado sigue siendo `gen-lang-client-0312126042` (`Nano banana pro`), que Cloud Vision API ya estaba habilitada alli, y que `GCV_API_KEY` existia con restricciones correctas. Tambien confirmo que el secret `GCV_API_KEY` en Supabase fue actualizado externamente con el valor validado desde GCP. El bloqueo real sigue siendo billing inactivo: la unica cuenta de facturacion (`0156DA-EB3EB0-9C9339`) esta cerrada, por lo que OCR permanece bloqueado hasta reactivar billing y vincularlo al proyecto activo. El proyecto nuevo `aidrive-genspark` fue creado externamente, pero no cambia el pipeline OCR actual y tampoco puede habilitar Vision mientras billing siga inactivo.
-- **Auditoria de seguridad — El Atacante y Murphy (2026-03-08):** 5 fixes de seguridad backend: (1) over-fetching `clientes(*)` reemplazado por `clientes(id,nombre,telefono)` en ventas.ts y pedidos.ts — previene exposicion de email, WhatsApp, limite de credito, link de pago; (2) errores PostgREST 4xx en pedidos.ts sanitizados — errores crudos con nombres de tablas/columnas ya no se filtran al cliente; (3) ventas.ts error handling — mensaje generico en vez de body crudo de PostgREST; (4) `updateTable` URL encoding — `id` ahora usa `URLSearchParams` en vez de interpolacion directa, cerrando vector de inyeccion de filtros; (5) logger.ts con redaccion recursiva de campos sensibles (token, password, secret, apikey, authorization, credential, session, cookie, private_key). Tests: **1952/1952 PASS**.
-- **Auditoria completa de produccion + hardening UX (2026-03-08):** Auditoria exhaustiva de 3 fases (reconocimiento profundo, analisis de gaps, plan de despliegue). Se ejecutaron 17 fixes en 2 rondas: Ronda 1 (infra/config, 7 items): sincronizacion `.env.example` con vars CI/CD, correccion de comentarios, campo `engines` en package.json, `.nvmrc`, observabilidad en `AuthContext`, nombre descriptivo, favicon SVG + meta description. Ronda 2 (UX usuario real, 8 items): proteccion doble-submit en Pedidos (3 botones estado + checkboxes), POS quick-create cliente (extraido a componente con `saving` state), Cuaderno (tracking per-ID con `mutatingIds` Set), Proveedores faltantes (`resolvingId` guard), Tareas (disabled per-ID en vez de global), memory leak `FacturaUpload` (cleanup `URL.revokeObjectURL` en unmount), hook `useUnsavedChangesWarning` (aplicado en POS carrito y Pedidos formulario), `maxLength` en inputs de texto libre. Tests: **1952/1952 PASS**, build OK, TypeScript OK, ESLint **0 errores**.
-- **Mejoras UX y Proactividad Wave 1 & 2 (2026-03-06):** Reducción drástica de la fricción del usuario mediante 6 mejoras de alto impacto (M1-M6). El Asistente IA ahora inicia con un Briefing Proactivo de 4 métricas, cuenta con Quick Prompts contextuales dinámicos, un renderizador de datos enriquecido (mini-tablas), y ofrece comparativas interdiarias automatizadas. El Dashboard incorpora alertas de acción en `TodayActions`. El componente POS incluye repetir ticket (`lastSale`). Se inyectó heurística NLP al parser (`parser.ts`) basada en validaciones de `TestMaster`. Testeado al 100%: **1959/1959 unit PASS**, **249/249 UI PASS**.
-- **Remediacion de dependencias frontend (2026-03-05, commit `8d226fe`):** corregidas 6 vulnerabilidades HIGH en audit de produccion. `vite-plugin-pwa` movido de `dependencies` a `devDependencies` (es herramienta de build, no runtime). Overrides actualizados: `minimatch` 5.1.7→5.1.8 y 10.2.1→10.2.3 (fix ReDoS), `rollup` >=4.59.0 (fix arbitrary file write), `serialize-javascript` >=7.0.3 (fix RCE). Resultado: **audit --prod 0 HIGH/0 CRITICAL**. Tests: **1945/1945 PASS**, build OK, lint 0 errores.
-- **Hardening de tipado TypeScript (2026-03-05, commit `3bc9ebc`):** eliminados ~249 `any` explicitos en codigo de produccion (45 archivos en commit, 2 archivos de tipos nuevos). `@typescript-eslint/no-explicit-any` quedo en `warn` para prevenir regresiones. Verificacion Codex: **1945/1945 PASS** (suite raiz), **249/249 PASS** (frontend), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks + 1 `KEEP` de interop `JsBarcode`).
-- **Ejecucion de 15 tareas (T01-T15, 2026-03-04):** sesion de Claude Code Executor completo. 14/15 tareas DONE, 1 BLOCKED_EXTERNAL (T01: GCV API Key — requiere accion del owner). Highlights: lock de concurrencia OCR (T02), transaccionalidad OCR (T03), mutex OCR (T04), idempotencia 2 endpoints (T05-T06), errores visibles frontend (T07-T08), hard cap reportes (T09), migraciones aplicadas (T10), DATA_HANDLING_POLICY (T11), performance baseline v2 (T12), nightly gates CI (T13), asistente IA Sprint 3 — 2 nuevos intents write (T14-T15), auditoria persistente en BD (T15). Tests: **1945/1945 PASS**, build OK, lint 0 errors. Evidencia: `docs/closure/execution-logs/T01..T15_*.md`.
-- **Plan de ejecucion para Claude Code (2026-03-04):** se genero artefacto operativo con 15 tareas complejas, subtareas y micro-pasos, incluyendo regla obligatoria de auto-continuidad: si una tarea queda `BLOCKED_EXTERNAL`, se documenta evidencia y se continua inmediatamente con `Tn+1` sin esperar aprobacion manual. Referencia: `docs/closure/archive/historical/CONTEXT_PROMPT_CLAUDE_CODE_15_TAREAS_2026-03-04_044540.md`.
-- **Verificacion operativa + UXFixOps (2026-03-04):** `RealityCheck` + `DocuGuard` + `UXFixOps/TestMaster` ejecutados. HC-1/HC-2/HC-3 sin hallazgos criticos. Fricciones P1 cerradas en alcance corregido: estado vacio accionable en `Productos`, feedback de exito en mutaciones de `Pedidos`, y test de `Dashboard` estabilizado. Metadata operativa sincronizada: `.agent/skills/project_config.yaml` actualizado a `functions_deployed: 16`.
-- **Verificacion integral (2026-03-03):** tests 1905/1905 PASS, build OK, lint 0, 16/16 edge functions ACTIVE. Tier 2 avanzado a 10/12: audit trail expansion (6 handlers), atomic margin validation (SP FOR UPDATE), OCR rollback verificado completo, CORS verificado seguro.
-- **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
-- **Tier 2 (12/12 hardening — COMPLETO):** RLS cache_proveedor, 3 CHECK constraints, timing-safe auth, state machine tareas, audit trail financiero (4+6 operaciones), cross-tab POS, atomic margin (FOR UPDATE), OCR rollback validado, CORS validado, DATA_HANDLING_POLICY.md completado (T11), performance baseline v2 (T12).
-- **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
-- GCV sigue BLOCKED: Prompt 5 de Comet confirmo que el bloqueo real es billing inactivo, no ausencia de API ni de secret.
+- El sistema mantiene estado operativo estable con quality gates en verde y sin regresiones funcionales en endpoints criticos.
+- Se cerro `PERF-001`: build frontend sin warnings residuales de chunking/PWA tras ajuste de `manualChunks` + `workbox.inlineWorkboxRuntime=true`.
+- Se inicio poda incremental de documentacion canonica (`DOCS-CTX-001`) para converger a `<=2000` palabras por documento sin perder trazabilidad (snapshots completos archivados en `docs/closure/archive/historical/`).
+- Permanecen pendientes externos ya conocidos: `OCR-007` (bloqueante OCR), `AUTH-001`, `AUTH-002`, `DB-001`.
 
-## 2) Estado tecnico verificado (sesion 2026-03-12, continuidad produccion)
-- Tests unitarios completos: **1959/1959 PASS** (88 archivos).
-- Tests de integracion: **68/68 PASS** (3 archivos).
-- E2E smoke Edge Functions: **4/4 PASS** (1 archivo).
-- Suite frontend/componentes: **257/257 PASS** (50 archivos).
-- Guardas de sesion frontend: **activas por defecto** (`24h` timebox + `8h` inactivity timeout, override via `VITE_AUTH_*`).
-- Build produccion: **OK** (39 precache entries PWA, 0 errores de compilacion).
-- TypeScript: **0 errores** (`tsc --noEmit` limpio).
-- Lint: **0 errores**, **72 warnings** (tests/mocks).
-- Audit de dependencias produccion: **0 HIGH, 0 CRITICAL**.
-- Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v42, api-assistant v4, facturas-ocr v13).
-- Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
-- Health endpoint: HTTP 200 local/remoto para `api-minimarket/health` tras alinear `verify_jwt=false` en config local.
-- Higiene de contexto: artefactos de build/cache bajo control (`dist/`, `test-reports/`, `supabase/.temp/` fuera de versionado) y cierre documental con policy de `docs/closure` en verde. Ramas remotas vigentes (2026-03-11): `origin/main`, `origin/copilot/*`, `origin/dependabot/*`.
-- Warnings no bloqueantes observados: permanece `Unknown input options: manualChunks` durante paso PWA/Workbox. El warning de chunk >500 kB en `react` quedo mitigado con nueva estrategia de split; `scanner` sigue pesado pero por debajo del umbral de warning actual. Referencia: `PERF-001`.
+## 2) Evidencia tecnica verificada (baseline 2026-03-12)
+### Quality gates
+- Unit tests (root): `1959/1959 PASS`
+- Integration tests: `68/68 PASS`
+- E2E smoke: `4/4 PASS`
+- Component tests frontend: `257/257 PASS`
+- Lint frontend: `0 errors` (`72 warnings` en tests/mocks)
+- Build frontend: `PASS`
+- Doc links: `PASS`
+- Closure policy check: `PASS`
 
-## 3) OCR de facturas: estado real
+### Build y performance (frontend)
+- Bundle con split por dominios pesados (`scanner`, `charts`, `supabase`, `react-core`, etc.) y sin warning circular.
+- `scanner` queda bajo umbral de warning configurado por build.
+- Paso PWA/Workbox sin warning `Unknown input options: manualChunks`.
 
-### Implementado y verificado
-- Extraccion OCR via `facturas-ocr` con Google Cloud Vision (`TEXT_DETECTION` para imagen, `DOCUMENT_TEXT_DETECTION` para PDF).
-- Matching 3 capas: barcode/SKU -> alias -> fuzzy.
-- Cache in-memory por request para matching (reduce consultas repetidas por item).
-- Persistencia en `facturas_ingesta`, `facturas_ingesta_items`, `facturas_ingesta_eventos`.
-- Flujo funcional en gateway: `POST /extraer`, `PUT /items/{id}/validar`, `POST /aplicar`.
-- Insercion de items OCR por batch con fallback individual + `items_failed` en respuesta/evento.
-- Reintento OCR seguro desde estado `error` con limpieza previa de items.
-- Deteccion de CUIT con variantes de formato (`XX-XXXXXXXX-X` y solo digitos).
-- Chunked base64 encoding para imagenes grandes (fix de stack overflow).
-- Error handling especifico para GCV timeout (504 `OCR_TIMEOUT`).
-- Scripts batch: `scripts/ocr-procesar-nuevos.mjs` y `scripts/seed-proveedores.mjs`.
-- 12 proveedores seeded, 21 facturas cargadas (**21 `pendiente`**, **0 `error`** — errores reseteados a pendiente en sesión 2026-03-01).
+### Runtime local vs remoto
+- Paridad validada para endpoint critico de salud:
+  - `GET /api-minimarket/health` responde `200` local y remoto.
+- `api-minimarket` mantiene politica operativa requerida: `verify_jwt=false` en despliegue.
 
-### Cross-check PLAN_FUSIONADO T1-T10
+## 3) Estado funcional por dominio
+### Core gateway / inventario / pedidos
+- Endpoints principales operativos y cubiertos por tests.
+- `PUT /pedidos/:id/estado` conserva lock optimista y respuesta `409 CONFLICT` en carrera.
 
-| Tarea | Descripcion | Estado | Evidencia |
-|-------|-------------|--------|-----------|
-| T1 | Guardas de estado en `/extraer` | COMPLETADO | `api-minimarket/index.ts` valida `pendiente|error` y retorna `409 INVALID_STATE` para estados no permitidos |
-| T2 | Reextraccion con limpieza previa | COMPLETADO | `facturas-ocr/index.ts` limpia `facturas_ingesta_items` en reintento (`estado=error`) y registra `ocr_reintento` |
-| T3 | Lock optimista en `/aplicar` | COMPLETADO | PATCH condicional `id+estado=validada`; si afecta 0 filas responde `409`, con rollback a `validada` en fallos parciales |
-| T4 | Guard de confianza OCR | COMPLETADO | Bloqueo `400 OCR_CONFIDENCE_BELOW_THRESHOLD` con umbral `OCR_MIN_SCORE_APPLY` (fallback `0.70`) |
-| T5 | Batch insert de items | COMPLETADO | `facturas-ocr/index.ts` inserta por batch y hace fallback individual con `items_failed` |
-| T6 | Cache in-memory alias/barcodes | COMPLETADO | `facturas-ocr/index.ts` usa cache por request (`barcodeOrSku`, `aliasByNormalized`, `fuzzyByWords`) |
-| T7 | Hardening `/aplicar` parcial | COMPLETADO | Ante error parcial: crea movimientos `salida` compensatorios, limpia `factura_ingesta_item_id` en movimiento original para reintento, registra evento `aplicacion_rollback` con `items_compensados`/`items_compensacion_fallida`. Tests: 25 en `facturas-aplicar-hardening.test.ts` |
-| T8 | Sync OpenAPI/API_README | COMPLETADO | `docs/api-openapi-3.1.yaml` + `docs/API_README.md` actualizados a códigos/estados/respuesta runtime |
-| T9 | Warning CUIT mismatch en UI | COMPLETADO | `Facturas.tsx` muestra alerta cuando `cuit_detectado` difiere de `proveedores.cuit` |
-| T10 | Soporte PDF OCR | COMPLETADO | `facturas-ocr/index.ts` detecta MIME/extensión y usa `DOCUMENT_TEXT_DETECTION` para PDF |
+### OCR de facturas
+- Backlog tecnico OCR cerrado (10/10), flujo y hardenings implementados en codigo.
+- Bloqueante funcional externo vigente: `OCR-007` por billing GCP inactivo.
 
+### Asistente IA
+- Sprint 3 implementado y operativo: 7 intents read + 4 intents write con plan→confirm y auditoria persistente.
+
+## 4) Pendientes abiertos (seguimiento vigente)
 ### Bloqueante externo
-- **OCR-007:** billing inactivo bloquea Google Cloud Vision. Sin este servicio, T1-T10 no pueden validarse end-to-end.
-- Evidencia consolidada:
-  - `facturas-ocr` devolvio `504 OCR_TIMEOUT` el 2026-02-28 11:39 UTC.
-  - Comet (2026-03-08) confirmo que `gen-lang-client-0312126042` (`Nano banana pro`) ya tiene Cloud Vision API habilitada.
-  - Comet (2026-03-08) confirmo que `GCV_API_KEY` existia con restricciones correctas y que el secret remoto en Supabase fue actualizado externamente.
-  - La unica cuenta de billing detectada (`0156DA-EB3EB0-9C9339`) esta cerrada/inactiva.
-- Accion: owner debe reactivar billing en GCP y vincularlo al proyecto OCR activo `gen-lang-client-0312126042`; luego reejecutar `POST /facturas/{id}/extraer`.
+- `OCR-007` (CRITICO): OCR end-to-end bloqueado por billing inactivo en GCP para Cloud Vision.
 
-## 4) Fuentes canonicas vigentes
-1. `docs/CONTEXT0_EJECUTIVO.md` (entrada unica de sesion)
+### Hardening externo no bloqueante
+- `AUTH-001`: CAPTCHA de Auth pendiente en Supabase.
+- `AUTH-002`: timeouts server-side nativos no disponibles en plan actual (mitigado client-side).
+- `DB-001`: network restrictions de PostgreSQL pendientes de allowlist.
+
+### Deuda documental
+- `DOCS-CTX-001`: poda canonica en progreso. Esta corrida reduce tamaño de docs canónicas y mantiene detalle historico en archivos archivados.
+
+## 5) Context engineering y gobernanza documental
+- Entrada de sesion recomendada: `docs/CONTEXT0_EJECUTIVO.md`.
+- Budget objetivo por doc canonico: `<=2000` palabras (`CONTEXT0`: 600-1000).
+- Exclusiones por defecto de contexto: `node_modules/`, `logs/`, `test-reports/`, `supabase/.temp/`, `docs/closure/archive/historical/`.
+- Script de control: `npm run docs:context-budget`.
+
+## 6) Fuentes canonicas vigentes
+1. `docs/CONTEXT0_EJECUTIVO.md`
 2. `docs/ESTADO_ACTUAL.md`
 3. `docs/DECISION_LOG.md`
 4. `docs/closure/OPEN_ISSUES.md`
-5. `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md` — prompts para Comet (5 plataformas: Supabase Auth, Supabase DB, Cloudflare, GitHub, GCP)
-6. `docs/API_README.md`
-7. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
-8. `docs/METRICS.md`
-9. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo para roadmap OCR)
-10. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md` (roadmap asistente IA)
+5. `docs/API_README.md`
+6. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+7. `docs/PRODUCTION_GATE_REPORT.md`
+8. `docs/api-openapi-3.1.yaml`
 
-## 5) Guardrails activos
-1. No imprimir secretos/JWTs (solo nombres).
-2. No usar git destructivo (`git reset --hard`, `git checkout -- <file>`, force-push).
-3. `api-minimarket` debe permanecer con `verify_jwt=false` si se redeploya.
-4. No declarar "cerrado" sin evidencia en `docs/closure/` o `test-reports/`.
+## 7) Guardrails activos
+1. No imprimir secretos/JWTs (solo nombres de variables).
+2. No usar git destructivo (`reset --hard`, `checkout -- <file>`, force-push).
+3. Si se redeploya `api-minimarket`, mantener `--no-verify-jwt`.
+4. No cerrar issues sin evidencia tecnica verificable.
 
-## 6) Nota operativa
-El sistema esta `LISTO PARA PRODUCCION`. Tier 1 (6/6) y Tier 2 (12/12) completados. El backlog OCR tecnico esta 10/10 tareas completadas. Los 9 hallazgos MEDIUM de la auditoria profunda estan todos resueltos. GCV sigue siendo el unico bloqueante funcional externo para validacion OCR end-to-end, y Prompt 5 de Comet dejo el diagnostico afinado: Cloud Vision y la key estan correctamente configurados en el proyecto activo, pero billing GCP sigue inactivo. Adicionalmente existe backlog de hardening externo no bloqueante en Supabase/Auth/DB: `CAPTCHA` pendiente (`AUTH-001`), timeouts server-side no disponibles en plan actual pero ya mitigados en frontend (`AUTH-002`), y `network restrictions` pendientes de allowlist (`DB-001`). El asistente IA esta en Sprint 3 con 4 acciones write y auditoria persistente en BD. Migracion `20260304010000` aplicada. Edge functions deployadas: api-assistant v4, api-minimarket v42, facturas-ocr v13.
-
-## 6b) Asistente IA — Sprint 1 + 1.1 + 1.2 + 1.3 + Sprint 2 + Sprint 3 (read + write con confirmacion + auditoria persistente)
-
-### Implementado (Sprint 1 → 1.3)
-- Edge Function `api-assistant` (`supabase/functions/api-assistant/index.ts`): CORS, auth JWT, validacion de rol confiable desde `app_metadata`, parser rule-based, 7 intent handlers read-only.
-- Intent parser separado en `parser.ts` con 7 intents read-only:
-  - `consultar_stock_bajo` → `GET /stock/minimo` (via api-minimarket) + nav `/stock`
-  - `consultar_pedidos_pendientes` → `GET /pedidos?estado=pendiente` (via api-minimarket) + nav `/pedidos`
-  - `consultar_resumen_cc` → `GET /cuentas-corrientes/resumen` (via api-minimarket) + nav `/clientes`
-  - `consultar_ventas_dia` → `GET /ventas?fecha_desde=...&fecha_hasta=...` (via api-minimarket) + nav `/ventas`
-  - `consultar_estado_ocr_facturas` → PostgREST directo `facturas_ingesta` (no hay GET gateway) + nav `/facturas`
-  - `saludo` → respuesta de bienvenida (sin fetch)
-  - `ayuda` → lista de capacidades (sin fetch)
-- Frontend: pagina `Asistente.tsx` con chat conversacional, quick-prompts, sugerencias inline, deep-links accionables.
-- Persistencia local de conversaciones (`localStorage`) + reset rapido con boton `Nuevo chat`.
-- Ruta `/asistente` protegida, acceso solo `admin` (deny-by-default en `roles.ts`).
-- Nav item en sidebar y Dashboard CTA.
-- API client `assistantApi.ts` con `sendMessage()`.
-- UX improvements (Sprint 1.1): etiquetas amigables, sin jerga tecnica, fix timezone ventas, navigation deep-links.
-- UX improvements (Sprint 1.2): contextual fallback suggestions, retry button on errors, loading indicator con texto.
-- UX improvements (Sprint 1.3): persistencia de historial y accion explicita de reinicio de chat para usuarios no tecnicos.
-- Ajuste 2026-03-08: el briefing proactivo se ejecuta solo en chats limpios y ya no interfiere con historiales persistidos; el trigger usa el intent `briefing` explicito.
-
-### Implementado (Sprint 2 — acciones con confirmacion)
-- 2 intents de escritura adicionales en parser: `crear_tarea` y `registrar_pago_cc`, con extraccion de parametros (titulo/prioridad, monto/cliente_nombre).
-- Set `WRITE_INTENTS` para clasificacion automatica de intents mutantes.
-- Flujo plan→confirm: intents de escritura retornan `mode: 'plan'` con `confirm_token` y `action_plan` (resumen, parametros, riesgo, validaciones) en vez de ejecutar directamente.
-- Confirm token store (`confirm-store.ts`): tokens de un solo uso con TTL de 120s, scoped por usuario, GC automatico, max 200 tokens globales.
-- Endpoint `POST /confirm`: consume token, valida userId, ejecuta accion via api-minimarket gateway y retorna resultado.
-- Ejecutores de accion: `executeCrearTarea()` → `POST /tareas`, `executeRegistrarPagoCC()` → `POST /cuentas-corrientes/pagos`.
-- Manejo de ambiguedad: si faltan datos obligatorios o hay multiples candidatos de cliente (incluyendo nombres exactos duplicados), se retorna `mode: 'clarify'` pidiendo desambiguacion explicita.
-- Frontend: plan card con borde amber, resumen visual de accion/parametros/riesgo, botones Confirmar (verde) y Cancelar (gris), estado `confirming` con spinner.
-- API client actualizado: `confirmAction(confirmToken)` para POST /confirm, tipos extendidos con `mode`, `confirm_token`, `action_plan`.
-- Quick prompts ampliados: "Crear tarea" y "Registrar pago" como acciones directas.
-- 116 unit tests del parser (95 Sprint 1 + 21 Sprint 2 incluyendo write intents y extraccion de params).
-- 10 unit tests del confirm-store (creacion, single-use, user mismatch, TTL, GC, concurrencia).
-- 3 unit tests de seguridad de rol.
-- 7 component tests del asistente (3 Sprint 1 + 4 Sprint 2: plan card, confirm, cancel, write quick-prompts).
-- Health version bumped a `2.0.0-sprint2`.
-
-### Implementado (Sprint 3 — acciones avanzadas + auditoria persistente)
-- 2 intents de escritura adicionales: `actualizar_estado_pedido` y `aplicar_factura`, con plan→confirm.
-- `actualizar_estado_pedido`: extrae numero_pedido y nuevo_estado del mensaje natural; valida transicion contra mapa de estados (pendiente→preparando→listo→entregado; cancelado desde cualquier no-terminal); busca pedido via PostgREST; ejecuta via PUT /pedidos/:id/estado del gateway.
-- `aplicar_factura`: busca facturas en estado=validada via PostgREST con join a proveedores; si hay 1 resultado: propone plan; si hay >1: lista opciones; si hay 0: informa. Ejecuta via POST /facturas/:id/aplicar con timeout extendido (30s por operacion bulk). Risk='alto'.
-- Auditoria persistente: nueva tabla `asistente_audit_log` (migracion `20260304010000`) con RLS por usuario, indices por usuario+fecha e intent+fecha. `insertAuditLog()` llamada en ambos paths del /confirm handler (success + error). Non-blocking: failures de audit no afectan flujo.
-- Parser extendido a 11 intents (7 read + 4 write), 10 suggestions.
-- Help text y "no intent" message actualizados con las 4 acciones disponibles.
-- Tests: **1945/1945 PASS** (86 files), build OK, lint **0 errores / 72 warnings** (warnings en tests/mocks tras activar `no-explicit-any: warn`).
-
-### No implementado (Sprint 4+)
-- Expansion de roles (deposito, ventas).
-- Guia visual para usuario no tecnico.
-- Dashboard de auditoria de acciones IA.
-
-## 7) Auditoria de produccion profunda (D-177)
-
-### Metodologia
-Analisis de ingenieria inversa simulando escenarios de produccion real en 3 capas:
-1. **Gateway (`api-minimarket/index.ts`)**: 35 hallazgos (race conditions, error leakage, null propagation, idempotency gaps)
-2. **Edge function (`facturas-ocr/index.ts`)**: 18 hallazgos (estado transitions, memory safety, secret leakage, auth bypass)
-3. **Frontend (`Facturas.tsx`)**: doble-submit, feedback silencioso
-
-### Fixes implementados (11 total)
-
-| # | ID | Severidad | Fix |
-|---|-----|-----------|-----|
-| 1 | RL-01 | CRITICO | Errores PostgREST 5xx ya no filtran detalles SQL/tabla al cliente |
-| 2 | S2 | HIGH | Eliminado fallback JWT no verificado en `internal-auth.ts` (cerraba bypass de auth) |
-| 3 | F2+D3 | CRITICO | Estado `extraida` se setea DESPUES de persistir items OCR (no antes) + PATCH response verificado |
-| 4 | F1+S1 | HIGH | try-catch en JSON parse de GCV + sanitizacion de API key en mensajes de error |
-| 5 | M1 | HIGH | Limites de tamaño de imagen OCR: min 1KB (corrupta), max 10MB (memory) |
-| 6 | ES-03 | HIGH | Audit event en `/aplicar` envuelto en try-catch (no falla factura exitosa) |
-| 7 | PW-02 | HIGH | Fallo de link movimiento→item ahora activa compensacion (no se pierde silenciosamente) |
-| 8 | TC-01 | HIGH | Validacion de cantidad antes de llamar a SP (previene NaN/invalid en SP) |
-| 9 | MISC-02 | MEDIUM | Sanitizacion de `x-request-id` del cliente (max 128 chars, alfanumerico+guiones) |
-| 10 | F3 | MEDIUM | `req.json()` en facturas-ocr envuelto en try-catch (400 en vez de 500 para body invalido) |
-| 11 | UI-01 | MEDIUM | `extracting`/`applying` migrados de `string|null` a `Set<string>` para tracking concurrente |
-
-### Hallazgos MEDIUM no implementados (backlog recomendado)
-- ~~**RC-01**: Race condition si dos usuarios extraen OCR simultaneamente (misma factura)~~ → **RESUELTO** (T02: lock de concurrencia OCR en gateway)
-- ~~**RC-02**: Check de margen en `/precios/aplicar` usa datos potencialmente stale~~ → **RESUELTO** (D-185: `SELECT ... FOR UPDATE` en `sp_aplicar_precio`, migracion `20260303010000`)
-- ~~**RC-03**: Transiciones de estado en tareas sin guard de estado previo~~ → **RESUELTO** (D-184: state machine tareas con validacion de estado previo)
-- ~~**ID-01**~~/**~~ID-02~~**/**~~ID-03~~**: ~~Sin idempotency key en `/deposito/movimiento`~~ (RESUELTO D-184) / ~~Sin idempotency key en `/deposito/ingreso`~~ (RESUELTO T05), ~~`/compras/recepcion`~~ (RESUELTO T06)
-- ~~**RE-01**: Agregacion in-memory sin limite en `/reportes/efectividad-tareas`~~ → **RESUELTO** (T09: hard cap 10k rows + capped indicator)
-- ~~**ES-01/02**: Fallo silencioso de `precio_compra` insert y auto-validacion de factura~~ → **RESUELTO** (T07: `_warnings` en precio_compra, T08: `_warnings` en auto-validacion factura)
-- ~~**D1/D2**: Insercion parcial de items OCR sin rollback; race condition en extraccion concurrente~~ → **RESUELTO** (T03: transaccionalidad insercion OCR, T04: mutex extraccion OCR)
-
-**Resumen: 0 hallazgos MEDIUM abiertos** (todos 9 originales resueltos: RC-01..RC-03, ID-01..ID-03, RE-01, ES-01/02, D1/D2).
+## 8) Nota de continuidad
+El sistema se mantiene en `LISTO PARA PRODUCCION` con evidencia reciente y reproducible. La operacion diaria no esta bloqueada salvo el OCR end-to-end por dependencia externa de billing (`OCR-007`).

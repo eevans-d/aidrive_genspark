@@ -46,6 +46,9 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
+        // Workbox 7 + Rollup 4 emits `Unknown input options: manualChunks`
+        // when runtime is externalized. Inlining avoids that broken path.
+        inlineWorkboxRuntime: true,
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -88,7 +91,8 @@ export default defineConfig({
           ) {
             return 'react-core'
           }
-          return 'vendor'
+          // Let Rollup decide the tail to avoid circular chunk edges (radix <-> vendor).
+          return
         },
       },
     },
