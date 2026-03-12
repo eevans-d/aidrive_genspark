@@ -53,7 +53,7 @@
 - `DB-001`: network restrictions de PostgreSQL pendientes de allowlist.
 
 ### Deuda documental
-- `DOCS-CTX-001`: poda canonica en progreso. Esta corrida reduce tamaño de docs canónicas y mantiene detalle historico en archivos archivados.
+- `DOCS-CTX-001`: **cerrado**. Las docs canónicas del budget quedan por debajo del target (`npm run docs:context-budget` => `ok=9 warn=0 fail=0`).
 
 ## 5) Context engineering y gobernanza documental
 - Entrada de sesion recomendada: `docs/CONTEXT0_EJECUTIVO.md`.
