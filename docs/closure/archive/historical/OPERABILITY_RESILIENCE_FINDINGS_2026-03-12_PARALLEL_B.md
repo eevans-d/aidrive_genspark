@@ -27,7 +27,7 @@ Alcance: observabilidad operativa, smoke checks de disponibilidad, triage tempra
 ### OPS-B-001 (401 en proveedor)
 - Ejecucion local: `npm run ops:smoke` -> `api-minimarket/health=200`, `api-proveedor/health=401`.
 - Ejecucion remota: `OPS_SMOKE_TARGET=remote SUPABASE_URL=... node scripts/ops-smoke-check.mjs` -> `api-proveedor/health=401`.
-- Politica activa `verify_jwt=true` para `api-proveedor`: `docs/closure/BASELINE_LOG_2026-03-11_125314.md` (linea `api-proveedor v26 verify_jwt=true`).
+- Politica activa `verify_jwt=true` para `api-proveedor`: `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_125314.md` (linea `api-proveedor v26 verify_jwt=true`).
 - Politica D-086: solo `api-minimarket` puede estar con `verify_jwt=false` (`docs/DECISION_LOG.md`).
 - Test E2E explicita requisito JWT para `/health`: `tests/e2e/api-proveedor.smoke.test.ts`.
 

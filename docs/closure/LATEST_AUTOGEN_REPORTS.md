@@ -1,22 +1,23 @@
 # Latest Autogen Reports
 
-**Ultima actualizacion:** 2026-03-11
+**Ultima actualizacion:** 2026-03-12
 **Objetivo:** reducir ruido operativo en `docs/closure/` dejando una referencia unica a los artefactos autogenerados mas recientes.
 
 ## Referencia activa (ultima corrida conocida)
 
 - Baseline:
-  - `docs/closure/BASELINE_LOG_2026-03-11_125314.md`
+  - `docs/closure/BASELINE_LOG_2026-03-12_033328.md`
 - Technical analysis:
-  - `docs/closure/TECHNICAL_ANALYSIS_2026-03-11_125318.md`
+  - `docs/closure/TECHNICAL_ANALYSIS_2026-03-12_033857.md`
 - Inventory report:
-  - `docs/closure/INVENTORY_REPORT_2026-03-11_130005.md`
+  - `docs/closure/INVENTORY_REPORT_2026-03-12_033859.md`
 - DocuGuard:
   - `docs/closure/DOCUGUARD_REPORT_2026-03-05_060503.md`
 
 ## Referencias historicas inmediatas (mismo dia)
 
-- `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_065739.md`
+- `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033433.md`
+- `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033434.md`
 
 ## Regla operativa
 

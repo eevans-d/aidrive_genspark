@@ -1,12 +1,13 @@
 # ESTADO ACTUAL DEL PROYECTO
 
-**Ultima actualizacion:** 2026-03-11 (cierre plan intensivo + sync codigo/docs + quality gates completos)
+**Ultima actualizacion:** 2026-03-12 (continuidad hacia produccion + revalidacion completa + context engineering)
 **Veredicto general del sistema:** `LISTO PARA PRODUCCION (Tier 1 DONE, Tier 2 12/12 DONE, UX Audit DONE, Security Audit DONE, hardening externo no bloqueante pendiente)`
 **Estado del modulo OCR de facturas:** `ESTABLE PARA USO OPERATIVO, BACKLOG TECNICO CERRADO (10/10), HARDENED, RC-01/D1/D2 RESUELTOS`
 **Estado del Asistente IA:** `SPRINT 3 COMPLETADO — 4 intents write con plan→confirm, auditoria persistente en BD`
 **Fuente ejecutiva:** `docs/PRODUCTION_GATE_REPORT.md`
 
 ## 1) Resumen ejecutivo
+- **Continuidad hacia produccion + context engineering (2026-03-12):** revalidacion completa de quality gates obligatorios con evidencia fresca: `unit 1959/1959 PASS`, `integration 68/68 PASS`, `e2e 4/4 PASS`, `components 257/257 PASS`, `lint 0 errors/72 warnings`, `build PASS`, `doc links PASS`, `closure policy PASS`. Se aplicaron tres hardenings tecnicos: (1) `vite.config.ts` refina `manualChunks` para bajar acoplamiento y eliminar warning de chunks >500 kB en `react` (nuevo `react-core` ~143 kB; `scanner` ~457 kB); (2) `run-e2e-tests.sh` ahora detecta `API_PROVEEDOR_SECRET` stale en runtime local y autorrecupera con restart controlado de Supabase; (3) `.agent/scripts/env_audit.py` corrige falso negativo para `VITE_*` accedidas via alias (`env = import.meta.env`). Adicionalmente se alinea `supabase/config.toml` para que local respete `api-minimarket verify_jwt=false`, quedando paridad local/remoto en `GET /api-minimarket/health` (200/200). Hallazgo residual no bloqueante: persiste warning `Unknown input options: manualChunks` durante paso PWA/Workbox (`PERF-001`).
 - **Cierre de plan intensivo (2026-03-11):** se cerraron los hallazgos de codigo y harness local verificados en auditoria. `PUT /pedidos/:id/estado` ahora aplica lock optimista y responde `409 CONFLICT` en carreras; `cron-jobs-maxiconsumo` acepta `jobId` y `job_id`; migraciones cron quedaron blindadas para entornos sin `pg_cron`. El harness local de pruebas se endurecio: hidratacion segura de `SUPABASE_*` desde `supabase status -o env` (sin `eval`), autorrecuperacion de `supabase_edge_runtime_<project_id>` y smoke E2E con JWT HS256 valido + secret inyectado en edge runtime local. Resultado verificado: `unit 1959/1959 PASS`, `integration 68/68 PASS`, `e2e 4/4 PASS`, `components 257/257 PASS`, `lint 0 errors/72 warnings`, `build PASS`, links docs OK y closure policy OK.
 - **Auditoria integral + hygiene sweep (2026-03-08):** revalidacion completa bajo `RealityCheck` + `DocuGuard` con evidencia fresca del repo. Se detecto una desincronizacion real en `Asistente.tsx`: el briefing proactivo estaba disparando `hola` y afectaba tests/continuidad de chats persistidos. Fix aplicado: el auto-briefing ahora usa `briefing` y solo corre en chats limpios, preservando historiales guardados; `Asistente.test.tsx` quedo resincronizado (**7/7 PASS**). Validacion global posterior: suite unitaria raiz **1952/1952 PASS**, suite frontend **257/257 PASS**, `tsc -b` **OK**, build **OK**, links de docs **OK**. Higiene aplicada: se eliminaron artefactos generados (`dist/`, `test-reports/`, `supabase/.temp/`) y archivos `:Zone.Identifier`; ramas remotas depuradas para dejar solo `origin/main`. Hallazgo residual no bloqueante: `PERF-001` (warnings de chunking/PWA durante build).
 - **Hardening CI / GitHub Actions (2026-03-08):** `PROMPT 4` ejecutado localmente en el repo. Se pinnearon a commit SHA las actions usadas en `.github/workflows/ci.yml`, `.github/workflows/deploy-cloudflare-pages.yml`, `.github/workflows/nightly-gates.yml`, `.github/workflows/security-nightly.yml` y `.github/workflows/backup.yml`. Ademas, `nightly-gates.yml` reemplaza `pnpm install --prefer-offline` por `pnpm install --frozen-lockfile`. Verificacion local: **0** referencias restantes a `uses: ...@v*|@main|@master`, parseo YAML **OK**. Pendiente externo: observar la siguiente corrida real de GitHub Actions para validar que no haya SHAs invalidos.
@@ -26,21 +27,21 @@
 - **Migraciones SQL:** 5 ficheros en repo (`20260302010000`, `20260302020000`, `20260302030000`, `20260303010000`, `20260304010000`) — todos aplicados a remote. Ultimo aplicado: `20260304010000` (tabla `asistente_audit_log`, 2026-03-04).
 - GCV sigue BLOCKED: Prompt 5 de Comet confirmo que el bloqueo real es billing inactivo, no ausencia de API ni de secret.
 
-## 2) Estado tecnico verificado (sesion 2026-03-11, post cierre intensivo)
+## 2) Estado tecnico verificado (sesion 2026-03-12, continuidad produccion)
 - Tests unitarios completos: **1959/1959 PASS** (88 archivos).
 - Tests de integracion: **68/68 PASS** (3 archivos).
 - E2E smoke Edge Functions: **4/4 PASS** (1 archivo).
 - Suite frontend/componentes: **257/257 PASS** (50 archivos).
 - Guardas de sesion frontend: **activas por defecto** (`24h` timebox + `8h` inactivity timeout, override via `VITE_AUTH_*`).
-- Build produccion: **OK** (36 precache entries PWA, 0 errores).
+- Build produccion: **OK** (39 precache entries PWA, 0 errores de compilacion).
 - TypeScript: **0 errores** (`tsc --noEmit` limpio).
 - Lint: **0 errores**, **72 warnings** (tests/mocks).
 - Audit de dependencias produccion: **0 HIGH, 0 CRITICAL**.
 - Edge Functions: **16/16 ACTIVE** (incluye api-minimarket v42, api-assistant v4, facturas-ocr v13).
 - Migraciones SQL en repo: **57** (0 pendientes — todas aplicadas).
-- Health endpoint: HTTP 200, `{"status":"healthy"}`.
+- Health endpoint: HTTP 200 local/remoto para `api-minimarket/health` tras alinear `verify_jwt=false` en config local.
 - Higiene de contexto: artefactos de build/cache bajo control (`dist/`, `test-reports/`, `supabase/.temp/` fuera de versionado) y cierre documental con policy de `docs/closure` en verde. Ramas remotas vigentes (2026-03-11): `origin/main`, `origin/copilot/*`, `origin/dependabot/*`.
-- Warnings no bloqueantes observados: build frontend emite warnings de chunking circular/tamano (`react`, `scanner`) y `Unknown input options: manualChunks` durante paso PWA/Workbox. Referencia: `PERF-001`.
+- Warnings no bloqueantes observados: permanece `Unknown input options: manualChunks` durante paso PWA/Workbox. El warning de chunk >500 kB en `react` quedo mitigado con nueva estrategia de split; `scanner` sigue pesado pero por debajo del umbral de warning actual. Referencia: `PERF-001`.
 
 ## 3) OCR de facturas: estado real
 
@@ -83,15 +84,16 @@
 - Accion: owner debe reactivar billing en GCP y vincularlo al proyecto OCR activo `gen-lang-client-0312126042`; luego reejecutar `POST /facturas/{id}/extraer`.
 
 ## 4) Fuentes canonicas vigentes
-1. `docs/ESTADO_ACTUAL.md`
-2. `docs/DECISION_LOG.md`
-3. `docs/closure/OPEN_ISSUES.md`
-4. `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md` — prompts para Comet (5 plataformas: Supabase Auth, Supabase DB, Cloudflare, GitHub, GCP)
-5. `docs/API_README.md`
-6. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
-7. `docs/METRICS.md`
-8. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo para roadmap OCR)
-9. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md` (roadmap asistente IA)
+1. `docs/CONTEXT0_EJECUTIVO.md` (entrada unica de sesion)
+2. `docs/ESTADO_ACTUAL.md`
+3. `docs/DECISION_LOG.md`
+4. `docs/closure/OPEN_ISSUES.md`
+5. `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md` — prompts para Comet (5 plataformas: Supabase Auth, Supabase DB, Cloudflare, GitHub, GCP)
+6. `docs/API_README.md`
+7. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+8. `docs/METRICS.md`
+9. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo para roadmap OCR)
+10. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md` (roadmap asistente IA)
 
 ## 5) Guardrails activos
 1. No imprimir secretos/JWTs (solo nombres).

@@ -1,18 +1,39 @@
 # README Canonico de Cierre
 
-**Ultima actualizacion:** 2026-03-01
+**Ultima actualizacion:** 2026-03-12
 
 ## Objetivo
 Mantener una unica fuente documental limpia, sin duplicados de prompts ni resultados historicos innecesarios.
 
 ## Fuente unica activa
-1. `docs/ESTADO_ACTUAL.md`
-2. `docs/DECISION_LOG.md`
-3. `docs/closure/OPEN_ISSUES.md`
-4. `docs/API_README.md`
-5. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
-6. `docs/METRICS.md`
-7. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo roadmap OCR)
+1. `docs/CONTEXT0_EJECUTIVO.md`
+2. `docs/ESTADO_ACTUAL.md`
+3. `docs/DECISION_LOG.md`
+4. `docs/closure/OPEN_ISSUES.md`
+5. `docs/API_README.md`
+6. `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+7. `docs/METRICS.md`
+8. `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` (solo roadmap OCR)
+
+## Fuente canonica extendida (cargar solo si aplica)
+1. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md`
+2. `docs/PRODUCTION_GATE_REPORT.md`
+3. `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md`
+
+## Budget de contexto
+- Target por doc canonico: `<= 2000` palabras.
+- Entrada ejecutiva de sesion (`CONTEXT0`) debe mantenerse entre `600-1000` palabras.
+- Validacion automatica:
+  - `npm run docs:context-budget`
+  - `node scripts/check-context-budget.mjs --strict`
+
+## Exclusiones por defecto (no cargar en contexto inicial)
+- `docs/closure/archive/historical/`
+- `node_modules/`
+- `minimarket-system/node_modules/`
+- `logs/`
+- `test-reports/`
+- `supabase/.temp/`
 
 ## Prompts canonicos activos
 - `docs/closure/CONTEXT_PROMPT_ENGINEERING_CODEX_SISTEMA_INTEGRAL_CIERRE_2026-02-24.md`

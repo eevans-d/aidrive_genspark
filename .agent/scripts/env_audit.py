@@ -32,6 +32,17 @@ PATTERNS: list[tuple[str, re.Pattern[str]]] = [
     ("vite_bracket", re.compile(r"import\.meta\.env\[\s*['\"]([A-Z0-9_]+)['\"]\s*\]")),
 ]
 
+VITE_ALIAS_ASSIGN_PATTERNS: list[re.Pattern[str]] = [
+    # const env = import.meta.env
+    re.compile(r"\b(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*(?::[^=\n]+)?=\s*import\.meta\.env\b"),
+    # env: SomeType = import.meta.env (function/default params)
+    re.compile(r"\b([A-Za-z_$][\w$]*)\s*(?::[^=\n]+)?=\s*import\.meta\.env\b"),
+]
+
+VITE_DESTRUCTURE_PATTERN = re.compile(
+    r"\{([^}]+)\}\s*(?::[^=\n]+)?=\s*import\.meta\.env\b"
+)
+
 
 DEFAULT_SCAN_DIRS = [
   "supabase/functions",
@@ -73,10 +84,37 @@ def _iter_files(scan_dirs: list[Path]) -> list[Path]:
 def _extract_vars(path: Path) -> dict[str, set[str]]:
     text = path.read_text(encoding="utf-8", errors="replace")
     found: dict[str, set[str]] = defaultdict(set)
+
     for label, rx in PATTERNS:
         for match in rx.findall(text):
             if isinstance(match, str) and match:
                 found[match].add(label)
+
+    alias_names: set[str] = set()
+    for rx in VITE_ALIAS_ASSIGN_PATTERNS:
+        for alias in rx.findall(text):
+            if isinstance(alias, str) and alias:
+                alias_names.add(alias)
+
+    for alias in alias_names:
+        dot_rx = re.compile(rf"\b{re.escape(alias)}\.([A-Z0-9_]+)\b")
+        bracket_rx = re.compile(rf"\b{re.escape(alias)}\[\s*['\"]([A-Z0-9_]+)['\"]\s*\]")
+        for match in dot_rx.findall(text):
+            if isinstance(match, str) and match:
+                found[match].add("vite_alias_dot")
+        for match in bracket_rx.findall(text):
+            if isinstance(match, str) and match:
+                found[match].add("vite_alias_bracket")
+
+    for raw_vars in VITE_DESTRUCTURE_PATTERN.findall(text):
+        for token in raw_vars.split(","):
+            candidate = token.strip()
+            if not candidate or candidate.startswith("..."):
+                continue
+            key = candidate.split(":", 1)[0].split("=", 1)[0].strip()
+            if re.fullmatch(r"[A-Z0-9_]+", key):
+                found[key].add("vite_destructure")
+
     return found
 
 

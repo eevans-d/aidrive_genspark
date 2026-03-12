@@ -24,6 +24,10 @@ enabled = false
 # cert_path = "../certs/my-cert.pem"
 # key_path = "../certs/my-key.pem"
 
+[functions.api-minimarket]
+enabled = true
+verify_jwt = false
+
 [db]
 # Port to use for the local database URL.
 port = 54322

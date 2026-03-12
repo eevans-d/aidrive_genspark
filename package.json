@@ -17,6 +17,7 @@
     "test:security": "vitest run --config vitest.auxiliary.config.ts tests/security",
     "test:contracts": "vitest run --config vitest.auxiliary.config.ts tests/api-contracts",
     "ops:smoke": "node scripts/ops-smoke-check.mjs",
+    "docs:context-budget": "node scripts/check-context-budget.mjs",
     "docs:closure-archive-historical": "node scripts/archive-closure-historical.mjs",
     "docs:closure-archive-index": "node scripts/generate-closure-archive-index.mjs",
     "docs:closure-policy-check": "node scripts/check-closure-root-policy.mjs",

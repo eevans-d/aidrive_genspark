@@ -1,10 +1,10 @@
 # MISIÓN: ANÁLISIS TÉCNICO INTEGRAL DEL PROYECTO
 
-- Fecha (UTC): `2026-03-11 13:00:05`
+- Fecha (UTC): `2026-03-12 03:38:59`
 - Repo: `.`
-- Branch: `main`
-- Commit: `2606442e1d42bea624ea03fb8d47558e57aac24e`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-11_125314.md`
+- Branch: `codex/parallel-operability-hardening-20260312`
+- Commit: `d5713f863306e1f5f37cc0af6dc6975181332e4b`
+- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-12_033328.md`
 
 ## 1. ARQUITECTURA Y ESTRUCTURA DEL PROYECTO
 
@@ -13,8 +13,7 @@
 - Nombre (package.json): `minimarket-system-workspace`
 - Tipo: fullstack (React/Vite frontend + Supabase Edge Functions backend + Postgres/Supabase)
 - Stack (alto nivel):
-  - Node: `v20.20.0` | npm: `11.8.0` | pnpm: `! Corepack is about to download https://registry.npmjs.org/pnpm/-/pnpm-10.32.1.tgz
-10.32.1`
+  - Node: `v20.20.0` | npm: `11.8.0` | pnpm: `10.32.1`
   - Supabase CLI: `2.72.7
 A new version of Supabase CLI is available: v2.75.0 (currently installed v2.72.7)
 We recommend updating regularly for new features and bug fixes: https://supabase.com/docs/guides/cli/getting-started#updating-the-supabase-cli`
@@ -36,9 +35,11 @@ We recommend updating regularly for new features and bug fixes: https://supabase
 - TODO/FIXME/HACK (preview):
 
 ```text
-scripts/rls_audit.sql:65:\echo 'Estas tablas bloquean TODO acceso excepto service_role'
-docs/ESTADO_ACTUAL.md:23:- **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
+docs/ESTADO_ACTUAL.md:25:- **Tier 1 (6 criticos) — TODOS RESUELTOS:** guard anti-mocks produccion, normalizacion errores de red, limites en queries, CSP+HSTS headers, idempotencia deposito (3 endpoints), FK CASCADE→RESTRICT (2 constraints).
 docs/api-openapi-3.1.yaml:1512:        - Cuando TODOS los items están en estado final, factura transiciona a 'validada'
+supabase/migrations/20260217100000_hardening_concurrency_fixes.sql:117:    RAISE EXCEPTION 'METODO_PAGO_INVALIDO';
+supabase/migrations/20260207010000_create_pos_ventas_fiados_cc.sql:312:    RAISE EXCEPTION 'METODO_PAGO_INVALIDO';
+supabase/migrations/20260207020000_create_ofertas_stock.sql:310:    RAISE EXCEPTION 'METODO_PAGO_INVALIDO';
 ```
 
 - Archivos más grandes por líneas (aprox):
@@ -70,8 +71,8 @@ docs/api-openapi-3.1.yaml:1512:        - Cuando TODOS los items están en estado
 
 - Posibles JWT hardcodeados (filenames only): ⚠️ FOUND (tests only)
   - Files:
-    - `tests/unit/gateway-auth.test.ts`
     - `tests/unit/security-gaps.test.ts`
+    - `tests/unit/gateway-auth.test.ts`
     - `tests/unit/shared-internal-auth.test.ts`
 - console.log en backend (filenames only): ✅ none
 
@@ -86,8 +87,7 @@ docs/api-openapi-3.1.yaml:1512:        - Cuando TODOS los items están en estado
 
 ### B. Ejecución de tests / gates
 
-- Quality gates: ❌ FAIL (exit 1)
-- Log: `test-reports/quality-gates_20260311-125343.log`
+- Quality gates: (skipped) re-run with `--with-gates`.
 
 ## 5. CONFIGURACIÓN Y ENTORNO
 
@@ -113,9 +113,10 @@ docs/api-openapi-3.1.yaml:1512:        - Cuando TODOS los items están en estado
 
 - `ACCESS_TOKEN`
 - `DB_PASSWORD`
+- `OPS_SMOKE_RETRIES`
+- `OPS_SMOKE_RETRY_DELAY_MS`
+- `OPS_SMOKE_TIMEOUT_MS`
 - `PROJECT_ID`
-- `VITE_AUTH_INACTIVITY_TIMEOUT_MS`
-- `VITE_AUTH_TIMEBOX_MS`
 
 ## Used In Code But Missing In Supabase Secrets (names)
 
@@ -157,5 +158,4 @@ docs/api-openapi-3.1.yaml:1512:        - Cuando TODOS los items están en estado
 
 ## 🔥 Issues críticos que bloquean producción (autodetect)
 
-- ❌ Quality gates fallan (ver `test-reports/quality-gates_20260311-125343.log`)
 - ⚠️ JWT-like strings detectados solo en tests (probable fixture). Revisar para evitar leaks accidentales.

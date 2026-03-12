@@ -1,6 +1,6 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-08 (sync Comet Prompt 5 + diagnostico refinado OCR-007)
+**Ultima actualizacion:** 2026-03-12 (continuidad produccion + context engineering operativo)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
 
 ## Hallazgos abiertos
@@ -44,11 +44,19 @@
 
 ## PERF-001 - Build frontend con warnings de chunking/PWA (BAJA - no bloqueante)
 - Severidad: BAJA
-- Impacto: el build de produccion termina correctamente, pero emite warnings de chunking circular (`vendor -> react -> vendor`, `vendor -> react -> charts -> vendor`), chunks grandes (`react` ~549 kB, `scanner` ~457 kB) y `Unknown input options: manualChunks` durante el paso de Workbox/PWA. No hay evidencia actual de fallo runtime, pero queda deuda de performance y ruido operativo.
-- Estado: ABIERTO
-- Evidencia: `pnpm -C minimarket-system build` ejecutado el 2026-03-08.
+- Impacto: el build de produccion termina correctamente y ya no dispara warning de chunk >500 kB en `react` tras ajuste de `manualChunks` (`react-core` ~143 kB, `scanner` ~457 kB). Permanece ruido no bloqueante en paso PWA/Workbox: `Unknown input options: manualChunks`.
+- Estado: ABIERTO_PARCIAL (mitigado en parte)
+- Evidencia: `pnpm -C minimarket-system build` re-ejecutado el 2026-03-12.
 - Ruta candidata: `minimarket-system/vite.config.ts`
-- Accion requerida: revisar estrategia de `manualChunks`, code-splitting de `scanner`/`react` y la interaccion `VitePWA`/Workbox para eliminar el warning residual.
+- Accion requerida: aislar la fuente exacta del warning residual en integracion `VitePWA`/Workbox y cerrar trazabilidad de `manualChunks` en ese paso.
+
+## DOCS-CTX-001 - Presupuesto de contexto canonico aun excedido en docs legacy (BAJA - no bloqueante)
+- Severidad: BAJA
+- Impacto: se incorporo `CONTEXT0` como entrada unica y chequeo automatizado de budget, pero docs canonicos legacy extensos (`ESTADO_ACTUAL`, `DECISION_LOG`, `API_README`, `ESQUEMA_BASE_DATOS_ACTUAL`) siguen sobre el target ideal de `<=2000` palabras; esto puede aumentar costo cognitivo si se ignora el flujo de carga recomendado.
+- Estado: ABIERTO_PLANIFICADO
+- Evidencia: `node scripts/check-context-budget.mjs` (baseline 2026-03-12).
+- Ruta candidata: `docs/ESTADO_ACTUAL.md`, `docs/DECISION_LOG.md`, `docs/API_README.md`, `docs/ESQUEMA_BASE_DATOS_ACTUAL.md`
+- Accion requerida: ejecutar poda incremental por secciones (mover narrativa extensa a historicos) hasta converger al target sin perder evidencia canonica.
 
 ## AUDIT-001 - Hallazgos MEDIUM de auditoria de produccion (CERRADO)
 - Severidad: MEDIA (ninguno bloqueante)
@@ -119,4 +127,4 @@
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`) y un hallazgo BAJO de performance/build (`PERF-001`).
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items de hardening externo no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`), un hallazgo BAJO de performance/build (`PERF-001`, mitigado parcial) y una deuda baja de poda documental (`DOCS-CTX-001`).

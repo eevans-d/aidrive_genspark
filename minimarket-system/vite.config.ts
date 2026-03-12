@@ -5,6 +5,15 @@ import sourceIdentifierPlugin from 'vite-plugin-source-identifier'
 import { VitePWA } from 'vite-plugin-pwa'
 
 const isProd = process.env.BUILD_MODE === 'prod'
+
+function normalizeModuleId(id: string): string {
+  return id.replace(/\\/g, '/')
+}
+
+function isNodeModule(id: string, pkg: string): boolean {
+  return id.includes(`/node_modules/${pkg}/`)
+}
+
 export default defineConfig({
   plugins: [
     react(),
@@ -59,14 +68,27 @@ export default defineConfig({
     rollupOptions: {
       output: {
         manualChunks(id) {
-          if (!id.includes("node_modules")) return
-          if (id.includes("react") || id.includes("react-router")) return "react"
-          if (id.includes("@radix-ui")) return "radix"
-          if (id.includes("@supabase")) return "supabase"
-          if (id.includes("recharts")) return "charts"
-          if (id.includes("lucide-react")) return "icons"
-          if (id.includes("@zxing") || id.includes("jsbarcode")) return "scanner"
-          return "vendor"
+          const moduleId = normalizeModuleId(id)
+          if (!moduleId.includes('/node_modules/')) return
+
+          // Keep heavy feature packs isolated to avoid re-downloading unrelated routes.
+          if (isNodeModule(moduleId, '@zxing') || isNodeModule(moduleId, 'jsbarcode')) return 'scanner'
+          if (isNodeModule(moduleId, '@supabase')) return 'supabase'
+          if (isNodeModule(moduleId, 'recharts')) return 'charts'
+          if (isNodeModule(moduleId, '@radix-ui')) return 'radix'
+          if (isNodeModule(moduleId, '@tanstack')) return 'query'
+          if (isNodeModule(moduleId, 'lucide-react')) return 'icons'
+          if (isNodeModule(moduleId, 'react-router') || isNodeModule(moduleId, '@remix-run')) return 'router'
+
+          // Only core React runtime stays here; avoid catching every `react-*` package.
+          if (
+            isNodeModule(moduleId, 'react') ||
+            isNodeModule(moduleId, 'react-dom') ||
+            isNodeModule(moduleId, 'scheduler')
+          ) {
+            return 'react-core'
+          }
+          return 'vendor'
         },
       },
     },

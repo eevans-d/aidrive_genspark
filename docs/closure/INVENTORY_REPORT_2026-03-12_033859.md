@@ -1,8 +1,8 @@
 # MISIÓN: INVENTARIO COMPLETO DE RECURSOS DEL PROYECTO
 
-- Fecha (UTC): `2026-03-11 13:00:08`
+- Fecha (UTC): `2026-03-12 03:39:01`
 - Repo: `.`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-11_125314.md`
+- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-12_033328.md`
 
 ## 1. RECURSOS DEL PROYECTO
 
@@ -12,12 +12,12 @@
 
 | Size | Path |
 |---:|---|
-| 848K | `.agent` |
-| 1.2M | `docs` |
+| 784K | `.agent` |
+| 1.4M | `docs` |
 | 1.6M | `supabase` |
 | 1.1M | `tests` |
-| 284K | `scripts` |
-| 442M | `minimarket-system` |
+| 300K | `scripts` |
+| 418M | `minimarket-system` |
 
 - Assets detectados (best-effort): `1` (top 20 por tamaño)
 
@@ -91,9 +91,10 @@
 
 - `ACCESS_TOKEN`
 - `DB_PASSWORD`
+- `OPS_SMOKE_RETRIES`
+- `OPS_SMOKE_RETRY_DELAY_MS`
+- `OPS_SMOKE_TIMEOUT_MS`
 - `PROJECT_ID`
-- `VITE_AUTH_INACTIVITY_TIMEOUT_MS`
-- `VITE_AUTH_TIMEBOX_MS`
 
 ## Used In Code But Missing In Supabase Secrets (names)
 

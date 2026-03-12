@@ -38,10 +38,16 @@ Kickoff (push-button: session-start + extract + mega-plan template):
 .agent/scripts/p0.sh kickoff "<objective>" --with-gates --with-supabase
 ```
 
+Verificar budget de contexto (entrada canónica):
+```bash
+npm run docs:context-budget
+```
+
 ## Source Of Truth Docs
 
+- `docs/CONTEXT0_EJECUTIVO.md` — entrada unica de sesion (resumen operativo + orden de carga + exclusiones)
 - `docs/ESTADO_ACTUAL.md` — estado actual verificado del sistema
-- `docs/DECISION_LOG.md` — decisiones activas e hitos (D-001..D-189)
+- `docs/DECISION_LOG.md` — decisiones activas e hitos vigentes
 - `docs/API_README.md` — endpoints, roles, contratos del gateway y edge functions
 - `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` — schema BD real
 - `docs/PLAN_FUSIONADO_FACTURAS_OCR.md` — roadmap OCR (10/10 completado)

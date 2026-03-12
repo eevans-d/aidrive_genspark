@@ -2,7 +2,7 @@
 
 **Fecha:** 2026-03-11 UTC
 **Alcance:** documentación canónica vs código real, worktree actual, despliegue remoto y quality gates locales
-**Fuentes base:** `docs/closure/BASELINE_LOG_2026-03-11_125314.md`, `docs/closure/TECHNICAL_ANALYSIS_2026-03-11_125318.md`, `docs/closure/INVENTORY_REPORT_2026-03-11_130005.md`, `test-reports/quality-gates_20260311-125343.log`
+**Fuentes base:** `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_125314.md`, `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-11_125318.md`, `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-11_130005.md`, `test-reports/quality-gates_20260311-125343.log`
 
 ## Veredicto ejecutivo
 
@@ -22,10 +22,10 @@
 
 | Elemento | Estado | Evidencia |
 |---|---|---|
-| Edge Functions remotas activas | REAL | `docs/closure/BASELINE_LOG_2026-03-11_125314.md` |
+| Edge Functions remotas activas | REAL | `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_125314.md` |
 | Versiones remotas clave actualizadas en docs | REAL | `api-minimarket v42`, `api-assistant v4`, `facturas-ocr v13` en `docs/ESTADO_ACTUAL.md` |
 | `api-minimarket` remoto responde healthy | REAL | `curl https://dqaygmjpzoqjjrywdsxi.supabase.co/functions/v1/api-minimarket/health` → `200` |
-| `api-minimarket` mantiene `verify_jwt=false` | REAL | `docs/closure/BASELINE_LOG_2026-03-11_125314.md` |
+| `api-minimarket` mantiene `verify_jwt=false` | REAL | `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_125314.md` |
 | Esquema documentado vs migraciones (45 tablas) | REAL | comparación `docs/ESQUEMA_BASE_DATOS_ACTUAL.md` vs `supabase/migrations/*.sql` |
 | Cron SQL con `Authorization` | REAL | scan HC-1 sobre `supabase/migrations/*.sql` |
 | `deploy.sh` filtra `_shared/` y usa `--no-verify-jwt` | REAL | scan HC-2 sobre `deploy.sh` |
