@@ -14,13 +14,15 @@
   - `pnpm -C minimarket-system build` -> **PASS**
   - `node scripts/validate-doc-links.mjs` -> **PASS**
   - `node scripts/check-closure-root-policy.mjs` -> **PASS**
-- Hallazgo residual de build: persiste el warning `Unknown input options: manualChunks` durante el paso PWA/Workbox (`PERF-001`, no bloqueante).
+- Build frontend sin warning residual de PWA/Workbox: `PERF-001` queda cerrado.
 
 ## 2) Lo que cambio hoy y por que importa
-- **Chunking frontend ajustado** en `minimarket-system/vite.config.ts`:
+- **PERF-001 cerrado** en `minimarket-system/vite.config.ts`:
   - Se refino `manualChunks` para dejar de capturar paquetes por coincidencia amplia (`id.includes("react")`) y separar bloques por dominio real (`react-core`, `router`, `query`, `charts`, `scanner`, etc.).
   - Resultado: desaparece el warning de chunk > 500k en `react`; `react-core` queda ~143 kB (antes ~549 kB).
-  - Deuda vigente: warning de Workbox/PWA sobre `manualChunks` aun presente.
+  - Se agrega `workbox.inlineWorkboxRuntime=true` para evitar la ruta de `workbox-build` que dispara `Unknown input options: manualChunks` con Rollup 4.
+  - Ajuste adicional: fallback de `manualChunks` sin chunk `vendor` forzado para eliminar warning circular `radix -> vendor -> radix`.
+  - Resultado final: build `PASS` sin warnings de chunking/PWA.
 - **Harness E2E endurecido** en `scripts/run-e2e-tests.sh`:
   - Si el runtime local arranca con `API_PROVEEDOR_SECRET` stale, el script detecta el 401 especifico y autorrecupera (`supabase stop/start`) antes de ejecutar pruebas.
   - Se agrega resolucion de bearer para el probe (usa `E2E_BEARER_TOKEN`, o JWT HS256 con `SUPABASE_JWT_SECRET`, o fallback a service role).
@@ -34,8 +36,8 @@
 ## 3) Bloqueantes y riesgos que siguen abiertos
 - `OCR-007` (CRITICO): OCR bloqueado por billing inactivo en GCP (externo al repo).
 - `AUTH-001`, `AUTH-002`, `DB-001`: hardening externo pendiente (no bloqueante para operacion actual).
-- `PERF-001`: warning residual en PWA/Workbox; performance general estable, pero existe ruido tecnico en build.
-- Riesgo de contexto: los docs canonicos historicamente crecieron por encima del target ideal de lectura por sesion.
+- `PERF-001`: **cerrado** en esta corrida.
+- Riesgo de contexto: mitigado. El budget canonico converge a `ok=9 warn=0 fail=0`.
 
 ## 4) Carga de contexto recomendada (orden obligatorio)
 1. `docs/CONTEXT0_EJECUTIVO.md` (este archivo)
@@ -55,7 +57,7 @@ No cargar por defecto:
 
 ## 5) Budget de contexto (regla operativa)
 - Target general por doc canonico: **<= 2000 palabras**.
-- Excepcion temporal: algunos docs troncales superan ese target por deuda historica; se controlan con hard cap y plan de poda incremental.
+- Estado actual: `ok=9 warn=0 fail=0` tras poda incremental canonica y archivado de detalle largo en `docs/closure/archive/historical/`.
 - Chequeo automatizado disponible:
   - `node scripts/check-context-budget.mjs`
   - `node scripts/check-context-budget.mjs --strict` (falla si hay docs sobre target)
