@@ -57,7 +57,10 @@ pnpm -C minimarket-system build
 Health checks manuales (requieren URL de proyecto):
 ```bash
 curl -i "$SUPABASE_URL/functions/v1/api-minimarket/health"
-curl -i "$SUPABASE_URL/functions/v1/api-proveedor/health"
+curl -i \
+  -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+  -H "x-api-secret: $API_PROVEEDOR_SECRET" \
+  "$SUPABASE_URL/functions/v1/api-proveedor/health"
 ```
 
 ## Errores Comunes

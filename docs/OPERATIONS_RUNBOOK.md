@@ -59,6 +59,7 @@ OPS_SMOKE_TARGET=remote SUPABASE_URL="https://<project-ref>.supabase.co" node sc
 ### Minuto 3-8: Aislar dominio de la falla
 1. Si falla solo `api-proveedor/health`, tratar como incidente de proveedor/scraper.
 2. Si el fallo de proveedor es `401`, validar primero credencial operativa:
+   - `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION` (o `SUPABASE_SERVICE_ROLE_KEY` como fallback de bearer).
    - `OPS_SMOKE_API_PROVEEDOR_SECRET` (o variable base `API_PROVEEDOR_SECRET` en el entorno de ejecucion).
 3. Si falla solo `api-minimarket/health`, tratar como incidente de gateway principal.
 4. Si fallan ambos endpoints criticos, tratar como incidente de plataforma (Supabase/infra/red).

@@ -36,6 +36,7 @@ Remoto con autenticacion de `api-proveedor/health`:
 ```bash
 OPS_SMOKE_TARGET=remote \
 SUPABASE_URL="https://<project-ref>.supabase.co" \
+OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION="Bearer $SUPABASE_SERVICE_ROLE_KEY" \
 OPS_SMOKE_API_PROVEEDOR_SECRET="$API_PROVEEDOR_SECRET" \
 node scripts/ops-smoke-check.mjs
 ```
@@ -70,6 +71,7 @@ node scripts/ops-smoke-check.mjs
 - `[FAIL_FINAL]`: endpoint agotado tras retries.
 - `[SUMMARY]`: resumen final.
 - `401` en `api-proveedor/health`: validar `OPS_SMOKE_API_PROVEEDOR_SECRET`.
+- `401` con proveedor y `verify_jwt=true`: validar `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION`.
 
 Exit codes:
 - `0`: todos los checks criticos en PASS.

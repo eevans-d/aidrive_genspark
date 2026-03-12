@@ -632,6 +632,10 @@ http://127.0.0.1:54321/functions/v1/api-proveedor
 x-api-secret: <valor de API_PROVEEDOR_SECRET>
 ```
 
+Nota operacional importante:
+- A nivel de codigo, `/health` esta marcado como `requiresAuth: false` en `schemas.ts`.
+- A nivel plataforma Supabase, rige la politica D-086 (`verify_jwt=true` para funciones distintas de `api-minimarket`), por lo que en entornos desplegados puede requerirse `Authorization: Bearer <token>` para llegar al handler.
+
 ### Lecturas (RLS opcional)
 - Si se envía `Authorization: Bearer <jwt>`, las lecturas usan ese JWT y aplican RLS.
 - Si no hay JWT, se usa `SUPABASE_ANON_KEY` por defecto.
@@ -650,7 +654,7 @@ Listado oficial según `supabase/functions/api-proveedor/schemas.ts`:
 | `/alertas` | Alertas activas | Sí |
 | `/estadisticas` | Métricas de scraping y proveedor | Sí |
 | `/configuracion` | Configuración segura del proveedor | Sí |
-| `/health` | Health check completo | No |
+| `/health` | Health check completo | No (app-level); puede requerir `Authorization` si `verify_jwt=true` |
 
 ### Headers de Respuesta
 Igual que `api-minimarket`:
@@ -661,9 +665,11 @@ Igual que `api-minimarket`:
 Para llamar desde `api-minimarket`:
 ```ts
 const proveedorSecret = Deno.env.get('API_PROVEEDOR_SECRET');
+const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 const response = await fetch(`${supabaseUrl}/functions/v1/api-proveedor/precios`, {
   method: 'GET',
   headers: {
+    'Authorization': `Bearer ${serviceRoleKey}`,
     'x-api-secret': proveedorSecret,
     'Content-Type': 'application/json',
     'x-request-id': requestId, // propagar para tracing

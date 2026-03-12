@@ -11,8 +11,12 @@ const TARGET = (process.env.OPS_SMOKE_TARGET || 'local').toLowerCase();
 const TIMEOUT_MS = parsePositiveInt('OPS_SMOKE_TIMEOUT_MS', DEFAULT_TIMEOUT_MS);
 const RETRIES = parseNonNegativeInt('OPS_SMOKE_RETRIES', DEFAULT_RETRIES);
 const RETRY_DELAY_MS = parseNonNegativeInt('OPS_SMOKE_RETRY_DELAY_MS', DEFAULT_RETRY_DELAY_MS);
+const serviceRoleKey = process.env.OPS_SMOKE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 const apiProveedorSecret = process.env.OPS_SMOKE_API_PROVEEDOR_SECRET || process.env.API_PROVEEDOR_SECRET || '';
-const apiProveedorAuthorization = process.env.OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION || process.env.OPS_SMOKE_AUTHORIZATION || '';
+const apiProveedorAuthorization =
+  process.env.OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION ||
+  process.env.OPS_SMOKE_AUTHORIZATION ||
+  (serviceRoleKey ? `Bearer ${serviceRoleKey}` : '');
 
 if (!['local', 'remote'].includes(TARGET)) {
   console.error('[CONFIG_ERROR] OPS_SMOKE_TARGET must be local or remote');
@@ -20,7 +24,6 @@ if (!['local', 'remote'].includes(TARGET)) {
 }
 
 const baseUrl = resolveBaseUrl(TARGET);
-const serviceRoleKey = process.env.OPS_SMOKE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
 
 const checks = [
   {
@@ -52,6 +55,9 @@ if (serviceRoleKey) {
 
 if (!apiProveedorSecret) {
   console.log('[INFO] api-proveedor/health may return 401 if OPS_SMOKE_API_PROVEEDOR_SECRET (or API_PROVEEDOR_SECRET) is not set');
+}
+if (!apiProveedorAuthorization) {
+  console.log('[INFO] api-proveedor/health may require Authorization when function verify_jwt=true');
 }
 
 console.log(`[OPS_SMOKE] target=${TARGET} base_url=${baseUrl} timeout_ms=${TIMEOUT_MS} retries=${RETRIES} retry_delay_ms=${RETRY_DELAY_MS}`);
@@ -147,6 +153,9 @@ async function runCheck(check) {
 
       const pass = response.ok;
       console.log(`[${pass ? 'PASS' : 'FAIL'}] endpoint=${check.name} critical=${check.critical} status=${response.status} latency_ms=${latency} attempt=${attempt}`);
+      if (!pass && check.name === 'api-proveedor/health' && response.status === 401) {
+        console.log('[HINT] endpoint=api-proveedor/health set OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION and/or OPS_SMOKE_API_PROVEEDOR_SECRET');
+      }
 
       if (pass) {
         return { pass: true };
