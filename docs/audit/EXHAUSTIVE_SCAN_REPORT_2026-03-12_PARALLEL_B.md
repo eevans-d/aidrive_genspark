@@ -2,75 +2,87 @@
 
 Fecha: 2026-03-12 UTC  
 Rama: `codex/parallel-operability-hardening-20260312`  
-Objetivo: escaneo integral de operabilidad, resiliencia y salud técnica de todo el repo.
+Objetivo: escaneo integral de operabilidad, resiliencia y salud tecnica del repositorio, con segunda verificacion hallazgo por hallazgo.
 
 ## 1) Cobertura de Escaneo
 
-- Archivos trackeados revisados por inventario: `656` (`git ls-files | wc -l`).
-- Archivos detectados en árbol (sin `.git`): `650` (`rg --files --hidden -g '!.git' | wc -l`).
-- Escaneo transversal por dominios:
-  - Backend `supabase/functions/*`
-  - Frontend `minimarket-system/src/*`
-  - Tests `tests/*` + `minimarket-system/src/**/*.test.tsx`
-  - Scripts `scripts/*`
-  - Docs operativas `docs/*`
-  - CI/CD `.github/workflows/*`
+- Conteo de archivos trackeados (`git ls-files | wc -l`): `660`.
+- Conteo de archivos en arbol sin `.git` (`rg --files --hidden -g '!.git' | wc -l`): `651`.
+- Cobertura transversal aplicada:
+  - Backend: `supabase/functions/*`
+  - Frontend: `minimarket-system/src/*`
+  - Tests: `tests/*` y `minimarket-system/src/**/*.test.tsx`
+  - Scripts: `scripts/*`
+  - CI/CD: `.github/workflows/*`
+  - Documentacion operativa y cierre: `docs/*`
 
-## 2) Validaciones Ejecutadas (evidencia)
+## 2) Evidencia Ejecutada (segunda pasada de confirmacion)
 
-1. `node scripts/check-critical-deps-alignment.mjs` -> PASS  
-2. `node scripts/check-supabase-js-alignment.mjs` -> PASS  
-3. `python3 .agent/scripts/env_audit.py --with-supabase` -> ejecutado (names only)  
-4. `python3 .agent/scripts/extract_reports.py --mode both` -> generado:  
-   - `docs/closure/TECHNICAL_ANALYSIS_2026-03-12_033433.md`  
-   - `docs/closure/INVENTORY_REPORT_2026-03-12_033434.md`  
-5. `bash scripts/run-integration-tests.sh --dry-run` -> prerequisitos OK (dry-run)  
-6. `bash scripts/run-e2e-tests.sh --dry-run` -> prerequisitos OK (dry-run)  
-7. `node scripts/metrics.mjs --check` -> `docs/METRICS.md OK.`  
-8. `npm run test:unit` -> `88 files / 1959 tests PASS`  
-9. `pnpm -C minimarket-system lint` -> `0 errors, 72 warnings`  
-10. `pnpm -C minimarket-system build` -> PASS (con warnings de bundling)  
-11. `npx vitest run tests/security --config vitest.auxiliary.config.ts` -> `11 PASS, 3 skipped`  
-12. `npx vitest run tests/api-contracts --config vitest.auxiliary.config.ts` -> `17 PASS, 1 skipped`  
-13. `pnpm -C minimarket-system test:components` -> `50 files / 257 tests PASS`  
-14. `node scripts/ops-smoke-check.mjs` (local y remoto) -> ejecutado, ver hallazgos.
+1. `node scripts/ops-smoke-check.mjs`  
+   - Resultado: `api-minimarket/health` PASS `200`; `api-proveedor/health` FAIL `401` tras retries.
+2. `OPS_SMOKE_TARGET=remote SUPABASE_URL="https://dqaygmjpzoqjjrywdsxi.supabase.co" node scripts/ops-smoke-check.mjs`  
+   - Resultado: mismo patron en remoto (PASS minimarket / FAIL proveedor 401).
+3. `rg -n "ops:smoke|ops-smoke-check" .github/workflows -S`  
+   - Resultado: sin coincidencias (no gate CI para smoke operativo).
+4. `rg -n "D-086|verify_jwt=true|requires JWT|api-proveedor/health" docs/DECISION_LOG.md docs/closure/BASELINE_LOG_2026-03-12_033328.md tests/e2e/api-proveedor.smoke.test.ts -S`  
+   - Resultado: confirmada politica D-086 y baseline `api-proveedor verify_jwt=true`; test E2E documenta que `/health` requiere JWT.
+5. `pnpm -C minimarket-system build`  
+   - Resultado: build PASS con warnings `Circular chunk: radix -> vendor -> radix` y `Unknown input options: manualChunks`.
+6. `pnpm -C minimarket-system test:components`  
+   - Resultado: `50` files / `257` tests PASS; persisten warnings de React Router future flags y `act(...)` en parte de las pruebas.
+7. `pnpm -C minimarket-system lint`  
+   - Resultado: `0 errors, 72 warnings` (`@typescript-eslint/no-explicit-any`, concentrado en tests/mocks).
+8. `supabase --version`  
+   - Resultado: instalada `2.72.7`; sugerida `2.75.0`.
+9. `python3 .agent/scripts/env_audit.py --with-supabase`  
+   - Resultado: variables usadas faltantes en Supabase secrets (names only) detectadas, incluyendo `API_PROVEEDOR_READ_MODE`, `ENVIRONMENT`, `LOG_LEVEL`, `TWILIO_*`, `WEBHOOK_URL`, entre otras.
+10. `node scripts/validate-doc-links.mjs`  
+    - Resultado: `Doc link check OK (37 files)`.
 
-## 3) Hallazgos Priorizados
+## 3) Matriz Revalidada de Hallazgos
 
-| ID | Severidad | Estado | Hallazgo | Observacion breve |
-|---|---|---|---|---|
-| EXH-B-001 | Alta | Abierto | `api-proveedor/health` falla `401` en smoke sin auth operativa | Con `verify_jwt=true` la plataforma puede requerir bearer aun si app-level marca `/health` como publico. |
-| EXH-B-002 | Media | Abierto | CI/nightly no incluye `ops:smoke` como gate de disponibilidad | El chequeo crítico de salud sigue manual y dependiente de operador. |
-| EXH-B-003 | Media | Abierto | Build frontend reporta warning de chunk circular (`radix -> vendor -> radix`) | Riesgo de degradación de mantenibilidad/bundle si escala la fragmentación. |
-| EXH-B-004 | Media | Abierto | Build reporta `Unknown input options: manualChunks` | Indica configuración de Rollup no aplicada; potencial falsa sensación de optimización. |
-| EXH-B-005 | Media | Abierto | Tests frontend emiten warnings recurrentes (`act(...)`, future flags Router v7) | No bloquea hoy, pero agrega ruido y puede ocultar regresiones reales. |
-| EXH-B-006 | Baja | Abierto | `eslint` con `72` warnings de `no-explicit-any` en tests/mocks frontend | Deuda técnica concentrada en suites de test; no afecta runtime productivo inmediato. |
-| EXH-B-007 | Baja | Abierto | Supabase CLI desactualizado (`2.72.7`, latest sugerido `2.75.0`) | Riesgo bajo, pero puede impactar reproducibilidad de comandos locales/CI. |
-| EXH-B-008 | Baja | Abierto | Variables usadas en backend ausentes en Supabase secrets (names only) | Gap de configuración operativa potencial en despliegues parciales. |
+| ID | Severidad | Estado Revalidado | Confirmacion | Observacion breve | Mejora/refactor recomendada en documento |
+|---|---|---|---|---|---|
+| EXH-B-001 | Alta | Abierto (confirmado) | `api-proveedor/health` sigue `401` en local/remoto sin auth operativa | Hallazgo real de disponibilidad operativa: no hay smoke verde sin credenciales. | Definir contrato de health para proveedor: `health-public` sin datos sensibles o exigir siempre token tecnico dedicado y documentado en runbook. |
+| EXH-B-002 | Media | Abierto (confirmado) | Workflows actuales no llaman `ops:smoke` | El smoke operativo depende de ejecucion manual. | Integrar job `ops:smoke` en `nightly-gates.yml` (fase 1 no bloqueante, fase 2 bloqueante) y publicar resumen PASS/FAIL como artifact. |
+| EXH-B-003 | Media | Abierto (confirmado) | Build vuelve a reportar `Circular chunk: radix -> vendor -> radix` | Aun no rompe release, pero escala deuda de bundling. | Revisar estrategia de chunking para radix/vendor (split explicito o simplificacion de dependencias compartidas). |
+| EXH-B-004 | Media | Abierto (confirmado) | Build vuelve a reportar `Unknown input options: manualChunks` | Config de optimizacion no esta siendo aplicada como se espera. | Corregir ubicacion/config de `manualChunks` en Vite/Rollup; agregar prueba de build que falle si aparece ese warning. |
+| EXH-B-005 | Media | Abierto (confirmado) | Test components sigue con warnings `act(...)` + future flags Router v7 | Ruido en CI que puede esconder errores reales. | Hardening de test harness: wrapper comun con `act`, configuracion de future flags controlada, limpieza de errores esperados en `ErrorBoundary.test.tsx`. |
+| EXH-B-006 | Baja | Abierto (confirmado) | Lint mantiene `72` warnings de `no-explicit-any` | Mayormente deuda en tests/mocks, no runtime. | Plan por lotes: tipar mocks centrales (`supabaseMock`) y activar budget de warnings por sprint. |
+| EXH-B-007 | Baja | Abierto (confirmado) | Supabase CLI local desfasada (`2.72.7` vs `2.75.0`) | Riesgo bajo, pero puede generar diferencias locales/CI. | Pin/normalizar version en tooling local + guia corta de upgrade para colaboradores. |
+| EXH-B-008 | Baja | Abierto (ajustado) | Env audit detecta faltantes en secrets (names only) | Parte puede ser opcional por entorno, parte critica para runtime. | Crear matriz obligatoria/opcional por entorno (dev/staging/prod) y validacion automatica predeploy para nombres requeridos. |
 
-## 4) Hallazgos Cerrados en esta sesión
+## 4) Hallazgos Cerrados en esta pista
 
-| ID | Estado | Acción aplicada |
+| ID | Estado | Accion aplicada |
 |---|---|---|
-| EXH-B-FIX-001 | Cerrado | Se añadieron variables `OPS_SMOKE_*` a `.env.example` para cerrar gap de documentación operativa. |
-| EXH-B-FIX-002 | Cerrado (rama) | Se consolidó smoke check operativo con hints/fallback auth para 401 en proveedor. |
-| EXH-B-FIX-003 | Cerrado (rama) | Se dejó playbook de triage operativo 0-15 min en runbooks/monitoring y se alineó troubleshooting. |
+| EXH-B-FIX-001 | Cerrado | Variables `OPS_SMOKE_*` incorporadas a `.env.example` para uso operativo reproducible. |
+| EXH-B-FIX-002 | Cerrado (rama) | Smoke check operativo consolidado con retries/timeouts, hints de auth y salida `PASS/FAIL` por endpoint. |
+| EXH-B-FIX-003 | Cerrado (rama) | Runbooks operativos actualizados con ejecucion, interpretacion y triage 0-15 minutos. |
 
-## 5) Riesgos Residuales
+## 5) Confirmacion de Revision Integral
 
-1. Sin `Authorization` y/o `x-api-secret` válidos, `api-proveedor/health` seguirá en FAIL crítico para smoke.
-2. Los tests “real endpoint” de seguridad/contratos están parcialmente skip por depender de credenciales/runtime externo.
-3. Existen cambios paralelos de otra ventana en `docs/closure` y archivos de configuración; este reporte no los revierte ni los mezcla.
+- Se ejecutaron checks tecnicos y operativos sobre backend, frontend, tests, scripts, CI y docs.
+- Se revalidaron los `8/8` hallazgos priorizados con evidencia reciente en la misma fecha (`2026-03-12 UTC`).
+- Se incorporaron mejoras/refactors sugeridos para cada hallazgo dentro de esta matriz.
+- Resultado: cobertura amplia y profunda del repo para objetivo de operabilidad/resiliencia; no se detectaron bloqueos nuevos de severidad critica adicionales fuera de EXH-B-001.
 
-## 6) Recomendaciones Inmediatas
+## 6) Riesgos Residuales (post-verificacion)
 
-1. Agregar job `ops:smoke` a `nightly-gates.yml` (modo no bloqueante inicial, con artifact de salida).  
-2. Definir perfil oficial de variables para operación (`OPS_SMOKE_*`, `API_PROVEEDOR_SECRET`, `SUPABASE_SERVICE_ROLE_KEY`).  
-3. Corregir warning `manualChunks` en configuración de build para garantizar que el split de chunks realmente se aplique.  
-4. Reducir ruido de tests frontend (wrapping con `act`, ajuste de future flags) para mejorar señal de CI.  
-5. Cerrar backlog de warnings `no-explicit-any` en tests/mocks por lotes.
+1. `api-proveedor/health` continuara en FAIL critico sin estrategia definitiva de auth operativa.
+2. Mientras `ops:smoke` no este en CI, la deteccion de indisponibilidad depende de disciplina manual.
+3. Warnings de build/tests/lint siguen sin mitigacion tecnica aplicada; no bloquean hoy, pero aumentan deuda operacional.
+4. El set de secrets faltantes necesita clasificacion formal por entorno para evitar falsos positivos y faltantes reales en produccion.
 
-## 7) Nota de Colisión
+## 7) Orden de Abordaje Recomendado
 
-- Se trabajó en aislamiento de ventana paralela, evitando ediciones destructivas o reversión de cambios ajenos.
-- Se detectaron cambios concurrentes externos en el working tree y se mantuvieron intactos.
+1. Resolver EXH-B-001 y EXH-B-002 como bloque de disponibilidad (SLA/SLO first).
+2. Corregir EXH-B-004 junto con EXH-B-003 para estabilidad de build y control de bundle.
+3. Reducir ruido de pruebas (EXH-B-005) para mejorar senal de CI.
+4. Ejecutar plan incremental de deuda (EXH-B-006 y EXH-B-007).
+5. Formalizar contrato de variables/secrets por entorno (EXH-B-008).
+
+## 8) Nota de No-Colision
+
+- No se modificaron archivos reservados por la ventana principal.
+- Se mantuvo aislamiento de cambios y se evito revertir trabajo ajeno.
