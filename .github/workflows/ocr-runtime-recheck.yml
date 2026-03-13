@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
     inputs:
       factura_id:
-        description: Optional factura_id to recheck. If omitted, the workflow selects the latest OCR error candidate.
+        description: Optional factura_id to recheck. If omitted, the workflow selects the latest error candidate.
         required: false
         default: ''
 
@@ -22,6 +22,7 @@ jobs:
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
           INPUT_FACTURA_ID: ${{ github.event.inputs.factura_id }}
         run: |
           set -euo pipefail
@@ -30,61 +31,54 @@ jobs:
           REPORT_FILE="test-reports/ocr-runtime-recheck.txt"
           : > "$REPORT_FILE"
 
-          rest_get() {
-            curl -sS --fail-with-body "$1" \
-              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
-          }
-
-          rest_post() {
-            curl -sS -o "$2" -w "%{http_code}" \
-              -X POST "$1" \
-              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
-              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
-              -H "Content-Type: application/json" \
-              --max-time 80 \
-              --data "$3"
-          }
-
           echo "OCR runtime recheck - $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$REPORT_FILE"
           echo "Target: production facturas-ocr" >> "$REPORT_FILE"
-          echo "Selection strategy: explicit factura_id or latest OCR error candidate" >> "$REPORT_FILE"
+          echo "Selection strategy: explicit factura_id or latest estado=error candidate" >> "$REPORT_FILE"
           echo >> "$REPORT_FILE"
 
-          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
-            echo "MISSING_CONFIG SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" >> "$REPORT_FILE"
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ] || [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "MISSING_CONFIG SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY or SUPABASE_DB_URL" >> "$REPORT_FILE"
             echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
             echo "- Status: SKIPPED (missing configuration)" >> "$GITHUB_STEP_SUMMARY"
             cat "$REPORT_FILE"
             exit 0
           fi
 
+          if ! command -v psql >/dev/null 2>&1; then
+            echo "MISSING_TOOL psql" >> "$REPORT_FILE"
+            echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Status: SKIPPED (psql unavailable)" >> "$GITHUB_STEP_SUMMARY"
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          sql_escape() {
+            printf "%s" "$1" | sed "s/'/''/g"
+          }
+
+          run_sql() {
+            psql "$SUPABASE_DB_URL" -X -v ON_ERROR_STOP=1 -P footer=off -At -F $'\t' -c "$1"
+          }
+
           candidate_id="${INPUT_FACTURA_ID:-}"
           selection_source="workflow_dispatch.input"
 
           if [ -z "$candidate_id" ]; then
-            events_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta_eventos?tipo=eq.ocr_error&select=factura_id,created_at,datos&order=created_at.desc&limit=20")"
-            candidate_id="$(jq -r '[.[] | select(((.datos.error // "") | test("GCV fetch failed|billing|timed out|Signal timed out"; "i")) or (.datos.status? == 403)) | .factura_id][0] // empty' <<<"$events_json")"
-            selection_source="facturas_ingesta_eventos.ocr_error"
+            candidate_id="$(run_sql "select id from public.facturas_ingesta where estado = 'error' and imagen_url is not null order by updated_at desc nulls last limit 1;")"
+            selection_source="public.facturas_ingesta.estado=error"
           fi
 
           if [ -z "$candidate_id" ]; then
-            error_rows_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?estado=eq.error&imagen_url=not.is.null&select=id,estado,updated_at,imagen_url&order=updated_at.desc&limit=5")"
-            candidate_id="$(jq -r '.[0].id // empty' <<<"$error_rows_json")"
-            selection_source="facturas_ingesta.estado=error"
-          fi
-
-          if [ -z "$candidate_id" ]; then
-            echo "NO_CANDIDATE no factura with OCR error state found" >> "$REPORT_FILE"
+            echo "NO_CANDIDATE no factura with estado=error and imagen_url found" >> "$REPORT_FILE"
             echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
             echo "- Status: SKIPPED (no OCR candidate found)" >> "$GITHUB_STEP_SUMMARY"
             cat "$REPORT_FILE"
             exit 0
           fi
 
-          before_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?id=eq.$candidate_id&select=id,estado,updated_at,imagen_url,numero,request_id,proveedor_id&limit=1")"
-          before_exists="$(jq 'length' <<<"$before_json")"
-          if [ "$before_exists" -eq 0 ]; then
+          candidate_id_escaped="$(sql_escape "$candidate_id")"
+          before_row="$(run_sql "select coalesce(estado,''), coalesce(imagen_url,''), coalesce(updated_at::text,''), coalesce(score_confianza::text,'') from public.facturas_ingesta where id = '$candidate_id_escaped' limit 1;")"
+          if [ -z "$before_row" ]; then
             echo "MISSING_FACTURA candidate=$candidate_id" >> "$REPORT_FILE"
             echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
             echo "- Status: SKIPPED (candidate not found)" >> "$GITHUB_STEP_SUMMARY"
@@ -92,41 +86,50 @@ jobs:
             exit 0
           fi
 
-          before_estado="$(jq -r '.[0].estado // "unknown"' <<<"$before_json")"
-          before_updated_at="$(jq -r '.[0].updated_at // "unknown"' <<<"$before_json")"
-          before_imagen_url="$(jq -r '.[0].imagen_url // "missing"' <<<"$before_json")"
+          before_estado="$(printf '%s' "$before_row" | cut -f1)"
+          before_imagen_url="$(printf '%s' "$before_row" | cut -f2)"
+          before_updated_at="$(printf '%s' "$before_row" | cut -f3)"
+          before_score="$(printf '%s' "$before_row" | cut -f4)"
 
           echo "Candidate factura_id: $candidate_id" >> "$REPORT_FILE"
           echo "Candidate source: $selection_source" >> "$REPORT_FILE"
           echo "Before estado: $before_estado" >> "$REPORT_FILE"
           echo "Before updated_at: $before_updated_at" >> "$REPORT_FILE"
-          echo "Imagen path present: $([ "$before_imagen_url" = "missing" ] && echo "no" || echo "yes")" >> "$REPORT_FILE"
+          echo "Before score_confianza: ${before_score:-null}" >> "$REPORT_FILE"
+          echo "Imagen path present: $([ -n "$before_imagen_url" ] && echo "yes" || echo "no")" >> "$REPORT_FILE"
           echo >> "$REPORT_FILE"
 
           response_file="$(mktemp)"
-          response_status="$(rest_post "$SUPABASE_URL/functions/v1/facturas-ocr" "$response_file" "{\"factura_id\":\"$candidate_id\"}")"
+          response_status="$(curl -sS -o "$response_file" -w "%{http_code}" \
+            -X POST "$SUPABASE_URL/functions/v1/facturas-ocr" \
+            -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+            -H "Content-Type: application/json" \
+            --max-time 80 \
+            --data "{\"factura_id\":\"$candidate_id\"}")"
           response_body="$(cat "$response_file")"
 
           sleep 5
 
-          after_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?id=eq.$candidate_id&select=id,estado,updated_at,numero,score_confianza&limit=1")"
-          after_estado="$(jq -r '.[0].estado // "unknown"' <<<"$after_json")"
-          after_updated_at="$(jq -r '.[0].updated_at // "unknown"' <<<"$after_json")"
-          after_score="$(jq -r '.[0].score_confianza // "null"' <<<"$after_json")"
-          events_after_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta_eventos?factura_id=eq.$candidate_id&select=tipo,created_at,datos&order=created_at.desc&limit=5")"
-          latest_event_type="$(jq -r '.[0].tipo // "none"' <<<"$events_after_json")"
-          latest_event_error="$(jq -r '.[0].datos.error // empty' <<<"$events_after_json")"
+          after_row="$(run_sql "select coalesce(estado,''), coalesce(updated_at::text,''), coalesce(score_confianza::text,'') from public.facturas_ingesta where id = '$candidate_id_escaped' limit 1;")"
+          latest_event_row="$(run_sql "select coalesce(tipo,''), coalesce(created_at::text,''), coalesce(datos::text,'') from public.facturas_ingesta_eventos where factura_id = '$candidate_id_escaped' order by created_at desc limit 1;")"
+
+          after_estado="$(printf '%s' "$after_row" | cut -f1)"
+          after_updated_at="$(printf '%s' "$after_row" | cut -f2)"
+          after_score="$(printf '%s' "$after_row" | cut -f3)"
+          latest_event_type="$(printf '%s' "$latest_event_row" | cut -f1)"
+          latest_event_created_at="$(printf '%s' "$latest_event_row" | cut -f2)"
+          latest_event_payload="$(printf '%s' "$latest_event_row" | cut -f3)"
 
           echo "Invocation HTTP status: $response_status" >> "$REPORT_FILE"
           echo "Response body: $response_body" >> "$REPORT_FILE"
           echo >> "$REPORT_FILE"
           echo "After estado: $after_estado" >> "$REPORT_FILE"
           echo "After updated_at: $after_updated_at" >> "$REPORT_FILE"
-          echo "After score_confianza: $after_score" >> "$REPORT_FILE"
+          echo "After score_confianza: ${after_score:-null}" >> "$REPORT_FILE"
           echo "Latest event type: $latest_event_type" >> "$REPORT_FILE"
-          if [ -n "$latest_event_error" ]; then
-            echo "Latest event error: $latest_event_error" >> "$REPORT_FILE"
-          fi
+          echo "Latest event created_at: $latest_event_created_at" >> "$REPORT_FILE"
+          echo "Latest event payload: $latest_event_payload" >> "$REPORT_FILE"
 
           echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
           echo "- Candidate factura_id: \`$candidate_id\`" >> "$GITHUB_STEP_SUMMARY"
