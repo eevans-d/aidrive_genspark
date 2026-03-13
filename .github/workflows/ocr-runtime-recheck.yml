@@ -1,0 +1,161 @@
+name: OCR Runtime Recheck
+
+on:
+  workflow_dispatch:
+    inputs:
+      factura_id:
+        description: Optional factura_id to recheck. If omitted, the workflow selects the latest OCR error candidate.
+        required: false
+        default: ''
+
+jobs:
+  ocr-runtime-recheck:
+    name: OCR Runtime Recheck
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - name: Recheck OCR runtime against production
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          INPUT_FACTURA_ID: ${{ github.event.inputs.factura_id }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p test-reports
+          REPORT_FILE="test-reports/ocr-runtime-recheck.txt"
+          : > "$REPORT_FILE"
+
+          rest_get() {
+            curl -sS --fail-with-body "$1" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY"
+          }
+
+          rest_post() {
+            curl -sS -o "$2" -w "%{http_code}" \
+              -X POST "$1" \
+              -H "apikey: $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Authorization: Bearer $SUPABASE_SERVICE_ROLE_KEY" \
+              -H "Content-Type: application/json" \
+              --max-time 80 \
+              --data "$3"
+          }
+
+          echo "OCR runtime recheck - $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$REPORT_FILE"
+          echo "Target: production facturas-ocr" >> "$REPORT_FILE"
+          echo "Selection strategy: explicit factura_id or latest OCR error candidate" >> "$REPORT_FILE"
+          echo >> "$REPORT_FILE"
+
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "MISSING_CONFIG SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY" >> "$REPORT_FILE"
+            echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Status: SKIPPED (missing configuration)" >> "$GITHUB_STEP_SUMMARY"
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          candidate_id="${INPUT_FACTURA_ID:-}"
+          selection_source="workflow_dispatch.input"
+
+          if [ -z "$candidate_id" ]; then
+            events_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta_eventos?tipo=eq.ocr_error&select=factura_id,created_at,datos&order=created_at.desc&limit=20")"
+            candidate_id="$(jq -r '[.[] | select(((.datos.error // "") | test("GCV fetch failed|billing|timed out|Signal timed out"; "i")) or (.datos.status? == 403)) | .factura_id][0] // empty' <<<"$events_json")"
+            selection_source="facturas_ingesta_eventos.ocr_error"
+          fi
+
+          if [ -z "$candidate_id" ]; then
+            error_rows_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?estado=eq.error&imagen_url=not.is.null&select=id,estado,updated_at,imagen_url&order=updated_at.desc&limit=5")"
+            candidate_id="$(jq -r '.[0].id // empty' <<<"$error_rows_json")"
+            selection_source="facturas_ingesta.estado=error"
+          fi
+
+          if [ -z "$candidate_id" ]; then
+            echo "NO_CANDIDATE no factura with OCR error state found" >> "$REPORT_FILE"
+            echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Status: SKIPPED (no OCR candidate found)" >> "$GITHUB_STEP_SUMMARY"
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          before_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?id=eq.$candidate_id&select=id,estado,updated_at,imagen_url,numero,request_id,proveedor_id&limit=1")"
+          before_exists="$(jq 'length' <<<"$before_json")"
+          if [ "$before_exists" -eq 0 ]; then
+            echo "MISSING_FACTURA candidate=$candidate_id" >> "$REPORT_FILE"
+            echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Status: SKIPPED (candidate not found)" >> "$GITHUB_STEP_SUMMARY"
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          before_estado="$(jq -r '.[0].estado // "unknown"' <<<"$before_json")"
+          before_updated_at="$(jq -r '.[0].updated_at // "unknown"' <<<"$before_json")"
+          before_imagen_url="$(jq -r '.[0].imagen_url // "missing"' <<<"$before_json")"
+
+          echo "Candidate factura_id: $candidate_id" >> "$REPORT_FILE"
+          echo "Candidate source: $selection_source" >> "$REPORT_FILE"
+          echo "Before estado: $before_estado" >> "$REPORT_FILE"
+          echo "Before updated_at: $before_updated_at" >> "$REPORT_FILE"
+          echo "Imagen path present: $([ "$before_imagen_url" = "missing" ] && echo "no" || echo "yes")" >> "$REPORT_FILE"
+          echo >> "$REPORT_FILE"
+
+          response_file="$(mktemp)"
+          response_status="$(rest_post "$SUPABASE_URL/functions/v1/facturas-ocr" "$response_file" "{\"factura_id\":\"$candidate_id\"}")"
+          response_body="$(cat "$response_file")"
+
+          sleep 5
+
+          after_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta?id=eq.$candidate_id&select=id,estado,updated_at,numero,score_confianza&limit=1")"
+          after_estado="$(jq -r '.[0].estado // "unknown"' <<<"$after_json")"
+          after_updated_at="$(jq -r '.[0].updated_at // "unknown"' <<<"$after_json")"
+          after_score="$(jq -r '.[0].score_confianza // "null"' <<<"$after_json")"
+          events_after_json="$(rest_get "$SUPABASE_URL/rest/v1/facturas_ingesta_eventos?factura_id=eq.$candidate_id&select=tipo,created_at,datos&order=created_at.desc&limit=5")"
+          latest_event_type="$(jq -r '.[0].tipo // "none"' <<<"$events_after_json")"
+          latest_event_error="$(jq -r '.[0].datos.error // empty' <<<"$events_after_json")"
+
+          echo "Invocation HTTP status: $response_status" >> "$REPORT_FILE"
+          echo "Response body: $response_body" >> "$REPORT_FILE"
+          echo >> "$REPORT_FILE"
+          echo "After estado: $after_estado" >> "$REPORT_FILE"
+          echo "After updated_at: $after_updated_at" >> "$REPORT_FILE"
+          echo "After score_confianza: $after_score" >> "$REPORT_FILE"
+          echo "Latest event type: $latest_event_type" >> "$REPORT_FILE"
+          if [ -n "$latest_event_error" ]; then
+            echo "Latest event error: $latest_event_error" >> "$REPORT_FILE"
+          fi
+
+          echo "## OCR Runtime Recheck" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Candidate factura_id: \`$candidate_id\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Candidate source: \`$selection_source\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Before estado: \`$before_estado\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Invocation HTTP status: \`$response_status\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- After estado: \`$after_estado\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Latest event: \`$latest_event_type\`" >> "$GITHUB_STEP_SUMMARY"
+
+          case "$response_status" in
+            200)
+              echo "- Status: PASS" >> "$GITHUB_STEP_SUMMARY"
+              echo "OCR_RUNTIME_STATUS=pass" >> "$GITHUB_ENV"
+              ;;
+            409)
+              echo "- Status: WARN (candidate not eligible at runtime)" >> "$GITHUB_STEP_SUMMARY"
+              echo "OCR_RUNTIME_STATUS=warn" >> "$GITHUB_ENV"
+              ;;
+            *)
+              echo "- Status: FAIL" >> "$GITHUB_STEP_SUMMARY"
+              echo "OCR_RUNTIME_STATUS=fail" >> "$GITHUB_ENV"
+              ;;
+          esac
+
+      - name: Upload OCR runtime artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ocr-runtime-recheck
+          path: test-reports/ocr-runtime-recheck.txt
+          retention-days: 7
+
+      - name: Fail if OCR runtime still errors
+        if: env.OCR_RUNTIME_STATUS == 'fail'
+        run: exit 1
