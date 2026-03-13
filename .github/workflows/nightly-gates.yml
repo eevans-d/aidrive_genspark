@@ -9,6 +9,7 @@ on:
 env:
   NODE_VERSION: '20'
   PNPM_VERSION: '9'
+  SUPABASE_CLI_VERSION: '2.75.0'
 
 jobs:
   unit-tests:
@@ -39,30 +40,38 @@ jobs:
           retention-days: 7
 
   lint-and-build:
-    name: Lint + Build (Frontend)
+    name: Lint + Build + Component Tests (Frontend)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
 
-      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-
       - uses: pnpm/action-setup@9fd676a19091d4595eefd76e4bd31c97133911f1
         with:
           version: ${{ env.PNPM_VERSION }}
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'pnpm'
+          cache-dependency-path: minimarket-system/pnpm-lock.yaml
 
       - name: Install frontend dependencies
         run: pnpm install --frozen-lockfile
         working-directory: minimarket-system
 
       - name: Lint (0 errors required)
-        run: pnpm lint
+        run: pnpm exec eslint .
         working-directory: minimarket-system
 
       - name: TypeScript check + Build
         run: pnpm build
         working-directory: minimarket-system
+
+      - name: Component tests
+        run: pnpm exec vitest run
+        working-directory: minimarket-system
+        env:
+          CI: 'true'
 
       - name: Check bundle size
         run: |
@@ -72,6 +81,138 @@ jobs:
             echo "::warning::JS bundle exceeds 2MB budget (${TOTAL_KB}KB)"
           fi
 
+  ops-smoke:
+    name: Ops Smoke (Remote, warning-only)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+
+      - uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install root dependencies
+        run: npm ci
+
+      - name: Run remote ops smoke (warning-only phase)
+        env:
+          SUPABASE_URL_PRIMARY: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_URL_FALLBACK: ${{ vars.VITE_SUPABASE_URL }}
+          OPS_SMOKE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          OPS_SMOKE_API_PROVEEDOR_SECRET: ${{ secrets.API_PROVEEDOR_SECRET }}
+        run: |
+          mkdir -p test-reports
+          REPORT_FILE="test-reports/ops-smoke-report.txt"
+          : > "$REPORT_FILE"
+
+          is_valid_supabase_url() {
+            case "$1" in
+              https://*.supabase.co) return 0 ;;
+              *) return 1 ;;
+            esac
+          }
+
+          echo "Nightly ops smoke report - $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$REPORT_FILE"
+          echo "Mode: warning-only" >> "$REPORT_FILE"
+          echo "Target: remote" >> "$REPORT_FILE"
+
+          missing=0
+          invalid=0
+          missing_names=""
+          invalid_names=""
+          resolved_url_source=""
+
+          if [ -n "${SUPABASE_URL_PRIMARY:-}" ]; then
+            if is_valid_supabase_url "$SUPABASE_URL_PRIMARY"; then
+              export SUPABASE_URL="$SUPABASE_URL_PRIMARY"
+              resolved_url_source="secrets.SUPABASE_URL"
+            else
+              echo "INVALID_CONFIG SUPABASE_URL" >> "$REPORT_FILE"
+              invalid=1
+              invalid_names="${invalid_names} SUPABASE_URL"
+            fi
+          elif [ -n "${SUPABASE_URL_FALLBACK:-}" ]; then
+            if is_valid_supabase_url "$SUPABASE_URL_FALLBACK"; then
+              export SUPABASE_URL="$SUPABASE_URL_FALLBACK"
+              resolved_url_source="vars.VITE_SUPABASE_URL"
+            else
+              echo "INVALID_CONFIG VITE_SUPABASE_URL" >> "$REPORT_FILE"
+              invalid=1
+              invalid_names="${invalid_names} VITE_SUPABASE_URL"
+            fi
+          else
+            echo "MISSING_CONFIG SUPABASE_URL_OR_VITE_SUPABASE_URL" >> "$REPORT_FILE"
+            missing=1
+            missing_names="${missing_names} SUPABASE_URL|VITE_SUPABASE_URL"
+          fi
+
+          for name in OPS_SMOKE_SERVICE_ROLE_KEY OPS_SMOKE_API_PROVEEDOR_SECRET; do
+            if [ -z "${!name:-}" ]; then
+              echo "MISSING_CONFIG $name" >> "$REPORT_FILE"
+              missing=1
+              case "$name" in
+                OPS_SMOKE_SERVICE_ROLE_KEY)
+                  missing_names="${missing_names} SUPABASE_SERVICE_ROLE_KEY"
+                  ;;
+                OPS_SMOKE_API_PROVEEDOR_SECRET)
+                  missing_names="${missing_names} API_PROVEEDOR_SECRET"
+                  ;;
+              esac
+            fi
+          done
+
+          if [ -n "$resolved_url_source" ]; then
+            echo "Resolved SUPABASE_URL source: $resolved_url_source" >> "$REPORT_FILE"
+          fi
+
+          echo "## Ops Smoke" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$missing" -eq 1 ] || [ "$invalid" -eq 1 ]; then
+            echo "::warning::Nightly ops smoke skipped: configuration missing or invalid."
+            echo "- Status: SKIPPED (configuration missing or invalid)" >> "$GITHUB_STEP_SUMMARY"
+            if [ -n "$missing_names" ]; then
+              echo "- Missing names:${missing_names}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -n "$invalid_names" ]; then
+              echo "- Invalid names:${invalid_names}" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            if [ -n "$resolved_url_source" ]; then
+              echo "- URL source: $resolved_url_source" >> "$GITHUB_STEP_SUMMARY"
+            fi
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          export OPS_SMOKE_TARGET=remote
+          export OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION="Bearer ${OPS_SMOKE_SERVICE_ROLE_KEY}"
+
+          set +e
+          npm run ops:smoke 2>&1 | tee -a "$REPORT_FILE"
+          smoke_exit=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$smoke_exit" -eq 0 ]; then
+            echo "- Status: PASS" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Target: remote" >> "$GITHUB_STEP_SUMMARY"
+            echo "- URL source: $resolved_url_source" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "::warning::Nightly ops smoke failed (warning-only phase)."
+            echo "- Status: FAIL (warning-only)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Target: remote" >> "$GITHUB_STEP_SUMMARY"
+            echo "- URL source: $resolved_url_source" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Action: review artifact \`ops-smoke-report\` before promoting this gate to blocking." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload ops smoke artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: ops-smoke-report
+          path: test-reports/ops-smoke-report.txt
+          retention-days: 7
+
   migration-drift:
     name: Migration Drift Check
     runs-on: ubuntu-latest
@@ -80,20 +221,57 @@ jobs:
 
       - uses: supabase/setup-cli@b60b5899c73b63a2d2d651b1e90db8d4c9392f51
         with:
-          version: latest
+          version: ${{ env.SUPABASE_CLI_VERSION }}
 
       - name: Check for pending migrations
-        run: |
-          supabase db push --dry-run 2>&1 | tee migration-status.txt
-          if grep -q "migrations will" migration-status.txt; then
-            echo "::warning::Pending migrations detected — review before next release"
-          fi
         env:
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          mkdir -p test-reports
+          REPORT_FILE="test-reports/migration-drift-report.txt"
+          : > "$REPORT_FILE"
+
+          echo "Migration drift report - $(date -u +"%Y-%m-%dT%H:%M:%SZ")" >> "$REPORT_FILE"
+
+          echo "## Migration Drift" >> "$GITHUB_STEP_SUMMARY"
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ -z "${SUPABASE_DB_URL:-}" ]; then
+            echo "MISSING_CONFIG SUPABASE_DB_URL" >> "$REPORT_FILE"
+            echo "::warning::Migration drift skipped: missing SUPABASE_DB_URL."
+            echo "- Status: SKIPPED (missing configuration)" >> "$GITHUB_STEP_SUMMARY"
+            echo "- Missing names: SUPABASE_DB_URL" >> "$GITHUB_STEP_SUMMARY"
+            cat "$REPORT_FILE"
+            exit 0
+          fi
+
+          set +e
+          supabase db push --dry-run --db-url "$SUPABASE_DB_URL" 2>&1 | tee -a "$REPORT_FILE"
+          drift_exit=${PIPESTATUS[0]}
+          set -e
+
+          if [ "$drift_exit" -ne 0 ]; then
+            echo "::error::Migration drift check failed."
+            echo "- Status: FAIL" >> "$GITHUB_STEP_SUMMARY"
+            exit "$drift_exit"
+          elif grep -q "migrations will" "$REPORT_FILE"; then
+            echo "::warning::Pending migrations detected — review before next release"
+            echo "- Status: WARN (pending migrations)" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "- Status: PASS" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload migration drift artifact
+        if: always()
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+        with:
+          name: migration-drift-report
+          path: test-reports/migration-drift-report.txt
+          retention-days: 7
 
   notify:
     name: Notify Results
-    needs: [unit-tests, lint-and-build, migration-drift]
+    needs: [unit-tests, lint-and-build, ops-smoke, migration-drift]
     if: failure()
     runs-on: ubuntu-latest
     steps:
