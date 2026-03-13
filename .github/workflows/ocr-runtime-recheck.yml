@@ -1,6 +1,9 @@
 name: OCR Runtime Recheck
 
 on:
+  push:
+    branches:
+      - codex/ocr-runtime-recheck-20260313
   workflow_dispatch:
     inputs:
       factura_id:
