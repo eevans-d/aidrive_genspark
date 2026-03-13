@@ -21,7 +21,7 @@ vi.mock('../lib/supabase', () => ({
       eq: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      then: vi.fn((cb: any) => cb({ data: [], error: null })),
+      then: vi.fn((cb: (result: { data: unknown[]; error: null }) => unknown) => cb({ data: [], error: null })),
     })),
   },
 }))

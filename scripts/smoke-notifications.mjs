@@ -17,6 +17,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 function loadDotEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -87,7 +88,7 @@ async function main() {
   if (!supabaseUrl) missing.push('SUPABASE_URL');
   if (!anonKey) missing.push('SUPABASE_ANON_KEY');
   if (missing.length) {
-    console.error(`MISSING_ENV: ${missing.join(', ')}`);
+    logError(`MISSING_ENV: ${missing.join(', ')}`);
     process.exit(2);
   }
 
@@ -123,8 +124,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('UNEXPECTED_ERROR');
-  console.error(err?.stack || String(err));
+  logError('UNEXPECTED_ERROR');
+  logError(err?.stack || String(err));
   process.exit(1);
 });
 

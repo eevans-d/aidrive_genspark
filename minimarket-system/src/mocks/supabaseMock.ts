@@ -11,11 +11,14 @@ type QueryResult<T> = {
 
 type Filter =
   | { type: 'eq'; column: string; value: unknown }
+  | { type: 'neq'; column: string; value: unknown }
   | { type: 'in'; column: string; values: unknown[] }
+  | { type: 'lt' | 'lte' | 'gt' | 'gte'; column: string; value: unknown }
 
 type Order = { column: string; ascending: boolean }
 
 type AuthCallback = (event: string, session: { user: User | null } | null) => void
+type MockRow = Record<string, unknown>
 
 const nowIso = () => new Date().toISOString()
 
@@ -37,7 +40,28 @@ const createMockUser = (email: string, metadata: Record<string, unknown> = {}) =
   } as User
 }
 
-const applyDefaults = (table: keyof MockDataStore, row: Record<string, any>) => {
+const compareValues = (left: unknown, right: unknown): number | null => {
+  if (typeof left === 'number' && typeof right === 'number') {
+    return left === right ? 0 : left < right ? -1 : 1
+  }
+
+  if (typeof left === 'string' && typeof right === 'string') {
+    const asDateLeft = Date.parse(left)
+    const asDateRight = Date.parse(right)
+    if (!Number.isNaN(asDateLeft) && !Number.isNaN(asDateRight)) {
+      return asDateLeft === asDateRight ? 0 : asDateLeft < asDateRight ? -1 : 1
+    }
+    return left.localeCompare(right)
+  }
+
+  if (typeof left === 'boolean' && typeof right === 'boolean') {
+    return Number(left) - Number(right)
+  }
+
+  return null
+}
+
+const applyDefaults = (table: keyof MockDataStore, row: MockRow): MockRow => {
   const now = nowIso()
   const id = row.id ?? createId(String(table))
 
@@ -89,7 +113,7 @@ class MockQueryBuilder {
   private mode: 'select' | 'update' | null = null
   private selectColumns: string | null = null
   private selectOptions: { count?: 'exact'; head?: boolean } = {}
-  private updateValues: Record<string, any> | null = null
+  private updateValues: MockRow | null = null
   private filters: Filter[] = []
   private orders: Order[] = []
   private rangeParams: { from: number; to: number } | null = null
@@ -107,10 +131,10 @@ class MockQueryBuilder {
     return this
   }
 
-  insert(payload: Record<string, any> | Record<string, any>[]) {
+  insert(payload: MockRow | MockRow[]) {
     const rows = Array.isArray(payload) ? payload : [payload]
     const normalized = rows.map((row) => applyDefaults(this.tableName, row))
-    const table = this.store[this.tableName] as Record<string, any>[]
+    const table = this.store[this.tableName] as MockRow[]
     table.push(...normalized)
 
     return Promise.resolve({
@@ -119,7 +143,7 @@ class MockQueryBuilder {
     })
   }
 
-  update(values: Record<string, any>) {
+  update(values: MockRow) {
     this.mode = 'update'
     this.updateValues = values
     return this
@@ -130,8 +154,33 @@ class MockQueryBuilder {
     return this
   }
 
+  neq(column: string, value: unknown) {
+    this.filters.push({ type: 'neq', column, value })
+    return this
+  }
+
   in(column: string, values: unknown[]) {
     this.filters.push({ type: 'in', column, values })
+    return this
+  }
+
+  lt(column: string, value: unknown) {
+    this.filters.push({ type: 'lt', column, value })
+    return this
+  }
+
+  lte(column: string, value: unknown) {
+    this.filters.push({ type: 'lte', column, value })
+    return this
+  }
+
+  gt(column: string, value: unknown) {
+    this.filters.push({ type: 'gt', column, value })
+    return this
+  }
+
+  gte(column: string, value: unknown) {
+    this.filters.push({ type: 'gte', column, value })
     return this
   }
 
@@ -150,7 +199,7 @@ class MockQueryBuilder {
     return this
   }
 
-  async single(): Promise<QueryResult<any>> {
+  async single(): Promise<QueryResult<MockRow>> {
     const result = await this.execute()
     const rows = Array.isArray(result.data) ? result.data : result.data ? [result.data] : []
     const data = rows[0] ?? null
@@ -165,18 +214,41 @@ class MockQueryBuilder {
     return { data, error: null }
   }
 
-  private applyFilters(rows: Record<string, any>[]) {
+  private applyFilters(rows: MockRow[]) {
     return rows.filter((row) => {
       return this.filters.every((filter) => {
         if (filter.type === 'eq') {
           return row[filter.column] === filter.value
         }
-        return filter.values.includes(row[filter.column])
+        if (filter.type === 'neq') {
+          return row[filter.column] !== filter.value
+        }
+        if (filter.type === 'in') {
+          return filter.values.includes(row[filter.column])
+        }
+
+        const comparison = compareValues(row[filter.column], filter.value)
+        if (comparison === null) {
+          return false
+        }
+        if (filter.type === 'lt') {
+          return comparison < 0
+        }
+        if (filter.type === 'lte') {
+          return comparison <= 0
+        }
+        if (filter.type === 'gt') {
+          return comparison > 0
+        }
+        if (filter.type === 'gte') {
+          return comparison >= 0
+        }
+        return false
       })
     })
   }
 
-  private applyOrder(rows: Record<string, any>[]) {
+  private applyOrder(rows: MockRow[]) {
     if (this.orders.length === 0) return rows
 
     const sorted = [...rows]
@@ -198,7 +270,7 @@ class MockQueryBuilder {
     return sorted
   }
 
-  private applyRange(rows: Record<string, any>[]) {
+  private applyRange(rows: MockRow[]) {
     let result = rows
 
     if (this.rangeParams) {
@@ -213,7 +285,7 @@ class MockQueryBuilder {
     return result
   }
 
-  private applySelect(rows: Record<string, any>[]) {
+  private applySelect(rows: MockRow[]) {
     const columns = this.selectColumns
     if (!columns || columns.trim() === '*' || columns.includes('*')) {
       return rows
@@ -225,7 +297,7 @@ class MockQueryBuilder {
       .filter(Boolean)
 
     return rows.map((row) => {
-      const selected: Record<string, any> = {}
+      const selected: MockRow = {}
       for (const field of fields) {
         selected[field] = row[field]
       }
@@ -233,8 +305,8 @@ class MockQueryBuilder {
     })
   }
 
-  private async execute(): Promise<QueryResult<any>> {
-    const rows = this.store[this.tableName] as Record<string, any>[]
+  private async execute(): Promise<QueryResult<MockRow[]>> {
+    const rows = this.store[this.tableName] as MockRow[]
     const filtered = this.applyFilters(rows)
 
     if (this.mode === 'update') {
@@ -261,15 +333,15 @@ class MockQueryBuilder {
     return { data: selected, error: null, count }
   }
 
-  then<TResult1 = QueryResult<any>, TResult2 = never>(
-    onfulfilled?: ((value: QueryResult<any>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
-    onrejected?: ((reason: any) => TResult2 | PromiseLike<TResult2>) | undefined | null
+  then<TResult1 = QueryResult<MockRow[]>, TResult2 = never>(
+    onfulfilled?: ((value: QueryResult<MockRow[]>) => TResult1 | PromiseLike<TResult1>) | undefined | null,
+    onrejected?: ((reason: unknown) => TResult2 | PromiseLike<TResult2>) | undefined | null
   ) {
     return this.execute().then(onfulfilled, onrejected)
   }
 
   catch<TResult = never>(
-    onrejected?: ((reason: any) => TResult | PromiseLike<TResult>) | undefined | null
+    onrejected?: ((reason: unknown) => TResult | PromiseLike<TResult>) | undefined | null
   ) {
     return this.execute().catch(onrejected)
   }
@@ -281,10 +353,10 @@ class MockQueryBuilder {
 
 const handleMovimientoInventario = (
   store: MockDataStore,
-  params: Record<string, any>
-): QueryResult<Record<string, any>> => {
+  params: MockRow
+): QueryResult<MockRow> => {
   const productoId = params?.p_producto_id
-  const tipo = params?.p_tipo
+  const tipo = String(params?.p_tipo ?? '')
   const cantidad = Number(params?.p_cantidad ?? 0)
 
   if (!productoId || !['entrada', 'salida'].includes(tipo) || !Number.isFinite(cantidad)) {
@@ -374,7 +446,7 @@ export const createMockSupabaseClient = () => {
 
   const from = (table: keyof MockDataStore) => new MockQueryBuilder(table, store)
 
-  const rpc = async (fn: string, params: Record<string, any>) => {
+  const rpc = async (fn: string, params: MockRow) => {
     if (fn === 'sp_movimiento_inventario') {
       return handleMovimientoInventario(store, params)
     }

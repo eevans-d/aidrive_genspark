@@ -23,6 +23,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const VALID_ROLES = ['admin', 'deposito', 'ventas', 'usuario'];
 
@@ -70,8 +71,8 @@ async function main() {
   // Parse CLI args
   const args = process.argv.slice(2);
   if (args.length < 2) {
-    console.error('Uso: node scripts/supabase-admin-sync-role.mjs <email> <rol>');
-    console.error(`Roles validos: ${VALID_ROLES.join(', ')}`);
+    logError('Uso: node scripts/supabase-admin-sync-role.mjs <email> <rol>');
+    logError(`Roles validos: ${VALID_ROLES.join(', ')}`);
     process.exit(2);
   }
 
@@ -79,11 +80,11 @@ async function main() {
   const rol = args[1].toLowerCase().trim();
 
   if (!email.includes('@')) {
-    console.error(`EMAIL_INVALIDO: ${email}`);
+    logError(`EMAIL_INVALIDO: ${email}`);
     process.exit(2);
   }
   if (!VALID_ROLES.includes(rol)) {
-    console.error(`ROL_INVALIDO: ${rol}. Validos: ${VALID_ROLES.join(', ')}`);
+    logError(`ROL_INVALIDO: ${rol}. Validos: ${VALID_ROLES.join(', ')}`);
     process.exit(2);
   }
 
@@ -97,7 +98,7 @@ async function main() {
   if (!supabaseUrl) missing.push('SUPABASE_URL');
   if (!serviceRoleKey) missing.push('SUPABASE_SERVICE_ROLE_KEY');
   if (missing.length) {
-    console.error(`MISSING_ENV: ${missing.join(', ')}`);
+    logError(`MISSING_ENV: ${missing.join(', ')}`);
     process.exit(2);
   }
 
@@ -111,8 +112,8 @@ async function main() {
   const listRes = await supabaseFetch(listUrl.toString(), { method: 'GET', serviceRoleKey });
   if (!listRes.ok) {
     const text = await listRes.text().catch(() => '');
-    console.error(`LIST_USERS_STATUS: ${listRes.status}`);
-    console.error(`LIST_USERS_ERROR: ${safeTruncate(text)}`);
+    logError(`LIST_USERS_STATUS: ${listRes.status}`);
+    logError(`LIST_USERS_ERROR: ${safeTruncate(text)}`);
     process.exit(1);
   }
 
@@ -121,8 +122,8 @@ async function main() {
   const existing = users.find((u) => (u?.email || '').toLowerCase() === email);
 
   if (!existing) {
-    console.error(`USUARIO_NO_ENCONTRADO: ${email}`);
-    console.error('El usuario debe existir en auth.users. Creelo primero con signup o Admin API.');
+    logError(`USUARIO_NO_ENCONTRADO: ${email}`);
+    logError('El usuario debe existir en auth.users. Creelo primero con signup o Admin API.');
     process.exit(1);
   }
 
@@ -147,8 +148,8 @@ async function main() {
 
   if (!updateRes.ok) {
     const text = await updateRes.text().catch(() => '');
-    console.error(`UPDATE_AUTH_STATUS: ${updateRes.status}`);
-    console.error(`UPDATE_AUTH_ERROR: ${safeTruncate(text)}`);
+    logError(`UPDATE_AUTH_STATUS: ${updateRes.status}`);
+    logError(`UPDATE_AUTH_ERROR: ${safeTruncate(text)}`);
     process.exit(1);
   }
 
@@ -178,10 +179,10 @@ async function main() {
 
   if (!personalRes.ok) {
     const text = await personalRes.text().catch(() => '');
-    console.error(`UPSERT_PERSONAL_STATUS: ${personalRes.status}`);
-    console.error(`UPSERT_PERSONAL_ERROR: ${safeTruncate(text)}`);
-    console.error('NOTA: Es posible que la tabla personal no tenga unique constraint en user_auth_id.');
-    console.error('Si falla, verificar schema de public.personal.');
+    logError(`UPSERT_PERSONAL_STATUS: ${personalRes.status}`);
+    logError(`UPSERT_PERSONAL_ERROR: ${safeTruncate(text)}`);
+    logError('NOTA: Es posible que la tabla personal no tenga unique constraint en user_auth_id.');
+    logError('Si falla, verificar schema de public.personal.');
     process.exit(1);
   }
 
@@ -200,7 +201,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('UNEXPECTED_ERROR');
-  console.error(err?.stack || String(err));
+  logError('UNEXPECTED_ERROR');
+  logError(err?.stack || String(err));
   process.exit(1);
 });

@@ -1,50 +1,71 @@
 # OPEN ISSUES (Canonico)
 
-**Ultima actualizacion:** 2026-03-12 (cierre PERF-001 + convergencia DOCS-CTX-001 + seguimiento de pendientes externos)
+**Ultima actualizacion:** 2026-03-13 (revalidacion documental local + cierre remoto GitHub + recheck OCR seguro)
 **Fuente ejecutiva:** `docs/ESTADO_ACTUAL.md`
+
+**Seguimiento 2026-03-13:** se revalidaron localmente los quality gates; Comet confirmo `SSL enforcement` activo en Supabase, `Secure password change=ON`, `Minimum password length=8` y billing GCP reactivado para OCR; GitHub ya fue corregido y `main` genero la primera evidencia remota real en `Nightly Quality Gates` (`23038842082`). Los pasos canonicos de navegador quedan en `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md`.
 
 ## Hallazgos abiertos
 
-## OCR-007 - Billing inactivo bloquea Google Cloud Vision (CRITICO - bloqueante para OCR)
+## OCR-007 - Billing GCP reactivado; pendiente revalidacion runtime controlada de Cloud Vision (CRITICO - bloqueante para OCR)
 - Severidad: CRITICA
-- Impacto: ningun OCR puede ejecutarse hasta resolver billing GCP.
-- Estado: BLOCKED — causa raiz confirmada
-- Causa raiz: Free Trial expirado en el proyecto OCR activo `gen-lang-client-0312126042` ("Nano banana pro"). La unica cuenta de facturacion detectada (`0156DA-EB3EB0-9C9339`) esta cerrada/vencida. Cloud Vision API ya esta habilitada y la key esta correctamente restringida, pero sin billing activo las llamadas siguen bloqueadas.
+- Impacto: el OCR no debe considerarse cerrado hasta confirmar una llamada runtime real sin error de billing/timeout.
+- Estado: PENDIENTE_VALIDACION_CONTROLADA
+- Causa raiz original: Free Trial expirado en el proyecto OCR activo `gen-lang-client-0312126042` ("Nano banana pro"). La unica cuenta de facturacion detectada (`0156DA-EB3EB0-9C9339`) estaba cerrada/vencida. Cloud Vision API ya estaba habilitada y la key correctamente restringida.
 - Evidencia original: `facturas_ingesta_eventos` evento `ocr_error` status 403 (2026-02-28 04:09 UTC)
 - Evidencia actualizada: timeout 15s (2026-02-28 05:19 UTC). Diagnostico GCP Console via Comet (2026-02-28 05:50 UTC).
 - Evidencia refinada (Comet Prompt 5, 2026-03-08): (1) el proyecto nuevo `aidrive-genspark` fue creado pero no puede habilitar Vision por falta de billing; (2) el proyecto realmente usado por OCR (`gen-lang-client-0312126042`) ya tenia Cloud Vision API habilitada; (3) `GCV_API_KEY` existia con restricciones correctas; (4) el secret `GCV_API_KEY` en Supabase fue actualizado externamente con el valor confirmado desde GCP.
-- Evidencia de re-check runtime: invocacion directa a `facturas-ocr` devuelve `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persiste `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
-- Accion requerida: owner debe activar billing en `https://console.cloud.google.com/billing/0156DA-EB3EB0-9C9339`, agregar metodo de pago y vincular esa cuenta al proyecto `gen-lang-client-0312126042`. Cloud Vision tiene 1000 unidades gratis/mes; no se cobra salvo exceso.
+- Evidencia Comet 2026-03-13: cuenta `0156DA-EB3EB0-9C9339` reactivada ("cuenta completa"), proyecto `gen-lang-client-0312126042` vinculado exitosamente y badge `Cuenta pagada` visible; Cloud Vision API sigue habilitada y la API key restringida sin cambios.
+- Evidencia de re-check runtime historica: invocacion directa a `facturas-ocr` devolvia `504 OCR_TIMEOUT` (2026-02-28 11:39 UTC), y el documento persistia `{"error":"GCV fetch failed: Signal timed out."}` en `facturas_ingesta_eventos`.
+- Evidencia GitHub 2026-03-13: la corrida temporal `OCR Runtime Recheck` `23039129015` no encontro ninguna factura actual en `estado=error` con `imagen_url`, por lo que no existia candidata segura para reintento automatico.
+- Accion requerida: ejecutar una revalidacion runtime controlada desde Supabase/produccion con `factura_id` explicita o una factura de prueba controlada y confirmar que el error de billing/timeout desaparecio. Si persiste, revisar propagacion, cuotas o credencial efectiva.
 - Plan asociado: `docs/closure/archive/historical/OCR_NUEVOS_RESULTADOS_2026-02-28.md`
-- Seguimiento 2026-03-12: **sin cambios** en condicion externa; permanece bloqueante.
+- Seguimiento 2026-03-13: billing ya no es el bloqueo activo; el pendiente real es disponer de una candidata controlada para validar runtime sin tocar lote productivo al azar.
 
 ## AUTH-001 - CAPTCHA de Auth no configurado en Supabase (MEDIA - hardening externo pendiente)
 - Severidad: MEDIA
 - Impacto: el login no tiene challenge anti-bot adicional. `signup` ya esta deshabilitado, por lo que el riesgo actual se concentra en intentos automatizados sobre credenciales existentes.
 - Estado: PENDIENTE_EXTERNAL
-- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
-- Accion requerida: crear credenciales del proveedor (`hCaptcha` o `Turnstile`), configurar el secret en Supabase Auth y agregar el widget al frontend de login.
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08 y 2026-03-13). El proyecto soporta `hCaptcha` y `Turnstile`; el dashboard solo requiere el `SECRET_KEY`, pero el frontend tambien necesita `SITE_KEY`.
+- Mitigaciones ya activadas en Auth (2026-03-13): `Secure password change=ON` y `Minimum password length=8`.
+- Accion requerida: crear credenciales del proveedor (`hCaptcha` o `Turnstile`), configurar el `SECRET_KEY` en Supabase Auth y agregar el widget con `SITE_KEY` al frontend de login.
 - Ruta candidata de integracion frontend: `minimarket-system/src/pages/Login.tsx`
-- Seguimiento 2026-03-12: **sin cambios** (pendiente externo).
+- Seguimiento 2026-03-13: sigue externo, pero con hardening compensatorio adicional aplicado en dashboard.
 
 ## AUTH-002 - Session timeouts server-side no disponibles en el plan actual (MEDIA - mitigado en frontend)
 - Severidad: MEDIA
 - Impacto: el dashboard actual no permite `timebox` ni `inactivity timeout` nativos. Sin compensacion, una sesion podia quedar abierta indefinidamente en un dispositivo compartido.
 - Estado: MITIGADO_PARCIAL
-- Evidencia externa: validacion via Comet en Supabase Dashboard (2026-03-08).
+- Evidencia externa: validacion via Comet en Supabase Dashboard (2026-03-08 y 2026-03-13) con banner explicito de Plan Pro.
 - Fix aplicado en repo: mitigacion client-side en `minimarket-system/src/contexts/AuthContext.tsx` + `minimarket-system/src/lib/authSessionPolicy.ts` con defaults `24h`/`8h`.
 - Verificacion local: `8/8 PASS` en tests focalizados (`authSessionPolicy` + `AuthContext`) y `tsc --noEmit` OK.
+- Compensaciones adicionales en dashboard: `Secure password change=ON`, `Minimum password length=8`, deteccion/revocacion de refresh tokens comprometidos activa.
 - Accion restante: si el proyecto sube a un plan con soporte nativo, alinear el timeout tambien a nivel server-side para que el corte no dependa solo del cliente.
-- Seguimiento 2026-03-12: **sin cambios** (mitigacion local vigente).
+- Seguimiento 2026-03-13: sin cambios de plan; mitigacion local y compensaciones de Auth siguen vigentes.
 
-## DB-001 - Network restrictions de PostgreSQL no configuradas (MEDIA - hardening externo pendiente)
+## DB-001 - SSL enforcement cerrado; allowlist de Network Restrictions pendiente (MEDIA - hardening externo parcial)
 - Severidad: MEDIA
 - Impacto: el host directo de la base permanece accesible desde cualquier IP hasta definir una allowlist. El pooler no queda cubierto por esta restriccion.
-- Estado: PENDIENTE_EXTERNAL
-- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) registrada en `docs/closure/archive/historical/COMET_BROWSER_FINDINGS_2026-03-08.md`.
+- Estado: MITIGADO_PARCIAL
+- Evidencia: validacion via Comet en Supabase Dashboard (2026-03-08) y reejecucion 2026-03-13.
+- Fix externo aplicado (2026-03-13): `SSL enforcement` activado y persistido en `Database > Settings`; cambio confirmado tras reinicio.
 - Accion requerida: inventariar IPs salientes de Render/Railway/desarrollo y aplicar CIDRs permitidos en Supabase Database → Network restrictions.
 - Nota: no existe evidencia en el repo sobre el valor actual de `DATABASE_URL` en servicios externos; esa comprobacion debe hacerse fuera del filesystem.
-- Seguimiento 2026-03-12: **sin cambios** (pendiente externo).
+- Seguimiento 2026-03-13: queda abierta solo la allowlist de IPs; el cierre de SSL ya no forma parte del pendiente.
+
+## CI-REMOTE-001 - `Nightly Quality Gates` remoto promovido a `main` y evidenciado (CERRADO)
+- Severidad: MEDIA
+- Impacto previo: `EXH-B-001`, `EXH-B-002` y `EXH-B-003` no tenian evidencia remota en GitHub Actions; `EXH-B-009` tampoco era efectivo en `main`.
+- Estado: CERRADO
+- Evidencia de cierre 2026-03-13:
+  - PR `#95` mergeada a `main` (`41b34bf`)
+  - `.github/workflows/nightly-gates.yml` en `main` ya contiene `Ops Smoke (Remote, warning-only)` y `SUPABASE_CLI_VERSION: 2.75.0`
+  - `VITE_SUPABASE_URL` corregida en GitHub
+  - `SUPABASE_ACCESS_TOKEN` cargado en GitHub
+  - corrida `Nightly Quality Gates` `23038842082` en `main` = `success`
+  - artifact `ops-smoke-report`: `api-minimarket/health=200`, `api-proveedor/health=200`, `cron-health-monitor/health-check=401` no critico
+  - artifact `migration-drift-report`: `Remote database is up to date.`
+- Nota residual: el `401` de `cron-health-monitor/health-check` mantiene `ops-smoke` en warning-only, pero ya no reabre `CI-REMOTE-001`.
 
 ## PERF-001 - Warning residual de chunking/PWA en build frontend (CERRADO)
 - Severidad: BAJA
@@ -125,8 +146,8 @@
 - Referencia: D-178, D-182 en `docs/DECISION_LOG.md`
 
 ## BLOCKED
-- OCR-007: billing inactivo bloquea Cloud Vision; el ultimo sintoma observable sigue siendo `504 OCR_TIMEOUT`. Bloqueante para extraccion OCR de las 21 facturas cargadas.
+- OCR-007: billing reactivado en GCP, pero la extraccion OCR sigue pendiente de una revalidacion controlada con `factura_id` explicita o factura de prueba.
 - Estado actual de lote OCR en BD: `21 pendiente`, `0 error`, `0 extraida`, `0 validada`, `0 aplicada`.
 
 ## Nota de interpretacion
-El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007 (billing GCP/Cloud Vision); adicionalmente quedan tres items externos no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`). `PERF-001` y `DOCS-CTX-001` quedan cerrados en esta corrida.
+El backlog OCR tecnico esta cerrado (10/10 tareas) y el sistema ha sido endurecido con 11 fixes de auditoria de produccion (D-177) + audit trail expansion (D-185) + atomic margin validation (D-185). AUDIT-001 esta CERRADO: 9/9 hallazgos MEDIUM resueltos (3 en D-184/D-185 + 6 en T01-T15). El Asistente IA Sprint 1 + 1.1/1.2/1.3 + Sprint 2 + Sprint 3 esta implementado, testeado y desplegado en produccion. El unico bloqueante funcional abierto sigue siendo OCR-007, ahora reducido a una validacion controlada posterior a la reactivacion de billing; adicionalmente quedan items externos no bloqueantes (`AUTH-001`, `AUTH-002`, `DB-001`). `CI-REMOTE-001`, `PERF-001` y `DOCS-CTX-001` quedan cerrados en esta corrida.

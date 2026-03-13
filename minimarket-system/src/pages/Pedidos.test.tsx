@@ -31,6 +31,18 @@ vi.mock('sonner', () => ({
 
 import { usePedidos } from '../hooks/queries/usePedidos'
 const mockedUsePedidos = vi.mocked(usePedidos)
+type PedidosResult = ReturnType<typeof usePedidos>
+
+const createPedidosResult = (
+  overrides: Partial<PedidosResult>,
+): PedidosResult => ({
+  data: undefined,
+  isLoading: false,
+  isFetching: false,
+  error: null,
+  refetch: vi.fn(),
+  ...overrides,
+} as PedidosResult)
 
 const renderWithQC = (ui: React.ReactElement) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -41,10 +53,13 @@ const mockPedido = {
   id: 'p1',
   numero_pedido: 42,
   cliente_nombre: 'Juan Perez',
-  estado: 'pendiente',
+  estado: 'pendiente' as const,
   items: [],
   monto_total: 5000,
-  pagado: 0,
+  monto_pagado: 0,
+  tipo_entrega: 'retiro' as const,
+  estado_pago: 'pendiente' as const,
+  fecha_pedido: '2026-02-12T10:00:00Z',
   fecha_creacion: '2026-02-12T10:00:00Z',
 }
 
@@ -54,25 +69,25 @@ describe('Pedidos', () => {
   })
 
   it('renders loading skeleton', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: undefined, isLoading: true, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      isLoading: true,
+    }))
     const { container } = renderWithQC(<Pedidos />)
     expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
   })
 
   it('renders error state', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: undefined, isLoading: false, isFetching: false, error: new Error('fail'), refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      error: new Error('fail'),
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText(/error|fail/i)).toBeInTheDocument()
   })
 
   it('renders filter buttons', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: { pedidos: [], total: 0, pendientes: 0, listos: 0 }, isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      data: { pedidos: [], total: 0, pendientes: 0, preparando: 0, listos: 0 },
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText('Todos')).toBeInTheDocument()
     expect(screen.getByText('Pendiente')).toBeInTheDocument()
@@ -80,34 +95,34 @@ describe('Pedidos', () => {
   })
 
   it('renders Nuevo Pedido button', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: { pedidos: [], total: 0, pendientes: 0, listos: 0 }, isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      data: { pedidos: [], total: 0, pendientes: 0, preparando: 0, listos: 0 },
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText(/nuevo pedido/i)).toBeInTheDocument()
   })
 
   it('renders empty list message when no pedidos', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: { pedidos: [], total: 0, pendientes: 0, listos: 0 }, isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      data: { pedidos: [], total: 0, pendientes: 0, preparando: 0, listos: 0 },
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText(/no hay pedidos/i)).toBeInTheDocument()
   })
 
   it('renders pedido card with order number', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: { pedidos: [mockPedido], total: 1, pendientes: 1, listos: 0 }, isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      data: { pedidos: [mockPedido], total: 1, pendientes: 1, preparando: 0, listos: 0 },
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText('#42')).toBeInTheDocument()
     expect(screen.getByText('Juan Perez')).toBeInTheDocument()
   })
 
   it('renders pedido status badge', () => {
-    mockedUsePedidos.mockReturnValue({
-      data: { pedidos: [mockPedido], total: 1, pendientes: 1, listos: 0 }, isLoading: false, isFetching: false, error: null, refetch: vi.fn(),
-    } as any)
+    mockedUsePedidos.mockReturnValue(createPedidosResult({
+      data: { pedidos: [mockPedido], total: 1, pendientes: 1, preparando: 0, listos: 0 },
+    }))
     renderWithQC(<Pedidos />)
     expect(screen.getByText('PENDIENTE')).toBeInTheDocument()
   })

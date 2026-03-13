@@ -12,6 +12,7 @@
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -41,7 +42,7 @@ function loadEnv() {
       }
     }
   } catch {
-    console.error('ERROR: No se encontró .env.test');
+    logError('No se encontró .env.test');
     process.exit(1);
   }
 }
@@ -138,7 +139,7 @@ async function main() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('ERROR: Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.test');
+    logError('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.test');
     process.exit(1);
   }
 
@@ -212,7 +213,7 @@ async function main() {
 
     if (!insertRes.ok) {
       const err = await insertRes.text();
-      console.error(`  ERROR: ${prov.nombre} — ${insertRes.status}: ${err}`);
+      logError(`${prov.nombre} — ${insertRes.status}: ${err}`);
       continue;
     }
 
@@ -226,6 +227,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('Error fatal:', err.message);
+  logError(`Error fatal: ${err.message}`);
   process.exit(1);
 });

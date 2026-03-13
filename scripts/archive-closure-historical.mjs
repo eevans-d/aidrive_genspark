@@ -2,12 +2,14 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const repoRoot = path.resolve(__dirname, '..');
 const closureDir = path.join(repoRoot, 'docs', 'closure');
 const archiveDir = path.join(closureDir, 'archive', 'historical');
+const gitIgnorePath = path.join(repoRoot, '.gitignore');
 
 const AUTOGEN_PREFIXES = [
   'BASELINE_LOG_',
@@ -43,6 +45,37 @@ function isDeprecatedCandidate(fileName) {
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+async function ensureArchiveTrackingRules(fileNames) {
+  let gitIgnore;
+  try {
+    gitIgnore = await fs.readFile(gitIgnorePath, 'utf8');
+  } catch {
+    return;
+  }
+
+  const lines = gitIgnore.split(/\r?\n/);
+  const requiredEntries = [
+    '!docs/closure/archive/',
+    'docs/closure/archive/*',
+    '!docs/closure/archive/INDEX.md',
+    '!docs/closure/archive/historical/',
+    'docs/closure/archive/historical/*',
+    ...fileNames.map((fileName) => `!docs/closure/archive/historical/${fileName}`),
+  ];
+
+  let changed = false;
+  for (const entry of requiredEntries) {
+    if (!lines.includes(entry)) {
+      lines.push(entry);
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    await fs.writeFile(gitIgnorePath, `${lines.join('\n')}\n`, 'utf8');
+  }
 }
 
 async function listMarkdownFiles(dirPath) {
@@ -86,6 +119,7 @@ async function main() {
     return;
   }
 
+  await ensureArchiveTrackingRules(historical);
   await fs.mkdir(archiveDir, { recursive: true });
 
   for (const fileName of historical) {
@@ -131,7 +165,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Failed to archive historical closure docs');
-  console.error(error instanceof Error ? error.message : String(error));
+  logError('Failed to archive historical closure docs');
+  logError(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

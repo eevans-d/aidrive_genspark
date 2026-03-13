@@ -81,6 +81,7 @@ venv/
 !/.vscode/
 !/.vscode/settings.json
 
+.cursor/
 .idea/
 *.sublime-workspace
 *.sublime-project
@@ -167,6 +168,15 @@ _archive/
 archive/
 !docs/archive/
 !docs/archive/**
+!docs/closure/archive/
+docs/closure/archive/*
+!docs/closure/archive/INDEX.md
+!docs/closure/archive/historical/
+docs/closure/archive/historical/*
+!docs/closure/archive/historical/BASELINE_LOG_2026-03-12_033328.md
+!docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033859.md
+!docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033857.md
+!docs/closure/archive/historical/MEGA_PLAN_2026-03-12_045452.md
 
 # Session reports (use CHANGELOG.md instead)
 REPORTE_*.md

@@ -33,7 +33,18 @@ describe('Tareas optimistic UI', () => {
   it('shows optimistic task immediately on create', async () => {
     const user = userEvent.setup()
 
-    let resolvePromise: (v: any) => void = () => {}
+    type CreatedTask = {
+      id: string
+      titulo: string
+      descripcion: null
+      estado: 'pendiente'
+      prioridad: 'normal'
+      asignada_a_nombre: null
+      fecha_vencimiento: null
+      created_at: string
+    }
+
+    let resolvePromise: (value: CreatedTask) => void = () => {}
     const deferred = new Promise((res) => { resolvePromise = res })
     createMock.mockReturnValueOnce(deferred)
 

@@ -8,12 +8,19 @@ import GlobalSearch from '../GlobalSearch'
 const navigateMock = vi.fn()
 const useGlobalSearchMock = vi.fn()
 const originalScrollIntoView = Element.prototype.scrollIntoView
+const ROUTER_FUTURE = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const
 
 vi.mock('react-router-dom', async () => {
   const actual = await vi.importActual<typeof import('react-router-dom')>('react-router-dom')
   return {
     ...actual,
     useNavigate: () => navigateMock,
+    MemoryRouter: (props: React.ComponentProps<typeof actual.MemoryRouter>) => (
+      <actual.MemoryRouter {...props} future={props.future ?? ROUTER_FUTURE} />
+    ),
   }
 })
 

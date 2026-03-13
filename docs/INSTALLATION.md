@@ -16,7 +16,7 @@ Dejar el entorno listo para desarrollo, pruebas y validacion operativa sin confi
 - Node.js 20+
 - npm (incluido con Node)
 - pnpm 9+
-- Supabase CLI
+- Supabase CLI (target documentado: `2.75.0`)
 - Deno (para tareas/validaciones Edge Function)
 
 ### 2) Clonar e instalar
@@ -100,10 +100,13 @@ Verificacion minima de instalacion:
 pnpm -C minimarket-system lint
 pnpm -C minimarket-system build
 npm run test:unit
+npm run ops:env-contract
 bash scripts/run-integration-tests.sh --dry-run
 bash scripts/run-e2e-tests.sh --dry-run
 node scripts/validate-doc-links.mjs
 ```
+
+Nota: `npm run ops:env-contract` requiere Supabase CLI autenticada para listar secrets por nombre.
 
 ## Escalacion
 1. Guardar salida del comando fallido.

@@ -25,7 +25,7 @@ export async function fetchDashboardStats(): Promise<DashboardStats> {
     // 1. Tareas pendientes (top 5 por prioridad, para display)
     supabase
       .from('tareas_pendientes')
-      .select('*')
+      .select('id, titulo, descripcion, asignada_a_id, asignada_a_nombre, prioridad, estado, fecha_creacion, fecha_vencimiento, fecha_completada, completada_por_id, completada_por_nombre, fecha_cancelada, cancelada_por_id, cancelada_por_nombre, razon_cancelacion, creada_por_id, creada_por_nombre, created_at, updated_at')
       .eq('estado', 'pendiente')
       .order('prioridad', { ascending: false })
       .limit(5),

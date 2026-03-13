@@ -98,7 +98,17 @@ function makeBuilder(table: string) {
 
   const rows = tableRows[table] ?? []
 
-  const builder: any = {
+  type MockBuilder = {
+    select: ReturnType<typeof vi.fn>
+    neq: ReturnType<typeof vi.fn>
+    order: ReturnType<typeof vi.fn>
+    limit: ReturnType<typeof vi.fn>
+    eq: ReturnType<typeof vi.fn>
+    lt: ReturnType<typeof vi.fn>
+    then: (resolve: (value: { data: unknown[]; error: null }) => unknown) => unknown
+  }
+
+  const builder: MockBuilder = {
     select: vi.fn(() => builder),
     neq: vi.fn(() => builder),
     order: vi.fn(() => builder),
@@ -126,7 +136,7 @@ describe('useAlertas', () => {
         riesgo_perdida: true,
         margen_bajo: false,
       },
-    ] as any)
+    ])
     comprasMock.mockResolvedValue([
       {
         producto_id: 'p2',
@@ -137,8 +147,8 @@ describe('useAlertas', () => {
         delta_costo_pct: -12,
         nivel_stock: 'bajo',
       },
-    ] as any)
-    sugeridasMock.mockResolvedValue([{ stock_id: 's2' }] as any)
+    ])
+    sugeridasMock.mockResolvedValue([{ stock_id: 's2' }])
   })
 
   it('combines critical alerts and insights with total count', async () => {

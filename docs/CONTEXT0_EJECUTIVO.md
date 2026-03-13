@@ -1,6 +1,6 @@
 # CONTEXT0 EJECUTIVO (Entrada Unica de Sesion)
 
-**Fecha de corte:** 2026-03-12 (UTC)  
+**Fecha de corte:** 2026-03-13 (UTC)
 **Objetivo:** proveer el minimo contexto operativo para que un agente arranque rapido, sin cargar historicos innecesarios ni perder trazabilidad.
 
 ## 1) Estado operativo real
@@ -10,33 +10,33 @@
   - `npm run test:integration` -> **68/68 PASS**
   - `npm run test:e2e` -> **4/4 PASS**
   - `pnpm -C minimarket-system test:components` -> **257/257 PASS**
-  - `pnpm -C minimarket-system lint` -> **0 errores / 72 warnings**
+  - `pnpm -C minimarket-system lint` -> **0 errores / 0 warnings**
   - `pnpm -C minimarket-system build` -> **PASS**
   - `node scripts/validate-doc-links.mjs` -> **PASS**
   - `node scripts/check-closure-root-policy.mjs` -> **PASS**
 - Build frontend sin warning residual de PWA/Workbox: `PERF-001` queda cerrado.
 
-## 2) Lo que cambio hoy y por que importa
-- **PERF-001 cerrado** en `minimarket-system/vite.config.ts`:
-  - Se refino `manualChunks` para dejar de capturar paquetes por coincidencia amplia (`id.includes("react")`) y separar bloques por dominio real (`react-core`, `router`, `query`, `charts`, `scanner`, etc.).
-  - Resultado: desaparece el warning de chunk > 500k en `react`; `react-core` queda ~143 kB (antes ~549 kB).
-  - Se agrega `workbox.inlineWorkboxRuntime=true` para evitar la ruta de `workbox-build` que dispara `Unknown input options: manualChunks` con Rollup 4.
-  - Ajuste adicional: fallback de `manualChunks` sin chunk `vendor` forzado para eliminar warning circular `radix -> vendor -> radix`.
-  - Resultado final: build `PASS` sin warnings de chunking/PWA.
-- **Harness E2E endurecido** en `scripts/run-e2e-tests.sh`:
-  - Si el runtime local arranca con `API_PROVEEDOR_SECRET` stale, el script detecta el 401 especifico y autorrecupera (`supabase stop/start`) antes de ejecutar pruebas.
-  - Se agrega resolucion de bearer para el probe (usa `E2E_BEARER_TOKEN`, o JWT HS256 con `SUPABASE_JWT_SECRET`, o fallback a service role).
-  - Resultado: evita falsos negativos intermitentes del smoke E2E.
-- **Env audit mejorado** en `.agent/scripts/env_audit.py`:
-  - Ahora detecta `VITE_*` accedidas por alias (`const env = import.meta.env`) y destructuring.
-  - Corrige falso negativo documental para `VITE_AUTH_TIMEBOX_MS` y `VITE_AUTH_INACTIVITY_TIMEOUT_MS`.
-- **Paridad local/remoto de health**:
-  - Se alinea `supabase/config.toml` con `[functions.api-minimarket] verify_jwt=false` para que el comportamiento local sea consistente con la politica de deploy del proyecto.
+## 2) Lo que cambio en esta corrida y por que importa
+- **LOG-001 cerrado**: logging de `scripts/` centralizado en `scripts/_shared/cli-log.mjs`. `scripts/` queda en `0` usos crudos de `console.warn/error`; en codigo productivo permanecen `6` sinks intencionales (`logger.ts`, `observability.ts`, `ErrorBoundary.tsx`, `GlobalSearch.tsx`) y `2` aserciones en tests del logger.
+- **Higiene de `docs/closure`**: artefactos historicos archivados, policy de raiz restaurada, `.gitignore` corregido para mantener trazabilidad de archivado sin destapar todo el historico.
+- **`select('*')` eliminado en frontend hooks**: `useAlertas`, `useDeposito`, `useDashboardStats` migrados a columnas explicitas. El frontend runtime queda sin `select('*')`, pero el backend conserva `36` ocurrencias productivas concentradas en Edge Functions y queries REST; quedan como deuda de optimizacion no bloqueante.
+- **PRODUCTION_GATE_REPORT actualizado**: score 100/100 con 1959 unit tests, 257 component tests, 0 warnings lint, 0 vulnerabilidades.
+- **Supabase CLI pineada en CI**: `nightly-gates.yml` usa `SUPABASE_CLI_VERSION: 2.75.0` en vez de `latest` para reproducibilidad.
+- **ops-smoke migrado a cli-log**: script de smoke operativo usa `scripts/_shared/cli-log.mjs` (log, logInfo) en vez de console.log.
+- **Nightly remoto ya promovido a `main`**: PR `#95` (`41b34bf`) promovio `ops-smoke` + `migration-drift` endurecidos. La corrida `Nightly Quality Gates` `23038842082` dejo `ops-smoke-report` y `migration-drift-report` en GitHub Actions.
+- **Hardening externo confirmado via Comet (2026-03-13)**: Supabase activo con `SSL enforcement` en conexiones entrantes, `Secure password change` en `ON` y `Minimum password length=8`; GCP billing reactivado y vinculado al proyecto OCR canonico.
+- **OCR runtime recheck seguro ejecutado**: la corrida temporal `OCR Runtime Recheck` `23039129015` no encontro ninguna factura actual en `estado=error` con `imagen_url`, por lo que la revalidacion final de `OCR-007` requiere `factura_id` explicita o una factura de prueba controlada.
 
 ## 3) Bloqueantes y riesgos que siguen abiertos
-- `OCR-007` (CRITICO): OCR bloqueado por billing inactivo en GCP (externo al repo).
-- `AUTH-001`, `AUTH-002`, `DB-001`: hardening externo pendiente (no bloqueante para operacion actual).
-- `PERF-001`: **cerrado** en esta corrida.
+- `OCR-007` (CRITICO): billing GCP ya fue reactivado, pero no existe hoy un candidato seguro en `estado=error` para revalidar OCR automaticamente; el cierre requiere `factura_id` explicita o una prueba controlada.
+- `AUTH-001`: CAPTCHA sigue pendiente por falta de `SECRET_KEY` + `SITE_KEY` del proveedor elegido.
+- `AUTH-002`: timeouts server-side siguen bloqueados por plan; mitigacion client-side vigente.
+- `DB-001`: `SSL enforcement` ya queda cerrado; la allowlist de `network restrictions` sigue pendiente por inventario de IPs.
+- `PERF-001`: cerrado.
+- `LOG-001`: cerrado.
+- `EXH-B-001/002`: cerrados en remoto con la corrida `Nightly Quality Gates` `23038842082` (`api-minimarket/health=200`, `api-proveedor/health=200`, artifacts archivados en `main`).
+- `EXH-B-003`: ya no es un punto ciego; `ops-smoke` cubre `cron-health-monitor/health-check`, pero la corrida remota vigente devuelve `401` no critico y mantiene el gate en warning-only.
+- `EXH-B-009`: mitigado en repo y efectivo en `main` (`SUPABASE_CLI_VERSION: 2.75.0` + `migration-drift-report` con `Remote database is up to date.`).
 - Riesgo de contexto: mitigado. El budget canonico converge a `ok=9 warn=0 fail=0`.
 
 ## 4) Carga de contexto recomendada (orden obligatorio)

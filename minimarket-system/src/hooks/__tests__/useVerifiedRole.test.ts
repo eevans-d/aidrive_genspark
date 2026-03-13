@@ -17,7 +17,13 @@ vi.mock('../../lib/supabase', () => ({
 }))
 
 function createBuilder() {
-  const builder: any = {
+  type MockBuilder = {
+    select: ReturnType<typeof vi.fn>
+    eq: ReturnType<typeof vi.fn>
+    single: (...args: unknown[]) => unknown
+  }
+
+  const builder: MockBuilder = {
     select: vi.fn(() => builder),
     eq: vi.fn(() => builder),
     single: (...args: unknown[]) => singleMock(...args),

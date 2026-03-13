@@ -1,30 +1,30 @@
 # Closure Hygiene Report
-**Fecha:** 2026-03-12 (UTC)
+**Fecha:** 2026-03-13 (UTC)
 **Objetivo:** clasificar documentos de `docs/closure` en activos, historicos y deprecados para continuidad limpia.
 
 ## Resumen
 - Total documentos Markdown en root: 10
-- Total historicos archivados: 64
+- Total historicos archivados: 68
 - Activos: 10
-- Historicos: 64
+- Historicos: 68
 - Deprecados: 0
 
 ## Activos (usar para continuidad)
-- `docs/closure/archive/historical/BASELINE_LOG_2026-03-12_033328.md`
+- `docs/closure/BASELINE_LOG_2026-03-13_035556.md`
 - `docs/closure/CONTEXT_PROMPT_CLAUDE_CODE_OCR_NUEVOS_2026-03-01.md`
 - `docs/closure/CONTEXT_PROMPT_ENGINEERING_CODEX_SISTEMA_INTEGRAL_CIERRE_2026-02-24.md`
 - `docs/closure/DOCUGUARD_REPORT_2026-03-05_060503.md`
-- `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033859.md`
+- `docs/closure/INVENTORY_REPORT_2026-03-13_035908.md`
 - `docs/closure/LATEST_AUTOGEN_REPORTS.md`
 - `docs/closure/OPEN_ISSUES.md`
 - `docs/closure/PERF_BASELINE_2026-02-26_081540.md`
 - `docs/closure/README_CANONICO.md`
-- `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033857.md`
+- `docs/closure/TECHNICAL_ANALYSIS_2026-03-13_035559.md`
 
 ## Ultimos autogenerados detectados
-- `docs/closure/archive/historical/BASELINE_LOG_2026-03-12_033328.md`
-- `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033857.md`
-- `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033859.md`
+- `docs/closure/BASELINE_LOG_2026-03-13_035556.md`
+- `docs/closure/TECHNICAL_ANALYSIS_2026-03-13_035559.md`
+- `docs/closure/INVENTORY_REPORT_2026-03-13_035908.md`
 - `docs/closure/DOCUGUARD_REPORT_2026-03-05_060503.md`
 
 ## Deprecados
@@ -48,6 +48,7 @@
 - `docs/closure/archive/historical/BASELINE_LOG_2026-03-05_061127.md`
 - `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_065739.md`
 - `docs/closure/archive/historical/BASELINE_LOG_2026-03-11_125314.md`
+- `docs/closure/archive/historical/BASELINE_LOG_2026-03-12_033328.md`
 - `docs/closure/archive/historical/CAMINO_RESTANTE_PRODUCCION_2026-02-12.md`
 - `docs/closure/archive/historical/CODEX_AUDITORIA_FASES_0_A_5_FINAL_2026-03-02.md`
 - `docs/closure/archive/historical/CODEX_FASES_AUDITORIA_DEFINITIVA_2026-03-02.md`
@@ -75,6 +76,8 @@
 - `docs/closure/archive/historical/INVENTORY_REPORT_2026-02-28_120703.md`
 - `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-11_130005.md`
 - `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033434.md`
+- `docs/closure/archive/historical/INVENTORY_REPORT_2026-03-12_033859.md`
+- `docs/closure/archive/historical/MEGA_PLAN_2026-03-12_045452.md`
 - `docs/closure/archive/historical/OCR_NUEVOS_HANDOFF_2026-02-28.md`
 - `docs/closure/archive/historical/OCR_NUEVOS_HANDOFF_2026-03-01.md`
 - `docs/closure/archive/historical/OCR_NUEVOS_MANIFEST_2026-02-28.md`
@@ -92,6 +95,7 @@
 - `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-02-28_120554.md`
 - `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-11_125318.md`
 - `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033433.md`
+- `docs/closure/archive/historical/TECHNICAL_ANALYSIS_2026-03-12_033857.md`
 - `docs/closure/archive/historical/VERIFICACION_POST_INTERRUPCION_2026-02-25.md`
 - `docs/closure/archive/historical/_AUDITORIA_FORENSE_PROMPT_v5.md`
 - `docs/closure/archive/historical/_auditoria_parcial_2026-03-11.md`

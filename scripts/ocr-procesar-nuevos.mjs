@@ -21,6 +21,7 @@ import { readFileSync, readdirSync, statSync } from 'fs';
 import { resolve, dirname, extname, basename } from 'path';
 import { fileURLToPath } from 'url';
 import { createHash } from 'crypto';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -49,7 +50,7 @@ function loadEnv() {
       }
     }
   } catch {
-    console.error('ERROR: No se encontró .env.test');
+    logError('No se encontró .env.test');
     process.exit(1);
   }
 }
@@ -232,7 +233,7 @@ async function main() {
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!supabaseUrl || !serviceRoleKey) {
-    console.error('ERROR: Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
+    logError('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY');
     process.exit(1);
   }
 
@@ -298,7 +299,7 @@ async function main() {
   const targetProveedorId = defaultProveedorId || null;
 
   if (mode === 'execute' && !targetProveedorId) {
-    console.error('ERROR: --proveedor=<uuid> es obligatorio en modo execute.');
+    logError('--proveedor=<uuid> es obligatorio en modo execute.');
     process.exit(1);
   }
 
@@ -401,6 +402,6 @@ async function main() {
 main().then(result => {
   console.log(JSON.stringify(result, null, 2));
 }).catch(err => {
-  console.error('Error fatal:', err.message);
+  logError(`Error fatal: ${err.message}`);
   process.exit(1);
 });

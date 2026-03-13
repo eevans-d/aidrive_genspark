@@ -1,3 +1,8 @@
+---
+description:
+alwaysApply: true
+---
+
 # Protocol Zero (aidrive_genspark)
 
 This repo includes an agentic workflow + skills system under `.agent/`.
@@ -16,10 +21,18 @@ Bootstrap skills (idempotent):
 ```bash
 .agent/scripts/p0.sh bootstrap
 ```
+PowerShell (Windows):
+```powershell
+.agent/scripts/p0.ps1 bootstrap
+```
 
 Select the right skill automatically for a request:
 ```bash
 .agent/scripts/p0.sh route "<user request>"
+```
+PowerShell (Windows):
+```powershell
+.agent/scripts/p0.ps1 route "<user request>"
 ```
 
 Generate production-planning extraction reports:

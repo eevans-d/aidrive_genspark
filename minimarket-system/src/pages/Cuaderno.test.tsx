@@ -50,6 +50,19 @@ vi.mock('../components/errorMessageUtils', () => ({
 
 import { useFaltantesByProveedor } from '../hooks/queries'
 const mockedUseFaltantesByProveedor = vi.mocked(useFaltantesByProveedor)
+type FaltantesByProveedorResult = ReturnType<typeof useFaltantesByProveedor>
+
+const createFaltantesByProveedorResult = (
+  overrides: Partial<FaltantesByProveedorResult>,
+): FaltantesByProveedorResult => ({
+  data: undefined,
+  isLoading: false,
+  isError: false,
+  error: null,
+  refetch: vi.fn(),
+  isFetching: false,
+  ...overrides,
+} as FaltantesByProveedorResult)
 
 const renderCuaderno = () => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -68,40 +81,26 @@ describe('Cuaderno', () => {
   })
 
   it('renders loading skeleton', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
-      data: undefined,
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       isLoading: true,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     const { container } = renderCuaderno()
     expect(container.querySelector('[data-testid="skeleton-card"]')).toBeTruthy()
   })
 
   it('renders error state', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
-      data: undefined,
-      isLoading: false,
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       isError: true,
       error: new Error('Network error'),
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     renderCuaderno()
     expect(screen.getByTestId('error-message')).toBeTruthy()
   })
 
   it('renders heading and tabs', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       data: { groups: {}, sinProveedor: [], total: 0 },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     renderCuaderno()
     expect(screen.getByText('Cuaderno')).toBeInTheDocument()
     expect(screen.getByText('Todos')).toBeInTheDocument()
@@ -110,20 +109,15 @@ describe('Cuaderno', () => {
   })
 
   it('shows empty state when no pendientes', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       data: { groups: {}, sinProveedor: [], total: 0 },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     renderCuaderno()
     expect(screen.getByText('No hay faltantes pendientes')).toBeInTheDocument()
   })
 
   it('shows pending count badge when total > 0', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       data: {
         groups: {
           'prov-1': {
@@ -145,19 +139,14 @@ describe('Cuaderno', () => {
         sinProveedor: [],
         total: 1,
       },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     renderCuaderno()
     expect(screen.getByText('1 pendiente')).toBeInTheDocument()
     expect(screen.getByText('Leche')).toBeInTheDocument()
   })
 
   it('renders faltante card with priority badge', () => {
-    mockedUseFaltantesByProveedor.mockReturnValue({
+    mockedUseFaltantesByProveedor.mockReturnValue(createFaltantesByProveedorResult({
       data: {
         groups: {},
         sinProveedor: [
@@ -174,12 +163,7 @@ describe('Cuaderno', () => {
         ],
         total: 1,
       },
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-      isFetching: false,
-    } as any)
+    }))
     renderCuaderno()
     expect(screen.getByText('Pan Lactal')).toBeInTheDocument()
     expect(screen.getByText('Normal')).toBeInTheDocument()

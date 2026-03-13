@@ -25,6 +25,19 @@ vi.mock('../utils/currency', () => ({
 
 import { useProductos } from '../hooks/queries'
 const mockedUseProductos = vi.mocked(useProductos)
+type ProductosResult = ReturnType<typeof useProductos>
+
+const createProductosResult = (
+  overrides: Partial<ProductosResult>,
+): ProductosResult => ({
+  data: undefined,
+  isLoading: false,
+  isError: false,
+  error: null,
+  refetch: vi.fn(),
+  isFetching: false,
+  ...overrides,
+} as ProductosResult)
 
 const renderWithQC = (ui: React.ReactElement) => {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
@@ -42,59 +55,60 @@ describe('Productos', () => {
   })
 
   it('renders loading skeleton', () => {
-    mockedUseProductos.mockReturnValue({
-      data: undefined, isLoading: true, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      isLoading: true,
+    }))
     const { container } = renderWithQC(<Productos />)
     expect(container.querySelectorAll('.animate-pulse').length).toBeGreaterThan(0)
   })
 
   it('renders error state', () => {
-    mockedUseProductos.mockReturnValue({
-      data: undefined, isLoading: false, isError: true, error: new Error('fail'), refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      isError: true,
+      error: new Error('fail'),
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByText(/error|fail/i)).toBeInTheDocument()
   })
 
   it('renders product list with names', () => {
-    mockedUseProductos.mockReturnValue({
-      data: { productos: mockProductos, total: 2 }, isLoading: false, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      data: { productos: mockProductos, total: 2 },
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByText('Coca Cola 500ml')).toBeInTheDocument()
     expect(screen.getByText('Pan Lactal')).toBeInTheDocument()
   })
 
   it('shows Nuevo producto button', () => {
-    mockedUseProductos.mockReturnValue({
-      data: { productos: [], total: 0 }, isLoading: false, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      data: { productos: [], total: 0 },
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByText(/nuevo producto/i)).toBeInTheDocument()
   })
 
   it('shows pagination controls', () => {
-    mockedUseProductos.mockReturnValue({
-      data: { productos: mockProductos, total: 40 }, isLoading: false, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      data: { productos: mockProductos, total: 40 },
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByText(/anterior/i)).toBeInTheDocument()
     expect(screen.getByText(/siguiente/i)).toBeInTheDocument()
   })
 
   it('shows barcode search input', () => {
-    mockedUseProductos.mockReturnValue({
-      data: { productos: [], total: 0 }, isLoading: false, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      data: { productos: [], total: 0 },
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByPlaceholderText(/escanear|codigo/i)).toBeInTheDocument()
   })
 
   it('renders page title', () => {
-    mockedUseProductos.mockReturnValue({
-      data: { productos: [], total: 0 }, isLoading: false, isError: false, error: null, refetch: vi.fn(), isFetching: false,
-    } as any)
+    mockedUseProductos.mockReturnValue(createProductosResult({
+      data: { productos: [], total: 0 },
+    }))
     renderWithQC(<Productos />)
     expect(screen.getByText(/gesti[oó]n de productos/i)).toBeInTheDocument()
   })

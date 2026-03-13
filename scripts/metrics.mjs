@@ -1,6 +1,9 @@
+#!/usr/bin/env node
+
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error, success } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -34,6 +37,7 @@ function walkDir(dir) {
 
 function countApiMinimarketEndpoints() {
   const filePath = path.join(repoRoot, 'supabase/functions/api-minimarket/index.ts');
+  if (!fs.existsSync(filePath)) return 0;
   const content = fs.readFileSync(filePath, 'utf8');
   const matches = content.match(/path\s*===\s*['"`][^'"`]+['"`]\s*&&\s*method\s*===\s*['"`][^'"`]+['"`]/g);
   return matches ? matches.length : 0;
@@ -41,6 +45,7 @@ function countApiMinimarketEndpoints() {
 
 function countApiProveedorEndpoints() {
   const filePath = path.join(repoRoot, 'supabase/functions/api-proveedor/schemas.ts');
+  if (!fs.existsSync(filePath)) return 0;
   const content = fs.readFileSync(filePath, 'utf8');
   const listMatch = content.match(/export const endpointList: EndpointName\[] = \[([\s\S]*?)\]/);
   if (!listMatch) return 0;
@@ -182,17 +187,17 @@ function main() {
     const expected = renderMetrics({ generatedAt: existingTs || 'UNKNOWN' });
     const actual = fs.existsSync(metricsPath) ? fs.readFileSync(metricsPath, 'utf8') : '';
     if (actual !== expected) {
-      console.error('docs/METRICS.md is out of date.');
-      console.error('Run: node scripts/metrics.mjs');
+      error('docs/METRICS.md is out of date.');
+      error('Run: node scripts/metrics.mjs');
       process.exit(1);
     }
-    console.log('docs/METRICS.md OK.');
+    success('docs/METRICS.md OK.');
     return;
   }
 
   const content = renderMetrics({ generatedAt: new Date().toISOString() });
   fs.writeFileSync(metricsPath, content);
-  console.log(`Métricas generadas en ${path.relative(repoRoot, metricsPath)}`);
+  success(`Métricas generadas en ${path.relative(repoRoot, metricsPath)}`);
 }
 
 main();

@@ -19,6 +19,7 @@ Mantener una unica fuente documental limpia, sin duplicados de prompts ni result
 1. `docs/PLAN_ASISTENTE_IA_DASHBOARD.md`
 2. `docs/PRODUCTION_GATE_REPORT.md`
 3. `docs/PROMPTS_COMET_HALLAZGOS_BROWSER.md`
+4. `docs/audit/EXHAUSTIVE_SCAN_REPORT_2026-03-12_FINAL.md` (solo auditoria operativa Parallel B)
 
 ## Budget de contexto
 - Target por doc canonico: `<= 2000` palabras.
@@ -42,6 +43,7 @@ Mantener una unica fuente documental limpia, sin duplicados de prompts ni result
 
 ## Reportes autogenerados (latest pointer)
 - Usar `docs/closure/LATEST_AUTOGEN_REPORTS.md` como indice unico de baseline/technical/inventory/docuguard vigentes.
+- Para auditoria operativa Parallel B, usar como referencia primaria `docs/audit/EXHAUSTIVE_SCAN_REPORT_2026-03-12_FINAL.md`.
 - Higiene documental actual: `docs/closure/CLOSURE_HYGIENE_REPORT_2026-03-01.md`.
 - Indice de historicos archivados: `docs/closure/archive/INDEX.md`.
 

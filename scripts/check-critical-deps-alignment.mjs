@@ -17,6 +17,7 @@
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { error, success } from './_shared/cli-log.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -50,16 +51,25 @@ function readPackageDep(pkg, dep) {
   return pkg.dependencies?.[dep] || pkg.devDependencies?.[dep] || null;
 }
 
-const rootPkg = readJSON('package.json');
-const frontendPkg = readJSON('minimarket-system/package.json');
-const denoJson = readJSON('supabase/functions/deno.json');
-const importMap = readJSON('supabase/functions/import_map.json');
+function readJSONSafe(relPath, fallback = {}) {
+  try {
+    return readJSON(relPath);
+  } catch (err) {
+    error(`could not read ${relPath}: ${err.message}`);
+    return fallback;
+  }
+}
+
+const rootPkg = readJSONSafe('package.json');
+const frontendPkg = readJSONSafe('minimarket-system/package.json');
+const denoJson = readJSONSafe('supabase/functions/deno.json');
+const importMap = readJSONSafe('supabase/functions/import_map.json');
 
 let hasFailure = false;
 
 function fail(message) {
   hasFailure = true;
-  console.error(message);
+  error(message.replace(/^FAIL:\s*/, ''));
 }
 
 console.log('\n=== Critical Dependency Governance Check ===\n');
@@ -157,9 +167,10 @@ for (const dep of majorParityDeps) {
 console.log('');
 
 if (hasFailure) {
-  console.error('FAIL: critical dependency governance check failed.');
-  console.error('Remediation: align versions and pin strict dependencies where required.');
+  error('critical dependency governance check failed.');
+  error('Remediation: align versions and pin strict dependencies where required.');
   process.exit(1);
 }
 
-console.log('PASS: critical dependency governance check passed.\n');
+success('critical dependency governance check passed.');
+console.log('');

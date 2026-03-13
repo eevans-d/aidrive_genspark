@@ -14,6 +14,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { printErrorLines, success } from './_shared/cli-log.mjs';
 
 const repoRoot = process.cwd();
 
@@ -162,11 +163,11 @@ for (const absMd of mdFiles) {
 }
 
 if (errors.length > 0) {
-  console.error(`Broken doc links found: ${errors.length}`);
-  for (const e of errors) {
-    console.error(`- ${e.file}: (${e.target}) -> ${e.resolved}`);
-  }
+  printErrorLines(
+    `Broken doc links found: ${errors.length}`,
+    errors.map((e) => `${e.file}: (${e.target}) -> ${e.resolved}`)
+  );
   process.exit(1);
 }
 
-console.log(`Doc link check OK (${mdFiles.length} files).`);
+success(`Doc link check OK (${mdFiles.length} files).`);

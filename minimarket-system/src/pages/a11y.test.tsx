@@ -1,10 +1,11 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render } from '@testing-library/react'
+import { render, waitFor } from '@testing-library/react'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { MemoryRouter } from 'react-router-dom'
 import { axe } from 'vitest-axe'
 import type { AxeMatchers } from 'vitest-axe'
 import * as matchers from 'vitest-axe/matchers'
+import type { ReactElement } from 'react'
 
 declare module 'vitest' {
   // eslint-disable-next-line @typescript-eslint/no-empty-object-type
@@ -38,24 +39,6 @@ vi.mock('../hooks/useUserRole', () => ({
   useUserRole: () => ({ role: 'admin', isAdmin: true, canAccess: () => true }),
 }))
 
-vi.mock('../lib/supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn().mockReturnThis(),
-      eq: vi.fn().mockReturnThis(),
-      neq: vi.fn().mockReturnThis(),
-      gte: vi.fn().mockReturnThis(),
-      lte: vi.fn().mockReturnThis(),
-      order: vi.fn().mockReturnThis(),
-      limit: vi.fn().mockReturnThis(),
-      maybeSingle: vi.fn().mockReturnThis(),
-      then: vi.fn((cb: any) => cb({ data: [], count: 0, error: null })),
-    })),
-    auth: { getSession: vi.fn().mockResolvedValue({ data: { session: null } }) },
-    rpc: vi.fn().mockResolvedValue({ data: [], error: null }),
-  },
-}))
-
 vi.mock('../lib/apiClient', () => ({
   default: {
     productos: { dropdown: vi.fn().mockResolvedValue([]) },
@@ -72,28 +55,44 @@ vi.mock('../utils/currency', () => ({
   money: (n: number) => n.toFixed(2),
 }))
 
-const renderWithProviders = (ui: React.ReactElement) => {
-  const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-  return render(
-    <MemoryRouter>
-      <QueryClientProvider client={qc}>{ui}</QueryClientProvider>
+const ROUTER_FUTURE = {
+  v7_startTransition: true,
+  v7_relativeSplatPath: true,
+} as const
+
+const renderWithProviders = (ui: ReactElement) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+  const renderResult = render(
+    <MemoryRouter future={ROUTER_FUTURE}>
+      <QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>
     </MemoryRouter>
   )
+
+  return { queryClient, ...renderResult }
+}
+
+const waitForQueryIdle = async (queryClient: QueryClient) => {
+  await waitFor(() => expect(queryClient.getQueryCache().getAll().length).toBeGreaterThan(0))
+  await waitFor(() => expect(queryClient.isFetching()).toBe(0))
+  await waitFor(() => expect(queryClient.isMutating()).toBe(0))
 }
 
 describe('Accessibility (a11y)', () => {
   beforeEach(() => {
     vi.clearAllMocks()
+    localStorage.clear()
   })
 
   it('Dashboard has no critical a11y violations', async () => {
-    const { container } = renderWithProviders(<Dashboard />)
+    const { container, queryClient } = renderWithProviders(<Dashboard />)
+    await waitForQueryIdle(queryClient)
     const results = await axe(container)
     expect(results).toHaveNoViolations()
   })
 
   it('Clientes has no critical a11y violations', async () => {
-    const { container } = renderWithProviders(<Clientes />)
+    const { container, queryClient } = renderWithProviders(<Clientes />)
+    await waitForQueryIdle(queryClient)
     const results = await axe(container)
     expect(results).toHaveNoViolations()
   })

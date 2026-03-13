@@ -14,6 +14,7 @@
 
 import { readFileSync } from 'fs';
 import { resolve } from 'path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 // --- Cargar .env.test ---
 const envPath = resolve(process.cwd(), '.env.test');
@@ -32,7 +33,7 @@ const SUPABASE_URL = env.SUPABASE_URL;
 const SERVICE_KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 
 if (!SUPABASE_URL || !SERVICE_KEY) {
-  console.error('ERROR: Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.test');
+  logError('Faltan SUPABASE_URL o SUPABASE_SERVICE_ROLE_KEY en .env.test');
   process.exit(1);
 }
 
@@ -219,6 +220,6 @@ async function main() {
 }
 
 main().catch(err => {
-  console.error('FATAL:', err.message);
+  logError(`FATAL: ${err.message}`);
   process.exit(1);
 });

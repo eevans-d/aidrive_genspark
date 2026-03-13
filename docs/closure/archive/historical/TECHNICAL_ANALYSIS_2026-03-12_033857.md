@@ -4,7 +4,7 @@
 - Repo: `.`
 - Branch: `codex/parallel-operability-hardening-20260312`
 - Commit: `d5713f863306e1f5f37cc0af6dc6975181332e4b`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-12_033328.md`
+- Baseline log (safe): `docs/closure/archive/historical/BASELINE_LOG_2026-03-12_033328.md`
 
 ## 1. ARQUITECTURA Y ESTRUCTURA DEL PROYECTO
 

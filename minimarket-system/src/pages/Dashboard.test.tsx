@@ -6,6 +6,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
+import type { ReactElement } from 'react';
 import Dashboard from './Dashboard';
 
 // Mock the hooks module
@@ -27,7 +28,8 @@ vi.mock('../lib/supabase', () => ({
                 from: vi.fn(() => ({
                         select: vi.fn().mockReturnThis(),
                         neq: vi.fn().mockReturnThis(),
-                        then: vi.fn((cb: any) => cb({ count: 0, error: null })),
+                        then: vi.fn((cb: (result: { count: number; error: null }) => unknown) =>
+                                cb({ count: 0, error: null })),
                 })),
         },
 }));
@@ -35,9 +37,22 @@ vi.mock('../lib/supabase', () => ({
 // Import the mocked hook to control its return value
 import { useDashboardStats } from '../hooks/queries';
 const mockedUseDashboardStats = vi.mocked(useDashboardStats);
+type DashboardStatsResult = ReturnType<typeof useDashboardStats>;
+
+const createDashboardStatsResult = (
+        overrides: Partial<DashboardStatsResult>,
+): DashboardStatsResult => ({
+        data: undefined,
+        isLoading: false,
+        isError: false,
+        error: null,
+        refetch: vi.fn(),
+        isFetching: false,
+        ...overrides,
+} as DashboardStatsResult);
 
 // Helper to wrap component with QueryClient
-const renderWithQueryClient = (ui: React.ReactElement) => {
+const renderWithQueryClient = (ui: ReactElement) => {
         const queryClient = new QueryClient({
                 defaultOptions: {
                         queries: {
@@ -61,14 +76,9 @@ describe('Dashboard', () => {
         });
 
         it('renders loading state correctly', () => {
-                mockedUseDashboardStats.mockReturnValue({
-                        data: undefined,
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         isLoading: true,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 const { container } = renderWithQueryClient(<Dashboard />);
 
@@ -78,29 +88,30 @@ describe('Dashboard', () => {
         });
 
         it('renders dashboard with stats when data is loaded', () => {
-                mockedUseDashboardStats.mockReturnValue({
-                        data: {
-                                tareasPendientes: [
-                                        { id: '1', titulo: 'Tarea 1', descripcion: 'Desc 1', prioridad: 'urgente' },
-                                ],
-                                totalTareasPendientes: 1,
-                                tareasUrgentes: 2,
-                                stockBajo: 5,
-                                totalProductos: 100,
-                        },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
+			data: {
+				tareasPendientes: [
+					{
+						id: '1', titulo: 'Tarea 1', descripcion: 'Desc 1', prioridad: 'urgente' as const,
+						estado: 'pendiente' as const, asignada_a_id: null, asignada_a_nombre: null,
+						fecha_creacion: '2026-01-01T00:00:00Z', fecha_vencimiento: null,
+						fecha_completada: null, completada_por_id: null, completada_por_nombre: null,
+						fecha_cancelada: null, cancelada_por_id: null, cancelada_por_nombre: null,
+						razon_cancelacion: null, creada_por_id: null, creada_por_nombre: null,
+						created_at: '2026-01-01T00:00:00Z', updated_at: '2026-01-01T00:00:00Z',
+					},
+				],
+				totalTareasPendientes: 1,
+				tareasUrgentes: 2,
+				stockBajo: 5,
+				totalProductos: 100,
+			},
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
-                // Check title
                 expect(screen.getByText('Dashboard')).toBeInTheDocument();
 
-                // Check stats cards
                 expect(screen.getByText('Tareas Urgentes')).toBeInTheDocument();
                 const tareasUrgentesBlock = screen.getByText('Tareas Urgentes').parentElement;
                 expect(tareasUrgentesBlock).not.toBeNull();
@@ -116,30 +127,25 @@ describe('Dashboard', () => {
                 expect(totalProductosBlock).not.toBeNull();
                 expect(within(totalProductosBlock as HTMLElement).getByText('100')).toBeInTheDocument();
 
-                // Check task list
                 expect(screen.getByText('Tarea 1')).toBeInTheDocument();
                 expect(screen.getByText('Desc 1')).toBeInTheDocument();
         });
 
         it('renders error state with retry option', () => {
                 const mockRefetch = vi.fn();
-                mockedUseDashboardStats.mockReturnValue({
-                        data: undefined,
-                        isLoading: false,
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         isError: true,
                         error: new Error('Network error'),
                         refetch: mockRefetch,
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
-                // Should show Dashboard title even in error state
                 expect(screen.getByText('Dashboard')).toBeInTheDocument();
         });
 
         it('renders empty state when no pending tasks', () => {
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -147,12 +153,7 @@ describe('Dashboard', () => {
                                 stockBajo: 0,
                                 totalProductos: 50,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -160,25 +161,16 @@ describe('Dashboard', () => {
         });
 
         it('handles undefined data gracefully with defaults', () => {
-                mockedUseDashboardStats.mockReturnValue({
-                        data: undefined,
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({}));
 
                 renderWithQueryClient(<Dashboard />);
 
-                // Should render with default values (0)
                 expect(screen.getByText('Dashboard')).toBeInTheDocument();
-                // Multiple elements might have '0', just verify page renders
                 expect(screen.getByText('Tareas Urgentes')).toBeInTheDocument();
         });
 
         it('V2-08: renders intent chips', () => {
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -186,12 +178,7 @@ describe('Dashboard', () => {
                                 stockBajo: 3,
                                 totalProductos: 50,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -201,7 +188,7 @@ describe('Dashboard', () => {
         });
 
         it('V2-08: clicking reponer chip shows stock bajo info with CTA', () => {
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -209,12 +196,7 @@ describe('Dashboard', () => {
                                 stockBajo: 3,
                                 totalProductos: 50,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -225,7 +207,7 @@ describe('Dashboard', () => {
         });
 
         it('V2-08: clicking resumen chip shows summary with CTAs', () => {
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 2,
@@ -233,12 +215,7 @@ describe('Dashboard', () => {
                                 stockBajo: 0,
                                 totalProductos: 80,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -251,7 +228,7 @@ describe('Dashboard', () => {
         });
 
         it('V2-08: clicking active chip toggles it off', () => {
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -259,12 +236,7 @@ describe('Dashboard', () => {
                                 stockBajo: 5,
                                 totalProductos: 50,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -272,14 +244,13 @@ describe('Dashboard', () => {
                 fireEvent.click(chip);
                 expect(screen.getByText(/5 productos con stock bajo/)).toBeInTheDocument();
 
-                // Click again to toggle off
                 fireEvent.click(chip);
                 expect(screen.queryByText(/5 productos con stock bajo/)).not.toBeInTheDocument();
         });
 
         it('V2-09: shows onboarding guide on first visit', () => {
                 localStorage.removeItem('onboarding_completed');
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -287,12 +258,7 @@ describe('Dashboard', () => {
                                 stockBajo: 0,
                                 totalProductos: 0,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -304,7 +270,7 @@ describe('Dashboard', () => {
 
         it('V2-09: hides onboarding after dismiss', () => {
                 localStorage.removeItem('onboarding_completed');
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -312,12 +278,7 @@ describe('Dashboard', () => {
                                 stockBajo: 0,
                                 totalProductos: 0,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 
@@ -330,7 +291,7 @@ describe('Dashboard', () => {
 
         it('V2-09: does not show onboarding when flag is set', () => {
                 localStorage.setItem('onboarding_completed', '1');
-                mockedUseDashboardStats.mockReturnValue({
+                mockedUseDashboardStats.mockReturnValue(createDashboardStatsResult({
                         data: {
                                 tareasPendientes: [],
                                 totalTareasPendientes: 0,
@@ -338,12 +299,7 @@ describe('Dashboard', () => {
                                 stockBajo: 0,
                                 totalProductos: 0,
                         },
-                        isLoading: false,
-                        isError: false,
-                        error: null,
-                        refetch: vi.fn(),
-                        isFetching: false,
-                } as any);
+                }));
 
                 renderWithQueryClient(<Dashboard />);
 

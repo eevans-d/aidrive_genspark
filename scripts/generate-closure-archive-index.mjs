@@ -2,6 +2,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -84,7 +85,7 @@ ${sections || '- `N/A`'}
 }
 
 main().catch((error) => {
-  console.error('Failed to generate closure archive index');
-  console.error(error instanceof Error ? error.message : String(error));
+  logError('Failed to generate closure archive index');
+  logError(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

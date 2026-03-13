@@ -8,7 +8,10 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 cd "$ROOT_DIR"
 
 echo "[bootstrap] syncing repo skills into Codex..."
-.agent/scripts/sync_codex_skills.py --mode symlink >/dev/null
+if ! .agent/scripts/sync_codex_skills.py --mode symlink >/dev/null 2>&1; then
+  echo "[bootstrap] symlink mode failed; falling back to copy mode..."
+  .agent/scripts/sync_codex_skills.py --mode copy >/dev/null
+fi
 
 echo "[bootstrap] installing curated skills (tier=${P0_CURATED_TIER:-core}) (idempotent)..."
 .agent/scripts/install_curated_skills.py >/dev/null || true

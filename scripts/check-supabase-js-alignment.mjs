@@ -10,6 +10,7 @@
 import { readFileSync } from 'fs';
 import { resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
+import { error, printErrorLines, success } from './_shared/cli-log.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dirname, '..');
@@ -75,7 +76,7 @@ for (const src of sources) {
 const refVersion = results.find((r) => r.version)?.version;
 
 if (!refVersion) {
-  console.error(`ERROR: Could not find ${PKG} in any source.`);
+  error(`Could not find ${PKG} in any source.`);
   process.exit(1);
 }
 
@@ -96,14 +97,16 @@ for (const r of results) {
 console.log('');
 
 if (!allOk) {
-  console.error(`FAIL: ${PKG} version drift detected.`);
-  console.error(`Action: align all sources to ${refVersion} and commit.\n`);
-  console.error('Files to check:');
-  console.error('  - package.json');
-  console.error('  - minimarket-system/package.json');
-  console.error('  - supabase/functions/deno.json');
-  console.error('  - supabase/functions/import_map.json');
+  error(`${PKG} version drift detected.`);
+  error(`Action: align all sources to ${refVersion} and commit.`);
+  printErrorLines('Files to check:', [
+    'package.json',
+    'minimarket-system/package.json',
+    'supabase/functions/deno.json',
+    'supabase/functions/import_map.json',
+  ]);
   process.exit(1);
 } else {
-  console.log(`PASS: All sources aligned at ${refVersion}.\n`);
+  success(`All sources aligned at ${refVersion}.`);
+  console.log('');
 }

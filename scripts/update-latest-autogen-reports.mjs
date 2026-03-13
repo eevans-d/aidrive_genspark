@@ -2,6 +2,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -132,7 +133,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('Failed to update latest autogen reports index');
-  console.error(err instanceof Error ? err.message : String(err));
+  logError('Failed to update latest autogen reports index');
+  logError(err instanceof Error ? err.message : String(err));
   process.exit(1);
 });

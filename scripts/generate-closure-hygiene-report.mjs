@@ -2,6 +2,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -121,7 +122,7 @@ ${historical.length > 0 ? historical.map((f) => `- \`${toDocPath(f)}\``).join('\
 }
 
 main().catch((error) => {
-  console.error('Failed to generate closure hygiene report');
-  console.error(error instanceof Error ? error.message : String(error));
+  logError('Failed to generate closure hygiene report');
+  logError(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

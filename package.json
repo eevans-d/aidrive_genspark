@@ -17,6 +17,7 @@
     "test:security": "vitest run --config vitest.auxiliary.config.ts tests/security",
     "test:contracts": "vitest run --config vitest.auxiliary.config.ts tests/api-contracts",
     "ops:smoke": "node scripts/ops-smoke-check.mjs",
+    "ops:env-contract": "python3 .agent/scripts/env_audit.py --with-supabase --target-environment prod --check-required-supabase",
     "docs:context-budget": "node scripts/check-context-budget.mjs",
     "docs:closure-archive-historical": "node scripts/archive-closure-historical.mjs",
     "docs:closure-archive-index": "node scripts/generate-closure-archive-index.mjs",

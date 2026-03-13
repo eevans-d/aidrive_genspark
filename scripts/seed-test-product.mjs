@@ -7,6 +7,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 function loadDotEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -36,7 +37,7 @@ async function main() {
   const key = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
   if (!url || !key) {
-    console.error('MISSING: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
+    logError('MISSING: SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY');
     process.exit(2);
   }
 
@@ -98,7 +99,7 @@ async function main() {
 
   if (!prodRes.ok) {
     const err = await prodRes.text();
-    console.error(`PRODUCT_CREATE_FAILED: ${prodRes.status} ${err}`);
+    logError(`PRODUCT_CREATE_FAILED: ${prodRes.status} ${err}`);
     process.exit(1);
   }
 
@@ -121,7 +122,7 @@ async function main() {
 
   if (!stockRes.ok) {
     const err = await stockRes.text();
-    console.error(`STOCK_CREATE_FAILED: ${stockRes.status} ${err}`);
+    logError(`STOCK_CREATE_FAILED: ${stockRes.status} ${err}`);
     process.exit(1);
   }
 
@@ -132,6 +133,6 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('ERROR: ' + (err?.message || String(err)));
+  logError(err?.message || String(err));
   process.exit(1);
 });

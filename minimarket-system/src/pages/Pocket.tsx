@@ -457,7 +457,7 @@ export default function Pocket() {
 
       {/* Header */}
       <header className="bg-blue-600 text-white px-4 py-3 flex items-center gap-3 shrink-0">
-        <button onClick={() => navigate('/')} className="p-2 -ml-1">
+        <button onClick={() => navigate('/')} className="p-2 -ml-1" aria-label="Volver al inicio">
           <ArrowLeft className="w-6 h-6" />
         </button>
         <h1 className="text-lg font-bold flex-1">Pocket Manager</h1>

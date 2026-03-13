@@ -19,6 +19,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 function loadDotEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -74,7 +75,7 @@ async function main() {
   if (!adminEmail) missing.push('TEST_USER_ADMIN');
   if (!adminPassword) missing.push('TEST_PASSWORD');
   if (missing.length) {
-    console.error(`MISSING_ENV: ${missing.join(', ')}`);
+    logError(`MISSING_ENV: ${missing.join(', ')}`);
     process.exit(2);
   }
 
@@ -86,8 +87,8 @@ async function main() {
   const listRes = await supabaseFetch(listUrl.toString(), { method: 'GET', serviceRoleKey });
   if (!listRes.ok) {
     const text = await listRes.text().catch(() => '');
-    console.error(`LIST_USERS_STATUS: ${listRes.status}`);
-    console.error(`LIST_USERS_ERROR: ${safeTruncate(text)}`);
+    logError(`LIST_USERS_STATUS: ${listRes.status}`);
+    logError(`LIST_USERS_ERROR: ${safeTruncate(text)}`);
     process.exit(1);
   }
 
@@ -116,8 +117,8 @@ async function main() {
 
     if (!createRes.ok) {
       const text = await createRes.text().catch(() => '');
-      console.error(`CREATE_USER_STATUS: ${createRes.status}`);
-      console.error(`CREATE_USER_ERROR: ${safeTruncate(text)}`);
+      logError(`CREATE_USER_STATUS: ${createRes.status}`);
+      logError(`CREATE_USER_ERROR: ${safeTruncate(text)}`);
       process.exit(1);
     }
 
@@ -127,7 +128,7 @@ async function main() {
   }
 
   if (!userId) {
-    console.error('USER_ID: null (unexpected)');
+    logError('USER_ID: null (unexpected)');
     process.exit(1);
   }
 
@@ -152,8 +153,8 @@ async function main() {
 
   if (!updateRes.ok) {
     const text = await updateRes.text().catch(() => '');
-    console.error(`UPDATE_USER_STATUS: ${updateRes.status}`);
-    console.error(`UPDATE_USER_ERROR: ${safeTruncate(text)}`);
+    logError(`UPDATE_USER_STATUS: ${updateRes.status}`);
+    logError(`UPDATE_USER_ERROR: ${safeTruncate(text)}`);
     process.exit(1);
   }
 
@@ -164,8 +165,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('UNEXPECTED_ERROR');
-  console.error(err?.stack || String(err));
+  logError('UNEXPECTED_ERROR');
+  logError(err?.stack || String(err));
   process.exit(1);
 });
 

@@ -32,7 +32,16 @@ export default defineConfig({
                                 'node_modules/',
                                 'src/setupTests.ts',
                                 '**/*.d.ts',
+                                'src/mocks/**',
                         ],
+                        thresholds: {
+                                global: {
+                                        branches: 40,
+                                        functions: 40,
+                                        lines: 40,
+                                        statements: 40,
+                                },
+                        },
                 },
         },
 

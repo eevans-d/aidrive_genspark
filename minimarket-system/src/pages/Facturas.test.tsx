@@ -13,12 +13,12 @@ const mockDropdown = vi.fn().mockResolvedValue([
 
 vi.mock('../lib/apiClient', () => ({
   default: {
-    productos: { dropdown: (...args: any[]) => mockDropdown(...args) },
+    productos: { dropdown: (...args: Parameters<typeof mockDropdown>) => mockDropdown(...args) },
   },
   facturasApi: {
-    extraer: (...args: any[]) => mockExtraer(...args),
-    validarItem: (...args: any[]) => mockValidarItem(...args),
-    aplicar: (...args: any[]) => mockAplicar(...args),
+    extraer: (...args: Parameters<typeof mockExtraer>) => mockExtraer(...args),
+    validarItem: (...args: Parameters<typeof mockValidarItem>) => mockValidarItem(...args),
+    aplicar: (...args: Parameters<typeof mockAplicar>) => mockAplicar(...args),
   },
   ValidarItemParams: {},
   AplicarFacturaResponse: {},
@@ -77,8 +77,10 @@ vi.mock('../lib/supabase', () => {
     },
   ]
 
-  const makeChain = (resolveData: any = []) => {
-    const chain: any = {
+  type ChainResult<T> = { data: T; error: null }
+
+  const makeChain = <T,>(resolveData: T) => {
+    const chain = {
       select: vi.fn(() => chain),
       eq: vi.fn(() => chain),
       in: vi.fn(() => chain),
@@ -86,10 +88,12 @@ vi.mock('../lib/supabase', () => {
       limit: vi.fn(() => chain),
       single: vi.fn(() => chain),
       insert: vi.fn(() => chain),
-      then: vi.fn((cb: any) => cb({ data: resolveData, error: null })),
+      then: vi.fn((cb: (result: ChainResult<T>) => unknown) => cb({ data: resolveData, error: null })),
     }
     // Make it thenable for async queries
-    chain[Symbol.for('nodejs.util.promisify.custom')] = () => Promise.resolve({ data: resolveData, error: null })
+    Object.assign(chain, {
+      [Symbol.for('nodejs.util.promisify.custom')]: () => Promise.resolve({ data: resolveData, error: null }),
+    })
     return chain
   }
 
@@ -104,7 +108,7 @@ vi.mock('../lib/supabase', () => {
           const chain = makeChain(mockItems)
           return chain
         }
-        return makeChain()
+        return makeChain([] as never[])
       }),
     },
   }

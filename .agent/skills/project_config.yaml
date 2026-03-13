@@ -94,7 +94,7 @@ audit_patterns:
     detection: "grep -B5 'console.error' minimarket-system/src/pages/ --include='*.tsx' -r | grep -v 'toast'"
     skills: [RealityCheck, CodeCraft, DebugHound]
   select_star_hooks:
-    description: "3 hooks (useAlertas, useDashboardStats, useDeposito) usan select('*') en frontend"
+    description: "select('*') en frontend hooks — CERRADO 2026-03-13: useAlertas, useDashboardStats, useDeposito migrados a columnas explicitas"
     severity: MEDIUM
     detection: "grep -rn \".select('*')\" minimarket-system/src/hooks/"
     skills: [PerformanceWatch, CodeCraft]

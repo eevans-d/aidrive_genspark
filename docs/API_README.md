@@ -1,4 +1,4 @@
-> [ACTIVO_VERIFICADO: 2026-03-12] Guia canonica compacta para operacion diaria del gateway `api-minimarket`.
+> [ACTIVO_VERIFICADO: 2026-03-13] Guia canonica compacta para operacion diaria del gateway `api-minimarket`.
 
 # Mini Market API - Guia Operativa
 
@@ -28,6 +28,12 @@ http://127.0.0.1:54321/functions/v1/api-minimarket
   - `api-minimarket` opera con `verify_jwt=false` a nivel Edge Function.
   - La validacion de usuario/rol se hace dentro del handler.
   - No cambiar este criterio en redeploys.
+- Contrato operativo relacionado:
+  - `api-proveedor` **no** hereda esta excepcion; mantiene `verify_jwt=true`.
+  - Para smoke remoto de `api-proveedor/health`, el contrato tecnico vigente es:
+    - `Authorization: Bearer <token tecnico>`
+    - `x-api-secret: <API_PROVEEDOR_SECRET>`
+  - En CI/nightly, ese smoke usa `SUPABASE_SERVICE_ROLE_KEY` como bearer tecnico y `API_PROVEEDOR_SECRET` como shared secret.
 
 ## 4) Contrato de respuesta estandar
 ### Exito (2xx)
@@ -115,8 +121,9 @@ curl -i "$BASE_URL/categorias" \
   - `npm run test:e2e`
 
 ## 9) Relacion con issues abiertos
-- `OCR-007`: bloqueo externo de Cloud Vision por billing (no por contrato del gateway).
-- `AUTH-001`, `AUTH-002`, `DB-001`: hardening externo de plataforma.
+- `OCR-007`: billing GCP ya fue reactivado; queda pendiente solo la revalidacion runtime del OCR (no es un problema de contrato del gateway).
+- `AUTH-001`, `AUTH-002`, `DB-001`: hardening externo de plataforma; en `DB-001` el `SSL enforcement` ya fue activado y resta la allowlist de IPs.
+- `CI-REMOTE-001`: **cerrado**. `main` ya genera `ops-smoke-report` + `migration-drift-report` (run `23038842082`); la unica nota remota vigente es el `401` no critico de `cron-health-monitor/health-check` en fase warning-only.
 - Estado vigente de severidad/acciones: `docs/closure/OPEN_ISSUES.md`.
 
 ## 10) Trazabilidad historica

@@ -456,7 +456,7 @@ export default function Proveedores() {
                   {(form.productos_ofrecidos || []).map((tag, idx) => (
                     <span key={idx} className="flex items-center gap-1 px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-sm">
                       {tag}
-                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-blue-600">
+                      <button type="button" onClick={() => removeTag(tag)} className="hover:text-blue-600" aria-label={`Quitar ${tag}`}>
                         <X className="w-3 h-3" />
                       </button>
                     </span>

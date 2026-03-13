@@ -22,6 +22,15 @@ from typing import Any
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
+DEFAULT_CONTRACT_PATH = Path("docs/ENV_SECRET_CONTRACT.json")
+ENV_ALIASES = {
+    "dev": "dev",
+    "development": "dev",
+    "staging": "staging",
+    "stage": "staging",
+    "prod": "prod",
+    "production": "prod",
+}
 
 
 PATTERNS: list[tuple[str, re.Pattern[str]]] = [
@@ -158,6 +167,62 @@ def _supabase_secret_names(project_ref: str) -> set[str]:
     return names
 
 
+def _normalize_target_environment(value: str) -> str:
+    normalized = ENV_ALIASES.get(value.strip().lower())
+    if normalized is None:
+        raise ValueError(f"unsupported target environment: {value}")
+    return normalized
+
+
+def _load_contract(path: Path) -> dict[str, Any] | None:
+    if not path.is_file():
+        return None
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    if not isinstance(raw, dict):
+        raise ValueError("env contract must be a JSON object")
+    variables = raw.get("variables")
+    if not isinstance(variables, dict):
+        raise ValueError("env contract requires a top-level 'variables' object")
+    return raw
+
+
+def _classify_missing_supabase(
+    missing_names: list[str],
+    contract: dict[str, Any] | None,
+    target_environment: str,
+) -> dict[str, list[str]]:
+    if contract is None:
+        return {"required": [], "optional": [], "unclassified": sorted(missing_names)}
+
+    variables = contract.get("variables", {})
+    required: list[str] = []
+    optional: list[str] = []
+    unclassified: list[str] = []
+
+    for name in sorted(missing_names):
+        meta = variables.get(name)
+        if not isinstance(meta, dict):
+            unclassified.append(name)
+            continue
+        supabase_map = meta.get("supabase")
+        if not isinstance(supabase_map, dict):
+            unclassified.append(name)
+            continue
+        state = supabase_map.get(target_environment)
+        if state == "required":
+            required.append(name)
+        elif state == "optional":
+            optional.append(name)
+        else:
+            unclassified.append(name)
+
+    return {
+        "required": required,
+        "optional": optional,
+        "unclassified": unclassified,
+    }
+
+
 def main(argv: list[str]) -> int:
     parser = argparse.ArgumentParser(description="Audit env var usage vs docs (names only)")
     parser.add_argument(
@@ -181,11 +246,29 @@ def main(argv: list[str]) -> int:
         help="When comparing with Supabase secrets, which used vars to compare (default: backend-only).",
     )
     parser.add_argument(
+        "--contract",
+        default=os.fspath(DEFAULT_CONTRACT_PATH),
+        help="JSON contract with required/optional Supabase vars by environment (default: docs/ENV_SECRET_CONTRACT.json).",
+    )
+    parser.add_argument(
+        "--target-environment",
+        default="prod",
+        help="Environment key for contract classification: dev, staging, prod (default: prod).",
+    )
+    parser.add_argument(
+        "--check-required-supabase",
+        action="store_true",
+        help="Exit non-zero if required Supabase vars for the target environment are missing.",
+    )
+    parser.add_argument(
         "--include-builtins",
         action="store_true",
         help="Include framework/runtime built-ins like DEV/PROD/DENO_DEPLOYMENT_ID in results.",
     )
     args = parser.parse_args(argv)
+    target_environment = _normalize_target_environment(args.target_environment)
+    contract_path = REPO_ROOT / args.contract
+    contract = _load_contract(contract_path)
 
     scan_dirs = [REPO_ROOT / p for p in DEFAULT_SCAN_DIRS]
     scan_dirs.extend(REPO_ROOT / p for p in args.scan_dir)
@@ -209,6 +292,7 @@ def main(argv: list[str]) -> int:
 
     supabase_names: set[str] | None = None
     missing_in_supabase: list[str] | None = None
+    missing_in_supabase_by_contract = {"required": [], "optional": [], "unclassified": []}
     if args.with_supabase:
         try:
             supabase_names = _supabase_secret_names(args.project_ref)
@@ -222,6 +306,11 @@ def main(argv: list[str]) -> int:
                     if any(str(f).startswith("supabase/functions/") for f in info["files"])
                 }
             missing_in_supabase = sorted(compare_set - supabase_names)
+            missing_in_supabase_by_contract = _classify_missing_supabase(
+                missing_in_supabase,
+                contract,
+                target_environment,
+            )
         except Exception as exc:
             supabase_names = None
             missing_in_supabase = None
@@ -243,14 +332,27 @@ def main(argv: list[str]) -> int:
             "supabase_secrets": sorted(list(supabase_names)) if supabase_names is not None else None,
             "missing_in_supabase_secrets": missing_in_supabase,
             "supabase_scope": args.supabase_scope if args.with_supabase else None,
+            "contract": {
+                "path": os.fspath(contract_path.relative_to(REPO_ROOT)) if contract is not None else None,
+                "target_environment": target_environment,
+                "missing_required_in_supabase_secrets": missing_in_supabase_by_contract["required"],
+                "missing_optional_in_supabase_secrets": missing_in_supabase_by_contract["optional"],
+                "missing_unclassified_in_supabase_secrets": missing_in_supabase_by_contract["unclassified"],
+            },
         }
         print(json.dumps(payload, ensure_ascii=True, indent=2))
+        if args.check_required_supabase and missing_in_supabase_by_contract["required"]:
+            return 1
         return 0
 
     print("# Env Audit (names only)")
     print("")
     print(f"- Scan roots: {', '.join(os.fspath(p.relative_to(REPO_ROOT)) for p in scan_dirs if p.exists())}")
     print(f"- Env example: `{args.env_example}`")
+    if contract is not None:
+        print(f"- Env contract: `{args.contract}` (target `{target_environment}`)")
+    else:
+        print(f"- Env contract: missing (`{args.contract}`)")
     if args.with_supabase:
         print(f"- Supabase secrets: enabled (project_ref `{args.project_ref}`)")
         print(f"- Supabase compare scope: `{args.supabase_scope}`")
@@ -273,11 +375,31 @@ def main(argv: list[str]) -> int:
     _sec("Present In .env.example But Not Used In Code", unused_in_code)
 
     if args.with_supabase and supabase_names is not None and missing_in_supabase is not None:
-        _sec("Used In Code But Missing In Supabase Secrets (names)", missing_in_supabase)
+        _sec("Used In Code But Missing In Supabase Secrets (raw names)", missing_in_supabase)
+        if contract is not None:
+            _sec(
+                f"Missing Required In Supabase Secrets ({target_environment})",
+                missing_in_supabase_by_contract["required"],
+            )
+            _sec(
+                f"Missing Optional In Supabase Secrets ({target_environment})",
+                missing_in_supabase_by_contract["optional"],
+            )
+            _sec(
+                f"Missing In Supabase Secrets Without Contract Classification ({target_environment})",
+                missing_in_supabase_by_contract["unclassified"],
+            )
 
     print("## Notes")
     print("")
     print("- This report never prints values. Review each missing variable and decide whether it belongs in `.env.example` or Supabase secrets.")
+    if contract is not None:
+        print("- Optional contract entries cover feature-gated or fallback-backed vars; only `--check-required-supabase` should fail the gate.")
+    if args.check_required_supabase and missing_in_supabase_by_contract["required"]:
+        print(f"- Gate result: FAIL ({len(missing_in_supabase_by_contract['required'])} required Supabase vars missing for `{target_environment}`).")
+        return 1
+    if args.check_required_supabase:
+        print(f"- Gate result: PASS (no required Supabase vars missing for `{target_environment}`).")
     return 0
 
 

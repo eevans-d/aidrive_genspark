@@ -2,12 +2,13 @@
 
 Estado: Activo
 Audiencia: Operacion + soporte interno
-Ultima actualizacion: 2026-03-12
+Ultima actualizacion: 2026-03-13
 Fuente de verdad: docs/ESTADO_ACTUAL.md
 Owner documental: Operacion + Infra
 
 > Este documento reemplaza la version corta previa y queda alineado al paquete documental V1.
-> Referencias de estado: segun FactPack 2026-03-12.
+> Referencias de estado: segun FactPack 2026-03-13.
+> Nota operativa: el smoke/nightly descrito aqui ya fue promovido a `main` via PR `#95` (`41b34bf`). La corrida `Nightly Quality Gates` `23038842082` ya deja `ops-smoke-report` + `migration-drift-report` en GitHub Actions.
 
 ## Objetivo
 Definir pasos operativos estandar para:
@@ -27,6 +28,17 @@ Comandos sugeridos:
 ```bash
 OPS_SMOKE_TARGET=remote SUPABASE_URL="https://<project-ref>.supabase.co" node scripts/ops-smoke-check.mjs
 ```
+
+Soporte CI/nightly:
+- `main` ejecuta `ops:smoke` en remoto en modo warning-only.
+- Variables esperadas por el workflow:
+  - `SUPABASE_URL` o `vars.VITE_SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `API_PROVEEDOR_SECRET`
+- El workflow prioriza `SUPABASE_URL`, usa `vars.VITE_SUPABASE_URL` como fallback y marca `SKIPPED` si la URL remota falta o es invalida.
+- El artifact operativo asociado es `ops-smoke-report`.
+- `migration-drift` deja `migration-drift-report` usando `SUPABASE_DB_URL`.
+- Estado remoto 2026-03-13: `main` ya expone `ops-smoke-report`; la corrida vigente confirma PASS en checks criticos y `401` no critico en `cron-health-monitor/health-check`.
 
 ### B. Operacion continua
 1. Monitorear eventos criticos:
@@ -59,11 +71,13 @@ OPS_SMOKE_TARGET=remote SUPABASE_URL="https://<project-ref>.supabase.co" node sc
 ### Minuto 3-8: Aislar dominio de la falla
 1. Si falla solo `api-proveedor/health`, tratar como incidente de proveedor/scraper.
 2. Si el fallo de proveedor es `401`, validar primero credencial operativa:
-   - `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION` (o `SUPABASE_SERVICE_ROLE_KEY` como fallback de bearer).
+   - `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION` (o `SUPABASE_SERVICE_ROLE_KEY` como bearer tecnico en CI/nightly).
    - `OPS_SMOKE_API_PROVEEDOR_SECRET` (o variable base `API_PROVEEDOR_SECRET` en el entorno de ejecucion).
 3. Si falla solo `api-minimarket/health`, tratar como incidente de gateway principal.
 4. Si fallan ambos endpoints criticos, tratar como incidente de plataforma (Supabase/infra/red).
 5. Si falla solo `cron-health-monitor/health-check` y los criticos estan PASS, registrar warning operativo y mantener servicio online.
+6. Si el fallo aparece solo en el nightly, revisar primero el artifact `ops-smoke-report` para distinguir incidente real vs configuracion faltante de secrets/vars.
+7. Si el incidente apunta a drift/migraciones, revisar `migration-drift-report` antes de asumir drift real.
 
 ### Minuto 8-15: Contencion y escalacion
 1. Revisar logs recientes de Edge Functions afectadas.
@@ -103,6 +117,7 @@ OPS_SMOKE_TARGET=remote SUPABASE_URL="https://<project-ref>.supabase.co" node sc
 2. Revisar logs de Functions en Supabase.
 3. Confirmar si afecta solo un servicio o todo el flujo.
 4. Activar incidente interno y seguir continuidad.
+5. Si el incidente proviene del nightly, adjuntar `ops-smoke-report` en la escalacion.
 
 ### R5 - Continuidad de datos (backup/restore)
 Backup:
@@ -137,6 +152,8 @@ node scripts/validate-doc-links.mjs
 Checklist de salud operativa:
 - [ ] Frontend accesible
 - [ ] `ops-smoke-check` en PASS para checks criticos
+- [ ] `nightly-gates` con artifact `ops-smoke-report` disponible
+- [ ] `migration-drift-report` disponible y revisado
 - [ ] POS operativo
 - [ ] Cuaderno operativo
 - [ ] Alertas y tareas visibles

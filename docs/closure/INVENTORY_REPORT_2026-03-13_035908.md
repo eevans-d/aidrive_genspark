@@ -1,8 +1,8 @@
 # MISIÓN: INVENTARIO COMPLETO DE RECURSOS DEL PROYECTO
 
-- Fecha (UTC): `2026-03-12 03:39:01`
+- Fecha (UTC): `2026-03-13 03:59:10`
 - Repo: `.`
-- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-12_033328.md`
+- Baseline log (safe): `docs/closure/BASELINE_LOG_2026-03-13_035556.md`
 
 ## 1. RECURSOS DEL PROYECTO
 
@@ -12,11 +12,11 @@
 
 | Size | Path |
 |---:|---|
-| 784K | `.agent` |
-| 1.4M | `docs` |
+| 796K | `.agent` |
+| 1.3M | `docs` |
 | 1.6M | `supabase` |
 | 1.1M | `tests` |
-| 300K | `scripts` |
+| 308K | `scripts` |
 | 418M | `minimarket-system` |
 
 - Assets detectados (best-effort): `1` (top 20 por tamaño)
@@ -80,6 +80,7 @@
 
 - Scan roots: supabase/functions, minimarket-system/src, scripts
 - Env example: `.env.example`
+- Env contract: `docs/ENV_SECRET_CONTRACT.json` (target `prod`)
 - Supabase secrets: enabled (project_ref `dqaygmjpzoqjjrywdsxi`)
 - Supabase compare scope: `backend-only`
 
@@ -91,12 +92,16 @@
 
 - `ACCESS_TOKEN`
 - `DB_PASSWORD`
+- `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION`
+- `OPS_SMOKE_API_PROVEEDOR_SECRET`
+- `OPS_SMOKE_AUTHORIZATION`
 - `OPS_SMOKE_RETRIES`
 - `OPS_SMOKE_RETRY_DELAY_MS`
+- `OPS_SMOKE_SERVICE_ROLE_KEY`
 - `OPS_SMOKE_TIMEOUT_MS`
 - `PROJECT_ID`
 
-## Used In Code But Missing In Supabase Secrets (names)
+## Used In Code But Missing In Supabase Secrets (raw names)
 
 - `API_PROVEEDOR_READ_MODE`
 - `EMAIL_FROM`
@@ -113,7 +118,33 @@
 - `TWILIO_FROM_NUMBER`
 - `WEBHOOK_URL`
 
+## Missing Required In Supabase Secrets (prod)
+
+(none)
+
+## Missing Optional In Supabase Secrets (prod)
+
+- `API_PROVEEDOR_READ_MODE`
+- `EMAIL_FROM`
+- `ENVIRONMENT`
+- `INTERNAL_ORIGINS_ALLOWLIST`
+- `LOG_LEVEL`
+- `OCR_MIN_SCORE_APPLY`
+- `REQUIRE_ORIGIN`
+- `SCRAPER_READ_MODE`
+- `SLACK_WEBHOOK_URL`
+- `TEST_ENVIRONMENT`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_NUMBER`
+- `WEBHOOK_URL`
+
+## Missing In Supabase Secrets Without Contract Classification (prod)
+
+(none)
+
 ## Notes
 
 - This report never prints values. Review each missing variable and decide whether it belongs in `.env.example` or Supabase secrets.
+- Optional contract entries cover feature-gated or fallback-backed vars; only `--check-required-supabase` should fail the gate.
 ```

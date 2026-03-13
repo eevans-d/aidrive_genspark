@@ -122,8 +122,9 @@ npm run test:integration
 ```
 
 ## 9) Relacion con issues abiertos
-- `OCR-007` es externo (billing GCP), no un drift de esquema local.
-- `AUTH-001`, `AUTH-002`, `DB-001` son hardenings de plataforma externa.
+- `OCR-007` sigue siendo externo al esquema: billing GCP ya fue reactivado y queda pendiente solo la revalidacion runtime del OCR.
+- `AUTH-001`, `AUTH-002`, `DB-001` siguen siendo hardenings de plataforma externa; en `DB-001` el `SSL enforcement` ya fue cerrado y resta la allowlist de IPs.
+- `CI-REMOTE-001` queda cerrado; la evidencia remota de CI/GitHub ya existe y no altera el esquema local.
 - `PERF-001` no aplica a BD (cerrado en frontend build).
 
 ## 10) Politica de mantenimiento del doc

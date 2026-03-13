@@ -549,7 +549,7 @@ export default function Asistente() {
               Reintentar
             </button>
           )}
-          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600">
+          <button onClick={() => setError(null)} className="text-red-400 hover:text-red-600" aria-label="Cerrar error">
             &times;
           </button>
         </div>
@@ -573,6 +573,7 @@ export default function Asistente() {
           disabled={loading || !input.trim()}
           className="px-4 py-3 min-h-[48px] bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
           title="Enviar"
+          aria-label="Enviar mensaje"
         >
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
         </button>

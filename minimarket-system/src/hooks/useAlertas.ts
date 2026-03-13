@@ -64,7 +64,7 @@ export function useAlertas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('mv_stock_bajo')
-        .select('*')
+        .select('stock_id, producto_id, producto_nombre, sku, codigo_barras, cantidad_actual, stock_minimo, stock_maximo, nivel_stock, porcentaje_stock_minimo, categoria_id, categoria_nombre, ubicacion')
         .neq('nivel_stock', 'normal')
         .order('nivel_stock', { ascending: true })
         .limit(10)
@@ -80,7 +80,7 @@ export function useAlertas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('mv_productos_proximos_vencer')
-        .select('*')
+        .select('stock_id, producto_id, producto_nombre, sku, codigo_barras, cantidad_actual, fecha_vencimiento, dias_hasta_vencimiento, nivel_alerta, ubicacion')
         .neq('nivel_alerta', 'normal')
         .order('dias_hasta_vencimiento', { ascending: true })
         .limit(10)
@@ -96,7 +96,7 @@ export function useAlertas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('vista_alertas_activas')
-        .select('*')
+        .select('id, producto_id, nombre_producto, tipo_cambio, valor_anterior, valor_nuevo, porcentaje_cambio, severidad, mensaje, accion_recomendada, fecha_alerta, procesada')
         .order('fecha_alerta', { ascending: false })
         .limit(10)
 
@@ -111,7 +111,7 @@ export function useAlertas() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('tareas_pendientes')
-        .select('*')
+        .select('id, titulo, estado, prioridad, fecha_vencimiento, asignada_a_nombre')
         .eq('estado', 'pendiente')
         .lt('fecha_vencimiento', new Date().toISOString())
         .limit(5)

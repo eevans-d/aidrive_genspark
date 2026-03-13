@@ -2,11 +2,12 @@
 
 Estado: Activo
 Audiencia: Soporte operativo
-Ultima actualizacion: 2026-03-12
+Ultima actualizacion: 2026-03-13
 Fuente de verdad: docs/ESTADO_ACTUAL.md
 Owner documental: Operacion + Infra
 
-> Referencias y conteos: segun FactPack 2026-03-12.
+> Referencias y conteos: segun FactPack 2026-03-13.
+> Nota operativa: `main` ya incorpora el nightly endurecido via PR `#95` (`41b34bf`). La corrida `Nightly Quality Gates` `23038842082` genero `ops-smoke-report` + `migration-drift-report`; los checks criticos pasan y `cron-health-monitor/health-check` devuelve `401` no critico.
 
 ## Objetivo
 Definir monitoreo diario/semanal para detectar degradacion temprano y sostener continuidad operativa.
@@ -20,6 +21,17 @@ Endpoints criticos (bloqueantes):
 
 Endpoint opcional (solo si hay service role):
 - `/functions/v1/cron-health-monitor/health-check`
+
+CI/nightly:
+- `main` ejecuta este smoke en remoto en **fase warning-only**.
+- Secrets/vars reutilizados por el workflow:
+  - `SUPABASE_URL` o `vars.VITE_SUPABASE_URL`
+  - `SUPABASE_SERVICE_ROLE_KEY`
+  - `API_PROVEEDOR_SECRET`
+- El workflow exporta `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION="Bearer $SUPABASE_SERVICE_ROLE_KEY"` y `OPS_SMOKE_API_PROVEEDOR_SECRET="$API_PROVEEDOR_SECRET"` para mantener `api-proveedor` con `verify_jwt=true`.
+- El workflow prioriza `SUPABASE_URL`, usa `vars.VITE_SUPABASE_URL` solo como fallback, valida formato esperado de URL Supabase y deja `ops-smoke-report` con nombres faltantes o invalidos.
+- `migration-drift` deja artifact `migration-drift-report` usando `SUPABASE_DB_URL`.
+- Estado remoto 2026-03-13: `main` ya genera `ops-smoke-report`; el artifact vigente confirma `api-minimarket/health=200`, `api-proveedor/health=200` y `cron-health-monitor/health-check=401` no critico.
 
 ### Ejecucion rapida
 Local:
@@ -61,7 +73,7 @@ node scripts/ops-smoke-check.mjs
 | `OPS_SMOKE_REMOTE_BASE_URL` | N/A | Base remota si `target=remote`. |
 | `OPS_SMOKE_SERVICE_ROLE_KEY` | N/A | Habilita check opcional de cron monitor. |
 | `OPS_SMOKE_API_PROVEEDOR_SECRET` | N/A | Header `x-api-secret` para `api-proveedor/health`. |
-| `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION` | N/A | Header `Authorization` opcional para proveedor. |
+| `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION` | N/A | Header `Authorization` requerido para smoke remoto de proveedor mientras `verify_jwt=true`. |
 | `OPS_SMOKE_AUTHORIZATION` | N/A | Fallback de Authorization para checks que lo requieran. |
 | `SUPABASE_URL` | N/A | Fallback para construir base remota. |
 
@@ -72,6 +84,7 @@ node scripts/ops-smoke-check.mjs
 - `[SUMMARY]`: resumen final.
 - `401` en `api-proveedor/health`: validar `OPS_SMOKE_API_PROVEEDOR_SECRET`.
 - `401` con proveedor y `verify_jwt=true`: validar `OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION`.
+- `cron-health-monitor/health-check` ausente en el resumen: validar `OPS_SMOKE_SERVICE_ROLE_KEY` o `SUPABASE_SERVICE_ROLE_KEY`.
 
 Exit codes:
 - `0`: todos los checks criticos en PASS.
@@ -92,6 +105,8 @@ Exit codes:
 2. Revisar ejecuciones de cron jobs y alertas activas.
 3. Validar estado de backups y restauracion de prueba.
 4. Correr verificacion documental de links.
+5. Revisar artifact `ops-smoke-report` de `nightly-gates` y decidir si el gate puede pasar a blocking cuando `cron-health-monitor/health-check` deje de devolver `401`.
+6. Revisar `migration-drift-report`; la corrida `23038842082` ya confirma `Remote database is up to date.`
 
 ## Endpoints Y Senales Clave
 | Componente | Endpoint/Fuente | Frecuencia |

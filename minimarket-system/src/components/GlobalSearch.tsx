@@ -285,6 +285,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
             <button
               onClick={() => setQuery('')}
               className="p-1 text-gray-400 hover:text-gray-600"
+              aria-label="Limpiar búsqueda"
             >
               <X className="w-4 h-4" />
             </button>
@@ -445,6 +446,7 @@ export default function GlobalSearch({ isOpen, onClose, initialQuery = '' }: Glo
                 onClick={() => { setProductoAccion(null); setProductoView('menu') }}
                 className="p-2 min-h-[48px] min-w-[48px] flex items-center justify-center rounded-lg hover:bg-gray-100"
                 title="Cerrar"
+                aria-label="Cerrar detalle de producto"
               >
                 ✕
               </button>
@@ -625,7 +627,7 @@ function LabelPrintView({
           })
         }
       } catch {
-        // ignore
+        if (import.meta.env.DEV) console.warn('jsbarcode load failed')
       }
     })()
     return () => { cancelled = true }

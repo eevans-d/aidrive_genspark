@@ -16,6 +16,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { error as logError } from './_shared/cli-log.mjs';
 
 function loadDotEnvFile(filePath) {
   if (!fs.existsSync(filePath)) return;
@@ -70,7 +71,7 @@ async function main() {
   if (!email) missing.push('TEST_USER_ADMIN');
   if (!password) missing.push('TEST_PASSWORD');
   if (missing.length) {
-    console.error(`MISSING_ENV: ${missing.join(', ')}`);
+    logError(`MISSING_ENV: ${missing.join(', ')}`);
     process.exit(2);
   }
 
@@ -85,13 +86,13 @@ async function main() {
   });
 
   if (!authRes.ok) {
-    console.error(`AUTH_FAILED: ${authRes.status}`);
+    logError(`AUTH_FAILED: ${authRes.status}`);
     process.exit(1);
   }
 
   const { access_token: accessToken } = await authRes.json();
   if (!accessToken) {
-    console.error('AUTH_ERROR: missing access_token');
+    logError('AUTH_ERROR: missing access_token');
     process.exit(1);
   }
 
@@ -180,7 +181,7 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error('UNEXPECTED_ERROR');
-  console.error(err?.message || String(err));
+  logError('UNEXPECTED_ERROR');
+  logError(err?.message || String(err));
   process.exit(1);
 });

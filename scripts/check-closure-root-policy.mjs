@@ -2,6 +2,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { error as logError, printErrorLines } from './_shared/cli-log.mjs';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -54,10 +55,10 @@ async function main() {
   );
 
   if (unexpected.length > 0) {
-    console.error('Closure root policy failed. Unexpected files in docs/closure root:');
-    for (const fileName of unexpected) {
-      console.error(`- docs/closure/${fileName}`);
-    }
+    printErrorLines(
+      'Closure root policy failed. Unexpected files in docs/closure root:',
+      unexpected.map((fileName) => `docs/closure/${fileName}`),
+    );
     process.exit(1);
   }
 
@@ -65,7 +66,7 @@ async function main() {
 }
 
 main().catch((error) => {
-  console.error('Failed to evaluate closure root policy');
-  console.error(error instanceof Error ? error.message : String(error));
+  logError('Failed to evaluate closure root policy');
+  logError(error instanceof Error ? error.message : String(error));
   process.exit(1);
 });

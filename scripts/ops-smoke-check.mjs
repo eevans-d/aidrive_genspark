@@ -2,6 +2,7 @@
 
 import process from 'node:process';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { error as logError, info as logInfo, log } from './_shared/cli-log.mjs';
 
 const DEFAULT_TIMEOUT_MS = 6000;
 const DEFAULT_RETRIES = 1;
@@ -11,15 +12,19 @@ const TARGET = (process.env.OPS_SMOKE_TARGET || 'local').toLowerCase();
 const TIMEOUT_MS = parsePositiveInt('OPS_SMOKE_TIMEOUT_MS', DEFAULT_TIMEOUT_MS);
 const RETRIES = parseNonNegativeInt('OPS_SMOKE_RETRIES', DEFAULT_RETRIES);
 const RETRY_DELAY_MS = parseNonNegativeInt('OPS_SMOKE_RETRY_DELAY_MS', DEFAULT_RETRY_DELAY_MS);
-const serviceRoleKey = process.env.OPS_SMOKE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
-const apiProveedorSecret = process.env.OPS_SMOKE_API_PROVEEDOR_SECRET || process.env.API_PROVEEDOR_SECRET || '';
-const apiProveedorAuthorization =
-  process.env.OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION ||
-  process.env.OPS_SMOKE_AUTHORIZATION ||
-  (serviceRoleKey ? `Bearer ${serviceRoleKey}` : '');
+const serviceRoleConfig = resolveConfigValue(['OPS_SMOKE_SERVICE_ROLE_KEY', 'SUPABASE_SERVICE_ROLE_KEY']);
+const apiProveedorSecretConfig = resolveConfigValue(['OPS_SMOKE_API_PROVEEDOR_SECRET', 'API_PROVEEDOR_SECRET']);
+const apiProveedorAuthorizationConfig = resolveConfigValue([
+  'OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION',
+  'OPS_SMOKE_AUTHORIZATION',
+]);
+const serviceRoleKey = serviceRoleConfig.value;
+const apiProveedorSecret = apiProveedorSecretConfig.value;
+const apiProveedorAuthorization = apiProveedorAuthorizationConfig.value || (serviceRoleKey ? `Bearer ${serviceRoleKey}` : '');
+const apiProveedorAuthorizationSource = apiProveedorAuthorizationConfig.source || (serviceRoleKey ? `${serviceRoleConfig.source}:bearer_fallback` : 'none');
 
 if (!['local', 'remote'].includes(TARGET)) {
-  console.error('[CONFIG_ERROR] OPS_SMOKE_TARGET must be local or remote');
+  logError('[CONFIG_ERROR] OPS_SMOKE_TARGET must be local or remote');
   process.exit(2);
 }
 
@@ -50,17 +55,20 @@ if (serviceRoleKey) {
     },
   });
 } else {
-  console.log('[INFO] optional endpoint cron-health-monitor/health-check disabled (missing OPS_SMOKE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY)');
+  logInfo('optional endpoint cron-health-monitor/health-check disabled (missing OPS_SMOKE_SERVICE_ROLE_KEY or SUPABASE_SERVICE_ROLE_KEY)');
 }
 
 if (!apiProveedorSecret) {
-  console.log('[INFO] api-proveedor/health may return 401 if OPS_SMOKE_API_PROVEEDOR_SECRET (or API_PROVEEDOR_SECRET) is not set');
+  logInfo('api-proveedor/health may return 401 if OPS_SMOKE_API_PROVEEDOR_SECRET (or API_PROVEEDOR_SECRET) is not set');
 }
 if (!apiProveedorAuthorization) {
-  console.log('[INFO] api-proveedor/health may require Authorization when function verify_jwt=true');
+  logInfo('api-proveedor/health may require Authorization when function verify_jwt=true');
 }
 
-console.log(`[OPS_SMOKE] target=${TARGET} base_url=${baseUrl} timeout_ms=${TIMEOUT_MS} retries=${RETRIES} retry_delay_ms=${RETRY_DELAY_MS}`);
+log(`[OPS_SMOKE] target=${TARGET} base_url=${baseUrl} timeout_ms=${TIMEOUT_MS} retries=${RETRIES} retry_delay_ms=${RETRY_DELAY_MS}`);
+log(
+  `[INFO] auth_sources api_proveedor_authorization=${apiProveedorAuthorizationSource} api_proveedor_secret=${apiProveedorSecretConfig.source || 'none'} cron_service_role=${serviceRoleConfig.source || 'none'}`
+);
 
 let criticalFailures = 0;
 let nonCriticalFailures = 0;
@@ -80,8 +88,8 @@ for (const check of checks) {
   }
 }
 
-console.log('');
-console.log(`[SUMMARY] total=${checks.length} pass=${totalPass} fail=${checks.length - totalPass} critical_fail=${criticalFailures} non_critical_fail=${nonCriticalFailures}`);
+log('');
+log(`[SUMMARY] total=${checks.length} pass=${totalPass} fail=${checks.length - totalPass} critical_fail=${criticalFailures} non_critical_fail=${nonCriticalFailures}`);
 
 if (criticalFailures > 0) {
   process.exit(1);
@@ -94,7 +102,7 @@ function parsePositiveInt(name, fallback) {
   if (!raw) return fallback;
   const value = Number.parseInt(raw, 10);
   if (!Number.isFinite(value) || value <= 0) {
-    console.error(`[CONFIG_ERROR] ${name} must be a positive integer`);
+    logError(`[CONFIG_ERROR] ${name} must be a positive integer`);
     process.exit(2);
   }
   return value;
@@ -105,10 +113,21 @@ function parseNonNegativeInt(name, fallback) {
   if (!raw) return fallback;
   const value = Number.parseInt(raw, 10);
   if (!Number.isFinite(value) || value < 0) {
-    console.error(`[CONFIG_ERROR] ${name} must be a non-negative integer`);
+    logError(`[CONFIG_ERROR] ${name} must be a non-negative integer`);
     process.exit(2);
   }
   return value;
+}
+
+function resolveConfigValue(names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (value) {
+      return { value, source: name };
+    }
+  }
+
+  return { value: '', source: '' };
 }
 
 function resolveBaseUrl(target) {
@@ -124,7 +143,7 @@ function resolveBaseUrl(target) {
 
   const supabaseUrl = process.env.SUPABASE_URL;
   if (!supabaseUrl) {
-    console.error('[CONFIG_ERROR] remote target requires OPS_SMOKE_REMOTE_BASE_URL or SUPABASE_URL');
+    logError('[CONFIG_ERROR] remote target requires OPS_SMOKE_REMOTE_BASE_URL or SUPABASE_URL');
     process.exit(2);
   }
 
@@ -152,9 +171,9 @@ async function runCheck(check) {
       lastLatency = latency;
 
       const pass = response.ok;
-      console.log(`[${pass ? 'PASS' : 'FAIL'}] endpoint=${check.name} critical=${check.critical} status=${response.status} latency_ms=${latency} attempt=${attempt}`);
+      log(`[${pass ? 'PASS' : 'FAIL'}] endpoint=${check.name} critical=${check.critical} status=${response.status} latency_ms=${latency} attempt=${attempt}`);
       if (!pass && check.name === 'api-proveedor/health' && response.status === 401) {
-        console.log('[HINT] endpoint=api-proveedor/health set OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION and/or OPS_SMOKE_API_PROVEEDOR_SECRET');
+        log('[HINT] endpoint=api-proveedor/health set OPS_SMOKE_API_PROVEEDOR_AUTHORIZATION and/or OPS_SMOKE_API_PROVEEDOR_SECRET');
       }
 
       if (pass) {
@@ -165,7 +184,7 @@ async function runCheck(check) {
       lastStatus = 'ERR';
       lastLatency = latency;
       lastError = sanitizeError(error);
-      console.log(`[FAIL] endpoint=${check.name} critical=${check.critical} status=ERR latency_ms=${latency} attempt=${attempt} error=${lastError}`);
+      log(`[FAIL] endpoint=${check.name} critical=${check.critical} status=ERR latency_ms=${latency} attempt=${attempt} error=${lastError}`);
     }
 
     if (attempt < attempts) {
@@ -173,7 +192,7 @@ async function runCheck(check) {
     }
   }
 
-  console.log(`[FAIL_FINAL] endpoint=${check.name} critical=${check.critical} status=${lastStatus} latency_ms=${lastLatency} attempts=${attempts}${lastError ? ` error=${lastError}` : ''}`);
+  log(`[FAIL_FINAL] endpoint=${check.name} critical=${check.critical} status=${lastStatus} latency_ms=${lastLatency} attempts=${attempts}${lastError ? ` error=${lastError}` : ''}`);
   return { pass: false };
 }
 

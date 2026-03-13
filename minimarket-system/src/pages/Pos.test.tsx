@@ -23,7 +23,7 @@ vi.mock('../lib/supabase', () => ({
       lte: vi.fn().mockReturnThis(),
       order: vi.fn().mockReturnThis(),
       limit: vi.fn().mockReturnThis(),
-      then: vi.fn((cb: any) => cb({ data: [], error: null })),
+      then: vi.fn((cb: (result: { data: unknown[]; error: null }) => unknown) => cb({ data: [], error: null })),
     })),
   },
 }))
@@ -34,7 +34,8 @@ vi.mock('../hooks/useUserRole', () => ({
 
 vi.mock('../utils/currency', () => ({
   money: (n: number) => n.toFixed(2),
-  calcTotal: (items: any[]) => items.reduce((a: number, i: any) => a + i.precio_unitario * i.cantidad, 0),
+  calcTotal: (items: Array<{ precio_unitario: number; cantidad: number }>) =>
+    items.reduce((total, item) => total + item.precio_unitario * item.cantidad, 0),
 }))
 
 const renderWithProviders = (ui: React.ReactElement) => {

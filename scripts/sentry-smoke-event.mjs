@@ -14,6 +14,7 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
+import { error as logError } from './_shared/cli-log.mjs';
 
 const repoRoot = process.cwd();
 const envArgIndex = process.argv.indexOf('--env');
@@ -32,7 +33,7 @@ function readDsnFromEnvFile() {
 
 const dsn = process.env.VITE_SENTRY_DSN || readDsnFromEnvFile();
 if (!dsn) {
-  console.error('ERROR: missing VITE_SENTRY_DSN (env or minimarket-system/.env.production.local)');
+  logError('missing VITE_SENTRY_DSN (env or minimarket-system/.env.production.local)');
   process.exit(1);
 }
 
@@ -40,13 +41,13 @@ let parsed;
 try {
   parsed = new URL(dsn);
 } catch {
-  console.error('ERROR: invalid DSN format');
+  logError('invalid DSN format');
   process.exit(1);
 }
 
 const projectId = parsed.pathname.replace(/^\//, '');
 if (!projectId || !parsed.username) {
-  console.error('ERROR: DSN missing project id or public key');
+  logError('DSN missing project id or public key');
   process.exit(1);
 }
 

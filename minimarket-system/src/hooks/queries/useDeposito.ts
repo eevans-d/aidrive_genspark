@@ -45,7 +45,7 @@ async function fetchDeposito(): Promise<DepositoResult> {
         const ayer = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
         const { data: movimientosData, error: movError } = await supabase
                 .from('movimientos_deposito')
-                .select('*')
+                .select('id, producto_id, tipo_movimiento, cantidad, fecha_movimiento, usuario_id, usuario_nombre, destino, proveedor_id, lote, motivo, observaciones, factura_ingesta_item_id, created_at')
                 .gte('fecha_movimiento', ayer)
                 .order('fecha_movimiento', { ascending: false })
                 .limit(20);
