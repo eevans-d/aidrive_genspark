@@ -21,6 +21,7 @@ minimarket-system/node_modules/
 !minimarket-system/pnpm-lock.yaml
 
 # ── Build / Coverage artifacts ───────────────────────────────────────────────
+coverage/
 minimarket-system/dist/
 minimarket-system/coverage/
 *.tsbuildinfo
